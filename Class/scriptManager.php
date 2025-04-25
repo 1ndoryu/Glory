@@ -204,6 +204,6 @@ if (!class_exists('ScriptManager')) {
                 }
             }
         }
-    } // End class ScriptManager
+    } 
 
-} // End if class_exists
+} 
