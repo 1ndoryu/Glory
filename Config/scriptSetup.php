@@ -1,17 +1,5 @@
 <?php
 
-use Glory\ScriptManager; 
+use Glory\Class\ScriptManager; 
 
-ScriptManager::define(
-    'EmailFormBuilder', 
-    '/Glory/Assets/js/EmailFormBuilder.js',
-    [],
-    null, 
-    true,
-    [
-        'object_name' => 'gloryGlobalData', 
-        'data' => [
-            'ajax_url' => admin_url('admin-ajax.php'),
-        ]
-    ]
-);
+ScriptManager::defineFolder('/Glory/Assets/js');

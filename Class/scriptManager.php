@@ -1,6 +1,6 @@
 <?php
-# App/Glory/ScriptManager.php
-namespace Glory;
+
+namespace Glory\Class;
 
 
 if (!class_exists('ScriptManager')) {

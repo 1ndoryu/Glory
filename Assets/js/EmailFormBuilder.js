@@ -11,11 +11,7 @@ class GloryEmailSignup {
         this.signupForms = document.querySelectorAll('[data-glory-signup-form]');
         this.modals = document.querySelectorAll('[data-glory-modal]');
         this.activeModal = null; // Track the currently open modal
-
-        // Get AJAX URL and potentially a global nonce from localized data
-        // Assumes ScriptManager localizes to an object named 'gloryGlobalData'
         this.ajaxUrl = window.gloryGlobalData?.ajax_url || '/wp-admin/admin-ajax.php';
-        // Note: Nonce is retrieved per-form from its hidden input field
 
         this._bindEvents();
     }
