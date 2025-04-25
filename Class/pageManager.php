@@ -13,8 +13,8 @@ if (!class_exists('PageManager')) {
         # Stores the definitions of pages to manage for the current request
         private static $pages = [];
 
-        # Stores the ID of the designated front page after processing
-        private static $frontPageId = null;
+        // Removed static $frontPageId - it wasn't reliably used across methods/requests.
+        // We rely on processPages determining it and passing to updateFrontPageOptions.
 
         /**
          * Define a page to be managed by the theme.
@@ -24,12 +24,18 @@ if (!class_exists('PageManager')) {
          */
         public static function define(string $slug, string $title = null, string $template = null)
         {
+            // Input validation for slug
+            if (empty($slug) || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
+                 error_log("PageManager: Invalid slug '{$slug}'. Slugs must be lowercase alphanumeric with hyphens.");
+                 return;
+            }
+
             if (is_null($title)) {
                 $title = ucwords(str_replace(['-', '_'], ' ', $slug));
             }
             if (is_null($template)) {
                 $templateName = str_replace(' ', '', ucwords(str_replace(['-', '_'], ' ', $slug)));
-                $template = "Template{$templateName}.php";
+                $template = "Template{$templateName}.php"; // Ensure this template file exists in your theme!
             }
             self::$pages[$slug] = [
                 'title'    => $title,
@@ -43,11 +49,11 @@ if (!class_exists('PageManager')) {
          */
         public static function register()
         {
-            # Process pages on init (adjust priority if needed, e.g., 11 to run slightly later)
+            # Process pages on init. Priority 10 is usually fine.
             add_action('init', [self::class, 'processPages'], 10);
 
-            # Add the reconciliation (deletion check) hook. Runs later.
-            add_action('init', [self::class, 'reconcileManagedPages'], 100); # Run much later in 'init'
+            # Add the reconciliation hook. Priority 100 ensures it runs after most 'init' actions.
+            add_action('init', [self::class, 'reconcileManagedPages'], 100);
         }
 
         /**
@@ -56,159 +62,238 @@ if (!class_exists('PageManager')) {
          */
         public static function processPages()
         {
-            if (empty(self::$pages)) {
-                # Even if no pages are defined now, we might need to delete old ones later
-                # So we don't return early here completely, reconciliation might still run.
-                # However, the front page logic needs the ID from this loop.
-                # Consider if front page should be unset if 'home' definition removed.
-                 self::updateFrontPageOptions(null); # Explicitly clear if no home defined
-                return;
-            }
-
             $processedFrontPageId = null;
             $processedPageIds = []; // Keep track of IDs processed in this run
 
-            foreach (self::$pages as $slug => $pageDef) {
-                $pageSlug = $pageDef['slug'];
-                $pageTitle = $pageDef['title'];
-                $pageTemplate = $pageDef['template'];
-                $currentPageId = null;
+            // Proceed even if self::$pages is empty, to ensure front page option is handled
+            // and the transient is set (potentially empty).
 
-                $existingPage = get_page_by_path($pageSlug, OBJECT, 'page');
+            if (!empty(self::$pages)) {
+                foreach (self::$pages as $slug => $pageDef) {
+                    $pageSlug = $pageDef['slug'];
+                    $pageTitle = $pageDef['title'];
+                    $pageTemplate = $pageDef['template'];
+                    $currentPageId = null;
 
-                if (!$existingPage) {
-                    # Create Page
-                    $pageData = [
-                        'post_title'    => $pageTitle,
-                        'post_content'  => '',
-                        'post_status'   => 'publish',
-                        'post_type'     => 'page',
-                        'post_name'     => $pageSlug,
-                        'page_template' => $pageTemplate,
-                    ];
-                    $insertedId = wp_insert_post($pageData, true);
+                    // Validate template exists (optional but recommended)
+                    // if ($pageTemplate && !locate_template($pageTemplate)) {
+                    //     error_log("PageManager: Template file '{$pageTemplate}' not found for page '{$pageSlug}'.");
+                    //     // Decide: continue without template, or skip page? Let's continue for now.
+                    //     // $pageTemplate = ''; // Clear template if not found?
+                    // }
 
-                    if (!is_wp_error($insertedId)) {
-                        $currentPageId = $insertedId;
-                        # MARK THE PAGE AS MANAGED!
-                        update_post_meta($currentPageId, self::MANAGED_META_KEY, true);
-                        #error_log("PageManager: Created and marked page '{$pageSlug}' (ID: {$currentPageId}) as managed.");
+
+                    $existingPage = get_page_by_path($pageSlug, OBJECT, 'page');
+
+                    if (!$existingPage) {
+                        # Create Page
+                        $pageData = [
+                            'post_title'    => $pageTitle,
+                            'post_content'  => "<!-- Page managed by Glory PageManager. Slug: {$pageSlug} -->", // Add placeholder content
+                            'post_status'   => 'publish',
+                            'post_type'     => 'page',
+                            'post_name'     => $pageSlug,
+                            // Only set template if it's not empty/null
+                            'page_template' => $pageTemplate ?: '',
+                        ];
+                        $insertedId = wp_insert_post($pageData, true); // Pass true to return WP_Error on failure
+
+                        if (!is_wp_error($insertedId) && $insertedId > 0) {
+                            $currentPageId = $insertedId;
+                            update_post_meta($currentPageId, self::MANAGED_META_KEY, true);
+                            error_log("PageManager: CREATED and marked page '{$pageSlug}' (ID: {$currentPageId}) as managed.");
+                        } else {
+                            $error_message = is_wp_error($insertedId) ? $insertedId->get_error_message() : 'Unknown error (ID 0)';
+                            error_log("PageManager: FAILED to create page '{$pageSlug}': " . $error_message);
+                            continue; // Skip to next page definition
+                        }
                     } else {
-                        error_log("PageManager: Failed to create page '{$pageSlug}': " . $insertedId->get_error_message());
-                        continue;
+                        # Update Page (if needed)
+                        $currentPageId = $existingPage->ID;
+
+                        // Ensure it's marked as managed
+                        update_post_meta($currentPageId, self::MANAGED_META_KEY, true);
+
+                        // Check and update template if necessary
+                        $currentTemplate = get_post_meta($currentPageId, '_wp_page_template', true);
+                        $newTemplateValue = $pageTemplate ?: ''; // Use empty string if template is null/empty
+
+                        if ($currentTemplate !== $newTemplateValue) {
+                            update_post_meta($currentPageId, '_wp_page_template', $newTemplateValue);
+                            error_log("PageManager: Updated template for managed page '{$pageSlug}' (ID: {$currentPageId}) to '{$newTemplateValue}'.");
+                        }
+
+                        // Optional Title Update (Risky - user might change it intentionally)
+                        // if ($existingPage->post_title !== $pageTitle && !empty($pageTitle)) {
+                        //     wp_update_post(['ID' => $currentPageId, 'post_title' => $pageTitle]);
+                        //     error_log("PageManager: Updated title for managed page '{$pageSlug}' (ID: {$currentPageId}).");
+                        // }
+
+                         // Optional: Ensure status is 'publish' if found in another state?
+                        // if ($existingPage->post_status !== 'publish') {
+                        //     wp_update_post(['ID' => $currentPageId, 'post_status' => 'publish']);
+                        //      error_log("PageManager: Set status to 'publish' for managed page '{$pageSlug}' (ID: {$currentPageId}).");
+                        // }
                     }
-                } else {
-                    # Update Page (if needed)
-                    $currentPageId = $existingPage->ID;
-                    $currentTemplate = get_post_meta($currentPageId, '_wp_page_template', true);
 
-                    # Ensure it's marked as managed (in case it existed before management)
-                    update_post_meta($currentPageId, self::MANAGED_META_KEY, true);
+                    # Track successfully processed page ID
+                    if ($currentPageId) {
+                        $processedPageIds[] = $currentPageId;
 
-                    if ($currentTemplate !== $pageTemplate) {
-                        update_post_meta($currentPageId, '_wp_page_template', $pageTemplate);
-                         #error_log("PageManager: Updated template for managed page '{$pageSlug}' (ID: {$currentPageId}).");
+                        # Check specifically for the 'home' slug
+                        if ($pageSlug === 'home') {
+                             error_log("PageManager processPages: Found/Created 'home' page with ID: {$currentPageId}");
+                            $processedFrontPageId = $currentPageId;
+                        }
                     }
-                    # Optional Title Update (still risky)
-                    # if ($existingPage->post_title !== $pageTitle) { ... }
-                }
+                } # End foreach
+            } else {
+                 error_log("PageManager processPages: No pages defined in self::\$pages.");
+                 // If no pages are defined, ensure 'home' isn't lingering as the front page if it wasn't processed.
+                 // Check if the current front page ID is managed but *not* in the (empty) processed list.
+                 $currentFrontPageId = (int) get_option('page_on_front');
+                 if ($currentFrontPageId > 0 && get_option('show_on_front') === 'page') {
+                      if (get_post_meta($currentFrontPageId, self::MANAGED_META_KEY, true)) {
+                          // Current front page IS managed, but wasn't processed (because no pages defined).
+                          // We should likely revert to 'posts'.
+                          error_log("PageManager processPages: Current front page (ID: {$currentFrontPageId}) is managed but no pages defined. Setting front page to null.");
+                          $processedFrontPageId = null; // Ensure it gets unset
+                      }
+                 }
+            }
 
-                # Track successfully processed page ID
-                if($currentPageId) {
-                    $processedPageIds[] = $currentPageId;
-                }
-
-
-                # Check for front page
-                if ($pageSlug === 'home' && $currentPageId) {
-                    $processedFrontPageId = $currentPageId;
-                }
-            } # End foreach
 
             # Update front page settings based on this run's results
+             error_log("PageManager processPages: Calling updateFrontPageOptions with ID: " . ($processedFrontPageId ?? 'null'));
             self::updateFrontPageOptions($processedFrontPageId);
 
-            # Store processed IDs for the reconciliation step (using a transient for cross-request storage)
-            # Using a transient allows the reconcile function (running later) to know what was just processed.
-            # Set a short expiration, e.g., 1 minute.
-            set_transient('pagemanager_processed_ids', $processedPageIds, MINUTE_IN_SECONDS);
-
+            # Store processed IDs for the reconciliation step. INCREASED EXPIRY.
+            # Always set the transient, even if the array is empty.
+            set_transient('pagemanager_processed_ids', $processedPageIds, 15 * MINUTE_IN_SECONDS);
+            error_log("PageManager processPages: Set transient 'pagemanager_processed_ids' with IDs: " . (!empty($processedPageIds) ? implode(', ', $processedPageIds) : 'None'));
         }
 
 
         /**
          * Deletes pages marked as managed but no longer defined in the code.
-         * Runs later on init to ensure all defines have happened.
          * @internal
          */
         public static function reconcileManagedPages() {
-             #error_log("PageManager: Starting reconciliation...");
+            error_log("PageManager reconcileManagedPages: Starting reconciliation...");
 
-            # Get the list of page IDs that were confirmed/created in *this specific run*
             $currentlyDefinedAndProcessedIds = get_transient('pagemanager_processed_ids');
-            # Clean up the transient immediately
-            delete_transient('pagemanager_processed_ids');
+            // Don't delete transient immediately, might need it if we reconstruct
 
-             if ($currentlyDefinedAndProcessedIds === false) {
-                 // This might happen if processPages didn't run or set the transient correctly.
-                 // Or if the transient expired between processPages and reconcile.
-                 // Decide how to handle this: either log an error and bail, or proceed cautiously
-                 // by perhaps fetching IDs based on self::$pages (less reliable if processPages failed partially).
-                 // For safety, let's bail if we don't have the confirmed list from the transient. 
-                 error_log("PageManager: Reconciliation skipped. Could not retrieve processed IDs transient. This might be normal on first load after transient expiry or if processPages failed.");
-                 return;
-             }
+            if ($currentlyDefinedAndProcessedIds === false) {
+                error_log("PageManager reconcileManagedPages: Transient 'pagemanager_processed_ids' not found/expired. Attempting fallback reconstruction.");
+                // Fallback: Reconstruct expected IDs based on current definitions in self::$pages
+                $currentlyDefinedAndProcessedIds = [];
+                if (!empty(self::$pages)) {
+                    $definedSlugs = array_keys(self::$pages);
+                    $args = [
+                        'post_type' => 'page',
+                        'post_status' => 'any',
+                        'posts_per_page' => -1,
+                        'meta_key' => self::MANAGED_META_KEY,
+                        'meta_value' => true,
+                        'fields' => 'ids',
+                        // Optimization: Only fetch pages whose slugs *might* be in our definitions
+                        // Requires WP 4.4+ for post_name__in
+                        // 'post_name__in' => $definedSlugs, // This helps narrow down the query
+                    ];
+                    $reconstructedIds = get_posts($args);
 
-            # Find ALL pages marked as managed by us in the database
-            $args = [
-                'post_type'      => 'page',
-                'post_status'    => 'any', # Check all statuses (publish, draft, trash, etc.)
-                'posts_per_page' => -1,      # Get all pages
-                'meta_key'       => self::MANAGED_META_KEY,
-                'meta_value'     => true,   # That have our flag
-                'fields'         => 'ids',  # Only get the IDs
-            ];
-            $potentiallyManagedPageIds = get_posts($args);
+                     // We need to double-check the slugs match because get_posts meta_query might not be perfect with post_name__in
+                     if (!empty($reconstructedIds)) {
+                        foreach ($reconstructedIds as $pageId) {
+                            $pageSlug = get_post_field('post_name', $pageId);
+                            if (in_array($pageSlug, $definedSlugs, true)) {
+                                $currentlyDefinedAndProcessedIds[] = $pageId;
+                            }
+                        }
+                     }
 
-            if (empty($potentiallyManagedPageIds)) {
-                 #error_log("PageManager: Reconciliation - No pages found marked as managed.");
-                return; # Nothing found marked as managed
+                    error_log("PageManager reconcileManagedPages: Reconstructed expected IDs based on definitions: " . (!empty($currentlyDefinedAndProcessedIds) ? implode(', ', $currentlyDefinedAndProcessedIds) : 'None'));
+                } else {
+                    error_log("PageManager reconcileManagedPages: No pages defined, reconciliation based on definitions yields no expected IDs.");
+                }
+                 // If still false/empty after reconstruction attempt, there's nothing to compare against *from definitions*.
+                 // We still need to compare against ALL managed pages found in DB below.
+                 if (empty($currentlyDefinedAndProcessedIds)) {
+                      error_log("PageManager reconcileManagedPages: Fallback reconstruction resulted in empty list. Reconciliation will compare ALL DB managed pages against an empty 'current' list.");
+                 }
+                 // Now delete the (potentially expired) transient if we haven't already
+                 delete_transient('pagemanager_processed_ids');
+
+            } else {
+                 // Transient was found, log it and delete it.
+                 error_log("PageManager reconcileManagedPages: Retrieved transient 'pagemanager_processed_ids' with IDs: " . (!empty($currentlyDefinedAndProcessedIds) ? implode(', ', $currentlyDefinedAndProcessedIds) : 'None'));
+                 delete_transient('pagemanager_processed_ids');
+                 // Ensure it's an array, even if empty from transient
+                 if (!is_array($currentlyDefinedAndProcessedIds)) {
+                     $currentlyDefinedAndProcessedIds = [];
+                 }
             }
 
-            #error_log("PageManager: Reconciliation - Found managed page IDs in DB: " . implode(', ', $potentiallyManagedPageIds));
-            #error_log("PageManager: Reconciliation - Currently defined & processed IDs: " . implode(', ', $currentlyDefinedAndProcessedIds));
 
+            # Find ALL pages marked as managed by us in the database
+            $args_all_managed = [
+                'post_type'      => 'page',
+                'post_status'    => 'any', // Include trash, draft etc.
+                'posts_per_page' => -1,
+                'meta_key'       => self::MANAGED_META_KEY,
+                'meta_value'     => true,
+                'fields'         => 'ids',
+            ];
+            $potentiallyManagedPageIds = get_posts($args_all_managed);
 
-            # Figure out which pages have the flag but are NOT in the current definition list
+            if (empty($potentiallyManagedPageIds)) {
+                error_log("PageManager reconcileManagedPages: No pages found marked as managed in DB. Reconciliation complete.");
+                return;
+            }
+
+            error_log("PageManager reconcileManagedPages: Found managed page IDs in DB: " . implode(', ', $potentiallyManagedPageIds));
+
+            # Figure out which pages have the flag but are NOT in the current definition list (or transient)
             $pagesToDeleteIds = array_diff($potentiallyManagedPageIds, $currentlyDefinedAndProcessedIds);
 
             if (empty($pagesToDeleteIds)) {
-                 #error_log("PageManager: Reconciliation - No pages to delete.");
-                return; # All managed pages are accounted for in the current definition.
+                error_log("PageManager reconcileManagedPages: All managed pages in DB are accounted for. No pages to delete.");
+                return;
             }
 
-            error_log("PageManager: Reconciliation - Pages marked for DELETION: " . implode(', ', $pagesToDeleteIds));
+            error_log("PageManager reconcileManagedPages: Pages marked for potential DELETION (Managed in DB but not in current definition/process run): " . implode(', ', $pagesToDeleteIds));
 
             # --- DANGER ZONE ---
-            # Delete the identified pages
-            foreach ($pagesToDeleteIds as $pageId) {
-                # Double check it's not the front page ID IF it was processedFrontPageId was null earlier?
-                 # Maybe add extra checks? e.g., don't delete if ID == get_option('page_on_front')?
-                 # For now, we trust that if 'home' wasn't defined, updateFrontPageOptions cleared it.
+            $force_delete = true; // Set to false to move to trash instead
+            $currentFrontPageId = (int) get_option('page_on_front');
+            $currentPostsPageId = (int) get_option('page_for_posts');
 
-                # wp_delete_post( $postid, $force_delete );
-                # true = bypass trash, delete permanently. false = move to trash.
-                $force_delete = true; # <<< SET TO false TO MOVE TO TRASH INSTEAD!
+            foreach ($pagesToDeleteIds as $pageId) {
+                // SAFETY CHECKS:
+                // 1. Don't delete the page currently assigned as 'page_on_front'
+                if ($pageId === $currentFrontPageId && $currentFrontPageId > 0) {
+                    error_log("PageManager reconcileManagedPages: SKIPPING deletion of page ID {$pageId} because it is currently set as the static front page.");
+                    continue;
+                }
+                // 2. Don't delete the page currently assigned as 'page_for_posts'
+                if ($pageId === $currentPostsPageId && $currentPostsPageId > 0) {
+                    error_log("PageManager reconcileManagedPages: SKIPPING deletion of page ID {$pageId} because it is currently set as the posts page.");
+                    continue;
+                }
+
+                error_log("PageManager reconcileManagedPages: Attempting to delete page ID: {$pageId} (Force delete: " . ($force_delete ? 'Yes' : 'No') . ")");
                 $deleted = wp_delete_post($pageId, $force_delete);
 
                 if ($deleted) {
-                    #error_log("PageManager: DELETED managed page with ID: {$pageId} (Force delete: " . ($force_delete ? 'Yes' : 'No') . ")");
+                    error_log("PageManager reconcileManagedPages: DELETED managed page with ID: {$pageId}.");
                 } else {
-                    # This can happen if the page was already deleted, or permissions issue, or hook interference.
-                    error_log("PageManager: FAILED to delete managed page with ID: {$pageId}. It might already be deleted or another issue occurred.");
+                    // wp_delete_post returns false or null or WP_Error. Could be permissions, already deleted, etc.
+                    error_log("PageManager reconcileManagedPages: FAILED to delete managed page with ID: {$pageId}. It might already be deleted or another issue occurred.");
                 }
             }
             # --- END DANGER ZONE ---
+             error_log("PageManager reconcileManagedPages: Reconciliation finished.");
         }
 
 
@@ -219,31 +304,66 @@ if (!class_exists('PageManager')) {
          */
         private static function updateFrontPageOptions(?int $homePageId): void
         {
-            # Simplified logic from before - ensures options match the $homePageId status
             $current_show_on_front = get_option('show_on_front');
-            $current_page_on_front = get_option('page_on_front');
-            # $current_page_for_posts = get_option('page_for_posts'); # Assuming blog page not managed here
+            $current_page_on_front = (int) get_option('page_on_front'); // Cast to int
+            $current_page_for_posts = (int) get_option('page_for_posts');
 
-             if ($homePageId) {
-                 # Need static front page
-                 if ($current_show_on_front !== 'page' || $current_page_on_front != $homePageId) {
+             error_log("PageManager updateFrontPageOptions: Received ID: " . ($homePageId ?? 'null') . ". Current settings: show_on_front='{$current_show_on_front}', page_on_front='{$current_page_on_front}', page_for_posts='{$current_page_for_posts}'");
+
+            if ($homePageId && $homePageId > 0) {
+                 // Validate the provided ID corresponds to a real, published page
+                 $homePageObject = get_post($homePageId);
+                 if (!$homePageObject || $homePageObject->post_type !== 'page' || $homePageObject->post_status !== 'publish') {
+                     error_log("PageManager updateFrontPageOptions: Provided home page ID {$homePageId} is invalid, not a page, or not published. Cannot set as front page.");
+                     // Optional: If the *current* setting points to this invalid ID, should we revert to posts?
+                     if ($current_show_on_front === 'page' && $current_page_on_front === $homePageId) {
+                         error_log("PageManager updateFrontPageOptions: Reverting to 'posts' because current front page ID {$homePageId} is invalid.");
+                         update_option('show_on_front', 'posts');
+                         update_option('page_on_front', 0);
+                     }
+                     return; // Do not proceed with setting this invalid ID
+                 }
+
+                 // Proceed only if the page is valid
+                 $optionsChanged = false;
+                 if ($current_show_on_front !== 'page') {
                      update_option('show_on_front', 'page');
+                     error_log("PageManager updateFrontPageOptions: Set show_on_front = 'page'");
+                     $optionsChanged = true;
+                 }
+                 if ($current_page_on_front !== $homePageId) {
                      update_option('page_on_front', $homePageId);
-                      #error_log("PageManager: Set front page to ID: {$homePageId}");
-                     # Optional: Unset posts page if it conflicts
-                     if (get_option('page_for_posts') == $homePageId) {
+                     error_log("PageManager updateFrontPageOptions: Set page_on_front = {$homePageId}");
+                     $optionsChanged = true;
+
+                     // If the new front page was previously the posts page, unset the posts page.
+                     if ($current_page_for_posts === $homePageId) {
                          update_option('page_for_posts', 0);
+                         error_log("PageManager updateFrontPageOptions: Unset page_for_posts because it matched the new front page ID {$homePageId}");
                      }
                  }
-             } else {
-                 # Need latest posts on front
+
+                 if ($optionsChanged) {
+                    error_log("PageManager updateFrontPageOptions: Front page options updated.");
+                    // It might be beneficial to flush rewrite rules here, although often not strictly necessary for option changes.
+                    // flush_rewrite_rules(); // Use with caution - potentially slow. Only if needed.
+                 } else {
+                    error_log("PageManager updateFrontPageOptions: Front page options were already correctly set for ID {$homePageId}.");
+                 }
+
+            } else {
+                 // No valid home page ID provided (or 'home' slug wasn't defined/found)
+                 // We should set the front page to display 'posts' IF it's currently 'page'.
                  if ($current_show_on_front === 'page') {
                      update_option('show_on_front', 'posts');
-                     update_option('page_on_front', 0);
-                     # update_option('page_for_posts', 0); # Usually unset too
-                     #error_log("PageManager: Set front page to 'posts' (no home page defined/found).");
+                     update_option('page_on_front', 0); // Unset the specific page ID
+                     // Optional: Also unset page_for_posts? Usually yes.
+                     // update_option('page_for_posts', 0);
+                     error_log("PageManager updateFrontPageOptions: No valid home page ID provided; set show_on_front = 'posts'.");
+                 } else {
+                      error_log("PageManager updateFrontPageOptions: No valid home page ID provided, and show_on_front is already 'posts'. No changes needed.");
                  }
-             }
+            }
         }
 
     } # End class PageManager
