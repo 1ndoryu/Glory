@@ -1,8 +1,7 @@
 <?php
 // Glory/load.php
 namespace Glory;
-use Glory\Class\PageManager;
-use Glory\Class\ScriptManager;
+
 
 // Asegúrate de que las constantes estén definidas (si las usas aquí)
 if (!defined('GLORY_FRAMEWORK_PATH')) {
@@ -29,12 +28,3 @@ if ($config_files) {
 unset($config_files, $config_file); // Limpia variables
 
 
-ScriptManager::setGlobalDevMode(true);  
-ScriptManager::setThemeVersion('0.1.2'); 
-
-ScriptManager::defineFolder('/js');
-PageManager::define('home');
-
-
-ScriptManager::register();
-PageManager::register();

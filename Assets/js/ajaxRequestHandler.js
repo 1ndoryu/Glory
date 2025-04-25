@@ -1,112 +1,81 @@
-/**
- * Glory Framework AJAX Helper
- *
- * Provides a standardized method for sending AJAX requests to WordPress backend
- * actions registered via AjaxRequestHandler.
- */
-class GloryAjax {
-
-    /**
-     * Sends an AJAX request to the WordPress backend using fetch.
-     *
-     * @param {string} action - The specific action key registered in AjaxRequestHandler.
-     * @param {object} [data={}] - An object containing data to send (excluding action and nonce).
-     * @param {string|null} [nonce=null] - The nonce value for the specified action. REQUIRED for security.
-     * @param {string} [nonceFieldName='_ajax_nonce'] - The field name for the nonce (should match PHP).
-     * @returns {Promise<object>} A promise that resolves with the parsed JSON response object
-     *                            (typically { success: boolean, data: mixed }) or rejects on network/HTTP error.
-     *                            On JSON parsing error, resolves with { success: false, error: 'parse_error', responseText: string }.
-     */
-    static async send(action, data = {}, nonce = null, nonceFieldName = '_ajax_nonce') {
-        // Basic validation
-        if (!action) {
-            console.error('GloryAjax Error: "action" parameter is required.');
-            return Promise.reject({ success: false, message: 'AJAX action not specified.' });
-        }
-        if (!nonce) {
-            console.warn(`GloryAjax Warning: Nonce not provided for action "${action}". Request will likely fail server-side validation.`);
-            // Optionally reject immediately: return Promise.reject({ success: false, message: 'Nonce is required.' });
-        }
-        // Ensure ajaxurl is available (should be localized)
-        if (typeof gloryGlobalData === 'undefined' || !gloryGlobalData.ajax_url) {
-             console.error('GloryAjax Error: gloryGlobalData.ajax_url is not defined. Ensure ScriptManager localizes it.');
-             return Promise.reject({ success: false, message: 'AJAX URL configuration missing.' });
-        }
-        const ajaxUrl = gloryGlobalData.ajax_url;
 
 
-        // Prepare data payload using URLSearchParams for 'application/x-www-form-urlencoded'
-        const bodyParams = new URLSearchParams();
-        bodyParams.append('action', action);
+const ajaxUrl = typeof ajax_params !== 'undefined' && ajax_params.ajax_url ? ajax_params.ajax_url : '/wp-admin/admin-ajax.php';
 
-        // Add nonce if provided
-        if (nonce) {
-            bodyParams.append(nonceFieldName, nonce);
-        }
+async function GloryAjax(action, data = {}) {
+    // Asegúrate que ajaxUrl está definido en este scope o globalmente
+    if (!enviarAjax) var enviarAjax = {}; // Asegura que el objeto exista si no es global
+    if (!enviarAjax.llamadas) {
+        enviarAjax.llamadas = {};
+    }
+    const llave = `${action}:${JSON.stringify(data)}`;
+    enviarAjax.llamadas[llave] = (enviarAjax.llamadas[llave] || 0) + 1;
 
-        // Append other data
-        for (const key in data) {
-            if (Object.hasOwnProperty.call(data, key)) {
-                 // Handle potential objects/arrays if needed, though URLSearchParams typically stringifies them simply.
-                 // For complex data, consider sending JSON with appropriate headers instead.
-                 bodyParams.append(key, data[key]);
-            }
-        }
+    // Construye el cuerpo incluyendo 'action' y los datos
+    // ¡IMPORTANTE! El nonce debe estar DENTRO del objeto 'data' que se pasa a esta función.
+    const body = new URLSearchParams({
+        action: action,
+        ...data // Aquí se incluye el nonce si está en 'data'
+    });
 
-        try {
-            const response = await fetch(ajaxUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: bodyParams,
-            });
+    console.log(`GloryAjax: Enviando solicitud AJAX: ${action} | Datos: ${JSON.stringify(data)} | Llamadas: ${enviarAjax.llamadas[llave]}`);
+    console.log("GloryAjax: Body:", body.toString()); // Log para ver qué se envía exactamente
 
-            const responseText = await response.text(); // Get text first for better error diagnosis
+    try {
+        const response = await fetch(ajaxUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: body
+        });
 
-            if (!response.ok) {
-                 console.error('GloryAjax HTTP Error:', {
-                     status: response.status,
-                     statusText: response.statusText,
-                     responseText: responseText, // Log raw response text
-                     action: action,
-                     requestData: data
-                 });
-                 // Try to parse error response if possible, otherwise use status text
-                 let errorData = { message: `HTTP error ${response.status} - ${response.statusText}` };
-                 try {
-                     const parsedError = JSON.parse(responseText);
-                     errorData = parsedError.data || errorData; // Use WP standard {success:false, data:{message:..}}
-                 } catch (e) {/* Ignore parse error */}
+        console.log(`GloryAjax: Respuesta recibida para ${action}:`, response);
+        const responseText = await response.text(); // Obtener texto para depurar
 
-                throw new Error(errorData.message || `HTTP error ${response.status}`);
-            }
-
-            // Try parsing JSON
-            try {
-                return JSON.parse(responseText); // WordPress typically sends {success: true/false, data: ...}
-            } catch (jsonError) {
-                console.error('GloryAjax JSON Parse Error:', {
-                    error: jsonError,
-                    responseText: responseText,
-                    action: action,
-                    requestData: data
-                });
-                // Return a structured error object instead of just the raw text
-                return { success: false, error: 'parse_error', responseText: responseText, message: 'Failed to parse server response.' };
-            }
-
-        } catch (error) {
-             console.error('GloryAjax Network/Fetch Error:', {
-                 error: error,
+        if (!response.ok) {
+            // Loguear más detalles en caso de error HTTP
+             console.error('Error HTTP en la solicitud AJAX:', {
+                 status: response.status,
+                 statusText: response.statusText,
+                 responseText: responseText, // Mostrar la respuesta del servidor
                  action: action,
-                 requestData: data,
-                 ajaxUrl: ajaxUrl
+                 requestData: data
              });
-             // Return a standardized error object matching WP's {success: false} structure
-             return Promise.reject({ success: false, message: error.message || 'A network error occurred.' });
+             console.log(`GloryAjax: Error HTTP en la solicitud AJAX: ${action}`);
+            throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);
         }
+
+        let responseData;
+        try {
+            // Intenta parsear como JSON, que es lo que wp_send_json_* envía
+            responseData = JSON.parse(responseText);
+        } catch (jsonError) {
+            // Si falla el parseo JSON (ej: devuelve '0' o HTML de error)
+            console.log(`GloryAjax: Error al parsear JSON en la respuesta para ${action}`);
+            console.error('No se pudo interpretar la respuesta como JSON:', {
+                error: jsonError,
+                responseText: responseText, // Muestra lo que realmente devolvió el servidor
+                action: action,
+                requestData: data
+            });
+            // Devolver un objeto de error consistente si no es JSON
+            return { success: false, message: 'Invalid server response.', rawResponse: responseText };
+        }
+
+        // Devuelve los datos parseados (esperamos { success: true/false, data: ...})
+        return responseData;
+
+    } catch (error) {
+        console.log(`GloryAjax: Error en el bloque try-catch para ${action}`);
+        // Captura errores de red o el 'throw' del !response.ok
+        console.error('Error en la solicitud AJAX (catch):', {
+            error: error,
+            action: action,
+            requestData: data,
+            ajaxUrl: ajaxUrl
+        });
+        // Devuelve un objeto de error consistente
+        return { success: false, message: error.message || 'Network error or failed request.' };
     }
 }
-
-window.GloryAjax = GloryAjax; 

@@ -1,2 +1,3 @@
 - [ ] Aprender a cargar los archivos de Glory eficientemente
 - [ ] Sistema para instalar componententes y forma eficiente de organizarlos
+- [ ] Hacer config example

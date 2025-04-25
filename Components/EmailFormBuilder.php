@@ -2,6 +2,7 @@
 # App/Glory/Components/EmailFormBuilder.php
 namespace Glory\Components;
 
+
 /**
  * Generates the initial email signup form HTML.
  */
@@ -33,7 +34,7 @@ class EmailFormBuilder
         'failure_wrapper_class'   => 'glory-form-message glory-form-failure u-hidden w-form-fail', // Added glory class, hidden by default
         'modal_target_id'         => 'user-details-modal', // Default ID for the modal to target
         'ajax_action_register'    => 'glory_register_email', // AJAX action for registration
-        'nonce_action'            => 'glory_email_signup_nonce', // Nonce action name
+        'nonce_action'            => 'glory_email_signup_action', // Nonce action name
     ];
 
     /**
@@ -42,6 +43,7 @@ class EmailFormBuilder
      */
     public function __construct(array $userConfig = [])
     {
+        
         // Ensure modal_target_id is unique if multiple forms are on the page
         if (isset($userConfig['form_id'])) {
             $this->config['modal_target_id'] = $userConfig['form_id'] . '-modal';
@@ -50,6 +52,7 @@ class EmailFormBuilder
             $this->config['modal_target_id'] = $this->config['form_id'] . '-modal';
             $this->config['email_id'] = $this->config['form_id'] . '-email';
         }
+        
 
         $this->config = array_merge($this->config, $userConfig);
     }
@@ -60,6 +63,7 @@ class EmailFormBuilder
      */
     public function render(): string
     {
+        
         // Sanitize configuration values
         $formId = htmlspecialchars($this->config['form_id'], ENT_QUOTES, 'UTF-8');
         $formName = htmlspecialchars($this->config['form_name'], ENT_QUOTES, 'UTF-8');
@@ -115,12 +119,14 @@ class EmailFormBuilder
     // Static methods remain the same
     public static function build(array $config = []): string
     {
+        
         $builder = new self($config);
         return $builder->render();
     }
 
     public static function display(array $config = []): void
     {
+        
         $builder = new self($config);
         echo $builder->render();
     }
@@ -147,6 +153,7 @@ class EmailFormBuilder
      */
     public static function displayWithModal(array $formConfig = [], array $modalConfig = []): void
     {
+        
         $emailForm = new self($formConfig);
         $modalId = $emailForm->getModalId(); // Get the ID the form expects
 
@@ -159,6 +166,7 @@ class EmailFormBuilder
         // Ensure the modal knows which form success/failure message divs to target
         $modalConfig['target_form_id'] = $emailForm->getFormId();
 
+        
 
         $modalForm = new UserDetailsModalBuilder($modalConfig);
 
@@ -189,7 +197,7 @@ class UserDetailsModalBuilder
         'submit_value' => 'Save Profile',
         'submit_data_wait' => 'Saving...',
         'ajax_action_update' => 'glory_update_user_details', // AJAX action for updating
-        'nonce_action' => 'glory_email_signup_nonce', // Default nonce action (can be overridden)
+        'nonce_action' => 'glory_email_signup_action', // Default nonce action (can be overridden)
         'failure_message' => 'Could not save details. Please try again.',
         'target_form_id' => 'signup-form', // ID of the original form for messaging context
     ];
@@ -200,15 +208,17 @@ class UserDetailsModalBuilder
      */
     public function __construct(array $userConfig = [])
     {
+        
         // Ensure unique input IDs if modal ID changes
         if (isset($userConfig['modal_id'])) {
             $baseId = $userConfig['modal_id'];
             $this->config['fname_id'] = $baseId . '-fname';
             $this->config['lname_id'] = $baseId . '-lname';
         } elseif (isset($this->config['modal_id'])) {
-            $baseId = $this->config['modal_id'];
+            $baseId = $this->config['modal_id'];            
             $this->config['fname_id'] = $baseId . '-fname';
             $this->config['lname_id'] = $baseId . '-lname';
+            error_log("UserDetailsModalBuilder __construct: Modal ID: {$this->config['modal_id']}, Fname ID: {$this->config['fname_id']}, Lname ID: {$this->config['lname_id']}");
         }
         $this->config = array_merge($this->config, $userConfig);
     }
@@ -219,6 +229,7 @@ class UserDetailsModalBuilder
      */
     public function render(): string
     {
+        
         $modalId = htmlspecialchars($this->config['modal_id'], ENT_QUOTES, 'UTF-8');
         $modalClass = htmlspecialchars($this->config['modal_class'], ENT_QUOTES, 'UTF-8');
         $modalTitle = htmlspecialchars($this->config['modal_title'], ENT_QUOTES, 'UTF-8');
@@ -286,12 +297,14 @@ class UserDetailsModalBuilder
     // Static methods
     public static function build(array $config = []): string
     {
+        
         $builder = new self($config);
         return $builder->render();
     }
 
     public static function display(array $config = []): void
     {
+        
         $builder = new self($config);
         echo $builder->render();
     }
