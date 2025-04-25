@@ -1,0 +1,132 @@
+/* App/Glory/Assets/css/GloryEmailSignupModal.css */
+
+.glory-modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    inset: 0; /* Cover the entire viewport */
+    z-index: 1000;
+    /* Align modal content center */
+    justify-content: center;
+    align-items: center;
+    /* Use flex for alignment if needed */
+    display: flex; /* Changed from none to flex to enable alignment */
+    opacity: 0; /* Start transparent */
+    visibility: hidden; /* Start hidden */
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.glory-modal[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+}
+
+
+.glory-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent overlay */
+    cursor: pointer; /* Indicate it can be clicked to close */
+    z-index: 1; /* Below content */
+}
+
+.glory-modal-content {
+    position: relative; /* To stack above overlay */
+    background-color: #fff;
+    padding: 25px 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    max-width: 500px; /* Limit width */
+    width: 90%; /* Responsive width */
+    z-index: 2; /* Above overlay */
+    /* Add transition for potential scaling effect */
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+}
+
+.glory-modal[aria-hidden="false"] .glory-modal-content {
+     transform: scale(1);
+}
+
+
+.glory-modal-title {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    text-align: center;
+}
+
+.glory-modal-close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #555;
+    padding: 5px;
+}
+.glory-modal-close-button:hover {
+    color: #000;
+}
+
+.glory-modal-field {
+    margin-bottom: 15px;
+}
+
+.glory-modal-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.glory-modal-field input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Include padding in width */
+}
+
+.glory-modal-actions {
+    text-align: right;
+    margin-top: 20px;
+}
+
+/* Reuse existing button styles if possible */
+.glory-modal-actions .form-submit {
+    /* Add any specific modal button styles here if needed */
+    padding: 10px 20px;
+}
+
+/* Style for message divs inside the modal */
+.glory-modal-failure {
+    /* Ensure it's visible when needed */
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* Hide utility class (adjust if your theme uses a different class) */
+.u-hidden {
+    display: none !important; /* Use important cautiously */
+}
+
+/* Style for general form messages (success/failure) */
+.glory-form-message {
+     margin-top: 15px;
+     padding: 12px 15px;
+     border-radius: 4px;
+     text-align: center;
+}
+.glory-form-success {
+    background-color: #dff0d8;
+    border: 1px solid #d6e9c6;
+    color: #3c763d;
+}
+.glory-form-failure {
+     background-color: #f2dede;
+     border: 1px solid #ebccd1;
+     color: #a94442;
+}
