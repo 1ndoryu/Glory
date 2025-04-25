@@ -1,6 +1,6 @@
 <?php
 # App/Glory/Components/EmailFormBuilder.php
-namespace App\Glory\Components;
+namespace Glory\Components;
 
 /**
  * Generates the initial email signup form HTML.

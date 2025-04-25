@@ -1,7 +1,7 @@
 <?php
 # App/Glory/ContentManager.php
 
-namespace App\Glory;
+namespace Glory;
 
 class ContentManager
 {

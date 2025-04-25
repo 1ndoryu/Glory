@@ -2,7 +2,7 @@
 # App/Glory/Components/LogoHelper.php  
 # En construcción
 
-namespace App\Glory\Components;
+namespace Glory\Components;
 
 class LogoHelper
 {

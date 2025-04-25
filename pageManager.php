@@ -1,6 +1,6 @@
 <?php
 # App/Glory/PageManager.php
-namespace App\Glory;
+namespace Glory;
 
 # Ensure this file is included only once
 if (!class_exists('PageManager')) {
