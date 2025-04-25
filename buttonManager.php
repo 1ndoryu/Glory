@@ -20,7 +20,4 @@ Necesito una clase para crear este tipo de contenido repetitivo más facil, no h
         </div>
     </div>
 
-
-
-
 */

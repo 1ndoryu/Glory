@@ -1,10 +1,10 @@
 <?php
 
-use App\Glory\ScriptManager; 
+use Glory\ScriptManager; 
 
 ScriptManager::define(
     'glory-email-signup', 
-    'App/Glory/Assets/js/GloryEmailSignup.js',
+    '/Glory/Assets/js/GloryEmailSignup.js',
     [],
     null, 
     true,
