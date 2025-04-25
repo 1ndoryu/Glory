@@ -1,8 +1,7 @@
 <?php
-// En functions.php o App/Config/scripts.php
+
 use Glory\ScriptManager;
 
-// Definir el script de navegación AJAX
 ScriptManager::define(
     'glory-ajax-nav',                                   
     '/Glory/Assets/js/ajax-page.js',                        
