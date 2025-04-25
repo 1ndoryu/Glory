@@ -1,0 +1,11 @@
+{
+    "name": "1ndoryu/glory",
+    "description": "Glory Framework for WordPress",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "Glory\\": ""
+        }    
+    },
+    "minimum-stability": "dev"
+}

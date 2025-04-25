@@ -26,3 +26,6 @@ if ($config_files) {
     }
 }
 unset($config_files, $config_file); // Limpia variables
+
+ScriptManager::register();
+PageManager::register();

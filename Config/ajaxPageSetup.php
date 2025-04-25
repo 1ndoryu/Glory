@@ -4,7 +4,7 @@ use Glory\ScriptManager;
 
 ScriptManager::define(
     'glory-ajax-nav',                                   
-    '/Glory/Assets/js/ajax-page.js',                        
+    '/Glory/Assets/js/gloryAjaxNav.js',                        
     [],                                                 
     null,                                               
     true,                                               
@@ -28,5 +28,5 @@ ScriptManager::define(
     null 
 );
 
-ScriptManager::register();
+
 
