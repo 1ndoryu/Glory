@@ -3,13 +3,13 @@
 use Glory\ScriptManager; 
 
 ScriptManager::define(
-    'glory-email-signup', 
-    '/Glory/Assets/js/GloryEmailSignup.js',
+    'EmailFormBuilder', 
+    '/Glory/Assets/js/EmailFormBuilder.js',
     [],
     null, 
     true,
     [
-        'object_name' => 'gloryGlobalData', // JS object name
+        'object_name' => 'gloryGlobalData', 
         'data' => [
             'ajax_url' => admin_url('admin-ajax.php'),
         ]

@@ -1,5 +1,5 @@
 <?php
-# App/Glory/Config/EmailFormBuilderConfig.php
+
 
 function glory_ajax_register_email()
 {
