@@ -5,7 +5,7 @@ use App\Glory\ScriptManager;
 // Definir el script de navegación AJAX
 ScriptManager::define(
     'glory-ajax-nav',                                   
-    'App/Glory/js/ajax-page.js',                        
+    'App/Glory/Assets/js/ajax-page.js',                        
     [],                                                 
     null,                                               
     true,                                               
