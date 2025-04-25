@@ -1,11 +1,13 @@
 {
-    "name": "1ndoryu/glory",
-    "description": "Glory Framework for WordPress",
+    "name": "1ndoryu/glory", 
+    "description": "Framework Glory para temas WordPress",
     "type": "library",
+    "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Glory\\": ""
-        }    
+            "Glory\\": "" 
+        }
     },
-    "minimum-stability": "dev"
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }
