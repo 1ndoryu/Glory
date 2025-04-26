@@ -7,7 +7,7 @@ if (!class_exists('ScriptManager')) {
 
     class ScriptManager
     {
-        /** @var array Stores script definitions. */
+        /** @var array Stores script definitions. Keys are handles. */
         private static $scripts = [];
 
         /** @var bool Global development mode status. */
@@ -36,14 +36,15 @@ if (!class_exists('ScriptManager')) {
 
         /**
          * Defines a single script to enqueue, optionally with localization data.
+         * If a script with the same handle is already defined, this definition will be ignored.
          *
-         * @param string $handle WP handle and base name of the script file (without .js).
-         * @param string|null $path Relative path to the theme directory (e.g., 'js/custom/mi-script.js'). If null, uses "js/{$handle}.js".
+         * @param string $handle WP handle for the script.
+         * @param string|null $path Relative path from the theme root (e.g., 'js/custom/my-script.js'). If null, assumes "js/{$handle}.js".
          * @param array $deps Dependencies (other script handles).
-         * @param string|null $version Script version. If null, uses file modification time if dev mode, else global theme version.
-         * @param bool $in_footer Load in footer (true) or in head (false).
-         * @param array|null $localize Optional. Array with 'object_name' (string) and 'data' (array) to pass to the script.
-         * @param bool|null $devMode Override development mode for this script: true (always cache-bust), false (never cache-bust), null (use global).
+         * @param string|null $version Script version. If null, calculated based on dev mode.
+         * @param bool $in_footer Load in footer (true) or head (false).
+         * @param array|null $localize Optional. Array with 'object_name' (string) and 'data' (array).
+         * @param bool|null $devMode Override global dev mode for this script.
          */
         public static function define(
             string $handle,
@@ -51,45 +52,60 @@ if (!class_exists('ScriptManager')) {
             array $deps = [],
             ?string $version = null,
             bool $in_footer = true,
-            ?array $localize = null, // <-- New parameter
+            ?array $localize = null,
             ?bool $devMode = null
         ): void {
-            # If no path is specified, build the default path
-            if (is_null($path)) {
-                $path = 'js/' . $handle . '.js';
-            }
             if (empty($handle)) {
-                error_log("ScriptManager: Script handle cannot be empty.");
+                error_log("ScriptManager: Script handle cannot be empty. Definition skipped.");
                 return;
             }
 
-            # Basic validation for localization data structure
-            if (!is_null($localize) && (!isset($localize['object_name']) || !is_string($localize['object_name']) || !isset($localize['data']) || !is_array($localize['data']))) {
-                error_log("ScriptManager: Invalid localize data structure for handle '{$handle}'. Requires 'object_name' (string) and 'data' (array).");
-                $localize = null; // Ignore invalid data
+            // --- CHANGE: Check if handle already exists ---
+            if (isset(self::$scripts[$handle])) {
+                // Optional: Log that we are skipping a duplicate definition. Useful for debugging.
+                 // error_log("ScriptManager: Script handle '{$handle}' is already defined. Skipping duplicate definition.");
+                return; // Script already defined, do nothing further.
+            }
+            // --- END CHANGE ---
+
+            # If no path is specified, build the default path
+            if (is_null($path)) {
+                $path = 'js/' . $handle . '.js'; // Default path convention
             }
 
+            # Basic validation for localization data structure
+            if (!is_null($localize)) {
+                if (!isset($localize['object_name']) || !is_string($localize['object_name']) || empty($localize['object_name'])) {
+                     error_log("ScriptManager: Invalid or empty 'object_name' for localization data for handle '{$handle}'. Localization skipped.");
+                     $localize = null;
+                } elseif (!isset($localize['data']) || !is_array($localize['data'])) {
+                    error_log("ScriptManager: Invalid 'data' (must be an array) for localization data for handle '{$handle}'. Localization skipped.");
+                    $localize = null;
+                }
+            }
 
+            // Store the definition
             self::$scripts[$handle] = [
                 'path'      => $path,
                 'deps'      => $deps,
-                'version'   => $version,
+                'version'   => $version, // Store null if not specified, will be calculated later
                 'in_footer' => $in_footer,
-                'localize'  => $localize, // <-- Store localization data
-                'dev_mode'  => $devMode,
-                'handle'    => $handle
+                'localize'  => $localize,
+                'dev_mode'  => $devMode,   // Store null if not specified, will use global later
+                'handle'    => $handle     // Store handle for consistency (though it's the array key)
             ];
         }
 
         /**
          * Defines all .js scripts found in a specific folder.
-         * Note: Does not support localization for folder definitions. Define individually if localization is needed.
+         * Skips files if a handle derived from the filename is already defined.
+         * Note: Does not support localization for folder definitions. Define individually if needed.
          *
          * @param string $folderRelPath Relative path to the theme directory (e.g., 'js/vendor').
          * @param array $defaultDeps Default dependencies for all scripts in this folder.
          * @param bool $defaultInFooter Load in footer by default for these scripts.
          * @param bool|null $folderDevMode Override development mode for all scripts in this folder (unless individually overridden).
-         * @param string $handlePrefix Optional prefix to add to each script handle.
+         * @param string $handlePrefix Optional prefix to add to each generated script handle.
          */
         public static function defineFolder(
             string $folderRelPath = 'js',
@@ -98,38 +114,44 @@ if (!class_exists('ScriptManager')) {
             ?bool $folderDevMode = null,
             string $handlePrefix = ''
         ): void {
-            $fullFolderPath = get_template_directory() . '/' . trim($folderRelPath, '/\\'); // Trim both slashes
+            $themeDir = get_template_directory();
+            // Normalize path separators and trim slashes
+            $normalizedFolderRelPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $folderRelPath);
+            $fullFolderPath = rtrim($themeDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . trim($normalizedFolderRelPath, DIRECTORY_SEPARATOR);
 
             if (!is_dir($fullFolderPath)) {
-                error_log("ScriptManager: Folder not found at {$fullFolderPath} when defining folder.");
+                 // Only log if it's not the root 'js' folder, which might legitimately not exist.
+                 if (trim($normalizedFolderRelPath, DIRECTORY_SEPARATOR) !== 'js') {
+                      error_log("ScriptManager: Folder not found at {$fullFolderPath} when defining folder '{$folderRelPath}'.");
+                 }
                 return;
             }
 
-
-            $files = glob($fullFolderPath . '/*.js');
+            $files = glob($fullFolderPath . DIRECTORY_SEPARATOR . '*.js');
             if ($files === false) {
-                error_log("ScriptManager: Failed to scan folder {$fullFolderPath}");
-                return; # Error reading directory
+                error_log("ScriptManager: Failed to scan folder {$fullFolderPath} for scripts.");
+                return;
             }
 
             foreach ($files as $file) {
-                // Sanitize handle: remove special chars except hyphen and underscore
-                $raw_handle = $handlePrefix . basename($file, '.js');
-                $handle = preg_replace('/[^a-zA-Z0-9_-]/', '', $raw_handle);
+                $filename = basename($file, '.js');
+                // Sanitize handle: keep alphanumeric, hyphen, underscore. Convert others to hyphen.
+                $raw_handle = $handlePrefix . $filename;
+                $handle = strtolower(preg_replace('/[^a-zA-Z0-9_-]+/', '-', $raw_handle));
+                $handle = trim($handle, '-'); // Remove leading/trailing hyphens potentially created
 
                 if (empty($handle)) {
-                    error_log("ScriptManager: Generated handle is empty for file {$file}. Skipping.");
+                    error_log("ScriptManager: Generated handle is empty for file '{$filename}' in folder '{$folderRelPath}'. Skipping.");
                     continue;
                 }
 
-                // Construct relative path correctly, ensuring forward slashes
-                $relativePath = str_replace(
-                    DIRECTORY_SEPARATOR,
-                    '/',
-                    trim($folderRelPath, '/\\') . '/' . basename($file)
-                );
+                // Construct relative path using forward slashes for web URLs
+                $relativePath = trim(str_replace(DIRECTORY_SEPARATOR, '/', $normalizedFolderRelPath), '/') . '/' . basename($file);
 
 
+                // Check if handle already defined BEFORE calling define()
+                // This check is technically redundant now because define() has its own check,
+                // but it's slightly more efficient to check here first.
                 if (!isset(self::$scripts[$handle])) {
                     self::define(
                         $handle,
@@ -137,73 +159,116 @@ if (!class_exists('ScriptManager')) {
                         $defaultDeps,
                         null, // Version determined during enqueue
                         $defaultInFooter,
-                        null, // Localization not supported directly here
-                        $folderDevMode
+                        null, // Localization not supported directly for folders
+                        $folderDevMode // Pass folder-level dev mode override
                     );
+                } else {
+                    // Optional: Log that we skipped a file because handle exists.
+                    // error_log("ScriptManager: Script handle '{$handle}' derived from file '{$filename}' in folder '{$folderRelPath}' already defined. Skipping file.");
                 }
             }
         }
 
         /**
-         * Registers the hook to enqueue defined scripts.
+         * Registers the WordPress hook to enqueue the defined scripts.
          */
         public static function register(): void
         {
-            # Use a slightly higher priority (e.g., 20) in case other hooks need these scripts.
+            // Priority 20 is usually good to run after default theme/plugin scripts but before late scripts.
             add_action('wp_enqueue_scripts', [self::class, 'enqueueScripts'], 20);
         }
 
         /**
-         * Function executed in the 'wp_enqueue_scripts' hook.
-         * @internal Do not call directly.
+         * Callback function for the 'wp_enqueue_scripts' action.
+         * Iterates through defined scripts and enqueues them using WordPress functions.
+         * @internal Do not call directly. This is hooked into WordPress.
          */
         public static function enqueueScripts(): void
         {
             if (empty(self::$scripts)) {
-                return;
+                return; // No scripts defined.
             }
 
+            $wp_scripts = wp_scripts(); // Get the WP_Scripts object to check registered status
+
             foreach (self::$scripts as $handle => $scriptDef) {
+
+                // Double-check if script *already* enqueued/registered by something else (less likely now but safe)
+                // This primarily prevents issues if another plugin/theme uses the same handle *before* our hook runs.
+                if (wp_script_is($handle, 'registered') || wp_script_is($handle, 'enqueued')) {
+                    // If already registered/enqueued, potentially localize if needed and not already done.
+                    if (!empty($scriptDef['localize'])) {
+                        // Check if localization data under this object name is already present for this handle
+                        // This check is complex because WP stores localization data internally.
+                        // A simpler approach is to just call wp_localize_script again; WP might handle duplicates gracefully
+                        // or overwrite, which might be acceptable for localization updates.
+                        // Let's call it to ensure our data is attempted.
+                        wp_localize_script(
+                            $handle,
+                            $scriptDef['localize']['object_name'],
+                            $scriptDef['localize']['data']
+                        );
+                    }
+                    continue; // Skip re-registering/enqueuing if WP already knows about it.
+                }
+
+
                 # 1. Determine full path and URL
-                $relativePath = ltrim($scriptDef['path'], '/\\'); // Ensure no leading slash
+                 // Ensure relative path starts without a slash for concatenation
+                $relativePath = ltrim(str_replace(DIRECTORY_SEPARATOR, '/', $scriptDef['path']), '/');
                 $filePath = get_template_directory() . '/' . $relativePath;
                 $fileUrl = get_template_directory_uri() . '/' . $relativePath;
 
-                # 2. Verify file exists
+                # 2. Verify file exists physically
                 if (!file_exists($filePath)) {
-                    error_log("ScriptManager: Script file not found at {$filePath} for handle '{$handle}'.");
-                    continue; # Skip this script if it doesn't exist
+                    error_log("ScriptManager: Script file not found at '{$filePath}' for handle '{$handle}'. Skipping enqueue.");
+                    continue;
                 }
 
-                # 3. Determine dev mode for THIS script
-                $isDev = $scriptDef['dev_mode'] ?? self::$globalDevMode; # Uses override or global
+                # 3. Determine effective development mode for this script
+                // Priority: Script-specific override > Global setting
+                $isDev = $scriptDef['dev_mode'] ?? self::$globalDevMode;
 
-                # 4. Determine version
-                $scriptVersion = $scriptDef['version']; // Use specific version if provided
+                # 4. Determine script version
+                $scriptVersion = $scriptDef['version']; // Use explicitly defined version if provided
                 if (is_null($scriptVersion)) {
-                    // If no specific version, use filemtime in dev mode, else global theme version
-                    $scriptVersion = $isDev ? filemtime($filePath) : self::$themeVersion;
+                    // If no explicit version: use file modification time in dev mode, otherwise use global theme version.
+                    // Ensure filemtime() doesn't fail if file disappears between checks (unlikely but possible)
+                    $mtime = @filemtime($filePath); // Use @ to suppress potential warning if file gone
+                    $scriptVersion = ($isDev && $mtime) ? $mtime : self::$themeVersion;
                 }
 
-                # 5. Enqueue the script
-                wp_enqueue_script(
+                # 5. Register the script (use wp_register_script first for clarity and better dependency handling)
+                $registered = wp_register_script(
                     $handle,
                     $fileUrl,
                     $scriptDef['deps'],
-                    $scriptVersion, // Use calculated version
+                    $scriptVersion,
                     $scriptDef['in_footer']
                 );
 
-                # 6. Localize script if data is provided
+                 if (!$registered) {
+                     error_log("ScriptManager: Failed to register script '{$handle}' at URL '{$fileUrl}'. Skipping.");
+                     continue;
+                 }
+
+
+                # 6. Localize script IF data is provided AND registration succeeded
                 if (!empty($scriptDef['localize'])) {
                     wp_localize_script(
                         $handle,
                         $scriptDef['localize']['object_name'],
                         $scriptDef['localize']['data']
                     );
+                    // Note: wp_localize_script implicitly enqueues the script it's attached to.
+                } else {
+                     # 7. Enqueue the script if not localized (localization auto-enqueues)
+                     wp_enqueue_script($handle);
                 }
-            }
-        }
-    } 
 
-} 
+            } // End foreach loop
+        } // End enqueueScripts method
+
+    } // End ScriptManager class
+
+} // End if class_exists
