@@ -2,6 +2,8 @@
 
 namespace Glory\Class;
 
+use Glory\Class\GloryLogger;
+
 # Ensure this file is included only once
 if (!class_exists('PageManager')) {
 
@@ -26,7 +28,7 @@ if (!class_exists('PageManager')) {
         {
             // Input validation for slug
             if (empty($slug) || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
-                 error_log("PageManager: ERROR Invalid slug '{$slug}'. Slugs must be lowercase alphanumeric with hyphens.");
+                GloryLogger::error("PageManager: Invalid slug '{$slug}'. Slugs must be lowercase alphanumeric with hyphens.");
                  return;
             }
 
@@ -77,7 +79,7 @@ if (!class_exists('PageManager')) {
 
                     // Validate template exists (optional but recommended)
                     // if ($pageTemplate && !locate_template($pageTemplate)) {
-                    //     error_log("PageManager: ERROR Template file '{$pageTemplate}' not found for page '{$pageSlug}'.");
+                    //     GloryLogger::error("PageManager: Template file '{$pageTemplate}' not found for page '{$pageSlug}'.");
                     //     // Decide: continue without template, or skip page? Let's continue for now.
                     //     // $pageTemplate = ''; // Clear template if not found?
                     // }
@@ -101,10 +103,10 @@ if (!class_exists('PageManager')) {
                         if (!is_wp_error($insertedId) && $insertedId > 0) {
                             $currentPageId = $insertedId;
                             update_post_meta($currentPageId, self::MANAGED_META_KEY, true);
-                            error_log("PageManager: CREATED and marked page '{$pageSlug}' (ID: {$currentPageId}) as managed.");
+                            GloryLogger::info("PageManager: CREATED and marked page '{$pageSlug}' (ID: {$currentPageId}) as managed.");
                         } else {
                             $error_message = is_wp_error($insertedId) ? $insertedId->get_error_message() : 'Unknown error (ID 0)';
-                            error_log("PageManager: ERROR FAILED to create page '{$pageSlug}': " . $error_message);
+                            GloryLogger::error("PageManager: FAILED to create page '{$pageSlug}': " . $error_message);
                             continue; // Skip to next page definition
                         }
                     } else {
@@ -120,7 +122,7 @@ if (!class_exists('PageManager')) {
 
                         if ($currentTemplate !== $newTemplateValue) {
                             update_post_meta($currentPageId, '_wp_page_template', $newTemplateValue);
-                            error_log("PageManager: Updated template for managed page '{$pageSlug}' (ID: {$currentPageId}) to '{$newTemplateValue}'.");
+                            GloryLogger::info("PageManager: Updated template for managed page '{$pageSlug}' (ID: {$currentPageId}) to '{$newTemplateValue}'.");
                         }
 
                         // Optional Title Update (Risky - user might change it intentionally)
@@ -147,22 +149,22 @@ if (!class_exists('PageManager')) {
                     }
                 } # End foreach
             } else {
-                 error_log("PageManager processPages: ERROR No pages defined in self::\$pages.");
+                GloryLogger::error("PageManager processPages: No pages defined in self::\$pages.");
                  // If no pages are defined, ensure 'home' isn't lingering as the front page if it wasn't processed.
                  // Check if the current front page ID is managed but *not* in the (empty) processed list.
                  $currentFrontPageId = (int) get_option('page_on_front');
                  if ($currentFrontPageId > 0 && get_option('show_on_front') === 'page') {
                       if (get_post_meta($currentFrontPageId, self::MANAGED_META_KEY, true)) {
                           // Current front page IS managed, but wasn't processed (because no pages defined).
-                          // We should likely revert to 'posts'.
-                          error_log("PageManager processPages: ERROR Current front page (ID: {$currentFrontPageId}) is managed but no pages defined. Setting front page to null.");
+                          // We should likely revert to 'posts'. 
+                          GloryLogger::error("Current front page (ID: {$currentFrontPageId}) is managed but no pages defined. Setting front page to null.");
                           $processedFrontPageId = null; // Ensure it gets unset
                       }
                  }
             }
 
 
-            # Update front page settings based on this run's results
+            # Update front page settings based on this run's results.
             self::updateFrontPageOptions($processedFrontPageId);
 
             # Store processed IDs for the reconciliation step. INCREASED EXPIRY.
@@ -176,7 +178,7 @@ if (!class_exists('PageManager')) {
          * @internal
          */
         public static function reconcileManagedPages() {
-            error_log("PageManager reconcileManagedPages: ERROR Starting reconciliation...");
+            GloryLogger::info("PageManager reconcileManagedPages: Starting reconciliation...");
 
             $currentlyDefinedAndProcessedIds = get_transient('pagemanager_processed_ids');
             // Don't delete transient immediately, might need it if we reconstruct
@@ -209,14 +211,14 @@ if (!class_exists('PageManager')) {
                         }
                      }
 
-                    error_log("PageManager reconcileManagedPages: ERROR Reconstructed expected IDs based on definitions: " . (!empty($currentlyDefinedAndProcessedIds) ? implode(', ', $currentlyDefinedAndProcessedIds) : 'None'));
+                    GloryLogger::info("PageManager reconcileManagedPages: Reconstructed expected IDs based on definitions: " . (!empty($currentlyDefinedAndProcessedIds) ? implode(', ', $currentlyDefinedAndProcessedIds) : 'None'));
                 } else {
-                    error_log("PageManager reconcileManagedPages: ERROR No pages defined, reconciliation based on definitions yields no expected IDs.");
+                    GloryLogger::error("PageManager reconcileManagedPages: No pages defined, reconciliation based on definitions yields no expected IDs.");
                 }
                  // If still false/empty after reconstruction attempt, there's nothing to compare against *from definitions*. 
                  // We still need to compare against ALL managed pages found in DB below.
                  if (empty($currentlyDefinedAndProcessedIds)) {
-                      error_log("PageManager reconcileManagedPages: Fallback reconstruction resulted in empty list. Reconciliation will compare ALL DB managed pages against an empty 'current' list.");
+                    GloryLogger::info("PageManager reconcileManagedPages: Fallback reconstruction resulted in empty list. Reconciliation will compare ALL DB managed pages against an empty 'current' list.");
                  }
                  // Now delete the (potentially expired) transient if we haven't already
                  delete_transient('pagemanager_processed_ids');
@@ -243,23 +245,23 @@ if (!class_exists('PageManager')) {
             $potentiallyManagedPageIds = get_posts($args_all_managed);
 
             if (empty($potentiallyManagedPageIds)) {
-                error_log("PageManager reconcileManagedPages: ERROR No pages found marked as managed in DB. Reconciliation complete.");
+                GloryLogger::info("PageManager reconcileManagedPages: No pages found marked as managed in DB. Reconciliation complete.");
                 return;
             }
 
-            error_log("PageManager reconcileManagedPages: ERROR Found managed page IDs in DB: " . implode(', ', $potentiallyManagedPageIds));
+            GloryLogger::info("PageManager reconcileManagedPages: Found managed page IDs in DB: " . implode(', ', $potentiallyManagedPageIds));
 
             # Figure out which pages have the flag but are NOT in the current definition list (or transient)
-            $pagesToDeleteIds = array_diff($potentiallyManagedPageIds, $currentlyDefinedAndProcessedIds); 
+            $pagesToDeleteIds = array_diff($potentiallyManagedPageIds, $currentlyDefinedAndProcessedIds);
 
             if (empty($pagesToDeleteIds)) {
-                error_log("PageManager reconcileManagedPages: All managed pages in DB are accounted for. No pages to delete.");
+                GloryLogger::info("All managed pages in DB are accounted for. No pages to delete.");
                 return;
             }
 
-            error_log("PageManager reconcileManagedPages: Pages marked for potential DELETION (Managed in DB but not in current definition/process run): " . implode(', ', $pagesToDeleteIds));
+            GloryLogger::info("Pages marked for potential DELETION (Managed in DB but not in current definition/process run): " . implode(', ', $pagesToDeleteIds));
 
-            # --- DANGER ZONE ---
+            # --- DANGER ZONE ---.
             $force_delete = true; // Set to false to move to trash instead
             $currentFrontPageId = (int) get_option('page_on_front');
             $currentPostsPageId = (int) get_option('page_for_posts');
@@ -267,28 +269,28 @@ if (!class_exists('PageManager')) {
             foreach ($pagesToDeleteIds as $pageId) {
                 // SAFETY CHECKS:
                 // 1. Don't delete the page currently assigned as 'page_on_front'
-                if ($pageId === $currentFrontPageId && $currentFrontPageId > 0) {
-                    error_log("PageManager reconcileManagedPages: SKIPPING deletion of page ID {$pageId} because it is currently set as the static front page.");
-                    continue; 
+                if ($pageId === $currentFrontPageId && $currentFrontPageId > 0) { 
+                    GloryLogger::info("SKIPPING deletion of page ID {$pageId} because it is currently set as the static front page.");
+                    continue;
                 }
                 // 2. Don't delete the page currently assigned as 'page_for_posts'
-                if ($pageId === $currentPostsPageId && $currentPostsPageId > 0) {
+                if ($pageId === $currentPostsPageId && $currentPostsPageId > 0) { 
                     error_log("PageManager reconcileManagedPages: SKIPPING deletion of page ID {$pageId} because it is currently set as the posts page.");
-                    continue; 
+                    continue;
                 }
 
-                error_log("PageManager reconcileManagedPages: ERROR Attempting to delete page ID: {$pageId} (Force delete: " . ($force_delete ? 'Yes' : 'No') . ")");
+                GloryLogger::info("PageManager reconcileManagedPages: Attempting to delete page ID: {$pageId} (Force delete: " . ($force_delete ? 'Yes' : 'No') . ")");
                 $deleted = wp_delete_post($pageId, $force_delete);
 
-                if ($deleted) { 
-                    error_log("PageManager reconcileManagedPages: DELETED managed page with ID: {$pageId}.");
+                if ($deleted) {
+                    GloryLogger::info("PageManager reconcileManagedPages: DELETED managed page with ID: {$pageId}.");
                 } else {
                     // wp_delete_post returns false or null or WP_Error. Could be permissions, already deleted, etc.
-                    error_log("PageManager reconcileManagedPages: FAILED to delete managed page with ID: {$pageId}. It might already be deleted or another issue occurred.");
+                    GloryLogger::error("PageManager reconcileManagedPages: FAILED to delete managed page with ID: {$pageId}. It might already be deleted or another issue occurred.");
                 }
             }
             # --- END DANGER ZONE ---
-             error_log("PageManager reconcileManagedPages: Reconciliation finished.");
+            GloryLogger::info("PageManager reconcileManagedPages: Reconciliation finished.");
         }
 
 
@@ -303,17 +305,17 @@ if (!class_exists('PageManager')) {
             $current_page_on_front = (int) get_option('page_on_front'); // Cast to int
             $current_page_for_posts = (int) get_option('page_for_posts');
 
-             error_log("PageManager updateFrontPageOptions: ERROR Received ID: " . ($homePageId ?? 'null') . ". Current settings: show_on_front='{$current_show_on_front}', page_on_front='{$current_page_on_front}', page_for_posts='{$current_page_for_posts}'");
+            GloryLogger::info("PageManager updateFrontPageOptions: Received ID: " . ($homePageId ?? 'null') . ". Current settings: show_on_front='{$current_show_on_front}', page_on_front='{$current_page_on_front}', page_for_posts='{$current_page_for_posts}'");
 
             if ($homePageId && $homePageId > 0) {
                  // Validate the provided ID corresponds to a real, published page
                  $homePageObject = get_post($homePageId);
-                 if (!$homePageObject || $homePageObject->post_type !== 'page' || $homePageObject->post_status !== 'publish') { 
-                     error_log("PageManager updateFrontPageOptions: Provided home page ID {$homePageId} is invalid, not a page, or not published. Cannot set as front page.");
+                 if (!$homePageObject || $homePageObject->post_type !== 'page' || $homePageObject->post_status !== 'publish') {
+                    GloryLogger::error("PageManager updateFrontPageOptions: Provided home page ID {$homePageId} is invalid, not a page, or not published. Cannot set as front page.");
                      // Optional: If the *current* setting points to this invalid ID, should we revert to posts?
                      if ($current_show_on_front === 'page' && $current_page_on_front === $homePageId) {
                          error_log("PageManager updateFrontPageOptions: Reverting to 'posts' because current front page ID {$homePageId} is invalid.");
-                         update_option('show_on_front', 'posts');
+                         update_option('show_on_front', 'posts'); 
                          update_option('page_on_front', 0);
                      }
                      return; // Do not proceed with setting this invalid ID
@@ -323,27 +325,27 @@ if (!class_exists('PageManager')) {
                  $optionsChanged = false;
                  if ($current_show_on_front !== 'page') {
                      update_option('show_on_front', 'page');
-                     error_log("PageManager updateFrontPageOptions: ERROR Set show_on_front = 'page'");
+                    GloryLogger::info("PageManager updateFrontPageOptions: Set show_on_front = 'page'");
                      $optionsChanged = true;
                  }
                  if ($current_page_on_front !== $homePageId) {
                      update_option('page_on_front', $homePageId);
-                     error_log("PageManager updateFrontPageOptions: Set page_on_front = {$homePageId}");
+                    GloryLogger::info("PageManager updateFrontPageOptions: Set page_on_front = {$homePageId}");
                      $optionsChanged = true;
 
                      // If the new front page was previously the posts page, unset the posts page.
                      if ($current_page_for_posts === $homePageId) {
                          update_option('page_for_posts', 0);
-                         error_log("PageManager updateFrontPageOptions: Unset page_for_posts because it matched the new front page ID {$homePageId}");
+                         GloryLogger::info("Unset page_for_posts because it matched the new front page ID {$homePageId}");
                      }
                  }
 
                  if ($optionsChanged) {
-                    error_log("PageManager updateFrontPageOptions: ERROR Front page options updated.");
+                    GloryLogger::info("PageManager updateFrontPageOptions: Front page options updated.");
                     // It might be beneficial to flush rewrite rules here, although often not strictly necessary for option changes.
                     // flush_rewrite_rules(); // Use with caution - potentially slow. Only if needed.
-                 } else {
-                    error_log("PageManager updateFrontPageOptions: Front page options were already correctly set for ID {$homePageId}.");
+                 } else { 
+                    GloryLogger::info("Front page options were already correctly set for ID {$homePageId}.");
                  }
 
             } else {
@@ -354,10 +356,10 @@ if (!class_exists('PageManager')) {
                      update_option('page_on_front', 0); // Unset the specific page ID
                      // Optional: Also unset page_for_posts? Usually yes.
                      // update_option('page_for_posts', 0);
-                     error_log("PageManager updateFrontPageOptions: ERROR No valid home page ID provided; set show_on_front = 'posts'.");
+                    GloryLogger::info("PageManager updateFrontPageOptions: No valid home page ID provided; set show_on_front = 'posts'.");
                  } else {
-                      error_log("PageManager updateFrontPageOptions: No valid home page ID provided, and show_on_front is already 'posts'. No changes needed.");
-                 }
+                    GloryLogger::info("PageManager updateFrontPageOptions: No valid home page ID provided, and show_on_front is already 'posts'. No changes needed.");
+                }
             }
         }
 

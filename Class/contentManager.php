@@ -3,6 +3,8 @@
 
 namespace Glory\Class;
 
+use Glory\Class\GloryLogger;
+
 class ContentManager
 {
     /**
@@ -25,6 +27,7 @@ class ContentManager
      */
     public static function get(string $key, string $default = '', bool $escape = true): string
     {
+        GloryLogger::info("called for key: $key");
         $option_name = self::OPTION_PREFIX . $key;
         $value = get_option($option_name);
 
@@ -32,6 +35,12 @@ class ContentManager
         // `get_option` devuelve `false` si la opción no existe.
         if ($value === false || $value === '') {
             $value = $default;
+            GloryLogger::info("No value found for key: $key. Using default: $default");
+        }
+
+        if ($value === false) {
+            GloryLogger::error("Error retrieving option from database for key: $key");
+            return '';
         }
 
         // Escapar para seguridad por defecto al imprimir en HTML
@@ -44,6 +53,7 @@ class ContentManager
             // Usaremos esc_html como un buen punto de partida general.
             return esc_html($value);
         } else {
+            GloryLogger::info("Returning raw value for key: $key");
             // Devolver el valor crudo si no se requiere escapar.
             return $value;
         }
@@ -59,6 +69,7 @@ class ContentManager
      */
     public static function text(string $key, string $default = ''): string
     {
+        GloryLogger::info("called for key: $key");
         return self::get($key, $default, true);
     }
 
@@ -72,6 +83,7 @@ class ContentManager
      */
     public static function richText(string $key, string $default = ''): string
     {
+        GloryLogger::info("called for key: $key");
         $value = self::get($key, $default, false); // Obtenemos valor crudo
         return wp_kses_post($value); // Limpiamos permitiendo HTML seguro
     }

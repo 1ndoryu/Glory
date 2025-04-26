@@ -2,9 +2,7 @@
 # App/Glory/Components/EmailFormBuilder.php
 namespace Glory\Components;
 
-
-
-// --- UserDetailsModalBuilder class REMOVED from this file ---
+use Glory\Class\GloryLogger;
 
 /**
  * Generates the initial email signup form HTML.
@@ -44,6 +42,7 @@ class EmailFormBuilder
      */
     public function __construct(array $userConfig = [])
     {
+        GloryLogger::info("EmailFormBuilder::__construct() called", ['userConfig' => $userConfig]);
         // Ensure modal_target_id and email_id are unique based on form_id
         $baseId = $userConfig['form_id'] ?? $this->config['form_id'];
         $this->config['modal_target_id'] = $baseId . '-modal'; // Default modal ID derived from form ID
@@ -58,6 +57,7 @@ class EmailFormBuilder
      */
     public function render(): string
     {
+        GloryLogger::info("EmailFormBuilder::render() called");
         // Sanitize configuration values
         $formId = htmlspecialchars($this->config['form_id'], ENT_QUOTES, 'UTF-8');
         $formName = htmlspecialchars($this->config['form_name'], ENT_QUOTES, 'UTF-8');
@@ -111,14 +111,20 @@ class EmailFormBuilder
     // Static methods remain the same
     public static function build(array $config = []): string
     {
-        $builder = new self($config);
-        return $builder->render();
+        try {
+            $builder = new self($config);
+            return $builder->render();
+        } catch (\Throwable $th) {
+            GloryLogger::error("EmailFormBuilder::build() - Error building form", ['error' => $th->getMessage(), 'config' => $config]);
+            return '';
+        }
     }
 
     public static function display(array $config = []): void
     {
-        $builder = new self($config);
-        echo $builder->render();
+        try {
+            $builder = new self($config);
+            echo $builder->render();
+        } catch (\Throwable $th) {GloryLogger::error("EmailFormBuilder::display() - Error displaying form", ['error' => $th->getMessage(), 'config' => $config]);}
     }
-
 }

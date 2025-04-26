@@ -1,6 +1,7 @@
 <?php
 
 namespace Glory\Class;
+use Glory\Class\GloryLogger;
 
 if (!class_exists('StyleManager')) {
 
@@ -59,7 +60,7 @@ if (!class_exists('StyleManager')) {
                 $cssPath = 'css/' . $handle . '.css';
             }
             if (empty($handle)) {
-                error_log("StyleManager: Style handle cannot be empty.");
+                GloryLogger::error("Style handle cannot be empty.");
                 return;
             }
 
@@ -94,7 +95,7 @@ if (!class_exists('StyleManager')) {
             if (!is_dir($fullFolderPath)) {
                 // Only log error if not the default 'css' path, which might not exist
                 if ($folderRelPath !== 'css') {
-                    error_log("StyleManager: Folder not found at {$fullFolderPath} when defining folder.");
+                    GloryLogger::error("Folder not found at {$fullFolderPath} when defining folder.");
                 }
                 return;
             }
@@ -102,7 +103,7 @@ if (!class_exists('StyleManager')) {
             $files = glob($fullFolderPath . '/*.css'); // Look for .css files
             if ($files === false) {
                 error_log("StyleManager: Failed to scan folder {$fullFolderPath}");
-                return;
+                return; 
             }
 
             foreach ($files as $file) {
@@ -111,7 +112,7 @@ if (!class_exists('StyleManager')) {
                 $handle = preg_replace('/[^a-zA-Z0-9_-]/', '', $raw_handle);
 
                 if (empty($handle)) {
-                    error_log("StyleManager: Generated handle is empty for file {$file}. Skipping.");
+                    GloryLogger::error("Generated handle is empty for file {$file}. Skipping.");
                     continue;
                 }
 
@@ -166,7 +167,7 @@ if (!class_exists('StyleManager')) {
 
                 # 2. Verify file exists
                 if (!file_exists($filePath)) {
-                    error_log("StyleManager: Style file not found at {$filePath} for handle '{$handle}'.");
+                    GloryLogger::error("Style file not found at {$filePath} for handle '{$handle}'.");
                     continue;
                 }
 

@@ -1,6 +1,7 @@
 <?php
 
 namespace Glory\Class;
+use Glory\Class\GloryLogger;
 
 
 if (!class_exists('ScriptManager')) {
@@ -56,7 +57,7 @@ if (!class_exists('ScriptManager')) {
             ?bool $devMode = null
         ): void {
             if (empty($handle)) {
-                error_log("ScriptManager: Script handle cannot be empty. Definition skipped.");
+                GloryLogger::error("Script handle cannot be empty. Definition skipped.");
                 return;
             }
 
@@ -76,10 +77,10 @@ if (!class_exists('ScriptManager')) {
             # Basic validation for localization data structure
             if (!is_null($localize)) {
                 if (!isset($localize['object_name']) || !is_string($localize['object_name']) || empty($localize['object_name'])) {
-                     error_log("ScriptManager: Invalid or empty 'object_name' for localization data for handle '{$handle}'. Localization skipped.");
+                    GloryLogger::error("Invalid or empty 'object_name' for localization data for handle '{$handle}'. Localization skipped.");
                      $localize = null;
                 } elseif (!isset($localize['data']) || !is_array($localize['data'])) {
-                    error_log("ScriptManager: Invalid 'data' (must be an array) for localization data for handle '{$handle}'. Localization skipped.");
+                    GloryLogger::error("Invalid 'data' (must be an array) for localization data for handle '{$handle}'. Localization skipped.");
                     $localize = null;
                 }
             }
@@ -122,13 +123,13 @@ if (!class_exists('ScriptManager')) {
             if (!is_dir($fullFolderPath)) {
                  // Only log if it's not the root 'js' folder, which might legitimately not exist.
                  if (trim($normalizedFolderRelPath, DIRECTORY_SEPARATOR) !== 'js') {
-                      error_log("ScriptManager: Folder not found at {$fullFolderPath} when defining folder '{$folderRelPath}'.");
+                    GloryLogger::error("Folder not found at {$fullFolderPath} when defining folder '{$folderRelPath}'.");
                  }
                 return;
             }
 
             $files = glob($fullFolderPath . DIRECTORY_SEPARATOR . '*.js');
-            if ($files === false) {
+            if ($files === false || empty($files)) {
                 error_log("ScriptManager: Failed to scan folder {$fullFolderPath} for scripts.");
                 return;
             }
@@ -141,7 +142,7 @@ if (!class_exists('ScriptManager')) {
                 $handle = trim($handle, '-'); // Remove leading/trailing hyphens potentially created
 
                 if (empty($handle)) {
-                    error_log("ScriptManager: Generated handle is empty for file '{$filename}' in folder '{$folderRelPath}'. Skipping.");
+                    GloryLogger::error("Generated handle is empty for file '{$filename}' in folder '{$folderRelPath}'. Skipping.");
                     continue;
                 }
 
@@ -221,7 +222,7 @@ if (!class_exists('ScriptManager')) {
 
                 # 2. Verify file exists physically
                 if (!file_exists($filePath)) {
-                    error_log("ScriptManager: Script file not found at '{$filePath}' for handle '{$handle}'. Skipping enqueue.");
+                    GloryLogger::error("Script file not found at '{$filePath}' for handle '{$handle}'. Skipping enqueue.");
                     continue;
                 }
 
@@ -248,7 +249,7 @@ if (!class_exists('ScriptManager')) {
                 );
 
                  if (!$registered) {
-                     error_log("ScriptManager: Failed to register script '{$handle}' at URL '{$fileUrl}'. Skipping.");
+                    GloryLogger::error("Failed to register script '{$handle}' at URL '{$fileUrl}'. Skipping.");
                      continue;
                  }
 

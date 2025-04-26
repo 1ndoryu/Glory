@@ -3,6 +3,7 @@
 namespace Glory\Services;
 
 use Exception;
+use Glory\Class\GloryLogger;
 use WP_Error;
 
 /**
@@ -15,9 +16,8 @@ class EmailSignupService
     const ACTION_REGISTER = 'glory_register_email';
     const ACTION_UPDATE   = 'glory_update_user_details';
 
-    // Nonce action strings (MUST MATCH the ones used in the forms)
-    const NONCE_ACTION_REGISTER = 'glory_email_signup_action';        // Used by EmailFormBuilder
-    const NONCE_ACTION_UPDATE   = 'glory_update_user_details_nonce'; // *** Used by FormModalBuilder for the profile update ***
+    const NONCE_ACTION_REGISTER = 'glory_email_signup_action';      
+    const NONCE_ACTION_UPDATE   = 'glory_update_user_details_nonce'; 
 
     /**
      * Registers native AJAX hooks.
@@ -44,14 +44,14 @@ class EmailSignupService
 
             // 2. Sanitize and Validate Email
             if (!isset($_POST['email']) || !is_email($_POST['email'])) {
-                error_log('Glory Service ERROR: handleRegistration() Invalid Email - ' . (isset($_POST['email']) ? sanitize_text_field($_POST['email']) : 'Email not received'));
+                GloryLogger::error('handleRegistration() Invalid Email', ['email' => (isset($_POST['email']) ? sanitize_text_field($_POST['email']) : 'Email not received')]);
                 wp_send_json_error(['message' => 'Please provide a valid email address.'], 400);
             }
             $email = sanitize_email($_POST['email']);
 
             // 3. Check if email exists
             if (email_exists($email)) {
-                error_log('Glory Service LOG: handleRegistration() Email already registered: ' . $email);
+                GloryLogger::info("handleRegistration() Email already registered: $email");
                 wp_send_json_error(['message' => 'This email address is already registered.'], 409); // Conflict
             }
 
@@ -61,13 +61,14 @@ class EmailSignupService
 
             // 5. Check for creation error
             if (is_wp_error($user_id)) {
-                error_log('Glory Service ERROR: handleRegistration() Error Creación: ' . $user_id->get_error_message());
+                GloryLogger::error('handleRegistration() Error Creación', ['error' => $user_id->get_error_message()]);
                 wp_send_json_error(['message' => 'Could not create account. Please try again later.'], 500);
             }
 
             // 6. SUCCESS: Send JSON success response with the new user ID
             // The JS (GloryEmailSignup) needs this userId to populate the modal form
             wp_send_json_success(['userId' => $user_id]);
+            GloryLogger::info("handleRegistration() User created successfully: $user_id");
         } catch (Exception $e) {
             // Catch potential exceptions from check_ajax_referer if nonce fails severely
             error_log('Glory Service LOG: handleRegistration() Exception: ' . $e->getMessage());
@@ -89,13 +90,13 @@ class EmailSignupService
 
             // 2. Validate User ID (sent from the modal form's hidden field)
             if (!isset($_POST['user_id']) || !($userId = absint($_POST['user_id'])) || $userId === 0) {
-                error_log('Glory Service ERROR: handleDetailsUpdate() User ID no válido: ' . print_r($_POST, true));
+                GloryLogger::error('handleDetailsUpdate() User ID no válido', ['_POST' => $_POST]);
                 wp_send_json_error(['message' => 'Invalid user identifier.'], 400);
             }
 
             // 3. Verify user exists
             if (!get_userdata($userId)) {
-                error_log('Glory Service ERROR: handleDetailsUpdate() Usuario no encontrado: ' . $userId);
+                GloryLogger::error("handleDetailsUpdate() Usuario no encontrado: $userId");
                 wp_send_json_error(['message' => 'User not found.'], 404);
             }
 
@@ -105,7 +106,7 @@ class EmailSignupService
 
             // Basic validation: Ensure required fields (like first_name) are not empty if needed
             if (empty($firstName)) {
-                error_log('Glory Service ERROR: handleDetailsUpdate() First name missing for user: ' . $userId);
+                GloryLogger::error("handleDetailsUpdate() First name missing for user: $userId");
                 wp_send_json_error(['message' => 'First name is required.'], 400);
             }
 
@@ -119,6 +120,7 @@ class EmailSignupService
             // 6. SUCCESS: Send JSON success response with a confirmation message
             // This message will be used by the 'glory.modalForm.success' event listener in GloryEmailSignup.js
             wp_send_json_success(['message' => 'Profile updated successfully!']);
+            GloryLogger::info("handleDetailsUpdate() User details updated successfully: $userId");
         } catch (Exception $e) {
             // Catch potential exceptions
             error_log('Glory Service LOG: handleDetailsUpdate() Exception: ' . $e->getMessage());
