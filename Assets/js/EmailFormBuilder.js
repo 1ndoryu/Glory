@@ -26,9 +26,6 @@ class GloryEmailSignup {
         this._bindEvents();
     }
 
-    // _bindEvents, _showLoading, _showMessage, _showModalMessage, _hideModalMessage, _openModal, _closeModal
-    // permanecen IGUALES a tu versión anterior. Los omito por brevedad.
-    // --- PEGA AQUÍ TUS MÉTODOS _bindEvents, _showLoading, _showMessage, etc. ---
     _bindEvents() {
         this.signupForms.forEach(formWrapper => {
             const form = formWrapper.querySelector('form');
@@ -135,7 +132,15 @@ class GloryEmailSignup {
     }
     _openModal(modalElement) {
         if (!modalElement) return;
-        modalElement.style.display = 'block';
+
+        const navElement = document.querySelector('.nav'); // <<< USA TU SELECTOR CORRECTO AQUÍ
+        if (navElement) {
+            navElement.classList.add('nav-hidden-by-modal');
+            // console.log('Nav hidden by modal'); // Opcional: para depuración
+        } else {
+            console.warn('Elemento .nav no encontrado para ocultar.'); // Opcional: advertencia si no se encuentra
+        }
+        modalElement.style.display = 'Flex';
         modalElement.setAttribute('aria-hidden', 'false');
         this.activeModal = modalElement;
         const focusableElements = modalElement.querySelectorAll('button, [href], input:not([type="hidden"]), select, textarea, [tabindex]:not([tabindex="-1"])');
@@ -145,6 +150,12 @@ class GloryEmailSignup {
     }
     _closeModal(modalElement) {
         if (!modalElement) return;
+
+        const navElement = document.querySelector('.nav'); // <<< USA TU SELECTOR CORRECTO AQUÍ
+        if (navElement) {
+            navElement.classList.remove('nav-hidden-by-modal');
+            // console.log('Nav shown after modal close'); // Opcional: para depuración
+        }
         modalElement.style.display = 'none';
         modalElement.setAttribute('aria-hidden', 'true');
         this._hideModalMessage(modalElement);
@@ -198,8 +209,10 @@ class GloryEmailSignup {
             // { success: true/false, data: ... } via wp_send_json_success/error
             if (result.success) {
                 const inputWrapper = formWrapper.querySelector('[data-glory-input-wrapper]');
-                if (inputWrapper) inputWrapper.style.display = 'none';
-
+                if (inputWrapper) {
+                    // inputWrapper.style.display = 'none'; // Avoid hiding the input wrapper
+                    form.reset(); // Reset the form instead
+                }
                 const userIdInput = modalElement.querySelector('[data-glory-user-id-input]');
                 if (userIdInput && result.data?.userId) {
                     userIdInput.value = result.data.userId;
@@ -256,7 +269,6 @@ class GloryEmailSignup {
         }
 
         // **** CAMBIO CLAVE ****
-        // Prepara los datos INCLUYENDO el nonce
         const requestData = {
             user_id: userIdInput.value,
             first_name: firstNameInput ? firstNameInput.value : '',
@@ -290,7 +302,7 @@ class GloryEmailSignup {
 }
 
 // Inicialización (igual que antes, pero verifica la función GloryAjax)
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('themePageReady', () => {
     // Asegúrate que tanto la función GloryAjax como la variable ajaxUrl estén listas
     if (typeof GloryAjax === 'function' && typeof ajaxUrl !== 'undefined') {
         new GloryEmailSignup();
