@@ -2,7 +2,7 @@
 # App/Glory/Components/EmailFormBuilder.php
 namespace Glory\Components;
 
-use Glory\Services\EmailSignupService;
+
 
 // --- UserDetailsModalBuilder class REMOVED from this file ---
 
@@ -19,7 +19,7 @@ class EmailFormBuilder
         'email_name'              => 'email',
         'email_data_name'         => 'Email',
         'email_placeholder'       => 'Enter your e-mail',
-        'email_id'                => 'email',
+        'email_id'                => 'email', 
         'email_maxlength'         => 256,
         'email_required'          => true,
         'submit_value'            => 'Sign up',
@@ -44,9 +44,6 @@ class EmailFormBuilder
      */
     public function __construct(array $userConfig = [])
     {
-
-        EmailSignupService::registerAjaxHooks();
-        
         // Ensure modal_target_id and email_id are unique based on form_id
         $baseId = $userConfig['form_id'] ?? $this->config['form_id'];
         $this->config['modal_target_id'] = $baseId . '-modal'; // Default modal ID derived from form ID
@@ -123,4 +120,5 @@ class EmailFormBuilder
         $builder = new self($config);
         echo $builder->render();
     }
+
 }

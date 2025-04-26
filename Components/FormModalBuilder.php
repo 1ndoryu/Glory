@@ -1,22 +1,19 @@
 <?php
-# App/Glory/Components/FormModalBuilder.php}
+# App/Glory/Components/FormModalBuilder.php
 namespace Glory\Components;
-
-use Glory\Services\EmailSignupService;
-
 
 /**
  * Generates Modal HTML containing a configurable form.
  */
 class FormModalBuilder
 {
-
+ 
 
     private $config = [
         // Modal Settings
         'modal_id'           => 'glory-form-modal',
         'modal_class'        => 'glory-modal',
-        'modal_title'        => 'Form',
+        'modal_title'        => 'Form', 
         'close_button_text'  => '&times;',
         'close_button_label' => 'Close Modal',
 
@@ -39,9 +36,6 @@ class FormModalBuilder
 
     public function __construct(array $userConfig = [])
     {
-
-        EmailSignupService::registerAjaxHooks();
-
         if (isset($userConfig['fields']) && is_array($userConfig['fields'])) {
             $this->config['fields'] = array_merge($this->config['fields'], $userConfig['fields']);
             unset($userConfig['fields']);
@@ -153,6 +147,7 @@ class FormModalBuilder
         HTML;
     }
 
+    // ... (métodos estáticos sin cambios) ...
     public static function build(array $config = []): string
     {
         $builder = new self($config);

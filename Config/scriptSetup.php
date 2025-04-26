@@ -4,4 +4,5 @@ use Glory\Class\ScriptManager;
 use Glory\Class\StyleManager;
 
 ScriptManager::defineFolder('Glory/Assets/js');
-StyleManager::defineFolder('Glory/Assets/css'); 
+#StyleManager::defineFolder('Glory/Assets/css'); 
+StyleManager::define('EmailSignupModal', 'Glory/Assets/css/EmailSignupModal.css');

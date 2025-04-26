@@ -20,34 +20,18 @@ class EmailSignupService
     const NONCE_ACTION_UPDATE   = 'glory_update_user_details_nonce'; // *** Used by FormModalBuilder for the profile update ***
 
     /**
-     * Flag to ensure hooks are registered only once per request.
-     * @var bool
-     */
-    private static $ajaxHooksRegistered = false;
-
-    /**
      * Registers native AJAX hooks.
      * This function should now be called from your functions.php or main initializer.
      */
     public static function registerAjaxHooks(): void
     {
-        
-        if (self::$ajaxHooksRegistered) {
-            return; 
-        }
-
-        // Hook for initial email registration
+        // Hook for initial email registration (allows non-logged-in users)
         add_action('wp_ajax_nopriv_' . self::ACTION_REGISTER, [self::class, 'handleRegistration']);
         add_action('wp_ajax_'        . self::ACTION_REGISTER, [self::class, 'handleRegistration']);
-
-        // Hook for updating user details
         add_action('wp_ajax_nopriv_' . self::ACTION_UPDATE, [self::class, 'handleDetailsUpdate']);
-        add_action('wp_ajax_'        . self::ACTION_UPDATE, [self::class, 'handleDetailsUpdate']);
-
-        // --- Mark as registered for this request ---
-        self::$ajaxHooksRegistered = true;
-        error_log('Glory Service LOG: AJAX Hooks Registered.'); // Optional: for debugging
+        add_action('wp_ajax_'        . self::ACTION_UPDATE, [self::class, 'handleDetailsUpdate']); 
     }
+
     /**
      * Handles the initial email registration AJAX request.
      * Verifies nonce and sends JSON response directly.
@@ -143,3 +127,5 @@ class EmailSignupService
         // wp_send_json_* functions call wp_die() implicitly.
     }
 }
+
+EmailSignupService::registerAjaxHooks();
