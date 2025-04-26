@@ -3,9 +3,6 @@
 
 namespace Glory\Class; // Asegúrate que este namespace es correcto para tu estructura
 
-use WP_Error;
-use WP_Post;
-
 class GloryLogger
 {
     const CPT_SLUG = 'glory_log';
@@ -114,7 +111,7 @@ class GloryLogger
             self::$logBuffer[$caller] = [
                 'messages'      => [],
                 'max_level'     => self::LEVEL_INFO, // Nivel inicial por defecto
-                'unique_hashes' => [],            // <-- Añadimos un array para guardar los hashes únicos vistos
+                'unique_hashes' => [],
             ];
         }
 
