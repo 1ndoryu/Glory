@@ -1,17 +1,24 @@
 <?php
-# App/Glory/Components/FormModalBuilder.php
+# App/Glory/Components/FormModalBuilder.php}
 namespace Glory\Components;
+
+use Glory\Services\EmailSignupService;
+
 
 /**
  * Generates Modal HTML containing a configurable form.
  */
 class FormModalBuilder
 {
+
+
     private $config = [
         // Modal Settings
         'modal_id'           => 'glory-form-modal',
         'modal_class'        => 'glory-modal',
-        // ... (otras configuraciones de modal) ...
+        'modal_title'        => 'Form',
+        'close_button_text'  => '&times;',
+        'close_button_label' => 'Close Modal',
 
         // Form Settings
         'form_aria_label'    => 'Modal Form',
@@ -24,14 +31,17 @@ class FormModalBuilder
 
         // AJAX & Messaging Settings
         'ajax_action'        => 'glory_modal_form_submit', // AJAX action name this form submits to
-        'nonce_action'       => 'glory_modal_form_nonce',  // *** The specific nonce action string for THIS form's AJAX action ***
+        'nonce_action'       => 'glory_modal_form_nonce',  // The specific nonce action string for THIS form's AJAX action
         'failure_message'    => 'An error occurred. Please try again.',
-        'target_form_id'     => null,
+        'target_form_id'     => null, // Optional ID of the original form that triggered this modal
     ];
+
 
     public function __construct(array $userConfig = [])
     {
-        // ... (resto del constructor sin cambios) ...
+
+        EmailSignupService::registerAjaxHooks();
+
         if (isset($userConfig['fields']) && is_array($userConfig['fields'])) {
             $this->config['fields'] = array_merge($this->config['fields'], $userConfig['fields']);
             unset($userConfig['fields']);
@@ -74,7 +84,7 @@ class FormModalBuilder
 
         $failureMessage = htmlspecialchars($this->config['failure_message'], ENT_QUOTES, 'UTF-8');
         $targetFormId = $this->config['target_form_id'] ? htmlspecialchars($this->config['target_form_id'], ENT_QUOTES, 'UTF-8') : '';
-        $targetFormIdAttr = $targetFormId ? "data-target-form-id=\"{$targetFormId}\"" : ''; // For linking back
+        $targetFormIdAttr = $targetFormId ? "data-target-form-id=\"{$targetFormId}\"" : '';
 
         $modalFailureDivId = $modalId . '-failure';
 
@@ -143,7 +153,6 @@ class FormModalBuilder
         HTML;
     }
 
-    // ... (métodos estáticos sin cambios) ...
     public static function build(array $config = []): string
     {
         $builder = new self($config);
