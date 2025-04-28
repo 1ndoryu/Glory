@@ -8,5 +8,6 @@ use Glory\Class\GloryLogger;
 ScriptManager::defineFolder('Glory/Assets/js');
 #StyleManager::defineFolder('Glory/Assets/css'); 
 StyleManager::define('EmailSignupModal', 'Glory/Assets/css/EmailSignupModal.css');
+StyleManager::define('PostDisplay', 'Glory/Assets/css/PostDisplay.css');
 
 GloryLogger::init();

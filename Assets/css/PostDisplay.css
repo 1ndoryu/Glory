@@ -1,0 +1,32 @@
+.type-portfolio_item {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.post-display-wrapper.post-type-portfolio_item {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    max-width: 1250px;
+    margin: auto;
+    padding: 20px;
+}
+
+.type-portfolio_item .post-thumbnail img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 6 / 4;
+    object-fit: cover;
+    display: block;
+}
+
+.type-portfolio_item .post-title a {
+    font-weight: 600;
+    color: var(--black) !important;
+}
+
+.div-title {
+    display: flex;
+    justify-content: space-between;
+}

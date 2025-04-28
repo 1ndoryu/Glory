@@ -25,7 +25,6 @@ class PostDisplay
     private static $defaultOptions = [
         'wrapper_base_class' => 'post-display-wrapper',
         'item_class'         => 'post-item',
-        'title_tag'          => 'h2',
         'show_excerpt'       => true,
         'no_posts_message'   => 'No posts found.',
         'template_path'      => '', // Default path is empty, calculated later
@@ -83,7 +82,6 @@ class PostDisplay
         $postTypeClass = sanitize_html_class('post-type-' . $postType);
         $wrapperBaseClass = sanitize_html_class($finalOptions['wrapper_base_class']);
         $itemClass = sanitize_html_class($finalOptions['item_class']);
-        $titleTag = tag_escape($finalOptions['title_tag']);
 
         GloryLogger::info("PostDisplay::getHtml() - Rendering posts for '{$postType}' using template: {$finalOptions['template_path']}", [
             'input_config' => $config, // Log original input
@@ -104,7 +102,6 @@ class PostDisplay
                 $templateData = [
                     'options'   => $finalOptions,
                     'itemClass' => $itemClass,
-                    'titleTag'  => $titleTag,
                 ];
 
                 while ($query->have_posts()) : $query->the_post();
