@@ -18,7 +18,7 @@ class PostDisplay
         'orderby'        => 'date',
         'order'          => 'DESC',
         'post_status'    => 'publish',
-        'no_found_rows'  => true,
+        'no_found_rows'  => true, // Set to false if pagination might be needed later
     ];
 
     /** Default display options. */
@@ -41,35 +41,26 @@ class PostDisplay
      */
     public static function getHtml(string $postType, array $config = []): string
     {
-        // 1. Validate Post Type
+        // ... (Validación y separación de config - sin cambios) ...
         if (empty($postType) || !post_type_exists($postType)) {
             GloryLogger::error("PostDisplay::getHtml() - Invalid or non-existent post type: '{$postType}'.");
             return '';
         }
 
-        // 2. Separate config into Query Args and Options
         $inputQueryArgs = [];
         $inputOptions = [];
         foreach ($config as $key => $value) {
             if (array_key_exists($key, self::$defaultOptions)) {
-                // If the key exists in our default *options*, treat it as an option
                 $inputOptions[$key] = $value;
             } else {
-                // Otherwise, assume it's a query argument
                 $inputQueryArgs[$key] = $value;
             }
         }
 
-        // 3. Merge with Defaults
-        // Merge extracted options with default options
         $finalOptions = array_merge(self::$defaultOptions, $inputOptions);
-        // Merge extracted query args with default query args
         $finalQueryArgs = array_merge(self::$defaultQueryArgs, $inputQueryArgs);
-
-        // Ensure the correct post_type is always set, overriding any value potentially passed in config
         $finalQueryArgs['post_type'] = $postType;
 
-        // 4. Determine and Validate Template Path
         if (empty($finalOptions['template_path'])) {
             $finalOptions['template_path'] = __DIR__ . '/templates/post-display-item.php';
         }
@@ -78,39 +69,40 @@ class PostDisplay
             return '<p class="post-display-error">Error: Could not load display template.</p>';
         }
 
-        // 5. Sanitize display values
         $postTypeClass = sanitize_html_class('post-type-' . $postType);
         $wrapperBaseClass = sanitize_html_class($finalOptions['wrapper_base_class']);
         $itemClass = sanitize_html_class($finalOptions['item_class']);
 
         GloryLogger::info("PostDisplay::getHtml() - Rendering posts for '{$postType}' using template: {$finalOptions['template_path']}", [
-            'input_config' => $config, // Log original input
+            'input_config' => $config,
             'final_query_args' => $finalQueryArgs,
             'final_options' => $finalOptions,
         ]);
 
-        // 6. Perform the WP_Query
         $query = new WP_Query($finalQueryArgs);
 
-        // 7. Generate HTML Output using the template
         ob_start();
         ?>
         <div class="<?php echo esc_attr($wrapperBaseClass); ?> <?php echo esc_attr($postTypeClass); ?>">
             <?php if ($query->have_posts()) : ?>
                 <?php
-                // Pass necessary variables to the template scope
-                $templateData = [
-                    'options'   => $finalOptions,
-                    'itemClass' => $itemClass,
-                ];
+                $position = 0; // <-- Inicializa el contador de posición
 
                 while ($query->have_posts()) : $query->the_post();
                     global $post;
+                    $position++; // <-- Incrementa la posición para cada post
 
-                    // Extract templateData variables into the current scope for the include
+                    // Prepara los datos para el template, incluyendo la posición
+                    $templateData = [
+                        'options'   => $finalOptions,
+                        'itemClass' => $itemClass,
+                        'position'  => $position, // <-- Pasa la posición al template
+                    ];
+
+                    // Extrae las variables para que estén disponibles en el scope del include
                     extract($templateData);
 
-                    // Include the template
+                    // Incluye el template del item
                     include $finalOptions['template_path'];
 
                 endwhile;
@@ -125,14 +117,8 @@ class PostDisplay
         return ob_get_clean();
     }
 
-    /**
-     * Renders (echoes) the HTML for displaying posts.
-     *
-     * @param string $postType The slug of the post type.
-     * @param array $config Optional. A single array containing both WP_Query arguments
-     *                      and display options.
-     */
-    public static function render(string $postType, array $config = []): void
+    // ... (método render sin cambios) ...
+     public static function render(string $postType, array $config = []): void
     {
         echo self::getHtml($postType, $config);
     }

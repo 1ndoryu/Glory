@@ -24,9 +24,11 @@
 .type-portfolio_item .post-title a {
     font-weight: 600;
     color: var(--black) !important;
+    font-size: 20px;
 }
 
 .div-title {
     display: flex;
     justify-content: space-between;
+    font-size: 18px;
 }
