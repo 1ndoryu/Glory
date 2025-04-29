@@ -19,16 +19,27 @@
     aspect-ratio: 6 / 4;
     object-fit: cover;
     display: block;
+    border-radius: 5px;
 }
 
 .type-portfolio_item .post-title a {
     font-weight: 600;
     color: var(--black) !important;
-    font-size: 20px;
+    font-size: 16px;
 }
 
 .div-title {
     display: flex;
     justify-content: space-between;
-    font-size: 18px;
+    font-size: 16px;
+}
+
+.post-position-4 {
+    margin-left: auto;
+}
+.post-position-4 .post-thumbnail img {
+    width: 450px;
+}
+.post-position-1 .post-thumbnail img {
+    width: 450px;
 }
