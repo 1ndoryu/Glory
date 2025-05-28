@@ -30,7 +30,6 @@ class ContentAdminPanel
             .glory-content-panel .glory-tab-content { display: none; }
             .glory-content-panel .glory-tab-content.active { display: block; }
             .glory-content-panel .postbox .hndle { cursor: default; padding: 8px 12px; }
-            /* .glory-content-panel .glory-section-wrap { margin-bottom: 20px; } */ /* No longer needed per section, but per tab */
             .glory-image-preview img { border: 1px solid #ddd; margin-top: 5px; max-width:150px; max-height:150px; display:block; }
             .glory-schedule-editor .glory-schedule-day-row { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ccc; }
             .glory-schedule-editor .glory-schedule-day-row:last-child { border-bottom: none; }
@@ -39,53 +38,17 @@ class ContentAdminPanel
             .glory-content-panel .form-table th { width: 200px; }
             .glory-content-panel .form-table td .regular-text, .glory-content-panel .form-table td .large-text { width: 100%; max-width: 500px; }
             .glory-content-panel .form-table td textarea.large-text { min-height: 120px; }
-
-            /* Styles for sidebar tabs */
-            .glory-tabs-nav-container {
-                width: 200px; /* Adjust as needed */
-                padding-right: 20px;
-                border-right: 1px solid #ccd0d4;
-            }
-            .glory-tabs-nav-container .nav-tab {
-                display: block;
-                margin-bottom: 5px; /* Space between tabs */
-                border: 1px solid #ccd0d4;
-                background: #f0f0f1;
-            }
-            .glory-tabs-nav-container .nav-tab-active {
-                background: #fff;
-                border-bottom-color: #ccd0d4; /* Or #fff if you want it to merge */
-            }
-            .glory-tabs-content-container {
-                flex-grow: 1;
-                padding-left: 20px;
-            }
-            .glory-tab-content .postbox { margin-top: 0; } /* Remove top margin for postbox inside tab */
-
-            .glory-content-panel {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .postbox {
-                position: relative;
-                min-width: 255px;
-                border: 1px solid #c3c4c7;
-                box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
-                background: #fff;
-                padding: 15px;
-            }
-
-            .glory-tabs-container-two {
-                display: flex;
-            }
-            #wpbody-content .metabox-holder {
-                padding-top: 0px; 
-            }
+            .glory-tabs-nav-container { width: 200px; padding-right: 20px; border-right: 1px solid #ccd0d4; }
+            .glory-tabs-nav-container .nav-tab { display: block; margin-bottom: 5px; border: 1px solid #ccd0d4; background: #f0f0f1; }
+            .glory-tabs-nav-container .nav-tab-active { background: #fff; border-bottom-color: #ccd0d4; }
+            .glory-tabs-content-container { flex-grow: 1; padding-left: 20px; }
+            .glory-tab-content .postbox { margin-top: 0; }
+            .glory-content-panel { display: flex; flex-direction: column; gap: 10px; }
+            .postbox { position: relative; min-width: 255px; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0, 0, 0, .04); background: #fff; padding: 15px; }
+            .glory-tabs-container-two { display: flex; }
+            #wpbody-content .metabox-holder { padding-top: 0px; }
         ";
         wp_add_inline_style('wp-admin', $inline_css);
-
         wp_add_inline_script('jquery', self::get_image_uploader_js() . self::get_tabs_js());
     }
 
@@ -98,13 +61,11 @@ class ContentAdminPanel
                 var button = $(this);
                 var inputField = button.prev('.glory-image-url-field');
                 var imagePreviewContainer = button.siblings('.glory-image-preview');
-
                 var frame = wp.media({
                     title: '" . esc_js(__('Select or Upload Image', 'glory')) . "',
                     button: { text: '" . esc_js(__('Use this image', 'glory')) . "' },
                     multiple: false
                 });
-
                 frame.on('select', function() {
                     var attachment = frame.state().get('selection').first().toJSON();
                     inputField.val(attachment.url);
@@ -112,7 +73,6 @@ class ContentAdminPanel
                 });
                 frame.open();
             });
-
             $(document).on('click', '.glory-remove-image-button', function(e) {
                 e.preventDefault();
                 var button = $(this);
@@ -121,8 +81,7 @@ class ContentAdminPanel
                 inputField.val('');
                 imagePreviewContainer.html('');
             });
-        });
-        ";
+        });";
     }
 
     private static function get_tabs_js(): string
@@ -131,32 +90,22 @@ class ContentAdminPanel
         jQuery(document).ready(function($) {
             var gloryTabs = $('.glory-tabs-nav-container .nav-tab');
             var gloryTabContents = $('.glory-tab-content');
-
             function activateTab(tabLink) {
-                var tabId = $(tabLink).attr('href'); // e.g., #tab-general
-
+                var tabId = $(tabLink).attr('href');
                 gloryTabs.removeClass('nav-tab-active');
                 $(tabLink).addClass('nav-tab-active');
-
                 gloryTabContents.removeClass('active').hide();
                 $(tabId).addClass('active').show();
-
-                // Update URL without reloading page
                 if (history.pushState) {
-                    var newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname + '?page=" . self::$menu_slug . "&tab=' + tabId.substring(5); // remove #tab-
+                    var newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname + '?page=" . self::$menu_slug . "&tab=' + tabId.substring(5);
                     history.pushState({path: newUrl}, '', newUrl);
                 }
             }
-
-            // Activate tab based on URL hash or first tab
-            var initialTab = window.location.hash; // e.g. #tab-general
+            var initialTab = window.location.hash;
             if (initialTab && $(initialTab).length) {
                 var correspondingLink = $('.glory-tabs-nav-container .nav-tab[href=\"' + initialTab + '\"]');
-                if (correspondingLink.length) {
-                    activateTab(correspondingLink);
-                }
+                if (correspondingLink.length) activateTab(correspondingLink);
             } else if (gloryTabs.length > 0) {
-                 // Try to get tab from query param if no hash
                 const urlParams = new URLSearchParams(window.location.search);
                 const queryTab = urlParams.get('tab');
                 let activatedFromQuery = false;
@@ -167,20 +116,14 @@ class ContentAdminPanel
                         activatedFromQuery = true;
                     }
                 }
-                if (!activatedFromQuery && gloryTabs.first().length) {
-                     activateTab(gloryTabs.first());
-                }
+                if (!activatedFromQuery && gloryTabs.first().length) activateTab(gloryTabs.first());
             }
-
-
             gloryTabs.on('click', function(e) {
                 e.preventDefault();
                 activateTab(this);
-                // Update window.location.hash so that if user refreshes, they stay on the same tab
-                window.location.hash = $(this).attr('href').substring(1); // remove #
+                window.location.hash = $(this).attr('href').substring(1);
             });
-        });
-        ";
+        });";
     }
 
     public static function add_admin_page(): void
@@ -198,29 +141,28 @@ class ContentAdminPanel
 
     public static function register_settings_and_handle_save(): void
     {
-        // Check if our specific form was submitted
         if (
             isset($_POST['action']) && $_POST['action'] === 'glory_save_content' &&
             isset($_POST['_wpnonce_glory_content_save']) && isset($_POST['glory_active_section'])
         ) {
-
             $active_section_key = sanitize_text_field($_POST['glory_active_section']);
-
             if (wp_verify_nonce($_POST['_wpnonce_glory_content_save'], 'glory_content_save_action_' . $active_section_key)) {
                 self::handle_save_data($active_section_key);
             } else {
+                GloryLogger::error("ContentAdminPanel: Nonce verification FAILED for section {$active_section_key}.");
                 wp_die(__('Nonce verification failed!', 'glory'), __('Error', 'glory'), ['response' => 403]);
             }
         }
     }
 
-    private static function handle_save_data(string $active_section_key): void
+    private static function handle_save_data(string $active_section_key): void // $active_section_key ya está sanitizado
     {
         if (!current_user_can('manage_options')) {
+            GloryLogger::error("ContentAdminPanel: User without 'manage_options' tried to save data for section {$active_section_key}.");
             wp_die(__('You do not have sufficient permissions to access this page.', 'glory'));
         }
 
-        GloryLogger::info("ContentAdminPanel: Handling save action for section: {$active_section_key}.");
+        // GloryLogger::info("ContentAdminPanel: Handling save for section: {$active_section_key}. POST data: " . print_r($_POST['glory_content'] ?? [], true));
 
         $all_registered_fields = ContentManager::getRegisteredContentFields();
         $posted_options = $_POST['glory_content'] ?? [];
@@ -228,104 +170,121 @@ class ContentAdminPanel
 
         // Filter fields to only those in the active section
         foreach ($all_registered_fields as $key => $config) {
-            if (($config['section'] ?? 'general') === $active_section_key) {
+            // Obtener el slug sanitizado de la sección del campo actual
+            $field_config_section_slug = sanitize_title($config['section'] ?? 'general');
+
+            // Comparar el slug sanitizado del campo con el slug activo (que ya está sanitizado)
+            if ($field_config_section_slug === $active_section_key) {
                 $fields_in_current_section[$key] = $config;
             }
         }
 
         if (empty($fields_in_current_section)) {
-            GloryLogger::info("ContentAdminPanel: No fields found for section {$active_section_key} during save.");
-            // Optionally add a settings error if this is unexpected
-            // add_settings_error('glory_content_messages', 'glory_no_fields_in_section', __('No fields to save for this section.', 'glory'), 'warning');
+            // Este log ahora solo debería aparecer si realmente no hay campos para esa sección sanitizada.
+            GloryLogger::info("ContentAdminPanel: No fields found for section '{$active_section_key}' after filtering during save. Original section from POST: '{$_POST['glory_active_section']}'. Check field registrations.");
+            // Puedes añadir un add_settings_error aquí si es un error inesperado
+            // add_settings_error('glory_content_messages', 'no_fields_to_save', __('No fields were found to save for this section. Please check the plugin configuration.', 'glory'), 'warning');
+            // No hagas redirect ni exit si no hay campos, para que el mensaje de error se muestre.
+            // Sin embargo, si es normal que una sección no tenga campos, este log es suficiente y el flujo puede continuar (no se guardará nada).
         }
 
-        foreach ($fields_in_current_section as $key => $config) {
-            $option_name = ContentManager::OPTION_PREFIX . $key;
-            $panel_value_exists_in_post = array_key_exists($key, $posted_options);
-            $value_to_save = null;
+        // El resto de la función handle_save_data permanece igual...
+        // (procesamiento de $value_to_save, update_option, etc.)
 
-            if ($config['type'] === 'schedule') {
-                $schedule_data = [];
-                if ($panel_value_exists_in_post && is_array($posted_options[$key])) {
-                    foreach ($posted_options[$key] as $day_schedule_data) {
-                        // Ensure 'day' exists, sanitize, and reconstruct
-                        $day_name = sanitize_text_field($day_schedule_data['day'] ?? '');
-                        if (empty($day_name)) continue;
+        // Solo proceder con el guardado y la redirección si hay campos
+        if (!empty($fields_in_current_section)) {
+            foreach ($fields_in_current_section as $key => $config) {
+                $option_name = ContentManager::OPTION_PREFIX . $key;
+                $panel_value_exists_in_post = array_key_exists($key, $posted_options);
+                $value_to_save = null;
 
-                        $status = sanitize_text_field($day_schedule_data['status'] ?? 'closed');
-                        $open_time = sanitize_text_field($day_schedule_data['open'] ?? '');
-                        $close_time = sanitize_text_field($day_schedule_data['close'] ?? '');
-                        $hours_str = '';
-
-                        if ($status === 'open' && !empty($open_time) && !empty($close_time)) {
-                            $hours_str = $open_time . '-' . $close_time;
-                        } elseif ($status === 'closed') {
-                            $hours_str = 'Cerrado';
-                            $open_time = '';
-                            $close_time = '';
+                if ($config['type'] === 'schedule') {
+                    $schedule_data = [];
+                    if ($panel_value_exists_in_post && is_array($posted_options[$key])) {
+                        foreach ($posted_options[$key] as $day_schedule_data) {
+                            $day_name = sanitize_text_field($day_schedule_data['day'] ?? '');
+                            if (empty($day_name)) continue;
+                            $status = sanitize_text_field($day_schedule_data['status'] ?? 'closed');
+                            $open_time = sanitize_text_field($day_schedule_data['open'] ?? '');
+                            $close_time = sanitize_text_field($day_schedule_data['close'] ?? '');
+                            $hours_str = '';
+                            if ($status === 'open' && !empty($open_time) && !empty($close_time)) {
+                                $hours_str = $open_time . '-' . $close_time;
+                            } elseif ($status === 'closed') {
+                                $hours_str = 'Cerrado';
+                                $open_time = '';
+                                $close_time = '';
+                            }
+                            $schedule_data[] = ['day' => $day_name, 'open' => $open_time, 'close' => $close_time, 'status' => $status, 'hours' => $hours_str];
                         }
-                        $schedule_data[] = ['day' => $day_name, 'open' => $open_time, 'close' => $close_time, 'status' => $status, 'hours' => $hours_str];
                     }
-                }
-                $value_to_save = $schedule_data;
-            } elseif ($config['type'] === 'raw') {
-                if ($panel_value_exists_in_post) {
-                    $json_string_from_textarea = sanitize_textarea_field(stripslashes($posted_options[$key]));
-                    $decoded_value = json_decode($json_string_from_textarea, true);
-
-                    if (json_last_error() === JSON_ERROR_NONE) {
-                        $value_to_save = $decoded_value;
-                        GloryLogger::info("ContentAdminPanel: Raw field '{$key}' saved as decoded JSON.");
+                    $value_to_save = $schedule_data;
+                } elseif ($config['type'] === 'raw') {
+                    if ($panel_value_exists_in_post) {
+                        $json_string_from_textarea = sanitize_textarea_field(stripslashes($posted_options[$key]));
+                        $decoded_value = json_decode($json_string_from_textarea, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $value_to_save = $decoded_value;
+                        } else {
+                            $value_to_save = $json_string_from_textarea;
+                            GloryLogger::info("ContentAdminPanel: Raw field '{$key}' contained invalid JSON. Saved as raw string. Error: " . json_last_error_msg());
+                            add_settings_error('glory_content_messages', 'glory_invalid_json_' . $key, sprintf(__('Warning: The content for "%s" was not valid JSON and has been saved as a raw string. Please correct it.', 'glory'), $config['label']), 'warning');
+                        }
                     } else {
-                        $value_to_save = $json_string_from_textarea;
-                        GloryLogger::info("ContentAdminPanel: Raw field '{$key}' contained invalid JSON. Saved as raw string. Error: " . json_last_error_msg());
-                        add_settings_error(
-                            'glory_content_messages',
-                            'glory_invalid_json_' . $key,
-                            sprintf(__('Warning: The content for "%s" was not valid JSON and has been saved as a raw string. Please correct it.', 'glory'), $config['label']),
-                            'warning'
-                        );
+                        $value_to_save = $config['default'] ?? [];
+                    }
+                } elseif ($panel_value_exists_in_post) {
+                    $raw_posted_value = $posted_options[$key];
+                    switch ($config['type']) {
+                        case 'text':
+                            $value_to_save = sanitize_text_field(stripslashes($raw_posted_value));
+                            break;
+                        case 'image':
+                            $value_to_save = esc_url_raw(stripslashes($raw_posted_value));
+                            break;
+                        case 'richText':
+                            $value_to_save = wp_kses_post(stripslashes($raw_posted_value));
+                            break;
+                        default:
+                            $value_to_save = sanitize_text_field(stripslashes($raw_posted_value));
                     }
                 } else {
-                    $value_to_save = $config['default'] ?? []; // Default for raw might be an empty array/object
+                    $value_to_save = in_array($config['type'], ['text', 'image', 'richText']) ? '' : ($config['default'] ?? '');
+                    if ($config['type'] === 'raw' && $value_to_save === '') $value_to_save = [];
                 }
-            } elseif ($panel_value_exists_in_post) {
-                $raw_posted_value = $posted_options[$key];
-                switch ($config['type']) {
-                    case 'text':
-                        $value_to_save = sanitize_text_field(stripslashes($raw_posted_value));
-                        break;
-                    case 'image':
-                        $value_to_save = esc_url_raw(stripslashes($raw_posted_value));
-                        break;
-                    case 'richText':
-                        $value_to_save = wp_kses_post(stripslashes($raw_posted_value));
-                        break;
-                    default:
-                        $value_to_save = sanitize_text_field(stripslashes($raw_posted_value));
-                }
-            } else {
-                $value_to_save = in_array($config['type'], ['text', 'image', 'richText']) ? '' : ($config['default'] ?? '');
+
+                $code_default_hash_at_save_time = ContentManager::getCodeDefaultHash($key);
+
+                GloryLogger::info("ContentAdminPanel: PRE-SAVE Key '{$key}'. Option: '{$option_name}'. Value to save: " . print_r($value_to_save, true));
+                GloryLogger::info("ContentAdminPanel: PRE-SAVE Key '{$key}'. Meta panel_saved_flag will be TRUE.");
+                GloryLogger::info("ContentAdminPanel: PRE-SAVE Key '{$key}'. Meta code_hash_on_save will be '{$code_default_hash_at_save_time}'.");
+
+                update_option($option_name, $value_to_save);
+                update_option($option_name . ContentManager::OPTION_META_PANEL_SAVED_SUFFIX, true);
+                update_option($option_name . ContentManager::OPTION_META_CODE_HASH_SUFFIX, $code_default_hash_at_save_time);
             }
 
-            GloryLogger::info("ContentAdminPanel: Preparing to save key '{$key}'. Option name: '{$option_name}'. Value to save: " . print_r($value_to_save, true));
-            GloryLogger::info("ContentAdminPanel: Code default for '{$key}' at save time: " . print_r(ContentManager::getCodeDefaultHash($key), true));
+            add_settings_error('glory_content_messages', 'glory_content_message', __('Settings Saved for section:', 'glory') . ' ' . esc_html(ucfirst(str_replace('-', ' ', $active_section_key))), 'updated'); // Usar str_replace para mejor visualización del slug
+            set_transient('settings_errors', get_settings_errors(), 30);
 
-            update_option($option_name, $value_to_save);
-            update_option($option_name . ContentManager::OPTION_META_PANEL_SAVED_SUFFIX, true);
-            update_option($option_name . ContentManager::OPTION_META_CODE_HASH_SUFFIX, ContentManager::getCodeDefaultHash($key));
-            GloryLogger::info("ContentAdminPanel: AFTER update_option for '{$option_name}'. Check DB now if possible.");
+            $redirect_url = admin_url('admin.php?page=' . self::$menu_slug . '&tab=' . $active_section_key . '&settings-updated=true');
+            wp_redirect($redirect_url);
+            exit;
+        } else {
+            // Si no hay campos, simplemente muestra los errores de configuración (si los hubo) y no redirijas.
+            // Esto permite que el add_settings_error del bloque `if (empty($fields_in_current_section))` se muestre.
+            // O si el log es suficiente, no necesitas hacer nada más aquí.
+            // Considera si quieres añadir un mensaje genérico aquí también.
+            add_settings_error('glory_content_messages', 'glory_no_fields_saved', __('No fields were configured for saving in this section.', 'glory'), 'warning');
+            set_transient('settings_errors', get_settings_errors(), 30);
+
+            // Redirigir de todas formas para limpiar el POST y mostrar el mensaje de error, pero sin &settings-updated=true
+            $redirect_url = admin_url('admin.php?page=' . self::$menu_slug . '&tab=' . $active_section_key);
+            wp_redirect($redirect_url);
+            exit;
         }
-
-        add_settings_error('glory_content_messages', 'glory_content_message', __('Settings Saved for section:', 'glory') . ' ' . esc_html(ucfirst($active_section_key)), 'updated');
-        set_transient('settings_errors', get_settings_errors(), 30);
-
-        // Redirect back to the current tab
-        $redirect_url = admin_url('admin.php?page=' . self::$menu_slug . '&tab=' . $active_section_key . '&settings-updated=true');
-        wp_redirect($redirect_url);
-        exit;
     }
-
+    
     public static function render_admin_page_html(): void
     {
         if (!current_user_can('manage_options')) {
@@ -335,44 +294,36 @@ class ContentAdminPanel
         $all_fields = ContentManager::getRegisteredContentFields();
         $fields_by_section = [];
         foreach ($all_fields as $key => $config) {
-            $section_slug = $config['section'] ?? 'general';
-            // Ensure section slug is safe for use in HTML attributes
-            $section_slug = sanitize_title($section_slug);
+            $section_slug = sanitize_title($config['section'] ?? 'general');
             $fields_by_section[$section_slug][$key] = $config;
         }
         ksort($fields_by_section);
 
-        // Determine active tab
         $default_tab = !empty($fields_by_section) ? array_key_first($fields_by_section) : 'general';
         $active_tab = isset($_GET['tab']) ? sanitize_title($_GET['tab']) : $default_tab;
         if (!array_key_exists($active_tab, $fields_by_section) && $active_tab !== 'general' && !empty($fields_by_section)) {
-            $active_tab = $default_tab; // Fallback if tab from GET is invalid
+            $active_tab = $default_tab;
         }
-
 ?>
         <div class="wrap glory-content-panel">
             <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-            <?php
-            // settings_errors() displays notices and errors from add_settings_error()
-            settings_errors('glory_content_messages');
-            ?>
+            <?php settings_errors('glory_content_messages'); ?>
             <div class="glory-tabs-container-two">
                 <div class="glory-tabs-nav-container">
                     <?php if (!empty($fields_by_section)): ?>
                         <?php foreach ($fields_by_section as $section_slug => $fields_in_section): ?>
                             <?php
-                            // Use label from the first field in section if available, or default to slug
-                            $section_label = ucfirst(str_replace('-', ' ', $section_slug)); // Default label
+                            $section_label_raw = 'General';
                             if (!empty($fields_in_section)) {
                                 $first_field_config = reset($fields_in_section);
-                                $section_label = $first_field_config['section_label'] ?? $first_field_config['section'] ?? $section_label;
+                                $section_label_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
                             }
                             $tab_id_attr = 'tab-' . $section_slug;
                             ?>
                             <a href="#<?php echo esc_attr($tab_id_attr); ?>"
                                 class="nav-tab <?php echo $active_tab === $section_slug ? 'nav-tab-active' : ''; ?>"
                                 data-tab-id="<?php echo esc_attr($section_slug); ?>">
-                                <?php echo esc_html(ucfirst($section_label)); ?>
+                                <?php echo esc_html(ucfirst($section_label_raw)); ?>
                             </a>
                         <?php endforeach; ?>
                     <?php else: ?>
@@ -387,11 +338,10 @@ class ContentAdminPanel
                         <?php foreach ($fields_by_section as $section_slug => $fields_in_section): ?>
                             <?php
                             $tab_id_attr = 'tab-' . $section_slug;
-                            // Use label from the first field in section if available, or default to slug
-                            $section_display_name = ucfirst(str_replace('-', ' ', $section_slug)); // Default label
+                            $section_display_name_raw = 'General';
                             if (!empty($fields_in_section)) {
                                 $first_field_config = reset($fields_in_section);
-                                $section_display_name = $first_field_config['section_label'] ?? $first_field_config['section'] ?? $section_display_name;
+                                $section_display_name_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
                             }
                             ?>
                             <div id="<?php echo esc_attr($tab_id_attr); ?>" class="glory-tab-content <?php echo $active_tab === $section_slug ? 'active' : ''; ?>">
@@ -399,15 +349,15 @@ class ContentAdminPanel
                                     <input type="hidden" name="action" value="glory_save_content">
                                     <input type="hidden" name="glory_active_section" value="<?php echo esc_attr($section_slug); ?>">
                                     <?php wp_nonce_field('glory_content_save_action_' . $section_slug, '_wpnonce_glory_content_save'); ?>
-
                                     <div class="metabox-holder">
                                         <div class="postbox">
-                                            <h2 class="hndle"><span><?php echo esc_html(ucfirst($section_display_name)); ?></span></h2>
+                                            <h2 class="hndle"><span><?php echo esc_html(ucfirst($section_display_name_raw)); ?></span></h2>
                                             <div class="inside">
                                                 <table class="form-table" role="presentation">
                                                     <tbody>
                                                         <?php foreach ($fields_in_section as $key => $config):
                                                             $current_value_for_field = $config['current_value'] ?? $config['default'] ?? '';
+                                                            // GloryLogger::info("ContentAdminPanel: Rendering field '{$key}'. current_value_for_field: ".print_r($current_value_for_field, true));
                                                             $option_input_name = 'glory_content[' . esc_attr($key) . ']';
                                                             $label = $config['label'] ?? ucfirst(str_replace('_', ' ', $key));
                                                             $description = $config['description'] ?? '';
@@ -440,10 +390,6 @@ class ContentAdminPanel
 <?php
     }
 
-    // render_field_input_control y render_schedule_input_control permanecen igual que tu versión original
-    // porque su lógica interna de renderizado de campos no necesita cambiar para el sistema de pestañas.
-    // Solo los he copiado aquí para completitud.
-
     private static function render_field_input_control(string $key, array $config, $current_value, string $option_input_name): void
     {
         $field_id = esc_attr($key);
@@ -459,24 +405,20 @@ class ContentAdminPanel
                     $json_string = json_encode($value_for_textarea, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     if ($json_string === false) {
                         $value_for_textarea = '/* Error al codificar a JSON: ' . json_last_error_msg() . ' */';
-                        GloryLogger::error("ContentAdminPanel: Error encoding raw field '{$key}' to JSON for display. Value: " . print_r($current_value, true));
+                        GloryLogger::error("ContentAdminPanel: Error encoding raw field '{$key}' to JSON for display. Value: " . print_r($current_value, true) . " Error: " . json_last_error_msg());
                     } else {
                         $value_for_textarea = $json_string;
                     }
                 } elseif ($value_for_textarea === null) {
                     $value_for_textarea = '';
                 }
-                if (!is_string($value_for_textarea)) {
-                    $value_for_textarea = (string) $value_for_textarea;
-                }
+                if (!is_string($value_for_textarea)) $value_for_textarea = (string) $value_for_textarea;
                 echo '<textarea id="' . $field_id . '" name="' . $option_input_name . '" rows="10" class="large-text">' . esc_textarea($value_for_textarea) . '</textarea>';
                 echo '<p class="description">' . __('Enter valid JSON. If content is not valid JSON, it will be saved as a raw string.', 'glory') . '</p>';
                 break;
             case 'richText':
                 $value_for_richtext_area = is_string($current_value) ? $current_value : '';
                 echo '<textarea id="' . $field_id . '" name="' . $option_input_name . '" rows="10" class="large-text wp-editor-area">' . esc_textarea($value_for_richtext_area) . '</textarea>';
-                // For actual rich text editor, you'd enqueue wp_editor and use it.
-                // For now, it's a textarea, but wp_kses_post will apply on save.
                 echo '<p class="description">' . __('HTML is allowed. Content will be filtered by wp_kses_post on save.', 'glory') . '</p>';
                 break;
             case 'image':
@@ -485,9 +427,7 @@ class ContentAdminPanel
                 echo ' <button type="button" class="button glory-upload-image-button">' . __('Upload Image', 'glory') . '</button>';
                 echo ' <button type="button" class="button glory-remove-image-button">' . __('Remove Image', 'glory') . '</button>';
                 echo '<div class="glory-image-preview">';
-                if (!empty($image_url)) {
-                    echo '<img src="' . esc_url($image_url) . '">';
-                }
+                if (!empty($image_url)) echo '<img src="' . esc_url($image_url) . '">';
                 echo '</div>';
                 break;
             case 'schedule':
@@ -495,52 +435,67 @@ class ContentAdminPanel
                 break;
             default:
                 echo '<input type="text" id="' . $field_id . '" name="' . $option_input_name . '" value="' . esc_attr(is_scalar($current_value) ? $current_value : '') . '" class="regular-text">';
-                GloryLogger::info("ContentAdminPanel: Unknown field type '{$type}' for key '{$key}'. Defaulting to text input.");
+                // GloryLogger::info("ContentAdminPanel: Unknown field type '{$type}' for key '{$key}'. Defaulting to text input."); // Demasiado verboso
         }
     }
 
     private static function render_schedule_input_control(string $key, array $schedule_data, string $base_input_name): void
     {
-        $schedule_data = is_array($schedule_data) ? $schedule_data : [];
-
+        $schedule_data = is_array($schedule_data) ? $schedule_data : []; // Asegurar que sea array
         $days_of_week_ordered = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
         $schedule_map = [];
-
-        foreach ($schedule_data as $entry) {
-            if (isset($entry['day'])) {
-                $schedule_map[$entry['day']] = $entry;
-            }
+        foreach ($schedule_data as $entry) { // Mapear para fácil acceso y asegurar estructura
+            if (isset($entry['day'])) $schedule_map[$entry['day']] = $entry;
         }
 
         echo '<div class="glory-schedule-editor">';
         foreach ($days_of_week_ordered as $idx => $day_name_label) {
-            $entry = $schedule_map[$day_name_label] ?? ['day' => $day_name_label, 'status' => 'closed', 'open' => '', 'close' => ''];
+            $entry = $schedule_map[$day_name_label] ?? ['day' => $day_name_label, 'status' => 'closed', 'open' => '', 'close' => '', 'hours' => 'Cerrado'];
 
+            // Asegurar que los datos sean consistentes incluso si vienen mal de la BD
             $status = esc_attr($entry['status'] ?? 'closed');
-            $open_time = esc_attr($entry['open'] ?? '');
-            $close_time = esc_attr($entry['close'] ?? '');
+            $open_time = ($status === 'open') ? esc_attr($entry['open'] ?? '') : '';
+            $close_time = ($status === 'open') ? esc_attr($entry['close'] ?? '') : '';
 
-            // Using index for POST array
-            $post_index = $idx;
-
+            $post_index = $idx; // Usar índice numérico para el array POST
             $input_name_day    = $base_input_name . '[' . $post_index . '][day]';
             $input_name_status = $base_input_name . '[' . $post_index . '][status]';
             $input_name_open   = $base_input_name . '[' . $post_index . '][open]';
             $input_name_close  = $base_input_name . '[' . $post_index . '][close]';
+            // No necesitamos input para 'hours', se reconstruye al guardar
             $unique_id_prefix = esc_attr($key . '_' . strtolower(str_replace(' ', '_', $day_name_label)));
 
             echo '<div class="glory-schedule-day-row">';
-            echo '<strong>' . esc_html($day_name_label) . '</strong><input type="hidden" name="' . $input_name_day . '" value="' . esc_attr($day_name_label) . '">';
-            echo '<br>';
+            echo '<strong>' . esc_html($day_name_label) . '</strong><input type="hidden" name="' . $input_name_day . '" value="' . esc_attr($day_name_label) . '"><br>';
             echo '<label for="' . $unique_id_prefix . '_status">' . __('Status:', 'glory') . ' </label>';
             echo '<select id="' . $unique_id_prefix . '_status" name="' . $input_name_status . '">';
             echo '<option value="open" ' . selected($status, 'open', false) . '>' . __('Open', 'glory') . '</option>';
             echo '<option value="closed" ' . selected($status, 'closed', false) . '>' . __('Closed', 'glory') . '</option>';
             echo '</select>';
-            echo '<label for="' . $unique_id_prefix . '_open">' . __('Open:', 'glory') . ' <input id="' . $unique_id_prefix . '_open" type="time" name="' . $input_name_open . '" value="' . $open_time . '"></label>';
-            echo '<label for="' . $unique_id_prefix . '_close">' . __('Close:', 'glory') . ' <input id="' . $unique_id_prefix . '_close" type="time" name="' . $input_name_close . '" value="' . $close_time . '"></label>';
+            echo '<label for="' . $unique_id_prefix . '_open">' . __('Open:', 'glory') . ' <input id="' . $unique_id_prefix . '_open" type="time" name="' . $input_name_open . '" value="' . $open_time . '" ' . ($status === 'closed' ? 'disabled' : '') . '></label>';
+            echo '<label for="' . $unique_id_prefix . '_close">' . __('Close:', 'glory') . ' <input id="' . $unique_id_prefix . '_close" type="time" name="' . $input_name_close . '" value="' . $close_time . '" ' . ($status === 'closed' ? 'disabled' : '') . '></label>';
             echo '</div>';
         }
         echo '</div>';
+        // JS para habilitar/deshabilitar campos de tiempo según el estado
+        // Este JS es un ejemplo, puede necesitar ajustes para integrarse correctamente
+        if (!wp_script_is('glory-schedule-admin-js', 'enqueued')) {
+            wp_add_inline_script('jquery', "
+                jQuery(document).ready(function($) {
+                    $(document).on('change', '.glory-schedule-editor select', function() {
+                        var row = $(this).closest('.glory-schedule-day-row');
+                        var isOpen = $(this).val() === 'open';
+                        row.find('input[type=\"time\"]').prop('disabled', !isOpen);
+                        if (!isOpen) {
+                           // row.find('input[type=\"time\"]').val(''); // Opcional: limpiar tiempos si se cierra
+                        }
+                    });
+                    // Disparar change en carga para aplicar estado inicial
+                    // $('.glory-schedule-editor select').trigger('change'); // Puede causar problemas si hay muchos, mejor manejar con CSS o al renderizar
+                });
+            ", 'after');
+            wp_register_script('glory-schedule-admin-js', false); // Marcar como enqueued para evitar duplicados
+            wp_enqueue_script('glory-schedule-admin-js');
+        }
     }
 }
