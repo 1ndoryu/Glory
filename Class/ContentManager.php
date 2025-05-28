@@ -34,6 +34,7 @@ class ContentManager
             'type'                      => $default_type,
             'label'                     => ucfirst(str_replace(['_', '-'], ' ', $key)),
             'section'                   => 'general',
+            'sub_section'               => 'general', // Nuevo campo para subsección
             'section_label'             => ucfirst(str_replace(['_', '-'], ' ', $args['section'] ?? 'general')),
             'description'               => '',
             'escape'                    => ($default_type === 'text'),
@@ -141,7 +142,7 @@ class ContentManager
     }
 
 
-    private static function registerOnTheFly(string $key, $default_value, string $type, ?string $label, ?string $section, ?string $description, bool $escape_behavior): void
+    private static function registerOnTheFly(string $key, $default_value, string $type, ?string $label, ?string $section, ?string $sub_section, ?string $description, bool $escape_behavior): void
     {
         if (!isset(self::$registered_content[$key])) {
             // GloryLogger::info("ContentManager: Registering on-the-fly for key: $key. This will trigger full sync logic.");
@@ -152,6 +153,7 @@ class ContentManager
                 'type'        => $type,
                 'label'       => $label, // Puede ser null, register() lo manejará
                 'section'     => $section, // Puede ser null
+                'sub_section' => $sub_section, // Puede ser null
                 'description' => $description, // Puede ser null
                 'escape'      => $escape_behavior,
                 // 'force_default_on_register' se quedará en false por defecto en register().
@@ -175,6 +177,7 @@ class ContentManager
         bool $escape_output = true,
         ?string $panel_title = null,
         ?string $panel_section = null,
+        ?string $panel_sub_section = null, // Nuevo parámetro
         ?string $panel_description = null,
         string $content_type = 'text'
     ) {
@@ -187,7 +190,7 @@ class ContentManager
         // Si ya está, registerOnTheFly no hará nada más que actualizar el hash/default en memoria si es necesario.
         // El `default_value` para `registerOnTheFly` es `$default_param` de `get()`.
         self::registerOnTheFly($key, $default_param, $content_type, $panel_title, $panel_section, $panel_description, $escape_output);
-
+        self::registerOnTheFly($key, $default_param, $content_type, $panel_title, $panel_section, $panel_sub_section, $panel_description, $escape_output);
         // PASO 2: Obtener el valor de la opción de la BD.
         // En este punto, la lógica de `register()` (incluida la sincronización) ya se ha ejecutado.
         // El valor en la opción `$option_name` DEBERÍA ser el valor final y correcto.
@@ -212,18 +215,18 @@ class ContentManager
 
     public static function text(string $key, string $default = '', ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): string
     {
-        return (string) self::get($key, $default, true, $panel_title, $panel_section, $panel_description, 'text');
+        return (string) self::get($key, $default, true, $panel_title, $panel_section, null, $panel_description, 'text');
     }
 
     public static function richText(string $key, string $default = '', ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): string
     {
-        $value = self::get($key, $default, false, $panel_title, $panel_section, $panel_description, 'richText');
+        $value = self::get($key, $default, false, $panel_title, $panel_section, null, $panel_description, 'richText');
         return wp_kses_post((string)$value);
     }
 
     public static function image(string $key, string $default = '', ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): string
     {
-        return (string) self::get($key, $default, false, $panel_title, $panel_section, $panel_description, 'image');
+        return (string) self::get($key, $default, false, $panel_title, $panel_section, null, $panel_description, 'image');
     }
 
     public static function schedule(string $key, array $defaultSchedule = [], ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): array
@@ -231,7 +234,7 @@ class ContentManager
         $schedule_data = self::get($key, $defaultSchedule, false, $panel_title, $panel_section, $panel_description, 'schedule');
 
         if (!is_array($schedule_data)) { 
-            GloryLogger::error("SCHEDULE ERROR [$key]: Retrieved data is not an array. Value: " . print_r($schedule_data, true) . ". Falling back to default schedule parameter.");
+            GloryLogger::error("SCHEDULE ERROR [$key]: Retrieved data is not an array. Value: " . print_r($schedule_data, true) . ". Falling back to default schedule parameter."); 
             $schedule_data = $defaultSchedule; 
         }
         
@@ -434,8 +437,3 @@ class ContentManager
         return $fields_with_current_values;
     }
 }
-
-// IMPORTANTE: Llama a ContentManager::static_init(); en un hook 'init' de tu plugin principal.
-// Ejemplo (en el archivo principal de tu plugin):
-// add_action('init', ['Glory\Class\ContentManager', 'static_init'], 1);
-// Esto asegura que $db_sentinel se inicialice temprano.
