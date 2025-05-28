@@ -189,7 +189,6 @@ class ContentManager
         // Si $key no está en self::$registered_content, se registrará aquí.
         // Si ya está, registerOnTheFly no hará nada más que actualizar el hash/default en memoria si es necesario.
         // El `default_value` para `registerOnTheFly` es `$default_param` de `get()`.
-        self::registerOnTheFly($key, $default_param, $content_type, $panel_title, $panel_section, $panel_description, $escape_output);
         self::registerOnTheFly($key, $default_param, $content_type, $panel_title, $panel_section, $panel_sub_section, $panel_description, $escape_output);
         // PASO 2: Obtener el valor de la opción de la BD.
         // En este punto, la lógica de `register()` (incluida la sincronización) ya se ha ejecutado.
