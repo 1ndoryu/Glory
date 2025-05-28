@@ -75,26 +75,79 @@ class ContentManager
         $code_default_value = $config['default'];
         $current_code_hash = $config['code_version_hash'];
 
+        GloryLogger::info("--- SYNC CHECK FOR KEY: $key ---");
+        $db_value_before_sync = get_option($option_name, '--DB_VALUE_NOT_SET--');
+        $is_panel_flag_before_sync = get_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX, false);
+        $hash_on_save_before_sync = get_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX, '--HASH_NOT_SET--');
+        $sentinel_for_db_check = new \stdClass(); 
+
+
+        if ($db_value_before_sync === $sentinel_for_db_check) {
+            GloryLogger::info("SYNC [$key]: DB value for '{$option_name}': --DOES_NOT_EXIST_IN_DB--");
+        } else {
+            GloryLogger::info("SYNC [$key]: DB value for '{$option_name}': " . print_r($db_value_before_sync, true));
+        }
+        GloryLogger::info("SYNC [$key]: Code default value (from PHP register call): " . print_r($code_default_value, true));
+        GloryLogger::info("SYNC [$key]: Current code_version_hash (md5 of code default): " . print_r($current_code_hash, true));
+        GloryLogger::info("SYNC [$key]: force_default_on_register (from PHP register call): " . ($config['force_default_on_register'] ? 'true' : 'false'));
+        GloryLogger::info("SYNC [$key]: _is_panel_value flag from DB ('{$option_name}" . self::OPTION_META_PANEL_SAVED_SUFFIX . "'): " . ($is_panel_flag_before_sync ? 'true' : 'false'));
+        GloryLogger::info("SYNC [$key]: _code_hash_on_save from DB ('{$option_name}" . self::OPTION_META_CODE_HASH_SUFFIX . "'): " . print_r($hash_on_save_before_sync, true));
+
         if ($config['force_default_on_register'] === true) {
-            $current_db_value = get_option($option_name, null);
+            GloryLogger::info("SYNC [$key]: Path taken: 'force_default_on_register' is TRUE.");
+            // $current_db_value = get_option($option_name, null); // Ya tenemos $db_value_before_sync
+
             // Forzar si el valor de la BD es diferente o no existe
-            if ($current_db_value !== $code_default_value) {
+            // Si $db_value_before_sync es el sentinel, significa que no existe, por lo tanto es diferente al code_default_value (a menos que code_default_value sea también el sentinel, lo cual es improbable)
+            if ($db_value_before_sync === $sentinel_for_db_check || $db_value_before_sync !== $code_default_value) {
+                GloryLogger::info("SYNC [$key]: force_default: DB value differs from code default OR DB value does not exist. OVERWRITING '{$option_name}' with code default.");
                 update_option($option_name, $code_default_value);
+            } else {
+                GloryLogger::info("SYNC [$key]: force_default: DB value is SAME as code default. No update needed for '{$option_name}'.");
             }
             // Limpiar flags del panel ya que el código manda
-            delete_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX);
-            delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
-            GloryLogger::info("Content '{$key}' was force-updated to code default due to 'force_default_on_register' flag.");
-        } else {
-            $is_panel_value_flag = get_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX, false);
-            if ($is_panel_value_flag) {
-                $hash_on_panel_save = get_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
-                if ($current_code_hash !== $hash_on_panel_save) {
-                    // El código ha cambiado desde que el panel guardó. El nuevo default del código se aplica.
+            if ($is_panel_flag_before_sync) { // Solo borrar si existe
+                GloryLogger::info("SYNC [$key]: force_default: Deleting panel flag '{$option_name}" . self::OPTION_META_PANEL_SAVED_SUFFIX . "'.");
+                delete_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX);
+            }
+            if ($hash_on_save_before_sync !== '--HASH_NOT_SET_IN_DB--') { // Solo borrar si existe
+                GloryLogger::info("SYNC [$key]: force_default: Deleting panel hash '{$option_name}" . self::OPTION_META_CODE_HASH_SUFFIX . "'.");
+                delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
+            }
+            // El GloryLogger::info original ya estaba bien aquí:
+            GloryLogger::info("Content '{$key}' was (or would be if different) force-updated to code default due to 'force_default_on_register' flag. Panel flags cleared.");
+        } else { // force_default_on_register es false
+            GloryLogger::info("SYNC [$key]: Path taken: 'force_default_on_register' is FALSE.");
+            // $is_panel_value_flag = get_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX, false); // Ya la tenemos como $is_panel_flag_before_sync
+
+            if ($is_panel_flag_before_sync) {
+                GloryLogger::info("SYNC [$key]: Sub-path: _is_panel_value_flag from DB IS TRUE.");
+                // $hash_on_panel_save = get_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX); // Ya la tenemos como $hash_on_save_before_sync
+
+                if ($current_code_hash !== $hash_on_save_before_sync) {
+                    GloryLogger::info("SYNC [$key]: Panel flag is TRUE, BUT current_code_hash ('{$current_code_hash}') !== hash_on_panel_save ('{$hash_on_save_before_sync}'). Code default has changed since panel save. OVERWRITING '{$option_name}' with new code default and clearing panel flags.");
                     update_option($option_name, $code_default_value);
                     delete_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX);
                     delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
-                    GloryLogger::info("Code for '{$key}' changed since last panel save. Code default has been applied over previous panel value (which was based on code hash: {$hash_on_panel_save}, new hash: {$current_code_hash}).");
+                    // El GloryLogger::info original ya estaba bien aquí:
+                    // GloryLogger::info("Code for '{$key}' changed since last panel save. Code default has been applied. Old hash: {$hash_on_panel_save}, new hash: {$current_code_hash}.");
+                } else {
+                    GloryLogger::info("SYNC [$key]: Panel flag is TRUE, and hashes MATCH (current_code_hash: '{$current_code_hash}', hash_on_panel_save: '{$hash_on_save_before_sync}'). Panel value for '{$option_name}' should be RETAINED. No changes made by sync logic.");
+                }
+            } else { // _is_panel_value_flag is false (según lo leído de la BD)
+                GloryLogger::info("SYNC [$key]: Sub-path: _is_panel_value_flag from DB IS FALSE.");
+                // El flag del panel no está activo.
+                // Si la opción NO existe en la BD, la inicializamos con el default del código.
+                if ($db_value_before_sync === $sentinel_for_db_check) { // Si la opción no existe en la BD
+                    GloryLogger::info("SYNC [$key]: Panel flag FALSE, and option '{$option_name}' does NOT exist in DB. INITIALIZING '{$option_name}' with code default.");
+                    update_option($option_name, $code_default_value);
+                    // El GloryLogger::info original ya estaba bien aquí:
+                    // GloryLogger::info("Content '{$key}' initialized with code default as no DB value or panel flag existed.");
+                } else {
+                    // La opción SÍ existe en la BD pero sin el flag del panel.
+                    // Esto significa que es un valor ya establecido (quizás por una ejecución anterior de esta lógica de inicialización,
+                    // o por 'force_default_on_register', o un valor antiguo antes de los flags). Se respeta.
+                    GloryLogger::info("SYNC [$key]: Panel flag FALSE, but option '{$option_name}' EXISTS in DB. Value: " . print_r($db_value_before_sync, true) . ". Assuming it's a code-driven value or old value. RETAINING. No changes made by sync logic.");
                 }
             }
         }
@@ -155,22 +208,22 @@ class ContentManager
     ) {
         GloryLogger::info("get() called for key: $key");
         $option_name = self::OPTION_PREFIX . $key;
-        
+
         // Obtener el valor de la opción directamente.
         // Si la opción no existe, get_option() devuelve false por defecto.
         // Si la opción existe pero su valor es false (booleano), también devolverá false.
         // Para distinguir "no existe" de "existe y es false", necesitamos una comprobación más robusta
         // o confiar en nuestros flags _is_panel_value o en que no guardaremos booleanos false directamente.
-        $db_value = get_option($option_name); 
+        $db_value = get_option($option_name);
 
         $final_value = null;
         $option_actually_exists_in_db = true; // Asumimos que existe si get_option no devuelve el valor por defecto (que es `false`)
-                                             // o si nuestro flag del panel está activo.
+        // o si nuestro flag del panel está activo.
 
         // Si get_option devuelve false, podría ser que no existe, o que su valor es false.
         // Para nuestro caso, si el panel guardó algo (incluso un string vacío), queremos ese valor.
         // Si la opción no existe Y el panel no ha guardado nada, entonces recurrimos a los defaults.
-        
+
         // Primero, verificamos si get_option devolvió el valor por defecto indicando que NO existe.
         // (get_option() devuelve el segundo parámetro si la opción no se encuentra, o false si no se da un segundo parámetro)
         $test_non_existence_default = new \stdClass(); // Objeto único para testear
@@ -419,23 +472,36 @@ class ContentManager
         $fields_with_current_values = [];
         foreach (self::$registered_content as $key => $config) {
             $option_name = self::OPTION_PREFIX . $key;
-            $db_value = get_option($option_name);
 
-            // El valor 'current_value' ahora refleja lo que get() devolvería,
-            // considerando la lógica de sincronización que ya ocurrió en register().
-            $option_value = get_option($option_name); // Obtener el valor sin default para chequear existencia
-            $option_exists = ($option_value !== false); // True si existe (incluso si es '', 0, null guardado explicitamente)
+            $is_panel_value_flag = get_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX, false);
 
-            if (get_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX, false) || $option_exists) {
-                $final_value = $db_value; // $db_value fue obtenido antes, ya tiene el valor de la opción
-                GloryLogger::info("Value found in DB (or panel saved an empty value, or option exists) for key: $key.");
+            // Usamos un centinela para distinguir "no existe" de "existe y es false/null/""
+            $sentinel = new \stdClass();
+            $db_value_or_sentinel = get_option($option_name, $sentinel);
+            $option_actually_exists_in_db = ($db_value_or_sentinel !== $sentinel);
+
+            if ($is_panel_value_flag) {
+                // Si el flag del panel está activo, el valor en la BD es el valor del panel.
+                // $db_value_or_sentinel es el valor real de la BD.
+                $config['current_value'] = $db_value_or_sentinel;
+                GloryLogger::info("getRegisteredContentFields: Key '$key' uses panel value due to flag. Value: " . print_r($config['current_value'], true));
+            } elseif ($option_actually_exists_in_db) {
+                // El flag del panel no está, pero la opción EXISTE en la BD.
+                // Esto significa que es un valor por defecto del código que fue sincronizado por register()
+                // o un valor antiguo antes de que existiera el flag. Se considera el valor actual.
+                $config['current_value'] = $db_value_or_sentinel;
+                GloryLogger::info("getRegisteredContentFields: Key '$key' uses existing DB value (no panel flag). Value: " . print_r($config['current_value'], true));
             } else {
+                // Ni flag del panel, ni opción existe en la BD. Usar el default del código.
                 $config['current_value'] = $config['default'] ?? null;
+                GloryLogger::info("getRegisteredContentFields: Key '$key' uses code default (no panel flag, no DB value). Value: " . print_r($config['current_value'], true));
             }
-            // Opcional: Añadir metadatos de sincronización para depuración en el panel (si es necesario)
-            // $config['debug_is_panel_value'] = get_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX, false);
+
+            // Para depuración en el panel si lo necesitas:
+            // $config['debug_is_panel_value'] = $is_panel_value_flag;
             // $config['debug_code_hash_on_save'] = get_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX, null);
             // $config['debug_current_code_hash'] = $config['code_version_hash'] ?? null;
+            // $config['debug_option_actually_exists'] = $option_actually_exists_in_db;
 
             $fields_with_current_values[$key] = $config;
         }

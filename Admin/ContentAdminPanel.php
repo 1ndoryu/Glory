@@ -308,10 +308,13 @@ class ContentAdminPanel
                 $value_to_save = in_array($config['type'], ['text', 'image', 'richText']) ? '' : ($config['default'] ?? '');
             }
 
+            GloryLogger::info("ContentAdminPanel: Preparing to save key '{$key}'. Option name: '{$option_name}'. Value to save: " . print_r($value_to_save, true));
+            GloryLogger::info("ContentAdminPanel: Code default for '{$key}' at save time: " . print_r(ContentManager::getCodeDefaultHash($key), true));
+
             update_option($option_name, $value_to_save);
             update_option($option_name . ContentManager::OPTION_META_PANEL_SAVED_SUFFIX, true);
-            update_option($option_name . ContentManager::OPTION_META_CODE_HASH_SUFFIX, ContentManager::getCodeDefaultHash($key)); // Consider if this is always appropriate
-            GloryLogger::info("ContentAdminPanel: Updated option '{$option_name}' for section '{$active_section_key}'.");
+            update_option($option_name . ContentManager::OPTION_META_CODE_HASH_SUFFIX, ContentManager::getCodeDefaultHash($key));
+            GloryLogger::info("ContentAdminPanel: AFTER update_option for '{$option_name}'. Check DB now if possible.");
         }
 
         add_settings_error('glory_content_messages', 'glory_content_message', __('Settings Saved for section:', 'glory') . ' ' . esc_html(ucfirst($active_section_key)), 'updated');
