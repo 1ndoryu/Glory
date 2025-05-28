@@ -47,6 +47,38 @@ class ContentAdminPanel
             .postbox { position: relative; min-width: 255px; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0, 0, 0, .04); background: #fff; padding: 15px; }
             .glory-tabs-container-two { display: flex; }
             #wpbody-content .metabox-holder { padding-top: 0px; }
+
+            /* Gallery Admin Grid CSS */
+            .glory-gallery-admin-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 20px;
+                padding: 10px;
+            }
+            .glory-gallery-item {
+                border: 1px solid #ddd;
+                padding: 10px;
+                background: #f9f9f9;
+            }
+            .glory-gallery-item .glory-image-preview img {
+                max-width: 100%; /* Override existing max-width for better fit */
+                height: auto;   /* Maintain aspect ratio */
+                display: block;
+                margin-bottom: 10px;
+            }
+            .glory-gallery-item label {
+                display: block;
+                margin-top: 10px;
+                font-weight: bold;
+            }
+            .glory-gallery-item input[type='text'] {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            .glory-gallery-item .glory-image-controls button {
+                margin-right: 5px;
+                margin-bottom: 5px;
+            }
         ";
         wp_add_inline_style('wp-admin', $inline_css);
         wp_add_inline_script('jquery', self::get_image_uploader_js() . self::get_tabs_js());
@@ -59,27 +91,51 @@ class ContentAdminPanel
             $(document).on('click', '.glory-upload-image-button', function(e) {
                 e.preventDefault();
                 var button = $(this);
-                var inputField = button.prev('.glory-image-url-field');
-                var imagePreviewContainer = button.siblings('.glory-image-preview');
+                var galleryItem = button.closest('.glory-gallery-item');
+                var inputField = galleryItem.find('.glory-image-url-field');
+                var imagePreviewContainer = galleryItem.find('.glory-image-preview');
+                
+                if (!inputField.length) {
+                    // console.error('Glory Uploader: Could not find inputField.');
+                    // return; // Optional: add debugging if needed by user later
+                }
+                if (!imagePreviewContainer.length) {
+                    // console.error('Glory Uploader: Could not find imagePreviewContainer.');
+                    // return; // Optional: add debugging
+                }
+
                 var frame = wp.media({
                     title: '" . esc_js(__('Select or Upload Image', 'glory')) . "',
                     button: { text: '" . esc_js(__('Use this image', 'glory')) . "' },
                     multiple: false
                 });
+
                 frame.on('select', function() {
                     var attachment = frame.state().get('selection').first().toJSON();
                     inputField.val(attachment.url);
-                    imagePreviewContainer.html('<img src=\"' + attachment.url + '\">');
+                    
+                    // Corrected image preview update
+                    var newImg = $('<img>');
+                    newImg.attr('src', attachment.url);
+                    imagePreviewContainer.empty().append(newImg); 
                 });
                 frame.open();
             });
+
             $(document).on('click', '.glory-remove-image-button', function(e) {
                 e.preventDefault();
                 var button = $(this);
-                var inputField = button.siblings('.glory-image-url-field');
-                var imagePreviewContainer = button.siblings('.glory-image-preview');
+                var galleryItem = button.closest('.glory-gallery-item');
+                var inputField = galleryItem.find('.glory-image-url-field');
+                var imagePreviewContainer = galleryItem.find('.glory-image-preview');
+
+                if (!inputField.length || !imagePreviewContainer.length) {
+                    // console.error('Glory Remover: Could not find inputField or imagePreviewContainer.');
+                    // return; // Optional: add debugging
+                }
+
                 inputField.val('');
-                imagePreviewContainer.html('');
+                imagePreviewContainer.html(''); // Consider adding a placeholder like '<p>No image set</p>'
             });
         });";
     }
@@ -353,29 +409,104 @@ class ContentAdminPanel
                                         <div class="postbox">
                                             <h2 class="hndle"><span><?php echo esc_html(ucfirst($section_display_name_raw)); ?></span></h2>
                                             <div class="inside">
-                                                <table class="form-table" role="presentation">
-                                                    <tbody>
-                                                        <?php foreach ($fields_in_section as $key => $config):
-                                                            $current_value_for_field = $config['current_value'] ?? $config['default'] ?? '';
-                                                            // GloryLogger::info("ContentAdminPanel: Rendering field '{$key}'. current_value_for_field: ".print_r($current_value_for_field, true));
-                                                            $option_input_name = 'glory_content[' . esc_attr($key) . ']';
-                                                            $label = $config['label'] ?? ucfirst(str_replace('_', ' ', $key));
-                                                            $description = $config['description'] ?? '';
-                                                        ?>
-                                                            <tr>
-                                                                <th scope="row">
-                                                                    <label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
-                                                                </th>
-                                                                <td>
-                                                                    <?php self::render_field_input_control($key, $config, $current_value_for_field, $option_input_name); ?>
-                                                                    <?php if ($description): ?>
-                                                                        <p class="description"><?php echo wp_kses_post($description); ?></p>
-                                                                    <?php endif; ?>
-                                                                </td>
-                                                            </tr>
-                                                        <?php endforeach; ?>
-                                                    </tbody>
-                                                </table>
+                                                <?php if ($section_slug === 'galeria-contenido'): ?>
+                                                    <div class="glory-gallery-admin-grid">
+                                                        <?php
+                                                        $processed_gallery_keys = [];
+                                                        for ($i = 1; $i <= 20; $i++) {
+                                                            $image_key = 'gallery_image_' . $i;
+                                                            $alt_key = 'gallery_image_alt_' . $i;
+
+                                                            if (isset($fields_in_section[$image_key])) {
+                                                                $image_config = $fields_in_section[$image_key];
+                                                                $alt_config = $fields_in_section[$alt_key] ?? null; // Alt might not exist if registration is inconsistent
+
+                                                                $image_url = $image_config['current_value'] ?? $image_config['default'] ?? '';
+                                                                $alt_text = '';
+                                                                if ($alt_config) {
+                                                                    $alt_text = $alt_config['current_value'] ?? $alt_config['default'] ?? '';
+                                                                }
+
+                                                                $image_option_input_name = 'glory_content[' . esc_attr($image_key) . ']';
+                                                                $alt_option_input_name = 'glory_content[' . esc_attr($alt_key) . ']';
+                                                                $image_label = $image_config['label'] ?? ('Imagen #' . $i);
+                                                                ?>
+                                                                <div class="glory-gallery-item">
+                                                                    <div class="glory-image-preview">
+                                                                        <?php if (!empty($image_url)): ?>
+                                                                            <img src="<?php echo esc_url($image_url); ?>" alt="Preview for <?php echo esc_attr($image_label); ?>">
+                                                                        <?php else: ?>
+                                                                            <p><?php _e('No image set', 'glory'); ?></p>
+                                                                        <?php endif; ?>
+                                                                    </div>
+                                                                    <div class="glory-image-controls">
+                                                                        <input type="hidden" name="<?php echo esc_attr($image_option_input_name); ?>" value="<?php echo esc_url($image_url); ?>" class="glory-image-url-field">
+                                                                        <button type="button" class="button glory-upload-image-button"><?php _e('Set/Change Image', 'glory'); ?></button>
+                                                                        <button type="button" class="button glory-remove-image-button"><?php _e('Remove Image', 'glory'); ?></button>
+                                                                    </div>
+                                                                    <label for="<?php echo esc_attr($alt_key); ?>"><?php _e('Alt Text:', 'glory'); ?> (<?php echo esc_html($image_label); ?>)</label>
+                                                                    <input type="text" id="<?php echo esc_attr($alt_key); ?>" name="<?php echo esc_attr($alt_option_input_name); ?>" value="<?php echo esc_attr($alt_text); ?>" class="regular-text">
+                                                                </div>
+                                                                <?php
+                                                                $processed_gallery_keys[] = $image_key;
+                                                                $processed_gallery_keys[] = $alt_key;
+                                                            }
+                                                        } ?>
+                                                    </div>
+                                                    <?php
+                                                    // Check if there are other fields in "Galeria Contenido" that were not part of the grid
+                                                    $remaining_fields_in_section = array_diff_key($fields_in_section, array_flip($processed_gallery_keys));
+                                                    if (!empty($remaining_fields_in_section)):
+                                                    ?>
+                                                        <hr>
+                                                        <p><em><?php _e('Other settings for this section:', 'glory'); ?></em></p>
+                                                        <table class="form-table" role="presentation">
+                                                            <tbody>
+                                                                <?php foreach ($remaining_fields_in_section as $key => $config):
+                                                                    $current_value_for_field = $config['current_value'] ?? $config['default'] ?? '';
+                                                                    $option_input_name = 'glory_content[' . esc_attr($key) . ']';
+                                                                    $label = $config['label'] ?? ucfirst(str_replace('_', ' ', $key));
+                                                                    $description = $config['description'] ?? '';
+                                                                ?>
+                                                                    <tr>
+                                                                        <th scope="row">
+                                                                            <label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
+                                                                        </th>
+                                                                        <td>
+                                                                            <?php self::render_field_input_control($key, $config, $current_value_for_field, $option_input_name); ?>
+                                                                            <?php if ($description): ?>
+                                                                                <p class="description"><?php echo wp_kses_post($description); ?></p>
+                                                                            <?php endif; ?>
+                                                                        </td>
+                                                                    </tr>
+                                                                <?php endforeach; ?>
+                                                            </tbody>
+                                                        </table>
+                                                    <?php endif; ?>
+                                                <?php else: // For sections other than 'galeria-contenido' ?>
+                                                    <table class="form-table" role="presentation">
+                                                        <tbody>
+                                                            <?php foreach ($fields_in_section as $key => $config):
+                                                                $current_value_for_field = $config['current_value'] ?? $config['default'] ?? '';
+                                                                $option_input_name = 'glory_content[' . esc_attr($key) . ']';
+                                                                $label = $config['label'] ?? ucfirst(str_replace('_', ' ', $key));
+                                                                $description = $config['description'] ?? '';
+                                                            ?>
+                                                                <tr>
+                                                                    <th scope="row">
+                                                                        <label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
+                                                                    </th>
+                                                                    <td>
+                                                                        <?php self::render_field_input_control($key, $config, $current_value_for_field, $option_input_name); ?>
+                                                                        <?php if ($description): ?>
+                                                                            <p class="description"><?php echo wp_kses_post($description); ?></p>
+                                                                        <?php endif; ?>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
