@@ -154,16 +154,30 @@ class ContentAdminPanel
                         }
                     }
                     $value_to_save = $schedule_data;
-                } elseif ($config['type'] === 'raw') {
+                } elseif ($config['type'] === 'raw' || $config['type'] === 'menu_structure') { // <--- AÑADIR 'menu_structure' AQUÍ
                     if ($panel_value_exists_in_post) {
                         $json_string_from_textarea = sanitize_textarea_field(stripslashes($posted_options[$key]));
-                        $decoded_value = json_decode($json_string_from_textarea, true);
+                        $decoded_value = json_decode($json_string_from_textarea, true); // true para array asociativo
+
                         if (json_last_error() === JSON_ERROR_NONE) {
                             $value_to_save = $decoded_value;
                         } else {
-                            $value_to_save = $json_string_from_textarea;
-                            GloryLogger::info("ContentAdminPanel: Raw field '{$key}' contained invalid JSON. Saved as raw string. Error: " . json_last_error_msg());
-                            add_settings_error('glory_content_messages', 'glory_invalid_json_' . $key, sprintf(__('Warning: The content for "%s" was not valid JSON and has been saved as a raw string. Please correct it.', 'glory'), $config['label']), 'warning');
+                            // Si no es JSON válido, para 'raw' guardamos como string, para 'menu_structure' podríamos querer un array vacío o el default.
+                            // Por ahora, para simplificar, ambos se comportan igual: error y string.
+                            // PERO es importante que 'menu_structure' idealmente siempre sea un array.
+                            if ($config['type'] === 'menu_structure') {
+                                GloryLogger::error("ContentAdminPanel: Menu Structure field '{$key}' contained invalid JSON. Attempting to save default or empty array. Error: " . json_last_error_msg());
+                                add_settings_error('glory_content_messages', 'glory_invalid_json_menu_' . $key, sprintf(__('Error: The content for menu structure "%s" was not valid JSON. Reverted to default or empty. Please correct it.', 'glory'), $config['label']), 'error');
+                                // Para 'menu_structure', si el JSON es inválido, podríamos querer forzar un array vacío o el default.
+                                // Por ahora, para mantener la consistencia con 'raw' si hay error, guardamos el string problemático
+                                // y ContentManager::menu() se encargará de devolver el default si el valor no es un array.
+                                // O podríamos hacer: $value_to_save = $config['default'] ?? [];
+                                $value_to_save = $json_string_from_textarea; // Opcional: $value_to_save = $config['default'] ?? [];
+                            } else {
+                                $value_to_save = $json_string_from_textarea;
+                                GloryLogger::info("ContentAdminPanel: Raw field '{$key}' contained invalid JSON. Saved as raw string. Error: " . json_last_error_msg());
+                                add_settings_error('glory_content_messages', 'glory_invalid_json_' . $key, sprintf(__('Warning: The content for "%s" was not valid JSON and has been saved as a raw string. Please correct it.', 'glory'), $config['label']), 'warning');
+                            }
                         }
                     } else {
                         $value_to_save = $config['default'] ?? [];

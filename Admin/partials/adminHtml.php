@@ -56,6 +56,36 @@ function glory_render_field_input_control(string $key, array $config, $current_v
         case 'text':
             echo '<input type="text" id="' . $field_id . '" name="' . $option_input_name . '" value="' . esc_attr($current_value) . '" class="regular-text">';
             break;
+        case 'menu_structure': // <--- AÑADIR 'menu_structure' AQUÍ
+            $value_for_textarea = $current_value;
+            if (is_array($value_for_textarea) || is_object($value_for_textarea)) {
+                // Para menu_structure, siempre esperamos un array.
+                // Para raw, puede ser array u objeto.
+                $json_string = json_encode($value_for_textarea, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                if ($json_string === false) {
+                    $error_msg = '/* Error al codificar a JSON: ' . json_last_error_msg() . ' */';
+                    $value_for_textarea = $error_msg;
+                    GloryLogger::error("ContentAdminPanel Partial: Error encoding {$type} field '{$key}' to JSON for display. Value: " . print_r($current_value, true) . " Error: " . json_last_error_msg());
+                } else {
+                    $value_for_textarea = $json_string;
+                }
+            } elseif ($value_for_textarea === null) {
+                // Si el valor es null, mostrar un textarea vacío. Para 'menu_structure', esto podría ser un array vacío '[]'.
+                $value_for_textarea = ($type === 'menu_structure' && is_null($current_value)) ? '[]' : '';
+            }
+
+            // Si después de todo, no es un string (ej. un booleano false de un error o algo inesperado), castearlo a string.
+            if (!is_string($value_for_textarea)) $value_for_textarea = (string) $value_for_textarea;
+
+            echo '<textarea id="' . $field_id . '" name="' . $option_input_name . '" rows="15" class="large-text code glory-json-editor">' . esc_textarea($value_for_textarea) . '</textarea>'; // Aumenté rows y añadí clase glory-json-editor
+
+            if ($type === 'menu_structure') {
+                echo '<p class="description">' . __('Enter the menu structure as valid JSON. This will be converted to a PHP array. Ensure IDs are unique.', 'glory') . '</p>';
+            } else { // 'raw'
+                echo '<p class="description">' . __('Enter valid JSON. If content is not valid JSON, it will be saved as a raw string.', 'glory') . '</p>';
+            }
+            break;
+        // --- FIN DE CÓDIGO MODIFICADO/NUEVO ---
         case 'raw':
             $value_for_textarea = $current_value;
             if (is_array($value_for_textarea) || is_object($value_for_textarea)) {
@@ -265,4 +295,7 @@ function render_glory_content_admin_panel_html(array $fields_by_section, string 
     return ob_get_clean();
 }
 
+
+
 ?>
+
