@@ -7,6 +7,7 @@ namespace Glory\Class;
 use DateTime;
 use DateTimeZone;
 use DateInterval;
+use Glory\Helper\ScheduleManager; // Added for the new ScheduleManager class
 
 class ContentManager
 {
@@ -58,7 +59,11 @@ class ContentManager
              self::$registered_content[$key]['default'] = $parsed_args['default'];
         }
 
+        self::_synchronizeRegisteredOption($key);
+    }
 
+    private static function _synchronizeRegisteredOption(string $key): void
+    {
         // --- Lógica de Sincronización Código vs Panel ---
         // Esta lógica se ejecuta CADA VEZ que se registra un campo (típicamente una vez por carga de página por campo).
         $config = self::$registered_content[$key]; // Usar la config en memoria que podría haber sido actualizada
@@ -72,7 +77,6 @@ class ContentManager
 
         // GloryLogger::info("SYNC [$key]: Initiating. Code default hash: '$current_code_hash'. force_default_on_register: " . ($config['force_default_on_register'] ? 'true':'false'));
         // GloryLogger::info("SYNC [$key]: DB state before sync: panel_flag=".($is_panel_value_flag?'true':'false').", hash_on_save=".($hash_on_panel_save === self::$db_sentinel ? 'NOT_SET' : $hash_on_panel_save).", db_value=".($db_value === self::$db_sentinel ? 'NOT_SET' : substr(print_r($db_value, true),0,100)."...") );
-
 
         if ($config['force_default_on_register']) {
             // GloryLogger::info("SYNC [$key]: 'force_default_on_register' is TRUE. Applying code default.");
@@ -123,7 +127,6 @@ class ContentManager
         }
         // GloryLogger::info("SYNC [$key]: Finished.");
     }
-
 
     public static function getCodeDefaultHash(string $key): ?string
     {
@@ -230,172 +233,13 @@ class ContentManager
 
     public static function schedule(string $key, array $defaultSchedule = [], ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): array
     {
-        $schedule_data = self::get($key, $defaultSchedule, false, $panel_title, $panel_section, $panel_description, 'schedule');
-
-        if (!is_array($schedule_data)) { 
-            GloryLogger::error("SCHEDULE ERROR [$key]: Retrieved data is not an array. Value: " . print_r($schedule_data, true) . ". Falling back to default schedule parameter."); 
-            $schedule_data = $defaultSchedule; 
-        }
-        
-        // Si después del fallback (o si era un array vacío originalmente) y tenemos un defaultSchedule con datos, lo usamos para normalizar.
-        // Esto previene intentar normalizar un array vacío si el default tiene estructura.
-        if (empty($schedule_data) && !empty($defaultSchedule)) {
-            // GloryLogger::info("SCHEDULE INFO [$key]: Retrieved data is empty or invalid, using provided default schedule for normalization: " . print_r($defaultSchedule, true));
-            $schedule_data = $defaultSchedule;
-        }
-
-        $normalized_schedule = [];
-        if (is_array($schedule_data)) { // Proceder solo si es un array
-            foreach ($schedule_data as $entry) {
-                if (!is_array($entry) || !isset($entry['day'])) {
-                    // GloryLogger::info("SCHEDULE INFO [$key]: Invalid or incomplete entry in schedule data. Entry: " . print_r($entry, true) . ". Skipping.");
-                    continue;
-                }
-                
-                $n_day = sanitize_text_field($entry['day']);
-                $n_status = sanitize_text_field($entry['status'] ?? 'closed');
-                $n_open = ($n_status === 'open') ? sanitize_text_field($entry['open'] ?? '') : '';
-                $n_close = ($n_status === 'open') ? sanitize_text_field($entry['close'] ?? '') : '';
-                $n_hours = '';
-
-                if ($n_status === 'open' && !empty($n_open) && !empty($n_close)) {
-                    $n_hours = $n_open . '-' . $n_close;
-                } elseif ($n_status === 'closed') {
-                    $n_hours = 'Cerrado';
-                } else if ($n_status === 'open' && empty($n_open) && empty($n_close) && !empty($entry['hours']) && strtolower($entry['hours']) !== 'cerrado') {
-                     // Intentar reconstruir open/close desde hours si status es open pero faltan tiempos
-                    $parts = explode('-', $entry['hours']);
-                    if (count($parts) === 2) {
-                        $n_open = trim($parts[0]);
-                        $n_close = trim($parts[1]);
-                        // Validar formato H:i, si no, descartar.
-                        if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $n_open) || !preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $n_close)) {
-                            $n_open = ''; $n_close = ''; $n_status = 'closed'; $n_hours = 'Cerrado';
-                            GloryLogger::info("SCHEDULE INFO [$key]: Invalid time format in 'hours' field '{$entry['hours']}' for day '{$n_day}'. Setting to closed.");
-                        } else {
-                           $n_hours = $n_open . '-' . $n_close; // Re-asignar por si trim cambió algo
-                        }
-                    } else {
-                         $n_status = 'closed'; $n_hours = 'Cerrado'; // hours no tiene formato esperado
-                         GloryLogger::info("SCHEDULE INFO [$key]: 'hours' field '{$entry['hours']}' for day '{$n_day}' is not in 'HH:MM-HH:MM' format. Setting to closed.");
-                    }
-                }
-
-
-                $normalized_schedule[] = [
-                    'day'    => $n_day,
-                    'open'   => $n_open,
-                    'close'  => $n_close,
-                    'status' => $n_status,
-                    'hours'  => $n_hours
-                ];
-            }
-        }
-        return $normalized_schedule;
+        return ScheduleManager::getScheduleData($key, $defaultSchedule, $panel_title, $panel_section, $panel_description, 'schedule');
     }
 
 
     public static function getCurrentStatus(string $schedule_key, array $default_schedule, string $timezone_string = 'Europe/Madrid'): array
     {
-        $schedule = self::schedule($schedule_key, $default_schedule); 
-
-        if (empty($schedule)) {
-            return ['status_class' => 'closed', 'message' => 'Horario no disponible.'];
-        }
-
-        try {
-            $timezone = new DateTimeZone($timezone_string);
-            $now = new DateTime('now', $timezone);
-        } catch (\Exception $e) {
-            GloryLogger::error("getCurrentStatus [$schedule_key]: Invalid timezone string: '$timezone_string'. Error: " . $e->getMessage() . ". Falling back to UTC.");
-            $timezone = new DateTimeZone('UTC'); // Fallback a UTC
-            $now = new DateTime('now', $timezone);
-        }
-
-        $current_day_english = $now->format('l'); // Monday, Tuesday...
-        $day_map_es_en = ['Lunes' => 'Monday', 'Martes' => 'Tuesday', 'Miércoles' => 'Wednesday', 'Jueves' => 'Thursday', 'Viernes' => 'Friday', 'Sábado' => 'Saturday', 'Domingo' => 'Sunday'];
-        $day_map_en_es = array_flip($day_map_es_en);
-        $current_day_name_es = $day_map_en_es[$current_day_english] ?? $current_day_english; // Fallback si no está en el mapa
-
-        $today_schedule_entry = null;
-        foreach ($schedule as $entry) { // Buscar la entrada del día actual
-            if (isset($entry['day']) && $entry['day'] === $current_day_name_es) {
-                $today_schedule_entry = $entry;
-                break;
-            }
-        }
-
-        $is_open_now = false;
-        if ($today_schedule_entry && ($today_schedule_entry['status'] ?? 'closed') === 'open' && !empty($today_schedule_entry['open']) && !empty($today_schedule_entry['close'])) {
-            try {
-                // Crear objetos DateTime para hoy con las horas de apertura/cierre
-                $open_time_str = $today_schedule_entry['open'];
-                $close_time_str = $today_schedule_entry['close'];
-
-                $open_datetime = DateTime::createFromFormat('Y-m-d H:i', $now->format('Y-m-d') . ' ' . $open_time_str, $timezone);
-                $close_datetime = DateTime::createFromFormat('Y-m-d H:i', $now->format('Y-m-d') . ' ' . $close_time_str, $timezone);
-
-                if (!$open_datetime || !$close_datetime) {
-                    GloryLogger::error("getCurrentStatus [$schedule_key]: Could not parse open/close times for today: '$open_time_str', '$close_time_str'. Date used: ".$now->format('Y-m-d'));
-                } else {
-                    // Si la hora de cierre es anterior a la de apertura (ej: 22:00 - 02:00), el cierre es al día siguiente.
-                    if ($close_datetime < $open_datetime) {
-                        $close_datetime->add(new DateInterval('P1D'));
-                    }
-                    if ($now >= $open_datetime && $now < $close_datetime) {
-                        $is_open_now = true;
-                    }
-                }
-            } catch (\Exception $e) { // Capturar errores de DateTime
-                GloryLogger::error("getCurrentStatus [$schedule_key]: Error processing schedule times: " . $e->getMessage());
-            }
-        }
-
-        if ($is_open_now) {
-            $message = 'Abierto.';
-            if ($today_schedule_entry && !empty($today_schedule_entry['close'])) {
-                $close_display_time = ($today_schedule_entry['close'] === '00:00' || $today_schedule_entry['close'] === '24:00') ? 'medianoche' : 'las ' . esc_html($today_schedule_entry['close']);
-                $message .= " Cerramos a {$close_display_time}.";
-            }
-            return ['status_class' => 'opened', 'message' => $message];
-        } else { // Está cerrado ahora, buscar próxima apertura
-            $next_opening_day_info = '';
-            $days_ordered = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-            $current_day_index = array_search($current_day_name_es, $days_ordered);
-
-            if ($current_day_index !== false) { // Si el día actual es válido
-                // Comprobar si abre más tarde hoy
-                if ($today_schedule_entry && ($today_schedule_entry['status'] ?? 'closed') === 'open' && !empty($today_schedule_entry['open'])) {
-                    try {
-                        $open_datetime_today = DateTime::createFromFormat('Y-m-d H:i', $now->format('Y-m-d') . ' ' . $today_schedule_entry['open'], $timezone);
-                        if ($open_datetime_today && $now < $open_datetime_today) { // Si la hora actual es antes de la hora de apertura de hoy
-                            $next_opening_day_info = 'hoy a las ' . esc_html($today_schedule_entry['open']);
-                        }
-                    } catch (\Exception $e) { /* Error ya logueado si el formato es malo */ }
-                }
-
-                // Si no abre más tarde hoy, buscar el próximo día de apertura en la semana
-                if (empty($next_opening_day_info)) {
-                    for ($i = 1; $i <= 7; $i++) { // Iterar los próximos 7 días
-                        $next_day_idx = ($current_day_index + $i) % 7;
-                        $next_day_name_candidate = $days_ordered[$next_day_idx];
-                        foreach ($schedule as $s_entry) {
-                            if (($s_entry['day'] ?? '') === $next_day_name_candidate && ($s_entry['status'] ?? 'closed') === 'open' && !empty($s_entry['open'])) {
-                                $day_prefix = ($i === 1) ? 'mañana' : 'el ' . lcfirst($next_day_name_candidate); // "mañana" o "el lunes"
-                                $next_opening_day_info = $day_prefix . ' a las ' . esc_html($s_entry['open']);
-                                goto found_next_opening; // Salir de ambos bucles
-                            }
-                        }
-                    }
-                    found_next_opening:;
-                }
-            }
-            $message = 'Cerrado.';
-            if (!empty($next_opening_day_info)) {
-                $message .= ' Abrimos ' . $next_opening_day_info . '.';
-            }
-            return ['status_class' => 'closed', 'message' => $message];
-        }
+        return ScheduleManager::getCurrentScheduleStatus($schedule_key, $default_schedule, $timezone_string);
     }
 
 
