@@ -18,169 +18,63 @@ class ContentAdminPanel
 
     public static function enqueue_admin_assets(string $hook_suffix): void
     {
-        $actual_hook_for_page = 'toplevel_page_' . self::$menu_slug;
-        if ($hook_suffix !== $actual_hook_for_page) {
+        // Solo en nuestra página de admin
+        $actual_hook = 'toplevel_page_' . self::$menu_slug;
+        if ($hook_suffix !== $actual_hook) {
             return;
         }
 
+        // Carga los módulos de media de WP (uploader, galerías, etc.)
         wp_enqueue_media();
 
-        $inline_css = "
-            .glory-content-panel .nav-tab-wrapper { margin-bottom: 20px; }
-            .glory-content-panel .glory-tab-content { display: none; }
-            .glory-content-panel .glory-tab-content.active { display: block; }
-            .glory-content-panel .postbox .hndle { cursor: default; padding: 8px 12px; }
-            .glory-image-preview img { border: 1px solid #ddd; margin-top: 5px; max-width:150px; max-height:150px; display:block; }
-            .glory-schedule-editor .glory-schedule-day-row { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ccc; }
-            .glory-schedule-editor .glory-schedule-day-row:last-child { border-bottom: none; }
-            .glory-schedule-editor label { margin-right: 10px; display: inline-block; }
-            .glory-schedule-editor input[type='time'], .glory-schedule-editor select { vertical-align: middle; }
-            .glory-content-panel .form-table th { width: 200px; }
-            .glory-content-panel .form-table td .regular-text, .glory-content-panel .form-table td .large-text { width: 100%; max-width: 500px; }
-            .glory-content-panel .form-table td textarea.large-text { min-height: 120px; }
-            .glory-tabs-nav-container { width: 200px; padding-right: 20px; border-right: 1px solid #ccd0d4; }
-            .glory-tabs-nav-container .nav-tab { display: block; margin-bottom: 5px; border: 1px solid #ccd0d4; background: #f0f0f1; }
-            .glory-tabs-nav-container .nav-tab-active { background: #fff; border-bottom-color: #ccd0d4; }
-            .glory-tabs-content-container { flex-grow: 1; padding-left: 20px; }
-            .glory-tab-content .postbox { margin-top: 0; }
-            .glory-content-panel { display: flex; flex-direction: column; gap: 10px; }
-            .postbox { position: relative; min-width: 255px; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0, 0, 0, .04); background: #fff; padding: 15px; }
-            .glory-tabs-container-two { display: flex; }
-            #wpbody-content .metabox-holder { padding-top: 0px; }
+        // Rutas del tema
+        $theme_uri  = get_stylesheet_directory_uri();
+        $theme_path = get_stylesheet_directory();
 
-            /* Gallery Admin Grid CSS */
-            .glory-gallery-admin-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                gap: 20px;
-                padding: 10px;
-            }
-            .glory-gallery-item {
-                border: 1px solid #ddd;
-                padding: 10px;
-                background: #f9f9f9;
-            }
-            .glory-gallery-item .glory-image-preview img {
-                max-width: 100%; /* Override existing max-width for better fit */
-                height: auto;   /* Maintain aspect ratio */
-                display: block;
-                margin-bottom: 10px;
-            }
-            .glory-gallery-item label {
-                display: block;
-                margin-top: 10px;
-                font-weight: bold;
-            }
-            .glory-gallery-item input[type='text'] {
-                width: 100%;
-                margin-bottom: 10px;
-            }
-            .glory-gallery-item .glory-image-controls button {
-                margin-right: 5px;
-                margin-bottom: 5px;
-            }
-        ";
-        wp_add_inline_style('wp-admin', $inline_css);
-        wp_add_inline_script('jquery', self::get_image_uploader_js() . self::get_tabs_js());
+        // === CSS ===
+        $css_handle       = 'glory-content-admin-panel-style';
+        $css_relative     = '/Glory/assets/css/content-admin-panel.css';
+        $css_file_url     = $theme_uri . $css_relative;
+        $css_file_path    = $theme_path . $css_relative;
+
+        if (file_exists($css_file_path)) {
+            wp_enqueue_style(
+                $css_handle,
+                $css_file_url,
+                [],
+                filemtime($css_file_path)
+            );
+        }
+
+        // === JAVASCRIPT ===
+        $js_handle          = 'glory-content-admin-panel-script';
+        $js_filename        = 'content-admin-panel.js';
+        $js_relative        = "/Glory/assets/js/{$js_filename}";
+        $js_file_url        = $theme_uri . $js_relative;
+        $js_file_systempath = $theme_path . $js_relative;
+
+        if (file_exists($js_file_systempath) && is_readable($js_file_systempath)) {
+            wp_enqueue_script(
+                $js_handle,
+                $js_file_url,
+                ['jquery', 'media-editor'],
+                filemtime($js_file_systempath),
+                true
+            );
+
+            wp_localize_script($js_handle, 'gloryAdminPanelSettings', [
+                'ajaxUrl'   => admin_url('admin-ajax.php'),
+                'nonce'     => wp_create_nonce('glory_admin_ajax_nonce'),
+                'menuSlug'  => self::$menu_slug,
+                'i18n'      => [
+                    'selectOrUploadImage' => esc_js(__('Select or Upload Image', 'glory')),
+                    'useThisImage'        => esc_js(__('Use this image', 'glory')),
+                ],
+            ]);
+        }
     }
 
-    private static function get_image_uploader_js(): string
-    {
-        return "
-        jQuery(document).ready(function($){
-            $(document).on('click', '.glory-upload-image-button', function(e) {
-                e.preventDefault();
-                var button = $(this);
-                var galleryItem = button.closest('.glory-gallery-item');
-                var inputField = galleryItem.find('.glory-image-url-field');
-                var imagePreviewContainer = galleryItem.find('.glory-image-preview');
-                
-                if (!inputField.length) {
-                    // console.error('Glory Uploader: Could not find inputField.');
-                    // return; // Optional: add debugging if needed by user later
-                }
-                if (!imagePreviewContainer.length) {
-                    // console.error('Glory Uploader: Could not find imagePreviewContainer.');
-                    // return; // Optional: add debugging
-                }
 
-                var frame = wp.media({
-                    title: '" . esc_js(__('Select or Upload Image', 'glory')) . "',
-                    button: { text: '" . esc_js(__('Use this image', 'glory')) . "' },
-                    multiple: false
-                });
-
-                frame.on('select', function() {
-                    var attachment = frame.state().get('selection').first().toJSON();
-                    inputField.val(attachment.url);
-                    
-                    // Corrected image preview update
-                    var newImg = $('<img>');
-                    newImg.attr('src', attachment.url);
-                    imagePreviewContainer.empty().append(newImg); 
-                });
-                frame.open();
-            });
-
-            $(document).on('click', '.glory-remove-image-button', function(e) {
-                e.preventDefault();
-                var button = $(this);
-                var galleryItem = button.closest('.glory-gallery-item');
-                var inputField = galleryItem.find('.glory-image-url-field');
-                var imagePreviewContainer = galleryItem.find('.glory-image-preview');
-
-                if (!inputField.length || !imagePreviewContainer.length) {
-                    // console.error('Glory Remover: Could not find inputField or imagePreviewContainer.');
-                    // return; // Optional: add debugging
-                }
-
-                inputField.val('');
-                imagePreviewContainer.html(''); // Consider adding a placeholder like '<p>No image set</p>'
-            });
-        });";
-    }
-
-    private static function get_tabs_js(): string
-    {
-        return "
-        jQuery(document).ready(function($) {
-            var gloryTabs = $('.glory-tabs-nav-container .nav-tab');
-            var gloryTabContents = $('.glory-tab-content');
-            function activateTab(tabLink) {
-                var tabId = $(tabLink).attr('href');
-                gloryTabs.removeClass('nav-tab-active');
-                $(tabLink).addClass('nav-tab-active');
-                gloryTabContents.removeClass('active').hide();
-                $(tabId).addClass('active').show();
-                if (history.pushState) {
-                    var newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname + '?page=" . self::$menu_slug . "&tab=' + tabId.substring(5);
-                    history.pushState({path: newUrl}, '', newUrl);
-                }
-            }
-            var initialTab = window.location.hash;
-            if (initialTab && $(initialTab).length) {
-                var correspondingLink = $('.glory-tabs-nav-container .nav-tab[href=\"' + initialTab + '\"]');
-                if (correspondingLink.length) activateTab(correspondingLink);
-            } else if (gloryTabs.length > 0) {
-                const urlParams = new URLSearchParams(window.location.search);
-                const queryTab = urlParams.get('tab');
-                let activatedFromQuery = false;
-                if (queryTab) {
-                    var targetTabLink = $('.glory-tabs-nav-container .nav-tab[data-tab-id=\"' + queryTab + '\"]');
-                    if (targetTabLink.length) {
-                        activateTab(targetTabLink);
-                        activatedFromQuery = true;
-                    }
-                }
-                if (!activatedFromQuery && gloryTabs.first().length) activateTab(gloryTabs.first());
-            }
-            gloryTabs.on('click', function(e) {
-                e.preventDefault();
-                activateTab(this);
-                window.location.hash = $(this).attr('href').substring(1);
-            });
-        });";
-    }
 
     public static function add_admin_page(): void
     {
@@ -218,36 +112,21 @@ class ContentAdminPanel
             wp_die(__('You do not have sufficient permissions to access this page.', 'glory'));
         }
 
-        // GloryLogger::info("ContentAdminPanel: Handling save for section: {$active_section_key}. POST data: " . print_r($_POST['glory_content'] ?? [], true));
-
         $all_registered_fields = ContentManager::getRegisteredContentFields();
         $posted_options = $_POST['glory_content'] ?? [];
         $fields_in_current_section = [];
 
-        // Filter fields to only those in the active section
         foreach ($all_registered_fields as $key => $config) {
-            // Obtener el slug sanitizado de la sección del campo actual
             $field_config_section_slug = sanitize_title($config['section'] ?? 'general');
-
-            // Comparar el slug sanitizado del campo con el slug activo (que ya está sanitizado)
             if ($field_config_section_slug === $active_section_key) {
                 $fields_in_current_section[$key] = $config;
             }
         }
 
         if (empty($fields_in_current_section)) {
-            // Este log ahora solo debería aparecer si realmente no hay campos para esa sección sanitizada.
             GloryLogger::info("ContentAdminPanel: No fields found for section '{$active_section_key}' after filtering during save. Original section from POST: '{$_POST['glory_active_section']}'. Check field registrations.");
-            // Puedes añadir un add_settings_error aquí si es un error inesperado
-            // add_settings_error('glory_content_messages', 'no_fields_to_save', __('No fields were found to save for this section. Please check the plugin configuration.', 'glory'), 'warning');
-            // No hagas redirect ni exit si no hay campos, para que el mensaje de error se muestre.
-            // Sin embargo, si es normal que una sección no tenga campos, este log es suficiente y el flujo puede continuar (no se guardará nada).
         }
 
-        // El resto de la función handle_save_data permanece igual...
-        // (procesamiento de $value_to_save, update_option, etc.)
-
-        // Solo proceder con el guardado y la redirección si hay campos
         if (!empty($fields_in_current_section)) {
             foreach ($fields_in_current_section as $key => $config) {
                 $option_name = ContentManager::OPTION_PREFIX . $key;
@@ -320,27 +199,22 @@ class ContentAdminPanel
                 update_option($option_name . ContentManager::OPTION_META_CODE_HASH_SUFFIX, $code_default_hash_at_save_time);
             }
 
-            add_settings_error('glory_content_messages', 'glory_content_message', __('Settings Saved for section:', 'glory') . ' ' . esc_html(ucfirst(str_replace('-', ' ', $active_section_key))), 'updated'); // Usar str_replace para mejor visualización del slug
+            add_settings_error('glory_content_messages', 'glory_content_message', __('Settings Saved for section:', 'glory') . ' ' . esc_html(ucfirst(str_replace('-', ' ', $active_section_key))), 'updated');
             set_transient('settings_errors', get_settings_errors(), 30);
 
             $redirect_url = admin_url('admin.php?page=' . self::$menu_slug . '&tab=' . $active_section_key . '&settings-updated=true');
             wp_redirect($redirect_url);
             exit;
         } else {
-            // Si no hay campos, simplemente muestra los errores de configuración (si los hubo) y no redirijas.
-            // Esto permite que el add_settings_error del bloque `if (empty($fields_in_current_section))` se muestre.
-            // O si el log es suficiente, no necesitas hacer nada más aquí.
-            // Considera si quieres añadir un mensaje genérico aquí también.
             add_settings_error('glory_content_messages', 'glory_no_fields_saved', __('No fields were configured for saving in this section.', 'glory'), 'warning');
             set_transient('settings_errors', get_settings_errors(), 30);
 
-            // Redirigir de todas formas para limpiar el POST y mostrar el mensaje de error, pero sin &settings-updated=true
             $redirect_url = admin_url('admin.php?page=' . self::$menu_slug . '&tab=' . $active_section_key);
             wp_redirect($redirect_url);
             exit;
         }
     }
-    
+
     public static function render_admin_page_html(): void
     {
         if (!current_user_can('manage_options')) {
@@ -360,273 +234,14 @@ class ContentAdminPanel
         if (!array_key_exists($active_tab, $fields_by_section) && $active_tab !== 'general' && !empty($fields_by_section)) {
             $active_tab = $default_tab;
         }
-?>
-        <div class="wrap glory-content-panel">
-            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
-            <?php settings_errors('glory_content_messages'); ?>
-            <div class="glory-tabs-container-two">
-                <div class="glory-tabs-nav-container">
-                    <?php if (!empty($fields_by_section)): ?>
-                        <?php foreach ($fields_by_section as $section_slug => $fields_in_section): ?>
-                            <?php
-                            $section_label_raw = 'General';
-                            if (!empty($fields_in_section)) {
-                                $first_field_config = reset($fields_in_section);
-                                $section_label_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
-                            }
-                            $tab_id_attr = 'tab-' . $section_slug;
-                            ?>
-                            <a href="#<?php echo esc_attr($tab_id_attr); ?>"
-                                class="nav-tab <?php echo $active_tab === $section_slug ? 'nav-tab-active' : ''; ?>"
-                                data-tab-id="<?php echo esc_attr($section_slug); ?>">
-                                <?php echo esc_html(ucfirst($section_label_raw)); ?>
-                            </a>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <p><?php _e('No content sections defined.', 'glory'); ?></p>
-                    <?php endif; ?>
-                </div>
 
-                <div class="glory-tabs-content-container">
-                    <?php if (empty($fields_by_section)): ?>
-                        <p><?php _e('No content fields have been registered yet.', 'glory'); ?></p>
-                    <?php else: ?>
-                        <?php foreach ($fields_by_section as $section_slug => $fields_in_section): ?>
-                            <?php
-                            $tab_id_attr = 'tab-' . $section_slug;
-                            $section_display_name_raw = 'General';
-                            if (!empty($fields_in_section)) {
-                                $first_field_config = reset($fields_in_section);
-                                $section_display_name_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
-                            }
-                            ?>
-                            <div id="<?php echo esc_attr($tab_id_attr); ?>" class="glory-tab-content <?php echo $active_tab === $section_slug ? 'active' : ''; ?>">
-                                <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=' . self::$menu_slug . '&tab=' . $section_slug)); ?>">
-                                    <input type="hidden" name="action" value="glory_save_content">
-                                    <input type="hidden" name="glory_active_section" value="<?php echo esc_attr($section_slug); ?>">
-                                    <?php wp_nonce_field('glory_content_save_action_' . $section_slug, '_wpnonce_glory_content_save'); ?>
-                                    <div class="metabox-holder">
-                                        <div class="postbox">
-                                            <h2 class="hndle"><span><?php echo esc_html(ucfirst($section_display_name_raw)); ?></span></h2>
-                                            <div class="inside">
-                                                <?php if ($section_slug === 'galeria-contenido'): ?>
-                                                    <div class="glory-gallery-admin-grid">
-                                                        <?php
-                                                        $processed_gallery_keys = [];
-                                                        for ($i = 1; $i <= 20; $i++) {
-                                                            $image_key = 'gallery_image_' . $i;
-                                                            $alt_key = 'gallery_image_alt_' . $i;
-
-                                                            if (isset($fields_in_section[$image_key])) {
-                                                                $image_config = $fields_in_section[$image_key];
-                                                                $alt_config = $fields_in_section[$alt_key] ?? null; // Alt might not exist if registration is inconsistent
-
-                                                                $image_url = $image_config['current_value'] ?? $image_config['default'] ?? '';
-                                                                $alt_text = '';
-                                                                if ($alt_config) {
-                                                                    $alt_text = $alt_config['current_value'] ?? $alt_config['default'] ?? '';
-                                                                }
-
-                                                                $image_option_input_name = 'glory_content[' . esc_attr($image_key) . ']';
-                                                                $alt_option_input_name = 'glory_content[' . esc_attr($alt_key) . ']';
-                                                                $image_label = $image_config['label'] ?? ('Imagen #' . $i);
-                                                                ?>
-                                                                <div class="glory-gallery-item">
-                                                                    <div class="glory-image-preview">
-                                                                        <?php if (!empty($image_url)): ?>
-                                                                            <img src="<?php echo esc_url($image_url); ?>" alt="Preview for <?php echo esc_attr($image_label); ?>">
-                                                                        <?php else: ?>
-                                                                            <p><?php _e('No image set', 'glory'); ?></p>
-                                                                        <?php endif; ?>
-                                                                    </div>
-                                                                    <div class="glory-image-controls">
-                                                                        <input type="hidden" name="<?php echo esc_attr($image_option_input_name); ?>" value="<?php echo esc_url($image_url); ?>" class="glory-image-url-field">
-                                                                        <button type="button" class="button glory-upload-image-button"><?php _e('Set/Change Image', 'glory'); ?></button>
-                                                                        <button type="button" class="button glory-remove-image-button"><?php _e('Remove Image', 'glory'); ?></button>
-                                                                    </div>
-                                                                    <label for="<?php echo esc_attr($alt_key); ?>"><?php _e('Alt Text:', 'glory'); ?> (<?php echo esc_html($image_label); ?>)</label>
-                                                                    <input type="text" id="<?php echo esc_attr($alt_key); ?>" name="<?php echo esc_attr($alt_option_input_name); ?>" value="<?php echo esc_attr($alt_text); ?>" class="regular-text">
-                                                                </div>
-                                                                <?php
-                                                                $processed_gallery_keys[] = $image_key;
-                                                                $processed_gallery_keys[] = $alt_key;
-                                                            }
-                                                        } ?>
-                                                    </div>
-                                                    <?php
-                                                    // Check if there are other fields in "Galeria Contenido" that were not part of the grid
-                                                    $remaining_fields_in_section = array_diff_key($fields_in_section, array_flip($processed_gallery_keys));
-                                                    if (!empty($remaining_fields_in_section)):
-                                                    ?>
-                                                        <hr>
-                                                        <p><em><?php _e('Other settings for this section:', 'glory'); ?></em></p>
-                                                        <table class="form-table" role="presentation">
-                                                            <tbody>
-                                                                <?php foreach ($remaining_fields_in_section as $key => $config):
-                                                                    $current_value_for_field = $config['current_value'] ?? $config['default'] ?? '';
-                                                                    $option_input_name = 'glory_content[' . esc_attr($key) . ']';
-                                                                    $label = $config['label'] ?? ucfirst(str_replace('_', ' ', $key));
-                                                                    $description = $config['description'] ?? '';
-                                                                ?>
-                                                                    <tr>
-                                                                        <th scope="row">
-                                                                            <label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
-                                                                        </th>
-                                                                        <td>
-                                                                            <?php self::render_field_input_control($key, $config, $current_value_for_field, $option_input_name); ?>
-                                                                            <?php if ($description): ?>
-                                                                                <p class="description"><?php echo wp_kses_post($description); ?></p>
-                                                                            <?php endif; ?>
-                                                                        </td>
-                                                                    </tr>
-                                                                <?php endforeach; ?>
-                                                            </tbody>
-                                                        </table>
-                                                    <?php endif; ?>
-                                                <?php else: // For sections other than 'galeria-contenido' ?>
-                                                    <table class="form-table" role="presentation">
-                                                        <tbody>
-                                                            <?php foreach ($fields_in_section as $key => $config):
-                                                                $current_value_for_field = $config['current_value'] ?? $config['default'] ?? '';
-                                                                $option_input_name = 'glory_content[' . esc_attr($key) . ']';
-                                                                $label = $config['label'] ?? ucfirst(str_replace('_', ' ', $key));
-                                                                $description = $config['description'] ?? '';
-                                                            ?>
-                                                                <tr>
-                                                                    <th scope="row">
-                                                                        <label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
-                                                                    </th>
-                                                                    <td>
-                                                                        <?php self::render_field_input_control($key, $config, $current_value_for_field, $option_input_name); ?>
-                                                                        <?php if ($description): ?>
-                                                                            <p class="description"><?php echo wp_kses_post($description); ?></p>
-                                                                        <?php endif; ?>
-                                                                    </td>
-                                                                </tr>
-                                                            <?php endforeach; ?>
-                                                        </tbody>
-                                                    </table>
-                                                <?php endif; ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <?php submit_button(__('Save Changes for this Section', 'glory')); ?>
-                                </form>
-                            </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-<?php
-    }
-
-    private static function render_field_input_control(string $key, array $config, $current_value, string $option_input_name): void
-    {
-        $field_id = esc_attr($key);
-        $type = $config['type'] ?? 'text';
-
-        switch ($type) {
-            case 'text':
-                echo '<input type="text" id="' . $field_id . '" name="' . $option_input_name . '" value="' . esc_attr($current_value) . '" class="regular-text">';
-                break;
-            case 'raw':
-                $value_for_textarea = $current_value;
-                if (is_array($value_for_textarea) || is_object($value_for_textarea)) {
-                    $json_string = json_encode($value_for_textarea, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-                    if ($json_string === false) {
-                        $value_for_textarea = '/* Error al codificar a JSON: ' . json_last_error_msg() . ' */';
-                        GloryLogger::error("ContentAdminPanel: Error encoding raw field '{$key}' to JSON for display. Value: " . print_r($current_value, true) . " Error: " . json_last_error_msg());
-                    } else {
-                        $value_for_textarea = $json_string;
-                    }
-                } elseif ($value_for_textarea === null) {
-                    $value_for_textarea = '';
-                }
-                if (!is_string($value_for_textarea)) $value_for_textarea = (string) $value_for_textarea;
-                echo '<textarea id="' . $field_id . '" name="' . $option_input_name . '" rows="10" class="large-text">' . esc_textarea($value_for_textarea) . '</textarea>';
-                echo '<p class="description">' . __('Enter valid JSON. If content is not valid JSON, it will be saved as a raw string.', 'glory') . '</p>';
-                break;
-            case 'richText':
-                $value_for_richtext_area = is_string($current_value) ? $current_value : '';
-                echo '<textarea id="' . $field_id . '" name="' . $option_input_name . '" rows="10" class="large-text wp-editor-area">' . esc_textarea($value_for_richtext_area) . '</textarea>';
-                echo '<p class="description">' . __('HTML is allowed. Content will be filtered by wp_kses_post on save.', 'glory') . '</p>';
-                break;
-            case 'image':
-                $image_url = is_string($current_value) ? $current_value : '';
-                echo '<input type="text" id="' . $field_id . '" name="' . $option_input_name . '" value="' . esc_url($image_url) . '" class="regular-text glory-image-url-field">';
-                echo ' <button type="button" class="button glory-upload-image-button">' . __('Upload Image', 'glory') . '</button>';
-                echo ' <button type="button" class="button glory-remove-image-button">' . __('Remove Image', 'glory') . '</button>';
-                echo '<div class="glory-image-preview">';
-                if (!empty($image_url)) echo '<img src="' . esc_url($image_url) . '">';
-                echo '</div>';
-                break;
-            case 'schedule':
-                self::render_schedule_input_control($key, is_array($current_value) ? $current_value : [], $option_input_name);
-                break;
-            default:
-                echo '<input type="text" id="' . $field_id . '" name="' . $option_input_name . '" value="' . esc_attr(is_scalar($current_value) ? $current_value : '') . '" class="regular-text">';
-                // GloryLogger::info("ContentAdminPanel: Unknown field type '{$type}' for key '{$key}'. Defaulting to text input."); // Demasiado verboso
-        }
-    }
-
-    private static function render_schedule_input_control(string $key, array $schedule_data, string $base_input_name): void
-    {
-        $schedule_data = is_array($schedule_data) ? $schedule_data : []; // Asegurar que sea array
-        $days_of_week_ordered = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-        $schedule_map = [];
-        foreach ($schedule_data as $entry) { // Mapear para fácil acceso y asegurar estructura
-            if (isset($entry['day'])) $schedule_map[$entry['day']] = $entry;
-        }
-
-        echo '<div class="glory-schedule-editor">';
-        foreach ($days_of_week_ordered as $idx => $day_name_label) {
-            $entry = $schedule_map[$day_name_label] ?? ['day' => $day_name_label, 'status' => 'closed', 'open' => '', 'close' => '', 'hours' => 'Cerrado'];
-
-            // Asegurar que los datos sean consistentes incluso si vienen mal de la BD
-            $status = esc_attr($entry['status'] ?? 'closed');
-            $open_time = ($status === 'open') ? esc_attr($entry['open'] ?? '') : '';
-            $close_time = ($status === 'open') ? esc_attr($entry['close'] ?? '') : '';
-
-            $post_index = $idx; // Usar índice numérico para el array POST
-            $input_name_day    = $base_input_name . '[' . $post_index . '][day]';
-            $input_name_status = $base_input_name . '[' . $post_index . '][status]';
-            $input_name_open   = $base_input_name . '[' . $post_index . '][open]';
-            $input_name_close  = $base_input_name . '[' . $post_index . '][close]';
-            // No necesitamos input para 'hours', se reconstruye al guardar
-            $unique_id_prefix = esc_attr($key . '_' . strtolower(str_replace(' ', '_', $day_name_label)));
-
-            echo '<div class="glory-schedule-day-row">';
-            echo '<strong>' . esc_html($day_name_label) . '</strong><input type="hidden" name="' . $input_name_day . '" value="' . esc_attr($day_name_label) . '"><br>';
-            echo '<label for="' . $unique_id_prefix . '_status">' . __('Status:', 'glory') . ' </label>';
-            echo '<select id="' . $unique_id_prefix . '_status" name="' . $input_name_status . '">';
-            echo '<option value="open" ' . selected($status, 'open', false) . '>' . __('Open', 'glory') . '</option>';
-            echo '<option value="closed" ' . selected($status, 'closed', false) . '>' . __('Closed', 'glory') . '</option>';
-            echo '</select>';
-            echo '<label for="' . $unique_id_prefix . '_open">' . __('Open:', 'glory') . ' <input id="' . $unique_id_prefix . '_open" type="time" name="' . $input_name_open . '" value="' . $open_time . '" ' . ($status === 'closed' ? 'disabled' : '') . '></label>';
-            echo '<label for="' . $unique_id_prefix . '_close">' . __('Close:', 'glory') . ' <input id="' . $unique_id_prefix . '_close" type="time" name="' . $input_name_close . '" value="' . $close_time . '" ' . ($status === 'closed' ? 'disabled' : '') . '></label>';
-            echo '</div>';
-        }
-        echo '</div>';
-        // JS para habilitar/deshabilitar campos de tiempo según el estado
-        // Este JS es un ejemplo, puede necesitar ajustes para integrarse correctamente
-        if (!wp_script_is('glory-schedule-admin-js', 'enqueued')) {
-            wp_add_inline_script('jquery', "
-                jQuery(document).ready(function($) {
-                    $(document).on('change', '.glory-schedule-editor select', function() {
-                        var row = $(this).closest('.glory-schedule-day-row');
-                        var isOpen = $(this).val() === 'open';
-                        row.find('input[type=\"time\"]').prop('disabled', !isOpen);
-                        if (!isOpen) {
-                           // row.find('input[type=\"time\"]').val(''); // Opcional: limpiar tiempos si se cierra
-                        }
-                    });
-                    // Disparar change en carga para aplicar estado inicial
-                    // $('.glory-schedule-editor select').trigger('change'); // Puede causar problemas si hay muchos, mejor manejar con CSS o al renderizar
-                });
-            ", 'after');
-            wp_register_script('glory-schedule-admin-js', false); // Marcar como enqueued para evitar duplicados
-            wp_enqueue_script('glory-schedule-admin-js');
+        // Assuming render_glory_content_admin_panel_html() is defined elsewhere and works correctly
+        // You might need to include it or ensure it's autoloaded.
+        if (function_exists('render_glory_content_admin_panel_html')) {
+            echo render_glory_content_admin_panel_html($fields_by_section, $active_tab, self::$menu_slug);
+        } else {
+            echo '<div class="wrap"><h1>Error</h1><p>Admin panel rendering function is missing.</p></div>';
+            GloryLogger::error("ContentAdminPanel: render_glory_content_admin_panel_html() function not found.");
         }
     }
 }
