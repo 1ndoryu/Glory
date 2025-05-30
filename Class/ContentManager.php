@@ -16,10 +16,11 @@ class ContentManager
     public const OPTION_META_PANEL_SAVED_SUFFIX = '_is_panel_value';
 
     private static array $registered_content = [];
-    private static $db_sentinel; 
+    private static $db_sentinel;
 
     // Llamar a esto una vez, e.g., en un hook 'init' de tu plugin.
-    public static function static_init() {
+    public static function static_init()
+    {
         if (self::$db_sentinel === null) {
             self::$db_sentinel = new \stdClass();
         }
@@ -27,7 +28,9 @@ class ContentManager
 
     public static function register(string $key, array $args = []): void
     {
-        if (self::$db_sentinel === null) { self::static_init(); } // Asegurar inicialización
+        if (self::$db_sentinel === null) {
+            self::static_init();
+        } // Asegurar inicialización
 
         $default_type = $args['type'] ?? 'text';
         $defaults = [
@@ -44,7 +47,7 @@ class ContentManager
         $parsed_args = wp_parse_args($args, $defaults);
         $code_default_for_hash = $parsed_args['default'];
         $parsed_args['code_version_hash'] = md5(is_scalar($code_default_for_hash) ? (string)$code_default_for_hash : serialize($code_default_for_hash));
-        
+
         // No sobreescribir si ya existe y solo se está llamando de nuevo (e.g. desde registerOnTheFly)
         // Solo la primera llamada a register() para una clave debe establecer la configuración completa.
         // Las llamadas subsecuentes (ej: de get() -> registerOnTheFly()) no deberían alterar la config original.
@@ -53,10 +56,10 @@ class ContentManager
         } else {
             // Si ya está registrado, solo actualizamos el hash del default del código por si acaso ha cambiado
             // entre la registración inicial y una llamada posterior a register() para la misma clave (poco común pero posible).
-             self::$registered_content[$key]['code_version_hash'] = $parsed_args['code_version_hash'];
-             // Y nos aseguramos que el default en memoria también esté actualizado con el último `register` call.
-             // Esto es importante si `register` se llama múltiples veces con diferentes defaults para la misma clave ANTES de `get`.
-             self::$registered_content[$key]['default'] = $parsed_args['default'];
+            self::$registered_content[$key]['code_version_hash'] = $parsed_args['code_version_hash'];
+            // Y nos aseguramos que el default en memoria también esté actualizado con el último `register` call.
+            // Esto es importante si `register` se llama múltiples veces con diferentes defaults para la misma clave ANTES de `get`.
+            self::$registered_content[$key]['default'] = $parsed_args['default'];
         }
 
         self::_synchronizeRegisteredOption($key);
@@ -121,8 +124,12 @@ class ContentManager
                 }
                 // En ambos casos (inicializado o actualizado a default del código sin flag de panel), los flags de panel (_is_panel_value y _code_hash_on_save)
                 // no se establecen o se borran si existieran, porque el valor ahora es gobernado por el código.
-                if ($is_panel_value_flag) { /* Esto no debería pasar si is_panel_value_flag ya es false */ delete_option($option_name . ContentManager::OPTION_META_PANEL_SAVED_SUFFIX); }
-                if ($hash_on_panel_save !== self::$db_sentinel) { delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX); }
+                if ($is_panel_value_flag) { /* Esto no debería pasar si is_panel_value_flag ya es false */
+                    delete_option($option_name . ContentManager::OPTION_META_PANEL_SAVED_SUFFIX);
+                }
+                if ($hash_on_panel_save !== self::$db_sentinel) {
+                    delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
+                }
             }
         }
         // GloryLogger::info("SYNC [$key]: Finished.");
@@ -174,6 +181,46 @@ class ContentManager
         }
     }
 
+    // --- INICIO DE CÓDIGO NUEVO O MODIFICADO ---
+
+    /**
+     * Obtiene o registra una estructura de menú.
+     * Las estructuras de menú se almacenan como arrays PHP.
+     *
+     * @param string $key               La clave única para esta estructura de menú.
+     * @param array  $defaultStructure  La estructura del menú por defecto (array PHP).
+     * @param string|null $panel_title       Título para el panel de administración.
+     * @param string|null $panel_section     Sección en el panel de administración.
+     * @param string|null $panel_sub_section Sub-sección en el panel de administración.
+     * @param string|null $panel_description Descripción para el panel de administración.
+     * @return array La estructura del menú.
+     */
+    public static function menu(
+        string $key,
+        array $defaultStructure = [],
+        ?string $panel_title = null,
+        ?string $panel_section = null,
+        ?string $panel_sub_section = null,
+        ?string $panel_description = null
+    ): array {
+        // El tipo 'menu_structure' se pasará a get().
+        // La estructura del menú se almacena como un array, no necesita escape de HTML.
+        $value = self::get(
+            $key,
+            $defaultStructure,      // Valor por defecto si no existe o se resetea
+            false,                 // escape_output = false para estructuras complejas
+            $panel_title,
+            $panel_section,
+            $panel_sub_section,
+            $panel_description,
+            'menu_structure'       // Nuevo content_type
+        );
+
+        // Asegurarse de que siempre devolvemos un array
+        return is_array($value) ? $value : $defaultStructure;
+    }
+
+
     public static function get(
         string $key,
         $default_param = '', // Default de último recurso si la opción no existe después de la sincronización
@@ -184,7 +231,9 @@ class ContentManager
         ?string $panel_description = null,
         string $content_type = 'text'
     ) {
-        if (self::$db_sentinel === null) { self::static_init(); }
+        if (self::$db_sentinel === null) {
+            self::static_init();
+        }
 
         // GloryLogger::info("GET [$key]: Called. Default param value: " . substr(print_r($default_param, true),0,100)."..." );
 
@@ -208,7 +257,7 @@ class ContentManager
         } else {
             // GloryLogger::info("GET [$key]: Retrieved final value from DB option '$option_name' (post-sync): " . substr(print_r($final_value, true),0,100)."..." );
         }
-        
+
         if (is_string($final_value) && $escape_output) {
             return esc_html($final_value);
         }
@@ -245,7 +294,9 @@ class ContentManager
 
     public static function getRegisteredContentFields(): array
     {
-        if (self::$db_sentinel === null) { self::static_init(); }
+        if (self::$db_sentinel === null) {
+            self::static_init();
+        }
         // GloryLogger::info("getRegisteredContentFields: Preparing fields for admin panel.");
         $fields_with_current_values = [];
 
@@ -266,9 +317,9 @@ class ContentManager
             } else {
                 // Esto sería un error grave si register() no inicializó la opción.
                 $new_config['current_value'] = $config['default'] ?? null; // Fallback al default en memoria
-                GloryLogger::error("getRegisteredContentFields ERROR [$key]: Option '$option_name' NOT FOUND in DB for panel. Using code default: " . substr(print_r($new_config['current_value'],true),0,100)."..." );
+                GloryLogger::error("getRegisteredContentFields ERROR [$key]: Option '$option_name' NOT FOUND in DB for panel. Using code default: " . substr(print_r($new_config['current_value'], true), 0, 100) . "...");
             }
-            
+
             // // Añadir metadatos de depuración si es necesario
             // $new_config['debug_is_panel_value'] = get_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX, false);
             // $new_config['debug_code_hash_on_save'] = get_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX, '--NOT SET--');

@@ -1,24 +1,203 @@
-.glory-content-panel .nav-tab-wrapper { margin-bottom: 20px; }
-.glory-content-panel .glory-tab-content { display: none; }
-.glory-content-panel .glory-tab-content.active { display: block; }
-.glory-content-panel .postbox .hndle { cursor: default; padding: 8px 12px; }
-.glory-image-preview img { border: 1px solid #ddd; margin-top: 5px; max-width:150px; max-height:150px; display:block; }
-.glory-schedule-editor .glory-schedule-day-row { margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ccc; }
-.glory-schedule-editor .glory-schedule-day-row:last-child { border-bottom: none; }
-.glory-schedule-editor label { margin-right: 10px; display: inline-block; }
-.glory-schedule-editor input[type='time'], .glory-schedule-editor select { vertical-align: middle; }
-.glory-content-panel .form-table th { width: 200px; }
-.glory-content-panel .form-table td .regular-text, .glory-content-panel .form-table td .large-text { width: 100%; max-width: 500px; }
-.glory-content-panel .form-table td textarea.large-text { min-height: 120px; }
-.glory-tabs-nav-container { width: 200px; padding-right: 20px; border-right: 1px solid #ccd0d4; }
-.glory-tabs-nav-container .nav-tab { display: block; margin-bottom: 5px; border: 1px solid #ccd0d4; background: #f0f0f1; }
-.glory-tabs-nav-container .nav-tab-active { background: #fff; border-bottom-color: #ccd0d4; }
-.glory-tabs-content-container { flex-grow: 1; padding-left: 20px; }
-.glory-tab-content .postbox { margin-top: 0; }
-.glory-content-panel { display: flex; flex-direction: column; gap: 10px; }
-.postbox { position: relative; min-width: 255px; border: 1px solid #c3c4c7; box-shadow: 0 1px 1px rgba(0, 0, 0, .04); background: #fff; padding: 15px; }
-.glory-tabs-container-two { display: flex; }
-#wpbody-content .metabox-holder { padding-top: 0px; }
+/* En Glory/assets/css/content-admin-panel.css */
+
+.glory-menu-items-list {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+}
+
+.metabox-holder tr {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.metabox-holder tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.metabox-holder p.description {
+    font-size: 11px;
+    margin: 0px;
+}
+
+.glory-menu-structure-admin .postbox .hndle {
+    cursor: default; /* Opcional: si no quieres que parezcan arrastrables */
+}
+
+.glory-menu-section {
+    border: 1px solid #ccd0d4;
+    margin-bottom: 15px;
+    background: #fff;
+}
+.glory-menu-section .inside {
+    padding: 12px;
+}
+.glory-menu-section .hndle {
+    padding: 8px 12px;
+    margin: 0;
+    line-height: 1.4;
+    border-bottom: 1px solid #eee;
+}
+
+.glory-menu-item {
+    border: 1px dashed #dcdcdc;
+    padding: 10px;
+    margin-bottom: 10px;
+    position: relative;
+    background-color: #f9f9f9;
+}
+
+.glory-menu-item .button.glory-remove-menu-item,
+.glory-menu-tab-item .button.glory-remove-menu-tab {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    padding: 0 5px !important;
+    line-height: 1.5 !important;
+    height: auto !important;
+    min-width: auto !important;
+    color: red;
+    border-color: red;
+}
+
+.glory-menu-tabs-editor .glory-menu-tab-item {
+    padding: 5px;
+    border-bottom: 1px solid #eee;
+    position: relative;
+}
+.glory-menu-tabs-editor .glory-menu-tab-item p {
+    margin: 5px 0;
+}
+.glory-menu-tabs-editor .glory-menu-tab-item input[type='text'] {
+    margin-right: 10px;
+}
+
+.postbox td {
+    padding: 0px !important;
+    margin-bottom: unset !important;
+}
+
+/* Estilo para el editor JSON fallback (si lo mantienes) */
+.glory-json-editor,
+textarea.code {
+    font-family: monospace;
+    white-space: pre;
+    overflow-x: auto; /* Para scroll horizontal si el JSON es muy ancho */
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 10px;
+}
+
+.glory-content-panel .nav-tab-wrapper {
+    margin-bottom: 20px;
+}
+.glory-content-panel .glory-tab-content {
+    display: none;
+}
+.glory-content-panel .glory-tab-content.active {
+    display: block;
+}
+.glory-content-panel .postbox .hndle {
+    cursor: default;
+    padding: 8px 12px;
+    font-size: 24px;
+}
+
+.glory-image-preview img {
+    border: 1px solid #ddd;
+    margin-top: 5px;
+    max-width: 150px;
+    max-height: 150px;
+    display: block;
+}
+.glory-schedule-editor .glory-schedule-day-row {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #ccc;
+}
+.glory-schedule-editor .glory-schedule-day-row:last-child {
+    border-bottom: none;
+}
+.glory-schedule-editor label {
+    margin-right: 10px;
+    display: inline-block;
+}
+.glory-schedule-editor input[type='time'],
+.glory-schedule-editor select {
+    vertical-align: middle;
+}
+.glory-content-panel .form-table th {
+    width: 240px;
+    padding: 0;
+    font-size: 16px;
+}
+
+.glory-content-panel .form-table td .regular-text,
+.glory-content-panel .form-table td .large-text {
+    width: 100%;
+    max-width: 500px;
+}
+.glory-content-panel .form-table td textarea.large-text {
+    min-height: 120px;
+}
+.glory-tabs-nav-container {
+    /* border-right: 1px solid #ccd0d4; */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding-right: 20px;
+    gap: 5px;
+}
+
+.glory-tabs-nav-container .nav-tab {
+    display: block;
+    margin-bottom: 5px;
+    /* border: 1px solid #ccd0d4; */
+    background: #f0f0f1;
+    border: unset;
+    padding: 0;
+    margin-left: 0px;
+}
+
+.glory-tabs-nav-container .nav-tab-active {
+    /* background: #fff;
+    border-bottom-color: #ccd0d4; */
+}
+.glory-tabs-content-container {
+    flex-grow: 1;
+    /* padding-left: 20px; */
+    margin-top: -38px;
+}
+
+.postbox label {
+    font-size: 14px;
+}
+
+.glory-tab-content .postbox {
+    margin-top: 0;
+}
+.glory-content-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.postbox {
+    position: relative;
+    min-width: 255px;
+    border: 1px solid #c3c4c7;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+    background: #fff;
+    padding: 15px;
+}
+.glory-tabs-container-two {
+    display: flex;
+}
+#wpbody-content .metabox-holder {
+    padding-top: 0px;
+}
 
 /* Gallery Admin Grid CSS */
 .glory-gallery-admin-grid {
@@ -34,7 +213,7 @@
 }
 .glory-gallery-item .glory-image-preview img {
     max-width: 100%; /* Override existing max-width for better fit */
-    height: auto;   /* Maintain aspect ratio */
+    height: auto; /* Maintain aspect ratio */
     display: block;
     margin-bottom: 10px;
 }
