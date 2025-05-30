@@ -7,8 +7,10 @@ class GloryLogger
 {
     const CPT_SLUG = 'glory_log';
     const LEVEL_INFO = 10;
-    const LEVEL_ERROR = 20;
-    private static $minSaveLevel = self::LEVEL_INFO;
+    const LEVEL_WARNING = 20; 
+    const LEVEL_ERROR = 30;
+    const LEVEL_CRITICAL = 50; 
+    private static $minSaveLevel = self::LEVEL_ERROR;
     private static $logBuffer = [];
     private static $saveLogsHookRegistered = false;
 
