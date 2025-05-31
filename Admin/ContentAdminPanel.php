@@ -27,6 +27,12 @@ class ContentAdminPanel
         // Carga los módulos de media de WP (uploader, galerías, etc.)
         wp_enqueue_media();
 
+        // Encolar scripts y estilos para el editor de código (CodeMirror)
+        wp_enqueue_code_editor(array('type' => 'application/json')); // Esto ayuda a asegurar que todo esté listo
+        wp_enqueue_script('code-editor');
+        wp_enqueue_style('code-editor');
+
+
         // Rutas del tema
         $theme_uri  = get_stylesheet_directory_uri();
         $theme_path = get_stylesheet_directory();
@@ -41,7 +47,7 @@ class ContentAdminPanel
             wp_enqueue_style(
                 $css_handle,
                 $css_file_url,
-                [],
+                ['wp-codemirror'], // Dependencia de los estilos de CodeMirror
                 filemtime($css_file_path)
             );
         }
@@ -57,23 +63,26 @@ class ContentAdminPanel
             wp_enqueue_script(
                 $js_handle,
                 $js_file_url,
-                ['jquery', 'media-editor'],
+                ['jquery', 'media-editor', 'code-editor'], // Añadir 'code-editor' como dependencia
                 filemtime($js_file_systempath),
                 true
             );
 
+            // Configuración para el editor de código JSON
+            $code_editor_settings = wp_get_code_editor_settings(['type' => 'application/json']);
+
             wp_localize_script($js_handle, 'gloryAdminPanelSettings', [
-                'ajaxUrl'   => admin_url('admin-ajax.php'),
-                'nonce'     => wp_create_nonce('glory_admin_ajax_nonce'),
-                'menuSlug'  => self::$menu_slug,
-                'i18n'      => [
+                'ajaxUrl'             => admin_url('admin-ajax.php'),
+                'nonce'               => wp_create_nonce('glory_admin_ajax_nonce'),
+                'menuSlug'            => self::$menu_slug,
+                'i18n'                => [
                     'selectOrUploadImage' => esc_js(__('Select or Upload Image', 'glory')),
                     'useThisImage'        => esc_js(__('Use this image', 'glory')),
                 ],
+                'codeEditorSettings' => $code_editor_settings, // Pasar settings del editor JSON
             ]);
         }
     }
-
 
 
     public static function add_admin_page(): void
@@ -232,7 +241,7 @@ class ContentAdminPanel
             exit;
         }
     }
-    
+
     public static function render_admin_page_html(): void
     {
         if (!current_user_can('manage_options')) {

@@ -1,25 +1,43 @@
 jQuery(document).ready(function ($) {
     // From get_image_uploader_js()
     console.log('Glory Admin Panel JS loaded');
+
+    // Inicializar CodeMirror para campos JSON
+    if (typeof wp !== 'undefined' && wp.codeEditor && typeof gloryAdminPanelSettings !== 'undefined' && gloryAdminPanelSettings.codeEditorSettings) {
+        $('.glory-json-editor-area').each(function () {
+            var $textarea = $(this);
+            var editorInstance = wp.codeEditor.initialize($textarea.attr('id'), gloryAdminPanelSettings.codeEditorSettings);
+            
+            // Guardar la instancia de CodeMirror en el elemento textarea
+            // para poder acceder a ella más tarde y refrescarla si es necesario.
+            if (editorInstance && editorInstance.codemirror) {
+                $textarea.data('CodeMirrorInstance', editorInstance.codemirror);
+            }
+        });
+    } else {
+        console.warn('Glory Admin Panel: wp.codeEditor or codeEditorSettings not available for JSON fields.');
+    }
+
     $(document).on('click', '.glory-upload-image-button', function (e) {
         e.preventDefault();
         var button = $(this);
-        var galleryItem = button.closest('.glory-gallery-item');
-        var inputField = galleryItem.find('.glory-image-url-field');
-        var imagePreviewContainer = galleryItem.find('.glory-image-preview');
+        // Modificado para ser más general, no solo para .glory-gallery-item
+        var parentContainer = button.closest('td, .glory-gallery-item'); 
+        var inputField = parentContainer.find('.glory-image-url-field');
+        var imagePreviewContainer = parentContainer.find('.glory-image-preview');
 
         if (!inputField.length) {
-            // console.error('Glory Uploader: Could not find inputField.');
-            // return;
+             console.error('Glory Uploader: Could not find inputField.');
+             return;
         }
         if (!imagePreviewContainer.length) {
-            // console.error('Glory Uploader: Could not find imagePreviewContainer.');
-            // return;
+             console.error('Glory Uploader: Could not find imagePreviewContainer.');
+             // return; // Podría no ser crítico si solo queremos setear el input
         }
 
         var frame = wp.media({
-            title: gloryAdminPanelSettings.i18n.selectOrUploadImage, // PHP esc_js(__('Select or Upload Image', 'glory'))
-            button: {text: gloryAdminPanelSettings.i18n.useThisImage}, // PHP esc_js(__('Use this image', 'glory'))
+            title: gloryAdminPanelSettings.i18n.selectOrUploadImage,
+            button: {text: gloryAdminPanelSettings.i18n.useThisImage},
             multiple: false
         });
 
@@ -29,7 +47,9 @@ jQuery(document).ready(function ($) {
 
             var newImg = $('<img>');
             newImg.attr('src', attachment.url);
-            imagePreviewContainer.empty().append(newImg);
+            if (imagePreviewContainer.length) {
+                imagePreviewContainer.empty().append(newImg);
+            }
         });
         frame.open();
     });
@@ -37,32 +57,55 @@ jQuery(document).ready(function ($) {
     $(document).on('click', '.glory-remove-image-button', function (e) {
         e.preventDefault();
         var button = $(this);
-        var galleryItem = button.closest('.glory-gallery-item');
-        var inputField = galleryItem.find('.glory-image-url-field');
-        var imagePreviewContainer = galleryItem.find('.glory-image-preview');
+        // Modificado para ser más general
+        var parentContainer = button.closest('td, .glory-gallery-item');
+        var inputField = parentContainer.find('.glory-image-url-field');
+        var imagePreviewContainer = parentContainer.find('.glory-image-preview');
 
-        if (!inputField.length || !imagePreviewContainer.length) {
-            // console.error('Glory Remover: Could not find inputField or imagePreviewContainer.');
-            // return;
+        if (!inputField.length) {
+            console.error('Glory Remover: Could not find inputField.');
+            return;
         }
 
         inputField.val('');
-        imagePreviewContainer.html('');
+        if (imagePreviewContainer.length) {
+            imagePreviewContainer.html('');
+        }
     });
 
     // From get_tabs_js()
     var gloryTabs = $('.glory-tabs-nav-container .nav-tab');
     var gloryTabContents = $('.glory-tab-content');
-    // var menuSlug = 'glory-content-manager'; // Removed, to be replaced by gloryAdminPanelSettings.menuSlug
 
     function activateTab(tabLink) {
-        var tabId = $(tabLink).attr('href');
+        var tabId = $(tabLink).attr('href'); // e.g., "#tab-general"
+        var $tabContent = $(tabId);
+
         gloryTabs.removeClass('nav-tab-active');
         $(tabLink).addClass('nav-tab-active');
+        
         gloryTabContents.removeClass('active').hide();
-        $(tabId).addClass('active').show();
+        $tabContent.addClass('active').show();
+
+        // Refrescar instancias de CodeMirror dentro de la pestaña recién activada
+        $tabContent.find('.glory-json-editor-area').each(function() {
+            var cmInstance = $(this).data('CodeMirrorInstance');
+            if (cmInstance) {
+                cmInstance.refresh();
+            }
+        });
+        
+        // Refrescar editores TinyMCE si es necesario (a veces tienen problemas al mostrarse desde un display:none)
+        // $tabContent.find('.wp-editor-area').each(function(){
+        //    var editorId = $(this).attr('id');
+        //    if (typeof tinymce !== 'undefined' && tinymce.get(editorId)) {
+        //        tinymce.get(editorId).show(); // O alguna otra forma de forzar un repaint/refresh si es necesario
+        //    }
+        // });
+
+
         if (history.pushState) {
-            var newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname + '?page=' + gloryAdminPanelSettings.menuSlug + '&tab=' + tabId.substring(5); // PHP self::$menu_slug
+            var newUrl = window.location.protocol + '//' + window.location.host + window.location.pathname + '?page=' + gloryAdminPanelSettings.menuSlug + '&tab=' + tabId.substring(5);
             history.pushState({path: newUrl}, '', newUrl);
         }
     }
@@ -82,13 +125,17 @@ jQuery(document).ready(function ($) {
                 activatedFromQuery = true;
             }
         }
-        if (!activatedFromQuery && gloryTabs.first().length) activateTab(gloryTabs.first());
+        if (!activatedFromQuery && gloryTabs.first().length) {
+            activateTab(gloryTabs.first());
+        }
     }
 
     gloryTabs.on('click', function (e) {
         e.preventDefault();
         activateTab(this);
-        window.location.hash = $(this).attr('href').substring(1);
+        // La URL hash se actualiza visualmente por el navegador debido al href,
+        // pero si se quiere forzar o asegurar:
+        // window.location.hash = $(this).attr('href');
     });
 
     // From inline script in render_schedule_input_control()
@@ -101,7 +148,5 @@ jQuery(document).ready(function ($) {
         }
     });
     // Trigger change on load to apply initial state for schedule editor
-    // This was commented out in PHP, keeping it commented.
-    // $('.glory-schedule-editor select').trigger('change');
+    // $('.glory-schedule-editor select').trigger('change'); // Descomentar si se quiere ejecutar al cargar la página
 });
-

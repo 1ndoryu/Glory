@@ -70,12 +70,20 @@ function renderFieldInput(string $key, array $config, $current_value, string $op
                 $value_for_textarea = '';
             }
             if (!is_string($value_for_textarea)) $value_for_textarea = (string) $value_for_textarea;
-            echo '<textarea id="' . $field_id . '" name="' . $option_input_name . '" rows="10" class="large-text">' . esc_textarea($value_for_textarea) . '</textarea>';
+            // Añadimos la clase 'glory-json-editor-area'
+            echo '<textarea id="' . $field_id . '" name="' . $option_input_name . '" rows="10" class="large-text glory-json-editor-area">' . esc_textarea($value_for_textarea) . '</textarea>';
             echo '<p class="description">' . __('Enter valid JSON. If content is not valid JSON, it will be saved as a raw string.', 'glory') . '</p>';
             break;
         case 'richText':
             $value_for_richtext_area = is_string($current_value) ? $current_value : '';
-            echo '<textarea id="' . $field_id . '" name="' . $option_input_name . '" rows="10" class="large-text wp-editor-area">' . esc_textarea($value_for_richtext_area) . '</textarea>';
+            $editor_settings = [
+                'textarea_name' => $option_input_name,
+                'media_buttons' => true, // Habilitar botones de medios
+                'tinymce'       => true, // Usar TinyMCE
+                'quicktags'     => true, // Habilitar Quicktags
+                'textarea_rows' => 10,
+            ];
+            wp_editor(wp_kses_post($value_for_richtext_area), $field_id, $editor_settings); // Usar wp_kses_post para limpiar el contenido antes de mostrarlo
             echo '<p class="description">' . __('HTML is allowed. Content will be filtered by wp_kses_post on save.', 'glory') . '</p>';
             break;
         case 'image':
@@ -99,7 +107,7 @@ function renderFieldInput(string $key, array $config, $current_value, string $op
 function renderContentPanel(array $fields_by_section, string $active_tab, string $menu_slug_for_url_building): string
 {
     ob_start();
-    ?>
+?>
     <div class="wrap glory-content-panel">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
         <?php settings_errors('glory_content_messages'); ?>
@@ -173,7 +181,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                 }
                             }
                         }
-                        
+
                         // Si después de filtrar, no quedan campos para esta sección (porque todos eran menu_structure),
                         // y estamos en el panel general, no renderizar el contenido de la pestaña.
                         if (empty($fields_to_render_in_section) && $menu_slug_for_url_building === 'glory-content-manager') {
@@ -181,8 +189,8 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                         }
                         // Si aún no se pudo determinar el nombre y hay campos, usar el primero disponible (aunque sean de menú, caso borde)
                         if (!$has_non_menu_fields && !empty($fields_in_section)) {
-                             $first_field_config = reset($fields_in_section);
-                             $section_display_name_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
+                            $first_field_config = reset($fields_in_section);
+                            $section_display_name_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
                         }
 
 
@@ -262,7 +270,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                                                         <label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
                                                                     </th>
                                                                     <td>
-                                                                        <?php renderFieldInput($key, $config, $current_value_for_field, $option_input_name); 
+                                                                        <?php renderFieldInput($key, $config, $current_value_for_field, $option_input_name);
                                                                         ?>
                                                                         <?php if ($description): ?>
                                                                             <p class="description"><?php echo wp_kses_post($description); ?></p>
@@ -288,7 +296,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                                                     <label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
                                                                 </th>
                                                                 <td>
-                                                                    <?php renderFieldInput($key, $config, $current_value_for_field, $option_input_name); 
+                                                                    <?php renderFieldInput($key, $config, $current_value_for_field, $option_input_name);
                                                                     ?>
                                                                     <?php if ($description): ?>
                                                                         <p class="description"><?php echo wp_kses_post($description); ?></p>
@@ -316,4 +324,3 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
 
 
 ?>
-
