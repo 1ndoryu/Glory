@@ -12,8 +12,8 @@ ScriptManager::define(
         'object_name' => 'gloryAjaxNavConfig',          
         'data' => [                                     
             'enabled'            => true,
-            'contentSelector'    => '#content',
-            'mainScrollSelector' => '#main',
+            'contentSelector'    => '#contentAjax',
+            'mainScrollSelector' => '#contentAjax',
             'loadingBarSelector' => '#loadingBar',
             'cacheEnabled'       => true,
             'ignoreUrlPatterns'  => [
