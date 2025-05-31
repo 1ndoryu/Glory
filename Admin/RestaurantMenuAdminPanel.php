@@ -124,24 +124,46 @@ class RestaurantMenuAdminPanel
                     'packDescriptionLabel' => __('Pack Description (optional):', 'glory'),
                     'multiPriceUIPlaceholder' => __('Multi-price item editor UI will be implemented later.', 'glory'),
                     'menuPackUIPlaceholder' => __('Menu pack editor UI will be implemented later.', 'glory'),
+                    // Nuevas traducciones para la UI de items multi-precio generada por JS
+                    'isHeaderRowLabel' => __('Is Header Row (defines new price columns for items below)', 'glory'),
+                    'isSinglePriceLabel' => __('Is Single Price Item (ignores columns, uses one price field)', 'glory'),
+                    'columnHeadersDefinedByThisRowLabel' => __('Column Headers Defined by this Row (these texts will be used for subsequent items):', 'glory'),
+                    'headerRowNameLabel' => __('Header Row Name (HTML allowed):', 'glory'), // Usado en el JS al cambiar a is_header_row
+                    'headerTextLabelN' => __('Header Text %d', 'glory'),
+                    'addHeaderPriceFieldTitle' => __('Add another header text field for this row', 'glory'),
                 ],
             ]);
         } else {
             GloryLogger::info("RestaurantMenuAdminPanel: JS file not found or not readable at {$js_file_systempath}");
         }
     }
-
+    
     public static function register_settings_and_handle_save(): void
     {
+        // Primero, verificar si es una acción de guardado de menú
         if (
             isset($_POST['action']) && $_POST['action'] === 'glory_save_restaurant_menu' &&
-            isset($_POST['_wpnonce_glory_restaurant_menu_save'])
+            isset($_POST['_wpnonce_glory_restaurant_menu_save']) &&
+            !isset($_POST['glory_reset_menu_key_action']) // Asegurarse de que no es una acción de reset
         ) {
             if (wp_verify_nonce($_POST['_wpnonce_glory_restaurant_menu_save'], 'glory_restaurant_menu_save_action')) {
                 self::handle_save_menu_data();
             } else {
                 GloryLogger::error("RestaurantMenuAdminPanel: Nonce verification FAILED for restaurant menu save.");
-                wp_die(__('Nonce verification failed!', 'glory'), __('Error', 'glory'), ['response' => 403]);
+                wp_die(__('Nonce verification failed for save!', 'glory'), __('Error', 'glory'), ['response' => 403]);
+            }
+        }
+        // Luego, verificar si es una acción de restablecimiento de un menú específico
+        elseif (isset($_POST['glory_reset_menu_key_action']) && !empty($_POST['glory_reset_menu_key_action'])) {
+            $menu_key_to_reset = sanitize_key($_POST['glory_reset_menu_key_action']);
+            $nonce_action_string = 'glory_restaurant_menu_reset_action_' . $menu_key_to_reset;
+            $nonce_name_string = '_wpnonce_glory_restaurant_menu_reset_' . $menu_key_to_reset;
+
+            if (isset($_POST[$nonce_name_string]) && wp_verify_nonce($_POST[$nonce_name_string], $nonce_action_string)) {
+                self::handle_reset_single_menu_data($menu_key_to_reset);
+            } else {
+                GloryLogger::error("RestaurantMenuAdminPanel: Nonce verification FAILED for restaurant menu reset on key '{$menu_key_to_reset}'.");
+                wp_die(__('Nonce verification failed for reset!', 'glory'), __('Error', 'glory'), ['response' => 403]);
             }
         }
     }
@@ -339,6 +361,59 @@ class RestaurantMenuAdminPanel
         exit;
     }
 
+    private static function handle_reset_single_menu_data(string $menu_key_to_reset): void
+    {
+        if (!current_user_can('manage_options')) {
+            GloryLogger::error("RestaurantMenuAdminPanel: User without 'manage_options' tried to reset menu data for key '{$menu_key_to_reset}'.");
+            wp_die(__('You do not have sufficient permissions to access this page.', 'glory'));
+        }
+
+        $all_fields = ContentManager::getRegisteredContentFields();
+        $field_config = $all_fields[$menu_key_to_reset] ?? null;
+        $menu_label = $field_config['label'] ?? $menu_key_to_reset;
+
+        if ($field_config && isset($field_config['type']) && $field_config['type'] === 'menu_structure') {
+            if (isset($field_config['default'])) {
+                $default_value = $field_config['default'];
+                $option_name = ContentManager::OPTION_PREFIX . $menu_key_to_reset;
+
+                update_option($option_name, $default_value);
+                delete_option($option_name . ContentManager::OPTION_META_PANEL_SAVED_SUFFIX);
+                delete_option($option_name . ContentManager::OPTION_META_CODE_HASH_SUFFIX);
+
+                GloryLogger::info("RestaurantMenuAdminPanel: Menu '{$menu_key_to_reset}' was reset to its default value by user.");
+                add_settings_error(
+                    'glory_restaurant_menu_messages',
+                    'glory_menu_reset_success',
+                    sprintf(__('Menu "%s" has been successfully reset to its default values.', 'glory'), esc_html($menu_label)),
+                    'updated'
+                );
+            } else {
+                GloryLogger::error("RestaurantMenuAdminPanel: Could not reset menu '{$menu_key_to_reset}'. No default value defined in its registration.");
+                add_settings_error(
+                    'glory_restaurant_menu_messages',
+                    'glory_menu_reset_no_default',
+                    sprintf(__('Could not reset menu "%s". No default value is defined for this menu in the code.', 'glory'), esc_html($menu_label)),
+                    'error'
+                );
+            }
+        } else {
+            GloryLogger::error("RestaurantMenuAdminPanel: Could not reset menu '{$menu_key_to_reset}'. Field not found or not a 'menu_structure' type.");
+            add_settings_error(
+                'glory_restaurant_menu_messages',
+                'glory_menu_reset_not_found',
+                sprintf(__('Could not reset menu "%s". The menu field was not found or is not of the correct type.', 'glory'), esc_html($menu_key_to_reset)),
+                'error'
+            );
+        }
+
+        set_transient('settings_errors', get_settings_errors(), 30);
+        $redirect_url = admin_url('admin.php?page=' . self::$menu_slug . '&settings-updated=true'); // settings-updated para mostrar el mensaje
+        wp_redirect($redirect_url);
+        exit;
+    }
+
+
     public static function render_admin_page_html(): void
     {
         if (!current_user_can('manage_options')) {
@@ -393,10 +468,6 @@ class RestaurantMenuAdminPanel
         submit_button(__('Save Menu Settings', 'glory'));
         echo '</form>';
 
-        // Plantillas JS (si tu nuevo JS las necesita directamente en el HTML).
-        // Es mejor si el JS las define internamente o las carga desde wp.template.
-        // Ejemplo:
-        // echo '<script type="text/html" id="tmpl-glory-restaurant-menu-tab-item"> ... </script>';
 
         echo '</div>'; // Cierre de .wrap
     }

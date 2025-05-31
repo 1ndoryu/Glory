@@ -80,6 +80,28 @@ function render_menu_structure_field_admin_html(string $key, array $config, $cur
         echo '</div>'; // .menu-dropdown-order-container
     }
 
+    // --- INICIO DE CÓDIGO AÑADIDO PARA EL BOTÓN DE RESTABLECER ---
+    echo '<div class="glory-menu-actions" style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd;">';
+    
+    $reset_nonce_action_string = 'glory_restaurant_menu_reset_action_' . $key;
+    $reset_nonce_name_string = '_wpnonce_glory_restaurant_menu_reset_' . $key;
+
+    // Botón de Restablecer para esta instancia de menú
+    echo '<button type="submit" 
+                  name="glory_reset_menu_key_action" 
+                  value="' . esc_attr($key) . '" 
+                  class="button button-secondary glory-reset-single-menu-button"
+                  onclick="return confirm(\'' . esc_js(sprintf(__('Are you sure you want to reset the menu "%s" to its default values? This action cannot be undone.', 'glory'), esc_html($config['label'] ?? $key))) . '\');">'
+          . esc_html__('Reset This Menu to Defaults', 'glory') .
+          '</button>';
+          
+    // Nonce específico para este botón/acción de reset
+    // El cuarto parámetro 'true' hace que se imprima, el tercero 'true' para referer check.
+    wp_nonce_field($reset_nonce_action_string, $reset_nonce_name_string, true, true); 
+
+    echo '</div>'; // .glory-menu-actions
+    // --- FIN DE CÓDIGO AÑADIDO PARA EL BOTÓN DE RESTABLECER ---
+
     echo '</div>'; // .glory-menu-structure-admin
 }
 
@@ -281,14 +303,13 @@ function render_menu_section_multi_price_admin_html(string $base_section_name_at
             }
             ?>
         </div>
-        <button type="button" class="button glory-add-menu-item-multi-price"><?php _e('Add Item to this Section', 'glory'); ?></button>
+        <button type="button" class="button glory-add-menu-item" data-item-type="multi_price"><?php _e('Add Item to this Section', 'glory'); ?></button>
         <p class="description">
             <?php _e('Use "Add Item" to add standard multi-price items, single-price items, or row headers. The type of item will be determined by the fields you fill. For a row header, use HTML in name (e.g. <b>Header</b>), fill its "prices" as text headers, and check "Is Header Row". For single price, fill name and "Price 1" and check "Is Single Price".', 'glory'); ?>
         </p>
     </div>
 <?php
 }
-
 /**
  * Renderiza un ítem para una sección 'multi_price'.
  */
