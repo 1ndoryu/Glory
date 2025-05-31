@@ -55,111 +55,7 @@ function renderFieldInput(string $key, array $config, $current_value, string $op
         case 'text':
             echo '<input type="text" id="' . $field_id . '" name="' . $option_input_name . '" value="' . esc_attr($current_value) . '" class="regular-text">';
             break;
-        case 'menu_structure':
-            // $current_value aquí es el array PHP completo de la estructura del menú
-            $menu_data = is_array($current_value) ? $current_value : [];
-            $tabs_data = $menu_data['tabs'] ?? [];
-            $sections_data = $menu_data['sections'] ?? [];
-
-            echo '<div class="glory-menu-structure-admin">';
-
-            // Parte 1: Administrador de Pestañas (Tabs) - Simplificado por ahora
-            echo '<h4>' . __('Menu Tabs Configuration', 'glory') . '</h4>';
-            echo '<div class="glory-menu-tabs-editor">';
-            if (!empty($tabs_data)) {
-                foreach ($tabs_data as $tab_index => $tab) {
-                    $tab_id_val = $tab['id'] ?? 'new_tab_' . $tab_index;
-                    $tab_text_val = $tab['text'] ?? '';
-                    $tab_visible_val = $tab['visible_in_tabs'] ?? true;
-                    $base_tab_name = esc_attr($option_input_name . '[tabs][' . $tab_index . ']');
-?>
-                    <div class="glory-menu-tab-item">
-                        <p>
-                            ID: <input type="text" name="<?php echo $base_tab_name . '[id]'; ?>" value="<?php echo esc_attr($tab_id_val); ?>" placeholder="Ej: 46580">
-                            Texto: <input type="text" name="<?php echo $base_tab_name . '[text]'; ?>" value="<?php echo esc_attr($tab_text_val); ?>" placeholder="Ej: NUESTROS DESAYUNOS">
-                            <label>
-                                <input type="checkbox" name="<?php echo $base_tab_name . '[visible_in_tabs]'; ?>" value="1" <?php checked($tab_visible_val); ?>>
-                                <?php _e('Visible in main tab bar', 'glory'); ?>
-                            </label>
-                            <button type="button" class="button button-small glory-remove-menu-tab">X</button>
-                        </p>
-                    </div>
-    <?php
-                }
-            }
-            echo '<button type="button" class="button glory-add-menu-tab">' . __('Add Tab', 'glory') . '</button>';
-            echo '</div><hr>';
-
-
-            // Parte 2: Administrador de Secciones
-            echo '<h4>' . __('Menu Sections', 'glory') . '</h4>';
-            echo '<div class="glory-menu-sections-editor">';
-
-            if (!empty($sections_data)) {
-                foreach ($sections_data as $section_id => $section) {
-                    $section_title = $section['title'] ?? '';
-                    $section_description = $section['description'] ?? '';
-                    $section_type = $section['type'] ?? 'standard'; // Asegurar que type exista
-                    $base_section_name = esc_attr($option_input_name . '[sections][' . $section_id . ']');
-
-                    echo '<div class="glory-menu-section postbox">';
-                    echo '<h3 class="hndle"><span>' . esc_html($section_title ?: __('New Section', 'glory')) . ' (ID: ' . esc_html($section_id) . ')</span></h3>';
-                    echo '<div class="inside">';
-
-                    // Campos comunes a todas las secciones (ID es la clave, no editable directamente aquí)
-                    echo '<input type="hidden" name="' . $base_section_name . '[id_placeholder]" value="' . esc_attr($section_id) . '">'; // Para identificar la sección al guardar si el título cambia
-                    echo '<p><label>' . __('Section Title:', 'glory') . '</label><br><input type="text" name="' . $base_section_name . '[title]' . '" value="' . esc_attr($section_title) . '" class="large-text"></p>';
-                    echo '<p><label>' . __('Section Description (optional):', 'glory') . '</label><br><textarea name="' . $base_section_name . '[description]' . '" rows="3" class="large-text">' . esc_textarea($section_description) . '</textarea></p>';
-                    echo '<p><label>' . __('Section Type:', 'glory') . '</label><br>';
-                    echo '<select name="' . $base_section_name . '[type]' . '">';
-                    echo '<option value="standard" ' . selected($section_type, 'standard', false) . '>' . __('Standard Items', 'glory') . '</option>';
-                    echo '<option value="multi_price" ' . selected($section_type, 'multi_price', false) . '>' . __('Multi-Price Items', 'glory') . '</option>';
-                    echo '<option value="menu_pack" ' . selected($section_type, 'menu_pack', false) . '>' . __('Menu Packs', 'glory') . '</option>';
-                    echo '</select></p>';
-
-
-                    // Renderizado específico por tipo de sección
-                    if ($section_type === 'standard') {
-                        echo '<h5>' . __('Items:', 'glory') . '</h5>';
-                        echo '<div class="glory-menu-items-list">';
-                        $items = $section['items'] ?? [];
-                        if (!empty($items)) {
-                            foreach ($items as $item_idx => $item_data) {
-                                renderMenuRestaurant($section_id, $item_idx, $item_data, $base_section_name . '[items]');
-                            }
-                        }
-                        echo '</div>'; // .glory-menu-items-list
-                        echo '<button type="button" class="button glory-add-menu-item" data-section-id="' . esc_attr($section_id) . '">' . __('Add Item to this Section', 'glory') . '</button>';
-                    } elseif ($section_type === 'multi_price') {
-                        echo '<p><em>' . __('Multi-price item editor UI will be implemented later.', 'glory') . '</em></p>';
-                        // Aquí iría la UI para price_headers e items con múltiples precios
-                        // Por ahora, mostramos el JSON para no perder datos
-                        $fallback_value = $section['items'] ?? [];
-                        if (isset($section['price_headers'])) $fallback_value = ['price_headers' => $section['price_headers'], 'items' => $fallback_value];
-                        echo '<textarea rows="5" class="large-text code" readonly>' . esc_textarea(json_encode($fallback_value, JSON_PRETTY_PRINT)) . '</textarea>';
-                    } elseif ($section_type === 'menu_pack') {
-                        echo '<p><em>' . __('Menu pack editor UI will be implemented later.', 'glory') . '</em></p>';
-                        // Aquí iría la UI para los packs
-                        // Por ahora, mostramos el JSON para no perder datos
-                        echo '<textarea rows="5" class="large-text code" readonly>' . esc_textarea(json_encode($section['packs'] ?? [], JSON_PRETTY_PRINT)) . '</textarea>';
-                    }
-
-                    echo '<p><button type="button" class="button button-link-delete glory-remove-menu-section">' . __('Remove this Section', 'glory') . '</button></p>';
-                    echo '</div>'; // .inside
-                    echo '</div>'; // .glory-menu-section
-                }
-            }
-            echo '</div>'; // .glory-menu-sections-editor
-            echo '<button type="button" class="button button-primary glory-add-menu-section">' . __('Add New Section', 'glory') . '</button>';
-
-            echo '</div>'; // .glory-menu-structure-admin
-
-            // Guardamos una copia del JSON original en un campo oculto por si algo falla o para referencia
-            // Esto es temporal hasta que la UI sea completamente funcional para todos los tipos
-            echo '<input type="hidden" name="' . esc_attr($option_input_name . '[_json_fallback]') . '" value="' . esc_attr(json_encode($current_value)) . '">';
-
-            break;
-        // --- FIN DE CÓDIGO MODIFICADO/NUEVO ---
+        // El case 'menu_structure' ha sido eliminado de aquí.
         case 'raw':
             $value_for_textarea = $current_value;
             if (is_array($value_for_textarea) || is_object($value_for_textarea)) {
@@ -192,7 +88,6 @@ function renderFieldInput(string $key, array $config, $current_value, string $op
             echo '</div>';
             break;
         case 'schedule':
-            // Updated call to the renamed global function in this file
             renderHorario($key, is_array($current_value) ? $current_value : [], $option_input_name);
             break;
         default:
@@ -213,10 +108,37 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                 <?php if (!empty($fields_by_section)): ?>
                     <?php foreach ($fields_by_section as $section_slug => $fields_in_section): ?>
                         <?php
+                        // No renderizar pestaña si todos los campos son 'menu_structure' ya que se manejan en otro panel
+                        $non_menu_fields_exist = false;
+                        foreach ($fields_in_section as $field_config) {
+                            if (($field_config['type'] ?? 'text') !== 'menu_structure') {
+                                $non_menu_fields_exist = true;
+                                break;
+                            }
+                        }
+                        if (!$non_menu_fields_exist && $menu_slug_for_url_building === 'glory-content-manager') {
+                            // Si estamos en el panel general y esta sección solo tenía campos de menú, no mostrar la pestaña.
+                            // Esto es para evitar pestañas vacías si los campos de menú se movieron a su propio panel.
+                            continue;
+                        }
+
+
                         $section_label_raw = 'General';
                         if (!empty($fields_in_section)) {
-                            $first_field_config = reset($fields_in_section);
-                            $section_label_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
+                            // Intentar obtener la etiqueta de la primera configuración de campo no-menú
+                            $first_field_config = null;
+                            foreach ($fields_in_section as $f_conf) {
+                                if (($f_conf['type'] ?? 'text') !== 'menu_structure') {
+                                    $first_field_config = $f_conf;
+                                    break;
+                                }
+                            }
+                            if ($first_field_config) {
+                                $section_label_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
+                            } elseif (!empty($fields_in_section)) { // Si solo hay campos de menú (improbable aquí después del continue)
+                                $first_field_config = reset($fields_in_section);
+                                $section_label_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
+                            }
                         }
                         $tab_id_attr = 'tab-' . $section_slug;
                         ?>
@@ -237,12 +159,34 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                 <?php else: ?>
                     <?php foreach ($fields_by_section as $section_slug => $fields_in_section): ?>
                         <?php
-                        $tab_id_attr = 'tab-' . $section_slug;
+                        // Filtrar campos 'menu_structure' de la renderización en este panel general
+                        $fields_to_render_in_section = [];
                         $section_display_name_raw = 'General';
-                        if (!empty($fields_in_section)) {
-                            $first_field_config = reset($fields_in_section);
-                            $section_display_name_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
+                        $has_non_menu_fields = false;
+
+                        foreach ($fields_in_section as $key_loop => $config_loop) {
+                            if (($config_loop['type'] ?? 'text') !== 'menu_structure') {
+                                $fields_to_render_in_section[$key_loop] = $config_loop;
+                                if (!$has_non_menu_fields) { // Tomar la etiqueta de la primera config no-menu
+                                    $section_display_name_raw = $config_loop['section_label'] ?? $config_loop['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
+                                    $has_non_menu_fields = true;
+                                }
+                            }
                         }
+                        
+                        // Si después de filtrar, no quedan campos para esta sección (porque todos eran menu_structure),
+                        // y estamos en el panel general, no renderizar el contenido de la pestaña.
+                        if (empty($fields_to_render_in_section) && $menu_slug_for_url_building === 'glory-content-manager') {
+                            continue;
+                        }
+                        // Si aún no se pudo determinar el nombre y hay campos, usar el primero disponible (aunque sean de menú, caso borde)
+                        if (!$has_non_menu_fields && !empty($fields_in_section)) {
+                             $first_field_config = reset($fields_in_section);
+                             $section_display_name_raw = $first_field_config['section_label'] ?? $first_field_config['section'] ?? ucfirst(str_replace('-', ' ', $section_slug));
+                        }
+
+
+                        $tab_id_attr = 'tab-' . $section_slug;
                         ?>
                         <div id="<?php echo esc_attr($tab_id_attr); ?>" class="glory-tab-content <?php echo $active_tab === $section_slug ? 'active' : ''; ?>">
                             <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=' . $menu_slug_for_url_building . '&tab=' . $section_slug)); ?>">
@@ -261,9 +205,10 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                                         $image_key = 'gallery_image_' . $i;
                                                         $alt_key = 'gallery_image_alt_' . $i;
 
-                                                        if (isset($fields_in_section[$image_key])) {
-                                                            $image_config = $fields_in_section[$image_key];
-                                                            $alt_config = $fields_in_section[$alt_key] ?? null;
+                                                        // Usar $fields_to_render_in_section para la galería también
+                                                        if (isset($fields_to_render_in_section[$image_key])) {
+                                                            $image_config = $fields_to_render_in_section[$image_key];
+                                                            $alt_config = $fields_to_render_in_section[$alt_key] ?? null;
 
                                                             $image_url = $image_config['current_value'] ?? $image_config['default'] ?? '';
                                                             $alt_text = '';
@@ -298,7 +243,8 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                                     } ?>
                                                 </div>
                                                 <?php
-                                                $remaining_fields_in_section = array_diff_key($fields_in_section, array_flip($processed_gallery_keys));
+                                                // Asegurarse de que $remaining_fields_in_section también use los campos filtrados
+                                                $remaining_fields_in_section = array_diff_key($fields_to_render_in_section, array_flip($processed_gallery_keys));
                                                 if (!empty($remaining_fields_in_section)):
                                                 ?>
                                                     <hr>
@@ -316,7 +262,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                                                         <label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
                                                                     </th>
                                                                     <td>
-                                                                        <?php renderFieldInput($key, $config, $current_value_for_field, $option_input_name); // Updated call 
+                                                                        <?php renderFieldInput($key, $config, $current_value_for_field, $option_input_name); 
                                                                         ?>
                                                                         <?php if ($description): ?>
                                                                             <p class="description"><?php echo wp_kses_post($description); ?></p>
@@ -331,7 +277,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                             ?>
                                                 <table class="form-table" role="presentation">
                                                     <tbody>
-                                                        <?php foreach ($fields_in_section as $key => $config):
+                                                        <?php foreach ($fields_to_render_in_section as $key => $config): // Iterar sobre los campos filtrados
                                                             $current_value_for_field = $config['current_value'] ?? $config['default'] ?? '';
                                                             $option_input_name = 'glory_content[' . esc_attr($key) . ']';
                                                             $label = $config['label'] ?? ucfirst(str_replace('_', ' ', $key));
@@ -342,7 +288,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                                                     <label for="<?php echo esc_attr($key); ?>"><?php echo esc_html($label); ?></label>
                                                                 </th>
                                                                 <td>
-                                                                    <?php renderFieldInput($key, $config, $current_value_for_field, $option_input_name);  // Updated call 
+                                                                    <?php renderFieldInput($key, $config, $current_value_for_field, $option_input_name); 
                                                                     ?>
                                                                     <?php if ($description): ?>
                                                                         <p class="description"><?php echo wp_kses_post($description); ?></p>
@@ -356,7 +302,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                         </div>
                                     </div>
                                 </div>
-                                <?php submit_button(__('Save Changes for this Section', 'glory')); ?>
+                                <?php if (!empty($fields_to_render_in_section)) submit_button(__('Save Changes for this Section', 'glory')); ?>
                             </form>
                         </div>
                     <?php endforeach; ?>
@@ -368,30 +314,6 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
     return ob_get_clean();
 }
 
-function renderMenuRestaurant(string $section_key, int $item_index, array $item_data, string $base_input_name): void
-{
-    $name = $item_data['name'] ?? '';
-    $price = $item_data['price'] ?? '';
-    $description = $item_data['description'] ?? '';
-?>
-    <div class="glory-menu-item" data-item-index="<?php echo $item_index; ?>">
-        <button type="button" class="button button-small glory-remove-menu-item">X</button>
-        <p>
-            <label><?php _e('Item Name:', 'glory'); ?></label><br>
-            <input type="text" name="<?php echo esc_attr($base_input_name . '[' . $item_index . '][name]'); ?>" value="<?php echo esc_attr($name); ?>" class="large-text">
-        </p>
-        <p>
-            <label><?php _e('Item Price:', 'glory'); ?></label><br>
-            <input type="text" name="<?php echo esc_attr($base_input_name . '[' . $item_index . '][price]'); ?>" value="<?php echo esc_attr($price); ?>" class="regular-text">
-        </p>
-        <p>
-            <label><?php _e('Item Description (optional):', 'glory'); ?></label><br>
-            <textarea name="<?php echo esc_attr($base_input_name . '[' . $item_index . '][description]'); ?>" rows="1" class="large-text" style="height: 50px !important; min-height: unset !important;"><?php echo esc_textarea($description); ?></textarea>
-        </p>
-        <hr>
-    </div>
-<?php
-}
 
 ?>
 

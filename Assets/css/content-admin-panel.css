@@ -230,3 +230,7 @@ textarea.code {
     margin-right: 5px;
     margin-bottom: 5px;
 }
+
+.glory-menu-items-list input.regular-text {
+    width: 100%;
+}

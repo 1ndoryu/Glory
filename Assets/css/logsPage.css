@@ -79,7 +79,7 @@ body.glory-logs-dark-mode {
     flex-direction: column;
 }
 
-h1 {
+.glory-log-entry h1 {
     display: none;
 }
 
