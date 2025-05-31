@@ -1,5 +1,5 @@
 <?php
-# /Glory/Components/formManager.php
+# /Glory/Components/formManagerComponent.php
 
 namespace Glory\Components;
 
@@ -7,15 +7,15 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class formManager
+class formManagerComponent
 {
     private string $id;
     private string $actionUrlOriginal; // URL de redirección original (para fallback muy básico o referencia)
     private string $method;
     private array $attributes = [];
     private array $fields = [];
-    private string $htmlAntesCampos = ''; // Anteriormente htmlDentroFormAntesCampos
-    private string $htmlDespuesCampos = ''; // Anteriormente htmlDentroFormDespuesCampos
+    private string $htmlAntesCampos = '';
+    private string $htmlDespuesCampos = '';
 
     private static bool $adminHooksInicializados = false;
 
@@ -29,14 +29,14 @@ class formManager
         $this->method = strtoupper($method);
         $this->attributes['id'] = $this->id;
 
-        self::registrarAccionesAdmin();
+        self::registrarAccionesGlobales(); // Renombrado para reflejar mejor su propósito actual
         self::registrarFormularioActivo($this->id);
     }
 
-    private static function registrarAccionesAdmin(): void
+    private static function registrarAccionesGlobales(): void
     {
         if (!self::$adminHooksInicializados) {
-            add_action('admin_menu', [self::class, 'agregarPaginaFormulariosAdmin']);
+            // La acción 'admin_menu' para agregar la página de admin se movió a formAdminPanel
             add_action('wp_footer', [self::class, 'mostrarMensajesFeedback']);
             self::$adminHooksInicializados = true;
         }
@@ -54,43 +54,31 @@ class formManager
         }
     }
 
-    public static function agregarPaginaFormulariosAdmin(): void
+    // Este método ahora genera el HTML para ser usado por formAdminPanel
+    public static function generarHtmlPanelAdmin(): string
     {
-        add_menu_page(
-            esc_html__('Datos de Formularios Glory', 'glory-domain'),
-            esc_html__('Formularios Glory', 'glory-domain'),
-            'manage_options',
-            'glory-form-data',
-            [self::class, 'renderizarPaginaAdminFormularios'],
-            'dashicons-feedback',
-            26
-        );
-    }
-
-    public static function renderizarPaginaAdminFormularios(): void
-    {
-        echo '<div class="wrap">';
-        echo '<h1>' . esc_html__('Datos Recopilados por Formularios Glory', 'glory-domain') . '</h1>';
+        $html = '<div class="wrap">';
+        $html .= '<h1>' . esc_html__('Datos Recopilados por Formularios Glory', 'glory-domain') . '</h1>';
 
         $activeFormIds = get_option('glory_active_form_ids', []);
         if (empty($activeFormIds) || !is_array($activeFormIds)) {
-            echo '<p>' . esc_html__('No hay formularios activos o no se han recibido datos aún.', 'glory-domain') . '</p>';
-            echo '</div>';
-            return;
+            $html .= '<p>' . esc_html__('No hay formularios activos o no se han recibido datos aún.', 'glory-domain') . '</p>';
+            $html .= '</div>';
+            return $html;
         }
 
         foreach ($activeFormIds as $formId) {
-            echo '<h2>' . esc_html__('Datos del formulario:', 'glory-domain') . ' ' . esc_html($formId) . '</h2>';
+            $html .= '<h2>' . esc_html__('Datos del formulario:', 'glory-domain') . ' ' . esc_html($formId) . '</h2>';
             $formDataKey = 'glory_form_data_' . $formId;
             $submissions = get_option($formDataKey, []);
 
             if (empty($submissions) || !is_array($submissions)) {
-                echo '<p>' . esc_html__('No hay envíos para este formulario todavía.', 'glory-domain') . '</p>';
+                $html .= '<p>' . esc_html__('No hay envíos para este formulario todavía.', 'glory-domain') . '</p>';
                 continue;
             }
 
-            echo '<table class="wp-list-table widefat fixed striped">';
-            echo '<thead><tr>';
+            $html .= '<table class="wp-list-table widefat fixed striped">';
+            $html .= '<thead><tr>';
 
             $firstSubmissionWithData = null;
             foreach ($submissions as $sub) {
@@ -104,45 +92,46 @@ class formManager
             if ($firstSubmissionWithData) {
                 foreach (array_keys($firstSubmissionWithData['formData']) as $headerKey) {
                     $headers[] = $headerKey;
-                    echo '<th>' . esc_html(ucwords(str_replace(['_', '-'], ' ', $headerKey))) . '</th>';
+                    $html .= '<th>' . esc_html(ucwords(str_replace(['_', '-'], ' ', $headerKey))) . '</th>';
                 }
             } else {
-                echo '<th>' . esc_html__('Datos', 'glory-domain') . '</th>';
+                $html .= '<th>' . esc_html__('Datos', 'glory-domain') . '</th>';
             }
 
             $dateColumnHeader = esc_html__('Fecha de Envío', 'glory-domain');
-            echo '<th>' . $dateColumnHeader . '</th>';
+            $html .= '<th>' . $dateColumnHeader . '</th>';
 
-            echo '</tr></thead>';
-            echo '<tbody>';
+            $html .= '</tr></thead>';
+            $html .= '<tbody>';
 
             foreach (array_reverse($submissions) as $submissionData) {
-                echo '<tr>';
+                $html .= '<tr>';
                 if (isset($submissionData['formData']) && is_array($submissionData['formData'])) {
                     if (!empty($headers)) {
                         foreach ($headers as $key) {
-                            echo '<td>' . esc_html($submissionData['formData'][$key] ?? '') . '</td>';
+                            $html .= '<td>' . esc_html($submissionData['formData'][$key] ?? '') . '</td>';
                         }
                     } else {
-                        echo '<td>' . esc_html(print_r($submissionData['formData'], true)) . '</td>';
+                        $html .= '<td>' . esc_html(print_r($submissionData['formData'], true)) . '</td>';
                     }
                     if (isset($submissionData['dateTimeFormatted'])) {
-                        echo '<td>' . esc_html($submissionData['dateTimeFormatted']) . '</td>';
+                        $html .= '<td>' . esc_html($submissionData['dateTimeFormatted']) . '</td>';
                     } elseif (isset($submissionData['timestamp'])) {
-                        echo '<td>' . esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $submissionData['timestamp'])) . '</td>';
+                        $html .= '<td>' . esc_html(date_i18n(get_option('date_format') . ' ' . get_option('time_format'), $submissionData['timestamp'])) . '</td>';
                     } else {
-                        echo '<td>' . esc_html__('N/A', 'glory-domain') . '</td>';
+                        $html .= '<td>' . esc_html__('N/A', 'glory-domain') . '</td>';
                     }
                 } else {
                     $columnCount = (!empty($headers) ? count($headers) : 1) + 1;
-                    echo '<td colspan="' . esc_attr($columnCount) . '">' . esc_html__('Datos no disponibles en el formato esperado.', 'glory-domain') . '</td>';
+                    $html .= '<td colspan="' . esc_attr($columnCount) . '">' . esc_html__('Datos no disponibles en el formato esperado.', 'glory-domain') . '</td>';
                 }
-                echo '</tr>';
+                $html .= '</tr>';
             }
-            echo '</tbody></table>';
-            echo '<hr style="margin: 20px 0;">';
+            $html .= '</tbody></table>';
+            $html .= '<hr style="margin: 20px 0;">';
         }
-        echo '</div>';
+        $html .= '</div>';
+        return $html;
     }
 
     public function setId(string $id): self
@@ -200,7 +189,7 @@ class formManager
         if ($requiresName || isset($fieldConfig['name'])) {
             $defaultName = $fieldConfig['name'] ?? uniqid('field_name_');
         } elseif ($type === 'submit' && !isset($fieldConfig['name'])) {
-            $defaultName = null; // Submit buttons don't strictly need a name to function
+            $defaultName = null;
         }
 
         $defaultId = $fieldConfig['id'] ?? ($defaultName ? $this->id . '_' . $defaultName : uniqid($this->id . '_field_id_'));
@@ -305,13 +294,13 @@ class formManager
             esc_attr(wp_create_nonce($nonceActionString))
         );
 
-        $formHtml .= $this->htmlAntesCampos; // Propiedad renombrada
+        $formHtml .= $this->htmlAntesCampos;
 
         foreach ($this->fields as $fieldConfig) {
-            $formHtml .= $this->renderizarCampo($fieldConfig); // Método renombrado
+            $formHtml .= $this->renderizarCampo($fieldConfig);
         }
 
-        $formHtml .= $this->htmlDespuesCampos; // Propiedad renombrada
+        $formHtml .= $this->htmlDespuesCampos;
         $formHtml .= "</form>\n";
 
         return $formHtml;
@@ -329,7 +318,7 @@ class formManager
         return $this;
     }
 
-    private function renderizarCampo(array $config): string // Método renombrado de renderField
+    private function renderizarCampo(array $config): string
     {
         $fieldHtml = "";
         $type = $config['type'];
@@ -354,7 +343,7 @@ class formManager
             $elementAttributes['type'] = $type;
         }
         if (in_array($type, ['text', 'email', 'tel', 'password', 'hidden', 'search', 'url', 'date', 'month', 'week', 'time', 'datetime-local', 'number', 'range', 'color', 'file', 'radio', 'checkbox'])) {
-            if ($value !== '' || $type === 'hidden') { // El valor se establece incluso si está vacío para tipos como radio/checkbox si se proporciona
+            if ($value !== '' || $type === 'hidden') {
                 $elementAttributes['value'] = $value;
             }
         }
@@ -371,9 +360,9 @@ class formManager
         $buttonDisplayContent = '';
 
         if ($type === 'submit' || $type === 'button') {
-            $finalAttributes['type'] = $type; // Asegurar que el tipo se establezca para botones
+            $finalAttributes['type'] = $type;
             if (!empty($htmlContent)) {
-                $buttonDisplayContent = $htmlContent; // Permitir HTML dentro del botón
+                $buttonDisplayContent = $htmlContent;
             } else {
                 $buttonTextFallback = $value ?: ucfirst($type);
                 $buttonDisplayContent = esc_html($buttonTextFallback);
@@ -398,7 +387,7 @@ class formManager
                 break;
             case 'submit':
             case 'button':
-                $inputElementHtml = '<button' . $inputAttributesString . '>' . $buttonDisplayContent . '</button>'; // Usar $buttonDisplayContent
+                $inputElementHtml = '<button' . $inputAttributesString . '>' . $buttonDisplayContent . '</button>';
                 break;
             case 'html':
                 $inputElementHtml = $htmlContent;

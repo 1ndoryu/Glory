@@ -1,9 +1,9 @@
 <?php
 # /Glory/Services/FormService.php
 
-namespace Glory\Components;
+namespace Glory\Services;
 
-use Glory\Class\formManager;
+use Glory\Components\formManagerComponent;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -28,7 +28,7 @@ class FormService
         $formId = sanitize_text_field(wp_unslash($_POST['_glory_form_id']));
 
         // 2. Verificar Nonce
-        $nonceFieldName = formManager::AJAX_NONCE_FIELD_NAME;
+        $nonceFieldName = formManagerComponent::AJAX_NONCE_FIELD_NAME;
         $nonceAction = 'glory_form_nonce_' . $formId;
         $nonceValueFromPost = isset($_POST[$nonceFieldName]) ? sanitize_text_field(wp_unslash($_POST[$nonceFieldName])) : null;
 
@@ -102,7 +102,7 @@ class FormService
      */
     public function registrarHooks(): void
     {
-        $gloryAjaxAction = formManager::AJAX_PROCESS_FORM_ACTION;
+        $gloryAjaxAction = formManagerComponent::AJAX_PROCESS_FORM_ACTION;
         
         add_action('wp_ajax_' . $gloryAjaxAction, [$this, 'procesarEnvioFormularioAjax']);
         add_action('wp_ajax_nopriv_' . $gloryAjaxAction, [$this, 'procesarEnvioFormularioAjax']);

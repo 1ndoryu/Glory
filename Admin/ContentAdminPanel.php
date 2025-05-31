@@ -88,8 +88,8 @@ class ContentAdminPanel
     public static function add_admin_page(): void
     {
         add_menu_page(
-            __('Glory Content', 'glory'),
-            __('Glory Content', 'glory'),
+            __('Glory', 'glory'),
+            __('Glory', 'glory'),
             'manage_options',
             self::$menu_slug,
             [self::class, 'render_admin_page_html'],

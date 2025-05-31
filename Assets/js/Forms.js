@@ -3,7 +3,7 @@ function inicializarManejoAjaxFormulariosGlory() {
 
     // Primero, asegúrate de que GloryAjax esté disponible.
     if (typeof GloryAjax !== 'function') {
-        console.error('Glory FormManager JS: La función GloryAjax no está definida. Los formularios no funcionarán con AJAX.');
+        console.error('Glory formManagerComponent JS: La función GloryAjax no está definida. Los formularios no funcionarán con AJAX.');
         // Podrías incluso añadir un mensaje a todos los responseDiv si es crítico.
         formularios.forEach(form => {
             const responseDiv = form.querySelector('.glory-form-ajax-response');
@@ -19,7 +19,7 @@ function inicializarManejoAjaxFormulariosGlory() {
         const responseDiv = formulario.querySelector('.glory-form-ajax-response');
         
         if (!responseDiv) {
-            console.warn('Glory FormManager JS: No se encontró el div de respuesta (.glory-form-ajax-response) para el formulario con ID:', formulario.id || '(sin ID)');
+            console.warn('Glory formManagerComponent JS: No se encontró el div de respuesta (.glory-form-ajax-response) para el formulario con ID:', formulario.id || '(sin ID)');
             return;
         }
 
@@ -41,7 +41,7 @@ function inicializarManejoAjaxFormulariosGlory() {
             const wpAjaxAction = formData.get('action'); 
 
             if (!wpAjaxAction) {
-                console.error('Glory FormManager JS: No se encontró el campo "action" en el FormData para el formulario:', formulario.id);
+                console.error('Glory formManagerComponent JS: No se encontró el campo "action" en el FormData para el formulario:', formulario.id);
                 responseDiv.innerHTML = '<p>Error de configuración interna del formulario (falta "action").</p>';
                 responseDiv.className = 'glory-form-ajax-response glory-ajax-error';
                 if (botonSubmit) botonSubmit.disabled = false;
@@ -84,7 +84,7 @@ function inicializarManejoAjaxFormulariosGlory() {
                 }
 
             } catch (error) { // Este catch es para errores inesperados en este bloque, no en GloryAjax.
-                console.error('Glory FormManager JS: Error inesperado procesando la respuesta de GloryAjax:', error);
+                console.error('Glory formManagerComponent JS: Error inesperado procesando la respuesta de GloryAjax:', error);
                 responseDiv.innerHTML = `<p>Ocurrió un error inesperado. Por favor, inténtelo de nuevo más tarde.</p>`;
                 responseDiv.className = 'glory-form-ajax-response glory-ajax-error';
             } finally {
