@@ -30,8 +30,6 @@ class formAdminPanel
 
     public function renderizarContenidoPanel(): void
     {
-        // Este método llamará a formManagerComponent para obtener el HTML real.
-        // Se asume que existirá un método estático `generarHtmlPanelAdmin` en formManagerComponent.
         echo formManagerComponent::generarHtmlPanelAdmin();
     }
 }

@@ -100,17 +100,74 @@ class ContentAdminPanel
 
     public static function register_settings_and_handle_save(): void
     {
+        // Guardar datos de una sección
         if (
             isset($_POST['action']) && $_POST['action'] === 'glory_save_content' &&
             isset($_POST['_wpnonce_glory_content_save']) && isset($_POST['glory_active_section'])
         ) {
             $active_section_key = sanitize_text_field($_POST['glory_active_section']);
             if (wp_verify_nonce($_POST['_wpnonce_glory_content_save'], 'glory_content_save_action_' . $active_section_key)) {
-                self::handle_save_data($active_section_key);
+                self::handle_save_data($active_section_key); // Este método ya redirige
             } else {
-                GloryLogger::error("ContentAdminPanel: Nonce verification FAILED for section {$active_section_key}.");
-                wp_die(__('Nonce verification failed!', 'glory'), __('Error', 'glory'), ['response' => 403]);
+                GloryLogger::error("ContentAdminPanel: Nonce verification FAILED for SAVE action, section {$active_section_key}.");
+                wp_die(__('Nonce verification failed for save action!', 'glory'), __('Error', 'glory'), ['response' => 403]);
             }
+            return; // Salir después de manejar el guardado
+        }
+
+        // Resetear una sección a los valores por defecto
+        if (
+            isset($_POST['action']) && $_POST['action'] === 'glory_reset_section' &&
+            isset($_POST['_wpnonce_glory_content_reset']) && isset($_POST['glory_active_section'])
+        ) {
+            $active_section_key = sanitize_text_field($_POST['glory_active_section']);
+            if (wp_verify_nonce($_POST['_wpnonce_glory_content_reset'], 'glory_content_reset_action_' . $active_section_key)) {
+                if (!current_user_can('manage_options')) {
+                    GloryLogger::error("ContentAdminPanel: User without 'manage_options' tried to RESET section {$active_section_key}.");
+                    wp_die(__('You do not have sufficient permissions to perform this action.', 'glory'));
+                }
+
+                $reset_results = ContentManager::resetSectionToDefaults($active_section_key);
+                $section_display_name = ucfirst(str_replace('-', ' ', $active_section_key));
+
+                if ($reset_results['fields_processed_count'] > 0) {
+                    add_settings_error(
+                        'glory_content_messages',
+                        'glory_content_reset_success',
+                        sprintf(
+                            __('Section "%s" has been successfully reset to default values. %d field(s) were reset.', 'glory'),
+                            esc_html($section_display_name),
+                            $reset_results['fields_processed_count']
+                        ),
+                        'updated'
+                    );
+                } elseif ($reset_results['not_found_or_empty'] && $reset_results['fields_processed_count'] === 0) {
+                    add_settings_error(
+                        'glory_content_messages',
+                        'glory_content_reset_no_fields',
+                        sprintf(
+                            __('Section "%s" was not found, is empty, or contained no fields applicable for reset by this panel.', 'glory'),
+                            esc_html($section_display_name)
+                        ),
+                        'warning'
+                    );
+                } else { // Podría haber errores específicos en el futuro, por ahora es un error genérico
+                    add_settings_error(
+                        'glory_content_messages',
+                        'glory_content_reset_failed',
+                        sprintf(__('Could not reset section "%s". Please check logs.', 'glory'), esc_html($section_display_name)),
+                        'error'
+                    );
+                }
+                set_transient('settings_errors', get_settings_errors(), 30);
+                $redirect_url = admin_url('admin.php?page=' . self::$menu_slug . '&tab=' . $active_section_key . '&settings-reset=true');
+                wp_redirect($redirect_url);
+                exit;
+            } else {
+                GloryLogger::error("ContentAdminPanel: Nonce verification FAILED for RESET action, section {$active_section_key}.");
+                wp_die(__('Nonce verification failed for reset action!', 'glory'), __('Error', 'glory'), ['response' => 403]);
+            }
+            return; // Salir después de manejar el reseteo
         }
     }
 

@@ -310,8 +310,21 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                         </div>
                                     </div>
                                 </div>
-                                <?php if (!empty($fields_to_render_in_section)) submit_button(__('Save Changes for this Section', 'glory')); ?>
+                                <?php if (!empty($fields_to_render_in_section)): ?>
+                                    <div class="glory-form-actions">
+                                        <?php submit_button(__('Save Changes for this Section', 'glory'), 'primary', 'submit_save', false); ?>
+                                    </div>
+                                <?php endif; ?>
                             </form>
+                            <?php // Formulario para el botón de reset
+                            if (!empty($fields_to_render_in_section)): ?>
+                                <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=' . $menu_slug_for_url_building . '&tab=' . $section_slug)); ?>" style="margin-top: 10px;">
+                                    <input type="hidden" name="action" value="glory_reset_section">
+                                    <input type="hidden" name="glory_active_section" value="<?php echo esc_attr($section_slug); ?>">
+                                    <?php wp_nonce_field('glory_content_reset_action_' . $section_slug, '_wpnonce_glory_content_reset'); ?>
+                                    <?php submit_button(__('Reset This Section to Defaults', 'glory'), 'delete button-secondary', 'submit_reset', false, ['onclick' => "return confirm('" . esc_js(sprintf(__('Are you sure you want to reset the section "%s" to its default values? This action cannot be undone.', 'glory'), esc_js($section_display_name_raw))) . "');"]); ?>
+                                </form>
+                            <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
                 <?php endif; ?>
