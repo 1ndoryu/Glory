@@ -137,7 +137,7 @@ class RestaurantMenuAdminPanel
             GloryLogger::info("RestaurantMenuAdminPanel: JS file not found or not readable at {$js_file_systempath}");
         }
     }
-    
+
     public static function register_settings_and_handle_save(): void
     {
         // Primero, verificar si es una acción de guardado de menú
@@ -285,14 +285,40 @@ class RestaurantMenuAdminPanel
                     } elseif ($current_section_type === 'menu_pack') {
                         $new_section_data['packs'] = [];
                         if (isset($section_data['packs']) && is_array($section_data['packs'])) {
-                            foreach ($section_data['packs'] as $pack_input) {
-                                if (empty($pack_input['name'])) continue;
-                                $new_section_data['packs'][] = [
-                                    'name' => sanitize_text_field(stripslashes($pack_input['name'])),
-                                    'price' => sanitize_text_field($pack_input['price'] ?? ''),
-                                    'items' => isset($pack_input['items']) ? sanitize_textarea_field(stripslashes($pack_input['items'])) : '', // 'items' aquí es un texto
-                                    'description' => isset($pack_input['description']) ? sanitize_textarea_field(stripslashes($pack_input['description'])) : null,
+                            foreach ($section_data['packs'] as $pack_input) { // $pack_input es un array para un pack
+                                // Usar 'pack_title' en lugar de 'name'
+                                if (empty($pack_input['pack_title'])) {
+                                    GloryLogger::info("RestaurantMenuAdminPanel: Menu pack skipped in section '{$section_id}' due to missing pack_title. Data: " . print_r($pack_input, true));
+                                    continue;
+                                }
+
+                                $current_pack_data = [
+                                    'pack_title' => sanitize_text_field(stripslashes($pack_input['pack_title'])),
+                                    'pack_price' => sanitize_text_field($pack_input['pack_price'] ?? ''),
+                                    'pack_description' => isset($pack_input['pack_description']) ? sanitize_textarea_field(stripslashes($pack_input['pack_description'])) : null,
+                                    'details' => [], // Inicializar array para detalles
                                 ];
+
+                                // Procesar los detalles del pack
+                                if (isset($pack_input['details']) && is_array($pack_input['details'])) {
+                                    foreach ($pack_input['details'] as $detail_input) {
+                                        if (empty($detail_input['text']) || empty($detail_input['type'])) {
+                                            GloryLogger::info("RestaurantMenuAdminPanel: Pack detail skipped due to missing text or type. Data: " . print_r($detail_input, true));
+                                            continue;
+                                        }
+                                        $sanitized_type = sanitize_key($detail_input['type']); // 'heading' o 'item'
+                                        if (!in_array($sanitized_type, ['heading', 'item'])) {
+                                            //GloryLogger::warning("RestaurantMenuAdminPanel: Invalid pack detail type '{$sanitized_type}'. Defaulting to 'item'. Detail text: {$detail_input['text']}");
+                                            $sanitized_type = 'item'; // Fallback a un tipo conocido
+                                        }
+
+                                        $current_pack_data['details'][] = [
+                                            'type' => $sanitized_type,
+                                            'text' => sanitize_text_field(stripslashes($detail_input['text'])),
+                                        ];
+                                    }
+                                }
+                                $new_section_data['packs'][] = $current_pack_data;
                             }
                         }
                     }

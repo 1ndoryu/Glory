@@ -234,3 +234,27 @@ textarea.code {
 .glory-menu-items-list input.regular-text {
     width: 100%;
 }
+
+.glory-menu-pack-details-list.ui-sortable {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.glory-menu-pack-detail-item.glory-menu-pack-detail-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-left: 20px;
+}
+.glory-menu-pack-detail-item.glory-menu-pack-detail-heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-left: 0px !important;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
