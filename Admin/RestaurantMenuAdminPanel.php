@@ -22,8 +22,8 @@ class RestaurantMenuAdminPanel
     {
         // Cambiado a add_menu_page para que sea un elemento de menú de nivel superior
         add_menu_page(
-            __('Restaurant Menu', 'glory'), // Título de la página
-            __('Restaurant Menu', 'glory'), // Título del menú
+            __('Menú del Restaurante', 'glory'), // Título de la página
+            __('Menú Restaurante', 'glory'),   // Título del menú
             'manage_options',               // Capacidad requerida
             self::$menu_slug,               // Slug del menú
             [self::class, 'render_admin_page_html'], // Función para renderizar el contenido
@@ -85,52 +85,50 @@ class RestaurantMenuAdminPanel
                 'nonce'     => wp_create_nonce('glory_restaurant_menu_ajax_nonce'),
                 'menuSlug'  => self::$menu_slug,
                 'i18n'      => [
-                    // ... (todas las traducciones que ya tenías) ...
-                    'removeItem' => __('Remove Item', 'glory'),
-                    'removeSection' => __('Remove Section', 'glory'),
-                    'removeTab' => __('Remove Tab', 'glory'),
-                    'confirmRemoveSection' => __('Are you sure you want to remove this entire section?', 'glory'),
-                    'confirmRemoveTab' => __('Are you sure you want to remove this tab?', 'glory'),
-                    'confirmRemoveItem' => __('Are you sure you want to remove this item?', 'glory'),
-                    'dragToReorder' => __('Drag to reorder', 'glory'),
-                    'newTabLabel' => __('New Tab', 'glory'),
-                    'tabIdPlaceholder' => __('Tab ID (e.g., main_courses)', 'glory'),
-                    'tabTextPlaceholder' => __('Tab Text (e.g., Main Courses)', 'glory'),
-                    'visibleInTabBarLabel' => __('Visible in main tab bar', 'glory'),
-                    'newSectionLabel' => __('New Section', 'glory'),
-                    'sectionTitleLabel' => __('Section Title:', 'glory'),
-                    'sectionDescriptionLabel' => __('Section Description (optional):', 'glory'),
-                    'sectionTypeLabel' => __('Section Type:', 'glory'),
-                    'sectionTypeStandard' => __('Standard Items (Name, Price, Description)', 'glory'),
-                    'sectionTypeMultiPrice' => __('Multi-Price Items (e.g., Small/Medium/Large)', 'glory'),
-                    'sectionTypeMenuPack' => __('Menu Packs (e.g., Combo Deals)', 'glory'),
-                    'addItemToSectionLabel' => __('Add Item to this Section', 'glory'),
-                    'addStandardItemLabel' => __('Add Standard Item', 'glory'),
-                    'itemNameLabel' => __('Item Name:', 'glory'),
-                    'itemPriceLabel' => __('Item Price:', 'glory'),
-                    'itemDescriptionLabel' => __('Item Description (optional):', 'glory'),
-                    'priceColumnsLabel' => __('Price Columns:', 'glory'),
-                    'addPriceColumnHeaderLabel' => __('Add Price Column Header', 'glory'),
-                    'priceHeaderPlaceholder' => __('e.g., Small', 'glory'),
-                    'multiPriceItemsLabel' => __('Multi-Price Items:', 'glory'),
-                    'addMultiPriceItemLabel' => __('Add Multi-Price Item', 'glory'),
-                    'priceLabelN' => __('Price %d', 'glory'),
-                    'priceLabelGeneral' => __('Price', 'glory'),
-                    'menuPacksLabel' => __('Menu Packs / Combos:', 'glory'),
-                    'addMenuPackLabel' => __('Add Menu Pack', 'glory'),
-                    'packNameLabel' => __('Pack Name:', 'glory'),
-                    'packPriceLabel' => __('Pack Price:', 'glory'),
-                    'packItemsLabel' => __('Pack Items (e.g., "Burger + Fries + Drink"):', 'glory'),
-                    'packDescriptionLabel' => __('Pack Description (optional):', 'glory'),
-                    'multiPriceUIPlaceholder' => __('Multi-price item editor UI will be implemented later.', 'glory'),
-                    'menuPackUIPlaceholder' => __('Menu pack editor UI will be implemented later.', 'glory'),
-                    // Nuevas traducciones para la UI de items multi-precio generada por JS
-                    'isHeaderRowLabel' => __('Is Header Row (defines new price columns for items below)', 'glory'),
-                    'isSinglePriceLabel' => __('Is Single Price Item (ignores columns, uses one price field)', 'glory'),
-                    'columnHeadersDefinedByThisRowLabel' => __('Column Headers Defined by this Row (these texts will be used for subsequent items):', 'glory'),
-                    'headerRowNameLabel' => __('Header Row Name (HTML allowed):', 'glory'), // Usado en el JS al cambiar a is_header_row
-                    'headerTextLabelN' => __('Header Text %d', 'glory'),
-                    'addHeaderPriceFieldTitle' => __('Add another header text field for this row', 'glory'),
+                    'removeItem' => __('Eliminar Elemento', 'glory'),
+                    'removeSection' => __('Eliminar Sección', 'glory'),
+                    'removeTab' => __('Eliminar Pestaña', 'glory'),
+                    'confirmRemoveSection' => __('¿Estás seguro de que quieres eliminar esta sección completa?', 'glory'),
+                    'confirmRemoveTab' => __('¿Estás seguro de que quieres eliminar esta pestaña?', 'glory'),
+                    'confirmRemoveItem' => __('¿Estás seguro de que quieres eliminar este elemento?', 'glory'),
+                    'dragToReorder' => __('Arrastrar para reordenar', 'glory'),
+                    'newTabLabel' => __('Nueva Pestaña', 'glory'),
+                    'tabIdPlaceholder' => __('ID de Pestaña (ej: platos_principales)', 'glory'),
+                    'tabTextPlaceholder' => __('Texto de Pestaña (ej: Platos Principales)', 'glory'),
+                    'visibleInTabBarLabel' => __('Visible en la barra de pestañas principal', 'glory'),
+                    'newSectionLabel' => __('Nueva Sección', 'glory'),
+                    'sectionTitleLabel' => __('Título de la Sección:', 'glory'),
+                    'sectionDescriptionLabel' => __('Descripción de la Sección (opcional):', 'glory'),
+                    'sectionTypeLabel' => __('Tipo de Sección:', 'glory'),
+                    'sectionTypeStandard' => __('Elementos Estándar (Nombre, Precio, Descripción)', 'glory'),
+                    'sectionTypeMultiPrice' => __('Elementos Multi-Precio (ej: Pequeño/Mediano/Grande)', 'glory'),
+                    'sectionTypeMenuPack' => __('Paquetes de Menú (ej: Ofertas Combinadas)', 'glory'),
+                    'addItemToSectionLabel' => __('Añadir Elemento a esta Sección', 'glory'),
+                    'addStandardItemLabel' => __('Añadir Elemento Estándar', 'glory'),
+                    'itemNameLabel' => __('Nombre del Elemento:', 'glory'),
+                    'itemPriceLabel' => __('Precio del Elemento:', 'glory'),
+                    'itemDescriptionLabel' => __('Descripción del Elemento (opcional):', 'glory'),
+                    'priceColumnsLabel' => __('Columnas de Precios:', 'glory'),
+                    'addPriceColumnHeaderLabel' => __('Añadir Encabezado de Columna de Precio', 'glory'),
+                    'priceHeaderPlaceholder' => __('ej: Pequeño', 'glory'),
+                    'multiPriceItemsLabel' => __('Elementos Multi-Precio:', 'glory'),
+                    'addMultiPriceItemLabel' => __('Añadir Elemento Multi-Precio', 'glory'),
+                    'priceLabelN' => __('Precio %d', 'glory'),
+                    'priceLabelGeneral' => __('Precio', 'glory'),
+                    'menuPacksLabel' => __('Paquetes de Menú / Combos:', 'glory'),
+                    'addMenuPackLabel' => __('Añadir Paquete de Menú', 'glory'),
+                    'packNameLabel' => __('Nombre del Paquete:', 'glory'),
+                    'packPriceLabel' => __('Precio del Paquete:', 'glory'),
+                    'packItemsLabel' => __('Elementos del Paquete (ej: "Hamburguesa + Patatas + Bebida"):', 'glory'),
+                    'packDescriptionLabel' => __('Descripción del Paquete (opcional):', 'glory'),
+                    'multiPriceUIPlaceholder' => __('La interfaz de edición para elementos multi-precio se implementará más adelante.', 'glory'),
+                    'menuPackUIPlaceholder' => __('La interfaz de edición para paquetes de menú se implementará más adelante.', 'glory'),
+                    'isHeaderRowLabel' => __('Es Fila de Encabezado (define nuevas columnas de precio para elementos inferiores)', 'glory'),
+                    'isSinglePriceLabel' => __('Es Elemento de Precio Único (ignora columnas, usa un campo de precio)', 'glory'),
+                    'columnHeadersDefinedByThisRowLabel' => __('Encabezados de Columna Definidos por esta Fila (estos textos se usarán para elementos subsiguientes):', 'glory'),
+                    'headerRowNameLabel' => __('Nombre de Fila de Encabezado (HTML permitido):', 'glory'), 
+                    'headerTextLabelN' => __('Texto de Encabezado %d', 'glory'),
+                    'addHeaderPriceFieldTitle' => __('Añadir otro campo de texto de encabezado para esta fila', 'glory'),
                 ],
             ]);
         } else {
@@ -150,7 +148,7 @@ class RestaurantMenuAdminPanel
                 self::handle_save_menu_data();
             } else {
                 GloryLogger::error("RestaurantMenuAdminPanel: Nonce verification FAILED for restaurant menu save.");
-                wp_die(__('Nonce verification failed for save!', 'glory'), __('Error', 'glory'), ['response' => 403]);
+                wp_die(__('¡Falló la verificación Nonce para guardar!', 'glory'), __('Error', 'glory'), ['response' => 403]);
             }
         }
         // Luego, verificar si es una acción de restablecimiento de un menú específico
@@ -163,7 +161,7 @@ class RestaurantMenuAdminPanel
                 self::handle_reset_single_menu_data($menu_key_to_reset);
             } else {
                 GloryLogger::error("RestaurantMenuAdminPanel: Nonce verification FAILED for restaurant menu reset on key '{$menu_key_to_reset}'.");
-                wp_die(__('Nonce verification failed for reset!', 'glory'), __('Error', 'glory'), ['response' => 403]);
+                wp_die(__('¡Falló la verificación Nonce para restablecer!', 'glory'), __('Error', 'glory'), ['response' => 403]);
             }
         }
     }
@@ -172,7 +170,7 @@ class RestaurantMenuAdminPanel
     {
         if (!current_user_can('manage_options')) {
             GloryLogger::error("RestaurantMenuAdminPanel: User without 'manage_options' tried to save menu data.");
-            wp_die(__('You do not have sufficient permissions to access this page.', 'glory'));
+            wp_die(__('No tienes permisos suficientes para acceder a esta página.', 'glory'));
         }
 
         $all_registered_fields = ContentManager::getRegisteredContentFields();
@@ -376,9 +374,9 @@ class RestaurantMenuAdminPanel
         }
 
         if ($processed_at_least_one_menu) {
-            add_settings_error('glory_restaurant_menu_messages', 'glory_menu_saved', __('Restaurant Menu settings saved.', 'glory'), 'updated');
+            add_settings_error('glory_restaurant_menu_messages', 'glory_menu_saved', __('Configuración del Menú del Restaurante guardada.', 'glory'), 'updated');
         } else {
-            add_settings_error('glory_restaurant_menu_messages', 'glory_no_menu_processed', __('No menu data was processed or found for saving. Ensure at least one "menu_structure" field is registered and submitted.', 'glory'), 'warning');
+            add_settings_error('glory_restaurant_menu_messages', 'glory_no_menu_processed', __('No se procesaron o encontraron datos del menú para guardar. Asegúrate de que al menos un campo "menu_structure" esté registrado y enviado.', 'glory'), 'warning');
         }
         set_transient('settings_errors', get_settings_errors(), 30);
 
@@ -391,7 +389,7 @@ class RestaurantMenuAdminPanel
     {
         if (!current_user_can('manage_options')) {
             GloryLogger::error("RestaurantMenuAdminPanel: User without 'manage_options' tried to reset menu data for key '{$menu_key_to_reset}'.");
-            wp_die(__('You do not have sufficient permissions to access this page.', 'glory'));
+            wp_die(__('No tienes permisos suficientes para acceder a esta página.', 'glory'));
         }
 
         $all_fields = ContentManager::getRegisteredContentFields();
@@ -411,7 +409,7 @@ class RestaurantMenuAdminPanel
                 add_settings_error(
                     'glory_restaurant_menu_messages',
                     'glory_menu_reset_success',
-                    sprintf(__('Menu "%s" has been successfully reset to its default values.', 'glory'), esc_html($menu_label)),
+                    sprintf(__('El menú "%s" se ha restablecido correctamente a sus valores predeterminados.', 'glory'), esc_html($menu_label)),
                     'updated'
                 );
             } else {
@@ -419,7 +417,7 @@ class RestaurantMenuAdminPanel
                 add_settings_error(
                     'glory_restaurant_menu_messages',
                     'glory_menu_reset_no_default',
-                    sprintf(__('Could not reset menu "%s". No default value is defined for this menu in the code.', 'glory'), esc_html($menu_label)),
+                    sprintf(__('No se pudo restablecer el menú "%s". No hay un valor predeterminado definido para este menú en el código.', 'glory'), esc_html($menu_label)),
                     'error'
                 );
             }
@@ -428,7 +426,7 @@ class RestaurantMenuAdminPanel
             add_settings_error(
                 'glory_restaurant_menu_messages',
                 'glory_menu_reset_not_found',
-                sprintf(__('Could not reset menu "%s". The menu field was not found or is not of the correct type.', 'glory'), esc_html($menu_key_to_reset)),
+                sprintf(__('No se pudo restablecer el menú "%s". El campo del menú no se encontró o no es del tipo correcto.', 'glory'), esc_html($menu_key_to_reset)),
                 'error'
             );
         }
@@ -443,7 +441,7 @@ class RestaurantMenuAdminPanel
     public static function render_admin_page_html(): void
     {
         if (!current_user_can('manage_options')) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'glory'));
+            wp_die(__('No tienes permisos suficientes para acceder a esta página.', 'glory'));
         }
 
         settings_errors('glory_restaurant_menu_messages');
@@ -460,10 +458,10 @@ class RestaurantMenuAdminPanel
         }
 
         echo '<div class="wrap glory-admin-panel-wrap glory-restaurant-menu-panel">'; // Añadida clase específica
-        echo '<h1>' . esc_html__('Manage Restaurant Menu', 'glory') . '</h1>';
+        echo '<h1>' . esc_html__('Gestionar Menú del Restaurante', 'glory') . '</h1>';
 
         if (empty($menu_structure_fields)) {
-            echo '<p>' . esc_html__('No restaurant menu fields (type: menu_structure) are currently registered.', 'glory') . '</p>';
+            echo '<p>' . esc_html__('No hay campos de menú de restaurante (tipo: menu_structure) registrados actualmente.', 'glory') . '</p>';
             echo '</div>';
             return;
         }
@@ -491,7 +489,7 @@ class RestaurantMenuAdminPanel
             echo '</div>'; // .menu-structure-instance-wrapper (postbox)
         }
 
-        submit_button(__('Save Menu Settings', 'glory'));
+        submit_button(__('Guardar Configuración del Menú', 'glory'));
         echo '</form>';
 
 

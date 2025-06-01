@@ -37,7 +37,7 @@ function render_menu_structure_field_admin_html(string $key, array $config, $cur
 
     // Contenedor para las Pestañas del Menú (Tabs)
     echo '<div class="menu-tabs-container postbox">';
-    echo '<h3 class="hndle"><span>' . __('Menu Tabs Configuration', 'glory') . '</span></h3>';
+    echo '<h3 class="hndle"><span>' . __('Configuración de Pestañas del Menú', 'glory') . '</span></h3>';
     echo '<div class="inside">';
     echo '<div class="glory-menu-tabs-editor">';
     if (!empty($tabs_data)) {
@@ -46,14 +46,14 @@ function render_menu_structure_field_admin_html(string $key, array $config, $cur
         }
     }
     echo '</div>'; // .glory-menu-tabs-editor
-    echo '<button type="button" class="button glory-add-menu-tab">' . __('Add Tab', 'glory') . '</button>';
+    echo '<button type="button" class="button glory-add-menu-tab">' . __('Añadir Pestaña', 'glory') . '</button>';
     echo '</div>'; // .inside
     echo '</div>'; // .menu-tabs-container
     echo '<hr>';
 
     // Contenedor para las Secciones del Menú
     echo '<div class="menu-sections-container postbox">';
-    echo '<h3 class="hndle"><span>' . __('Menu Sections', 'glory') . '</span></h3>';
+    echo '<h3 class="hndle"><span>' . __('Secciones del Menú', 'glory') . '</span></h3>';
     echo '<div class="inside">';
     echo '<div class="glory-menu-sections-editor">'; // El JS buscará este contenedor para añadir secciones
     if (!empty($sections_data)) {
@@ -62,7 +62,7 @@ function render_menu_structure_field_admin_html(string $key, array $config, $cur
         }
     }
     echo '</div>'; // .glory-menu-sections-editor
-    echo '<button type="button" class="button button-primary glory-add-menu-section">' . __('Add New Section', 'glory') . '</button>';
+    echo '<button type="button" class="button button-primary glory-add-menu-section">' . __('Añadir Nueva Sección', 'glory') . '</button>';
     echo '</div>'; // .inside
     echo '</div>'; // .menu-sections-container
     echo '<hr>';
@@ -70,7 +70,7 @@ function render_menu_structure_field_admin_html(string $key, array $config, $cur
     // Opcional: UI para gestionar 'dropdown_items_order' si existe y se quiere hacer editable
     if (isset($menu_data['dropdown_items_order'])) {
         echo '<div class="menu-dropdown-order-container postbox">';
-        echo '<h3 class="hndle"><span>' . __('Dropdown Items Order (Advanced)', 'glory') . '</span></h3>';
+        echo '<h3 class="hndle"><span>' . __('Orden de Elementos del Desplegable (Avanzado)', 'glory') . '</span></h3>';
         echo '<div class="inside">';
         echo '<p>' . __('Define el orden de los elementos en los desplegables del menú (si aplica). Use los IDs de las secciones.', 'glory') . '</p>';
         // Un simple textarea para editar el array como JSON por ahora, o una UI más avanzada si se desea
@@ -91,8 +91,8 @@ function render_menu_structure_field_admin_html(string $key, array $config, $cur
                   name="glory_reset_menu_key_action" 
                   value="' . esc_attr($key) . '" 
                   class="button button-secondary glory-reset-single-menu-button"
-                  onclick="return confirm(\'' . esc_js(sprintf(__('Are you sure you want to reset the menu "%s" to its default values? This action cannot be undone.', 'glory'), esc_html($config['label'] ?? $key))) . '\');">'
-        . esc_html__('Reset This Menu to Defaults', 'glory') .
+                  onclick="return confirm(\'' . esc_js(sprintf(__('¿Estás seguro de que quieres restablecer el menú "%s" a sus valores predeterminados? Esta acción no se puede deshacer.', 'glory'), esc_html($config['label'] ?? $key))) . '\');">'
+        . esc_html__('Restablecer Este Menú a los Valores Predeterminados', 'glory') .
         '</button>';
 
     // Nonce específico para este botón/acción de reset
@@ -117,14 +117,14 @@ function render_menu_tab_item_admin_html(string $base_menu_input_name, int $tab_
     $base_tab_name_attr = esc_attr($base_menu_input_name . '[tabs][' . $tab_index . ']');
 ?>
     <div class="glory-menu-tab-item" data-tab-index="<?php echo esc_attr($tab_index); ?>">
-        <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Drag to reorder', 'glory'); ?>"></span>
-        <input type="text" name="<?php echo $base_tab_name_attr . '[id]'; ?>" value="<?php echo esc_attr($tab_id_val); ?>" placeholder="<?php esc_attr_e('Tab ID (e.g., main_courses)', 'glory'); ?>" class="regular-text glory-tab-id-input">
-        <input type="text" name="<?php echo $base_tab_name_attr . '[text]'; ?>" value="<?php echo esc_attr($tab_text_val); ?>" placeholder="<?php esc_attr_e('Tab Text (e.g., Main Courses)', 'glory'); ?>" class="regular-text glory-tab-text-input">
+        <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Arrastrar para reordenar', 'glory'); ?>"></span>
+        <input type="text" name="<?php echo $base_tab_name_attr . '[id]'; ?>" value="<?php echo esc_attr($tab_id_val); ?>" placeholder="<?php esc_attr_e('ID de Pestaña (ej: platos_principales)', 'glory'); ?>" class="regular-text glory-tab-id-input">
+        <input type="text" name="<?php echo $base_tab_name_attr . '[text]'; ?>" value="<?php echo esc_attr($tab_text_val); ?>" placeholder="<?php esc_attr_e('Texto de Pestaña (ej: Platos Principales)', 'glory'); ?>" class="regular-text glory-tab-text-input">
         <label class="glory-tab-visibility">
             <input type="checkbox" name="<?php echo $base_tab_name_attr . '[visible_in_tabs]'; ?>" value="1" <?php checked($tab_visible_val); ?>>
-            <?php _e('Visible in tab bar', 'glory'); ?>
+            <?php _e('Visible en la barra de pestañas', 'glory'); ?>
         </label>
-        <button type="button" class="button button-small button-link-delete glory-remove-menu-tab" title="<?php esc_attr_e('Remove Tab', 'glory'); ?>">
+        <button type="button" class="button button-small button-link-delete glory-remove-menu-tab" title="<?php esc_attr_e('Eliminar Pestaña', 'glory'); ?>">
             <span class="dashicons dashicons-no-alt"></span>
         </button>
     </div>
@@ -146,35 +146,35 @@ function render_menu_section_admin_html(string $base_menu_input_name, string $se
     <div class="glory-menu-section postbox" data-section-id="<?php echo esc_attr($section_id); ?>">
         <div class="postbox-header">
             <h2 class="hndle">
-                <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Drag to reorder section', 'glory'); ?>"></span>
-                <span class="glory-section-title-display"><?php echo esc_html($section_title ?: __('New Section', 'glory')); ?></span>
+                <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Arrastrar para reordenar sección', 'glory'); ?>"></span>
+                <span class="glory-section-title-display"><?php echo esc_html($section_title ?: __('Nueva Sección', 'glory')); ?></span>
                 <span class="glory-section-id-display">(ID: <?php echo esc_html($section_id); ?>)</span>
             </h2>
             <div class="handle-actions hide-if-no-js">
-                <button type="button" class="button-link glory-remove-menu-section" title="<?php esc_attr_e('Remove Section', 'glory'); ?>">
-                    <span class="dashicons dashicons-trash"></span><span class="screen-reader-text"><?php _e('Remove Section', 'glory'); ?></span>
+                <button type="button" class="button-link glory-remove-menu-section" title="<?php esc_attr_e('Eliminar Sección', 'glory'); ?>">
+                    <span class="dashicons dashicons-trash"></span><span class="screen-reader-text"><?php _e('Eliminar Sección', 'glory'); ?></span>
                 </button>
                 <button type="button" class="handlediv" aria-expanded="true">
-                    <span class="screen-reader-text"><?php printf(__('Toggle panel: %s', 'glory'), esc_html($section_title)); ?></span>
+                    <span class="screen-reader-text"><?php printf(__('Alternar panel: %s', 'glory'), esc_html($section_title)); ?></span>
                     <span class="toggle-indicator" aria-hidden="true"></span>
                 </button>
             </div>
         </div>
         <div class="inside">
             <p>
-                <label for="<?php echo $base_section_name_attr . '[title]'; ?>"><?php _e('Section Title:', 'glory'); ?></label><br>
+                <label for="<?php echo $base_section_name_attr . '[title]'; ?>"><?php _e('Título de la Sección:', 'glory'); ?></label><br>
                 <input type="text" id="<?php echo $base_section_name_attr . '[title]'; ?>" name="<?php echo $base_section_name_attr . '[title]'; ?>" value="<?php echo esc_attr($section_title); ?>" class="large-text glory-section-title-input">
             </p>
             <p>
-                <label for="<?php echo $base_section_name_attr . '[description]'; ?>"><?php _e('Section Description (optional):', 'glory'); ?></label><br>
+                <label for="<?php echo $base_section_name_attr . '[description]'; ?>"><?php _e('Descripción de la Sección (opcional):', 'glory'); ?></label><br>
                 <textarea id="<?php echo $base_section_name_attr . '[description]'; ?>" name="<?php echo $base_section_name_attr . '[description]'; ?>" rows="2" class="large-text"><?php echo esc_textarea($section_description); ?></textarea>
             </p>
             <p>
-                <label for="<?php echo $base_section_name_attr . '[type]'; ?>"><?php _e('Section Type:', 'glory'); ?></label><br>
+                <label for="<?php echo $base_section_name_attr . '[type]'; ?>"><?php _e('Tipo de Sección:', 'glory'); ?></label><br>
                 <select id="<?php echo $base_section_name_attr . '[type]'; ?>" name="<?php echo $base_section_name_attr . '[type]'; ?>" class="glory-section-type-select">
-                    <option value="standard" <?php selected($section_type, 'standard'); ?>><?php _e('Standard Items (Name, Price, Description)', 'glory'); ?></option>
-                    <option value="multi_price" <?php selected($section_type, 'multi_price'); ?>><?php _e('Multi-Price Items (e.g., Small/Medium/Large)', 'glory'); ?></option>
-                    <option value="menu_pack" <?php selected($section_type, 'menu_pack'); ?>><?php _e('Menu Packs (e.g., Combo Deals)', 'glory'); ?></option>
+                    <option value="standard" <?php selected($section_type, 'standard'); ?>><?php _e('Elementos Estándar (Nombre, Precio, Descripción)', 'glory'); ?></option>
+                    <option value="multi_price" <?php selected($section_type, 'multi_price'); ?>><?php _e('Elementos Multi-Precio (ej: Pequeño/Mediano/Grande)', 'glory'); ?></option>
+                    <option value="menu_pack" <?php selected($section_type, 'menu_pack'); ?>><?php _e('Paquetes de Menú (ej: Ofertas Combinadas)', 'glory'); ?></option>
                     <!-- Add other types if needed -->
                 </select>
             </p>
@@ -185,7 +185,7 @@ function render_menu_section_admin_html(string $base_menu_input_name, string $se
                 // El JS también manejará el cambio de UI, pero esto renderiza el estado actual.
                 if ($section_type === 'standard') {
                     echo '<div class="glory-menu-items-list-container">'; // Contenedor para la lista de items
-                    echo '<h4>' . __('Items:', 'glory') . '</h4>';
+                    echo '<h4>' . __('Elementos:', 'glory') . '</h4>';
                     echo '<div class="glory-menu-items-list">'; // El JS opera sobre este div para items
                     $items = $section_data['items'] ?? [];
                     if (!empty($items)) {
@@ -194,7 +194,7 @@ function render_menu_section_admin_html(string $base_menu_input_name, string $se
                         }
                     }
                     echo '</div>'; // .glory-menu-items-list
-                    echo '<button type="button" class="button glory-add-menu-item" data-section-id="' . esc_attr($section_id) . '" data-item-type="standard">' . __('Add Standard Item', 'glory') . '</button>';
+                    echo '<button type="button" class="button glory-add-menu-item" data-section-id="' . esc_attr($section_id) . '" data-item-type="standard">' . __('Añadir Elemento Estándar', 'glory') . '</button>';
                     echo '</div>'; // .glory-menu-items-list-container
                 } elseif ($section_type === 'multi_price') {
                     render_menu_section_multi_price_admin_html($base_section_name_attr, $section_data);
@@ -220,20 +220,20 @@ function render_menu_item_standard_admin_html(string $base_items_input_name, int
     $base_item_name_attr = esc_attr($base_items_input_name . '[' . $item_index . ']');
 ?>
     <div class="glory-menu-item glory-menu-item-standard" data-item-index="<?php echo esc_attr($item_index); ?>">
-        <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Drag to reorder item', 'glory'); ?>"></span>
-        <button type="button" class="button button-small button-link-delete glory-remove-menu-item" title="<?php esc_attr_e('Remove Item', 'glory'); ?>">
+        <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Arrastrar para reordenar elemento', 'glory'); ?>"></span>
+        <button type="button" class="button button-small button-link-delete glory-remove-menu-item" title="<?php esc_attr_e('Eliminar Elemento', 'glory'); ?>">
             <span class="dashicons dashicons-no-alt"></span>
         </button>
         <p>
-            <label><?php _e('Item Name:', 'glory'); ?></label><br>
+            <label><?php _e('Nombre del Elemento:', 'glory'); ?></label><br>
             <input type="text" name="<?php echo $base_item_name_attr . '[name]'; ?>" value="<?php echo esc_attr($item_name); ?>" class="large-text">
         </p>
         <p>
-            <label><?php _e('Item Price:', 'glory'); ?></label><br>
+            <label><?php _e('Precio del Elemento:', 'glory'); ?></label><br>
             <input type="text" name="<?php echo $base_item_name_attr . '[price]'; ?>" value="<?php echo esc_attr($item_price); ?>" class="regular-text">
         </p>
         <p>
-            <label><?php _e('Item Description (optional):', 'glory'); ?></label><br>
+            <label><?php _e('Descripción del Elemento (opcional):', 'glory'); ?></label><br>
             <textarea name="<?php echo $base_item_name_attr . '[description]'; ?>" rows="1" class="large-text glory-textarea-autosize"><?php echo esc_textarea($item_description); ?></textarea>
         </p>
     </div>
@@ -252,20 +252,20 @@ function render_menu_section_multi_price_admin_html(string $base_section_name_at
 
 ?>
     <div class="glory-menu-section-multi-price-container">
-        <h4><?php _e('Global Price Columns (for this section if no sub-headers are used):', 'glory'); ?></h4>
+        <h4><?php _e('Columnas de Precios Globales (para esta sección si no se usan sub-encabezados):', 'glory'); ?></h4>
         <div class="glory-price-headers-editor glory-global-price-headers-editor">
             <?php if (!empty($global_price_headers)): ?>
                 <?php foreach ($global_price_headers as $header_idx => $header_text): ?>
                     <div class="glory-price-header-item">
-                        <input type="text" name="<?php echo esc_attr($base_section_name_attr . '[price_headers][' . $header_idx . ']'); ?>" value="<?php echo esc_attr($header_text); ?>" placeholder="<?php esc_attr_e('e.g., Small', 'glory'); ?>">
+                        <input type="text" name="<?php echo esc_attr($base_section_name_attr . '[price_headers][' . $header_idx . ']'); ?>" value="<?php echo esc_attr($header_text); ?>" placeholder="<?php esc_attr_e('ej: Pequeño', 'glory'); ?>">
                         <button type="button" class="button button-small button-link-delete glory-remove-price-header"><span class="dashicons dashicons-no-alt"></span></button>
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
-        <button type="button" class="button glory-add-price-header" data-target-editor="global"><?php _e('Add Global Price Column Header', 'glory'); ?></button>
+        <button type="button" class="button glory-add-price-header" data-target-editor="global"><?php _e('Añadir Encabezado de Columna de Precio Global', 'glory'); ?></button>
         <hr>
-        <h4><?php _e('Items (can include sub-headers, single price items, or multi-price items):', 'glory'); ?></h4>
+        <h4><?php _e('Elementos (pueden incluir sub-encabezados, elementos de precio único o elementos multi-precio):', 'glory'); ?></h4>
         <div class="glory-menu-items-list glory-menu-items-multi-price">
             <?php
             $current_item_specific_price_headers = $global_price_headers; // Por defecto, usamos las cabeceras globales
@@ -303,9 +303,9 @@ function render_menu_section_multi_price_admin_html(string $base_section_name_at
             }
             ?>
         </div>
-        <button type="button" class="button glory-add-menu-item" data-item-type="multi_price"><?php _e('Add Item to this Section', 'glory'); ?></button>
+        <button type="button" class="button glory-add-menu-item" data-item-type="multi_price"><?php _e('Añadir Elemento a esta Sección', 'glory'); ?></button>
         <p class="description">
-            <?php _e('Use "Add Item" to add standard multi-price items, single-price items, or row headers. The type of item will be determined by the fields you fill. For a row header, use HTML in name (e.g. <b>Header</b>), fill its "prices" as text headers, and check "Is Header Row". For single price, fill name and "Price 1" and check "Is Single Price".', 'glory'); ?>
+            <?php _e('Usa "Añadir Elemento" para agregar elementos multi-precio estándar, elementos de precio único o encabezados de fila. El tipo de elemento se determinará por los campos que completes. Para un encabezado de fila, usa HTML en el nombre (ej: <b>Encabezado</b>), completa sus "precios" como textos de encabezado y marca "Es Fila de Encabezado". Para precio único, completa el nombre y "Precio 1" y marca "Es Elemento de Precio Único".', 'glory'); ?>
         </p>
     </div>
 <?php
@@ -330,47 +330,47 @@ function render_menu_item_multi_price_admin_html(string $base_items_input_name, 
         <button type="button" class="button button-small button-link-delete glory-remove-menu-item"><span class="dashicons dashicons-no-alt"></span></button>
 
         <p>
-            <label><?php echo $is_header_row ? __('Header Row Name (HTML allowed):', 'glory') : __('Item Name:', 'glory'); ?></label><br>
+            <label><?php echo $is_header_row ? __('Nombre de Fila de Encabezado (HTML permitido):', 'glory') : __('Nombre del Elemento:', 'glory'); ?></label><br>
             <input type="text" name="<?php echo $base_item_name_attr . '[name]'; ?>" value="<?php echo esc_attr($item_name); // Para is_header_row, el guardado usará wp_kses 
                                                                                             ?>" class="large-text glory-item-name">
         </p>
 
         <div class="glory-item-price-fields">
             <?php if ($is_header_row): ?>
-                <label><?php _e('Column Headers Defined by this Row (these texts will be used for subsequent items):', 'glory'); ?></label>
+                <label><?php _e('Encabezados de Columna Definidos por esta Fila (estos textos se usarán para elementos subsiguientes):', 'glory'); ?></label>
                 <div class="glory-item-prices-row glory-header-row-prices">
                     <?php
                     $header_item_prices = $item_data['prices'] ?? []; // Estos son los textos de las cabeceras
                     $num_headers_defined_by_row = $num_price_columns_for_item; // Viene de count($item_data['prices']) en la función llamante
                     for ($i = 0; $i < $num_headers_defined_by_row; $i++): ?>
-                        <input type="text" name="<?php echo $base_item_name_attr . '[prices][' . $i . ']'; ?>" value="<?php echo esc_attr($header_item_prices[$i] ?? ''); ?>" placeholder="<?php printf(esc_attr__('Header Text %d', 'glory'), $i + 1); ?>" class="regular-text">
+                        <input type="text" name="<?php echo $base_item_name_attr . '[prices][' . $i . ']'; ?>" value="<?php echo esc_attr($header_item_prices[$i] ?? ''); ?>" placeholder="<?php printf(esc_attr__('Texto de Encabezado %d', 'glory'), $i + 1); ?>" class="regular-text">
                     <?php endfor; ?>
                     <!-- Botón para añadir más campos de texto de cabecera dinámicamente si es necesario -->
-                    <button type="button" class="button button-small glory-add-header-price-field-to-row" title="<?php esc_attr_e('Add another header text field for this row', 'glory'); ?>">+</button>
+                    <button type="button" class="button button-small glory-add-header-price-field-to-row" title="<?php esc_attr_e('Añadir otro campo de texto de encabezado para esta fila', 'glory'); ?>">+</button>
                 </div>
 
             <?php elseif ($is_single_price): ?>
-                <label><?php _e('Price:', 'glory'); ?></label>
+                <label><?php _e('Precio:', 'glory'); ?></label>
                 <div class="glory-item-prices-row glory-single-price-row">
                     <input type="text" name="<?php echo $base_item_name_attr . '[price]'; // Note: '[price]', not '[prices][0]' 
-                                                ?>" value="<?php echo esc_attr($item_data['price'] ?? ''); ?>" placeholder="<?php esc_attr_e('Price', 'glory'); ?>" class="regular-text">
+                                                ?>" value="<?php echo esc_attr($item_data['price'] ?? ''); ?>" placeholder="<?php esc_attr_e('Precio', 'glory'); ?>" class="regular-text">
                 </div>
 
             <?php else: // Ítem multi-precio estándar 
             ?>
-                <label><?php _e('Prices (corresponding to active column headers):', 'glory'); ?></label>
+                <label><?php _e('Precios (correspondientes a los encabezados de columna activos):', 'glory'); ?></label>
                 <div class="glory-item-prices-row glory-standard-multi-prices-row">
                     <?php
                     $standard_item_prices = $item_data['prices'] ?? [];
                     // $num_price_columns_for_item viene de count($active_price_headers_texts) en la función llamante
                     for ($i = 0; $i < $num_price_columns_for_item; $i++):
-                        $placeholder_text = isset($active_price_headers_texts[$i]) && !empty($active_price_headers_texts[$i]) ? $active_price_headers_texts[$i] : sprintf(__('Price %d', 'glory'), $i + 1);
+                        $placeholder_text = isset($active_price_headers_texts[$i]) && !empty($active_price_headers_texts[$i]) ? $active_price_headers_texts[$i] : sprintf(__('Precio %d', 'glory'), $i + 1);
                     ?>
                         <input type="text" name="<?php echo $base_item_name_attr . '[prices][' . $i . ']'; ?>" value="<?php echo esc_attr($standard_item_prices[$i] ?? ''); ?>" placeholder="<?php echo esc_attr($placeholder_text); ?>" class="regular-text">
                     <?php endfor; ?>
                     <?php if ($num_price_columns_for_item === 0): // Fallback si no hay cabeceras activas, al menos un campo 
                     ?>
-                        <input type="text" name="<?php echo $base_item_name_attr . '[prices][0]'; ?>" value="<?php echo esc_attr($standard_item_prices[0] ?? ''); ?>" placeholder="<?php esc_attr_e('Price', 'glory'); ?>" class="regular-text">
+                        <input type="text" name="<?php echo $base_item_name_attr . '[prices][0]'; ?>" value="<?php echo esc_attr($standard_item_prices[0] ?? ''); ?>" placeholder="<?php esc_attr_e('Precio', 'glory'); ?>" class="regular-text">
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
@@ -379,18 +379,18 @@ function render_menu_item_multi_price_admin_html(string $base_items_input_name, 
         <p>
             <label>
                 <input type="checkbox" class="glory-item-is-header-row-checkbox" name="<?php echo $base_item_name_attr . '[is_header_row]'; ?>" value="1" <?php checked($is_header_row); ?>>
-                <?php _e('Is Header Row (defines new price columns for items below)', 'glory'); ?>
+                <?php _e('Es Fila de Encabezado (define nuevas columnas de precio para elementos inferiores)', 'glory'); ?>
             </label>
         </p>
         <p>
             <label>
                 <input type="checkbox" class="glory-item-is-single-price-checkbox" name="<?php echo $base_item_name_attr . '[is_single_price]'; ?>" value="1" <?php checked($is_single_price); ?>>
-                <?php _e('Is Single Price Item (ignores columns, uses one price field)', 'glory'); ?>
+                <?php _e('Es Elemento de Precio Único (ignora columnas, usa un campo de precio)', 'glory'); ?>
             </label>
         </p>
 
         <p>
-            <label><?php _e('Item Description (optional):', 'glory'); ?></label><br>
+            <label><?php _e('Descripción del Elemento (opcional):', 'glory'); ?></label><br>
             <textarea name="<?php echo $base_item_name_attr . '[description]'; ?>" rows="1" class="large-text glory-textarea-autosize"><?php echo esc_textarea($item_description); ?></textarea>
         </p>
     </div>
@@ -405,7 +405,7 @@ function render_menu_section_menu_pack_admin_html(string $base_section_name_attr
     $packs = $section_data['packs'] ?? [];
 ?>
     <div class="glory-menu-section-menu-pack-container">
-        <h4><?php _e('Menu Packs / Combos:', 'glory'); ?></h4>
+        <h4><?php _e('Paquetes de Menú / Combos:', 'glory'); ?></h4>
         <div class="glory-menu-packs-list">
             <?php
             if (!empty($packs)) {
@@ -415,7 +415,7 @@ function render_menu_section_menu_pack_admin_html(string $base_section_name_attr
             }
             ?>
         </div>
-        <button type="button" class="button glory-add-menu-pack" data-base-packs-input-name="<?php echo esc_attr($base_section_name_attr . '[packs]'); ?>"><?php _e('Add Menu Pack', 'glory'); ?></button>
+        <button type="button" class="button glory-add-menu-pack" data-base-packs-input-name="<?php echo esc_attr($base_section_name_attr . '[packs]'); ?>"><?php _e('Añadir Paquete de Menú', 'glory'); ?></button>
     </div>
 <?php
 }
@@ -435,25 +435,25 @@ function render_menu_pack_item_admin_html(string $base_packs_input_name, int $pa
     $base_pack_name_attr = esc_attr($base_packs_input_name . '[' . $pack_index . ']');
 ?>
     <div class="glory-menu-item glory-menu-item-pack" data-item-index="<?php echo esc_attr($pack_index); ?>">
-        <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Drag to reorder pack', 'glory'); ?>"></span>
-        <button type="button" class="button button-small button-link-delete glory-remove-menu-item" title="<?php esc_attr_e('Remove Pack', 'glory'); ?>">
+        <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Arrastrar para reordenar paquete', 'glory'); ?>"></span>
+        <button type="button" class="button button-small button-link-delete glory-remove-menu-item" title="<?php esc_attr_e('Eliminar Paquete', 'glory'); ?>">
             <span class="dashicons dashicons-no-alt"></span>
         </button>
         
         <p>
-            <label><?php _e('Pack Title:', 'glory'); ?></label><br>
+            <label><?php _e('Título del Paquete:', 'glory'); ?></label><br>
             <input type="text" name="<?php echo $base_pack_name_attr . '[pack_title]'; ?>" value="<?php echo esc_attr($pack_title_val); ?>" class="large-text">
         </p>
         <p>
-            <label><?php _e('Pack Price:', 'glory'); ?></label><br>
+            <label><?php _e('Precio del Paquete:', 'glory'); ?></label><br>
             <input type="text" name="<?php echo $base_pack_name_attr . '[pack_price]'; ?>" value="<?php echo esc_attr($pack_price_val); ?>" class="regular-text">
         </p>
         <p>
-            <label><?php _e('Pack Description (optional):', 'glory'); ?></label><br>
+            <label><?php _e('Descripción del Paquete (opcional):', 'glory'); ?></label><br>
             <textarea name="<?php echo $base_pack_name_attr . '[pack_description]'; ?>" rows="1" class="large-text glory-textarea-autosize"><?php echo esc_textarea($pack_description_val); ?></textarea>
         </p>
 
-        <h4><?php _e('Pack Details (e.g., "First course to choose", "Dish 1", "Dish 2"):', 'glory'); ?></h4>
+        <h4><?php _e('Detalles del Paquete (ej: "Primer plato a elegir", "Plato 1", "Plato 2"):', 'glory'); ?></h4>
         <div class="glory-menu-pack-details-list">
             <?php
             if (!empty($pack_details_val)) {
@@ -464,8 +464,8 @@ function render_menu_pack_item_admin_html(string $base_packs_input_name, int $pa
             }
             ?>
         </div>
-        <button type="button" class="button glory-add-menu-pack-detail" data-detail-type="item" data-pack-index="<?php echo esc_attr($pack_index); ?>"><?php _e('Add Item Detail', 'glory'); ?></button>
-        <button type="button" class="button glory-add-menu-pack-detail" data-detail-type="heading" data-pack-index="<?php echo esc_attr($pack_index); ?>"><?php _e('Add Heading Detail', 'glory'); ?></button>
+        <button type="button" class="button glory-add-menu-pack-detail" data-detail-type="item" data-pack-index="<?php echo esc_attr($pack_index); ?>"><?php _e('Añadir Detalle de Elemento', 'glory'); ?></button>
+        <button type="button" class="button glory-add-menu-pack-detail" data-detail-type="heading" data-pack-index="<?php echo esc_attr($pack_index); ?>"><?php _e('Añadir Detalle de Encabezado', 'glory'); ?></button>
     </div>
 <?php
 }
@@ -479,15 +479,15 @@ function render_menu_pack_detail_item_admin_html(string $base_details_input_name
     $item_class = 'glory-menu-pack-detail-item glory-menu-pack-detail-' . esc_attr($detail_type_val);
 ?>
     <div class="<?php echo $item_class; ?>" data-detail-index="<?php echo esc_attr($detail_index); ?>" data-detail-type="<?php echo esc_attr($detail_type_val); ?>">
-        <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Drag to reorder detail', 'glory'); ?>"></span>
+        <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Arrastrar para reordenar detalle', 'glory'); ?>"></span>
         
         <input type="hidden" name="<?php echo $base_detail_name_attr . '[type]'; ?>" value="<?php echo esc_attr($detail_type_val); ?>">
         
         <input type="text" name="<?php echo $base_detail_name_attr . '[text]'; ?>" value="<?php echo esc_attr($detail_text_val); ?>" 
-               placeholder="<?php echo $detail_type_val === 'heading' ? esc_attr__('Heading text (e.g., First Courses)', 'glory') : esc_attr__('Item text (e.g., Salad)', 'glory'); ?>" 
+               placeholder="<?php echo $detail_type_val === 'heading' ? esc_attr__('Texto de encabezado (ej: Primeros Platos)', 'glory') : esc_attr__('Texto del elemento (ej: Ensalada)', 'glory'); ?>" 
                class="large-text glory-pack-detail-text-input">
         
-        <button type="button" class="button button-small button-link-delete glory-remove-menu-pack-detail" title="<?php esc_attr_e('Remove Detail', 'glory'); ?>">
+        <button type="button" class="button button-small button-link-delete glory-remove-menu-pack-detail" title="<?php esc_attr_e('Eliminar Detalle', 'glory'); ?>">
             <span class="dashicons dashicons-no-alt"></span>
         </button>
     </div>
