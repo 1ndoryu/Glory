@@ -13,6 +13,7 @@ class FormService
 {
     const AJAX_DELETE_SINGLE_SUBMISSION_ACTION = 'glory_delete_single_submission';
     const AJAX_DELETE_ALL_SUBMISSIONS_ACTION = 'glory_delete_all_submissions';
+    public const HONEYPOT_FIELD_NAME = '_glory_hp_field';
 
     /**
      * Procesa el envío de formularios AJAX.
@@ -56,12 +57,26 @@ class FormService
             return;
         }
 
+        // Anti-Spam: Honeypot
+        // Esta verificación asume que HONEYPOT_FIELD_NAME está definida como una constante en la clase,
+        // por ejemplo: public const HONEYPOT_FIELD_NAME = '_glory_hp_field';
+        if (isset($_POST[self::HONEYPOT_FIELD_NAME]) && !empty($_POST[self::HONEYPOT_FIELD_NAME])) {
+            // Opcionalmente, loguear este intento de spam si tienes un sistema de logging:
+            // error_log('Glory Form Spam: Honeypot triggered for form ' . $formId . '. IP: ' . ($_SERVER['REMOTE_ADDR'] ?? 'N/A'));
+            wp_send_json_error([
+                'message' => __('Detectamos actividad inusual. Por favor, intente de nuevo más tarde.', 'glory-domain'), // Mensaje genérico para el usuario
+                'debug_info' => 'Honeypot field filled.'
+            ], 403); // 403 Forbidden es apropiado para accesos no autorizados/spam
+            return;
+        }
+
         // 3. Recopilar y Sanitizar Datos
         $datosFormulario = [];
         $camposExcluidos = [
             'action',
             $nonceFieldName,
             '_glory_form_id',
+            self::HONEYPOT_FIELD_NAME, // Asegurar que el campo honeypot no se guarde
             'submit',
             'g-recaptcha-response' // Ejemplo de campo a excluir (reCAPTCHA)
             // Añadir aquí cualquier otro nombre de campo que no deba guardarse
@@ -189,7 +204,7 @@ class FormService
         update_option($optionKey, [], false);
         wp_send_json_success(['message' => __('Todos los mensajes para este formulario han sido borrados.', 'glory-domain')]);
     }
-    
+
     public function agregarCabecerasCors(): void
     {
         $origin = isset($_SERVER['HTTP_ORIGIN']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_ORIGIN'])) : '';
@@ -197,8 +212,9 @@ class FormService
         // Para desarrollo, tu origen con el puerto :10022 es necesario.
         // En producción, esto podría ser el mismo dominio o no necesitarse si el frontend y backend están en el mismo origen.
         $allowed_origins = [
-            'http://tasklist.local:10022', // Servidor de desarrollo frontend
-            'http://tasklist.local',    // Si también accedes a WP desde aquí sin puerto y necesitas CORS
+            'http://restaurante.local:10022', // Servidor de desarrollo frontend
+            'http://restaurante.local',    // Si también accedes a WP desde aquí sin puerto y necesitas CORS
+            'https://www.entretenedores.net'
         ];
 
         if (in_array($origin, $allowed_origins, true)) {

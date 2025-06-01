@@ -328,6 +328,18 @@ class formManagerComponent
             esc_attr(wp_create_nonce($nonceActionString))
         );
 
+        // Añadir el campo Honeypot
+        // La constante HONEYPOT_FIELD_NAME debe estar definida en esta clase o ser accesible.
+        // Ejemplo: public const HONEYPOT_FIELD_NAME = '_glory_hp_field'; (Asegúrate de añadir esto a la clase)
+        $formHtml .= '    <div style="position:absolute; left:-9999px; top: -9999px;" aria-hidden="true">' . "\n";
+        $formHtml .= sprintf(
+            '        <input type="text" name="%s" id="%s_hp" tabindex="-1" autocomplete="off">' . "\n",
+            esc_attr(\Glory\Services\FormService::HONEYPOT_FIELD_NAME), // Usamos la constante de FormService
+            esc_attr($this->id)
+        );
+        $formHtml .= '    </div>' . "\n";
+
+
         $formHtml .= $this->htmlAntesCampos;
 
         foreach ($this->fields as $fieldConfig) {
