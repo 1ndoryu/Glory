@@ -33,13 +33,13 @@ function renderHorario(string $key, array $schedule_data, string $base_input_nam
 
         echo '<div class="glory-schedule-day-row">';
         echo '<strong>' . esc_html($day_name_label) . '</strong><input type="hidden" name="' . $input_name_day . '" value="' . esc_attr($day_name_label) . '"><br>';
-        echo '<label for="' . $unique_id_prefix . '_status">' . __('Status:', 'glory') . ' </label>';
+        echo '<label for="' . $unique_id_prefix . '_status">' . __('Estado:', 'glory') . ' </label>';
         echo '<select id="' . $unique_id_prefix . '_status" name="' . $input_name_status . '">';
-        echo '<option value="open" ' . selected($status, 'open', false) . '>' . __('Open', 'glory') . '</option>';
-        echo '<option value="closed" ' . selected($status, 'closed', false) . '>' . __('Closed', 'glory') . '</option>';
+        echo '<option value="open" ' . selected($status, 'open', false) . '>' . __('Abierto', 'glory') . '</option>';
+        echo '<option value="closed" ' . selected($status, 'closed', false) . '>' . __('Cerrado', 'glory') . '</option>';
         echo '</select>';
-        echo '<label for="' . $unique_id_prefix . '_open">' . __('Open:', 'glory') . ' <input id="' . $unique_id_prefix . '_open" type="time" name="' . $input_name_open . '" value="' . $open_time . '" ' . ($status === 'closed' ? 'disabled' : '') . '></label>';
-        echo '<label for="' . $unique_id_prefix . '_close">' . __('Close:', 'glory') . ' <input id="' . $unique_id_prefix . '_close" type="time" name="' . $input_name_close . '" value="' . $close_time . '" ' . ($status === 'closed' ? 'disabled' : '') . '></label>';
+        echo '<label for="' . $unique_id_prefix . '_open">' . __('Apertura:', 'glory') . ' <input id="' . $unique_id_prefix . '_open" type="time" name="' . $input_name_open . '" value="' . $open_time . '" ' . ($status === 'closed' ? 'disabled' : '') . '></label>';
+        echo '<label for="' . $unique_id_prefix . '_close">' . __('Cierre:', 'glory') . ' <input id="' . $unique_id_prefix . '_close" type="time" name="' . $input_name_close . '" value="' . $close_time . '" ' . ($status === 'closed' ? 'disabled' : '') . '></label>';
         echo '</div>';
     }
     echo '</div>';
@@ -72,7 +72,7 @@ function renderFieldInput(string $key, array $config, $current_value, string $op
             if (!is_string($value_for_textarea)) $value_for_textarea = (string) $value_for_textarea;
             // Añadimos la clase 'glory-json-editor-area'
             echo '<textarea id="' . $field_id . '" name="' . $option_input_name . '" rows="10" class="large-text glory-json-editor-area">' . esc_textarea($value_for_textarea) . '</textarea>';
-            echo '<p class="description">' . __('Enter valid JSON. If content is not valid JSON, it will be saved as a raw string.', 'glory') . '</p>';
+            echo '<p class="description">' . __('Introduzca JSON válido. Si el contenido no es JSON válido, se guardará como una cadena de texto sin formato.', 'glory') . '</p>';
             break;
         case 'richText':
             $value_for_richtext_area = is_string($current_value) ? $current_value : '';
@@ -84,13 +84,13 @@ function renderFieldInput(string $key, array $config, $current_value, string $op
                 'textarea_rows' => 10,
             ];
             wp_editor(wp_kses_post($value_for_richtext_area), $field_id, $editor_settings); // Usar wp_kses_post para limpiar el contenido antes de mostrarlo
-            echo '<p class="description">' . __('HTML is allowed. Content will be filtered by wp_kses_post on save.', 'glory') . '</p>';
+            echo '<p class="description">' . __('Se permite HTML. El contenido será filtrado por wp_kses_post al guardar.', 'glory') . '</p>';
             break;
         case 'image':
             $image_url = is_string($current_value) ? $current_value : '';
             echo '<input type="text" id="' . $field_id . '" name="' . $option_input_name . '" value="' . esc_url($image_url) . '" class="regular-text glory-image-url-field">';
-            echo ' <button type="button" class="button glory-upload-image-button">' . __('Upload Image', 'glory') . '</button>';
-            echo ' <button type="button" class="button glory-remove-image-button">' . __('Remove Image', 'glory') . '</button>';
+            echo ' <button type="button" class="button glory-upload-image-button">' . __('Subir Imagen', 'glory') . '</button>';
+            echo ' <button type="button" class="button glory-remove-image-button">' . __('Quitar Imagen', 'glory') . '</button>';
             echo '<div class="glory-image-preview">';
             if (!empty($image_url)) echo '<img src="' . esc_url($image_url) . '">';
             echo '</div>';
@@ -131,7 +131,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                         }
 
 
-                        $section_label_raw = 'General';
+                        $section_label_raw = __('General', 'glory');
                         if (!empty($fields_in_section)) {
                             // Intentar obtener la etiqueta de la primera configuración de campo no-menú
                             $first_field_config = null;
@@ -157,19 +157,19 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                         </a>
                     <?php endforeach; ?>
                 <?php else: ?>
-                    <p><?php _e('No content sections defined.', 'glory'); ?></p>
+                    <p><?php _e('No se han definido secciones de contenido.', 'glory'); ?></p>
                 <?php endif; ?>
             </div>
 
             <div class="glory-tabs-content-container">
                 <?php if (empty($fields_by_section)): ?>
-                    <p><?php _e('No content fields have been registered yet.', 'glory'); ?></p>
+                    <p><?php _e('Aún no se han registrado campos de contenido.', 'glory'); ?></p>
                 <?php else: ?>
                     <?php foreach ($fields_by_section as $section_slug => $fields_in_section): ?>
                         <?php
                         // Filtrar campos 'menu_structure' de la renderización en este panel general
                         $fields_to_render_in_section = [];
-                        $section_display_name_raw = 'General';
+                        $section_display_name_raw = __('General', 'glory');
                         $has_non_menu_fields = false;
 
                         foreach ($fields_in_section as $key_loop => $config_loop) {
@@ -226,22 +226,22 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
 
                                                             $image_option_input_name = 'glory_content[' . esc_attr($image_key) . ']';
                                                             $alt_option_input_name = 'glory_content[' . esc_attr($alt_key) . ']';
-                                                            $image_label = $image_config['label'] ?? ('Imagen #' . $i);
+                                                            $image_label = $image_config['label'] ?? sprintf(__('Imagen #%d', 'glory'), $i);
                                                     ?>
                                                             <div class="glory-gallery-item">
                                                                 <div class="glory-image-preview">
                                                                     <?php if (!empty($image_url)): ?>
-                                                                        <img src="<?php echo esc_url($image_url); ?>" alt="Preview for <?php echo esc_attr($image_label); ?>">
+                                                                        <img src="<?php echo esc_url($image_url); ?>" alt="<?php printf(esc_attr__('Vista previa para %s', 'glory'), esc_attr($image_label)); ?>">
                                                                     <?php else: ?>
-                                                                        <p><?php _e('No image set', 'glory'); ?></p>
+                                                                        <p><?php _e('No hay imagen establecida', 'glory'); ?></p>
                                                                     <?php endif; ?>
                                                                 </div>
                                                                 <div class="glory-image-controls">
                                                                     <input type="hidden" name="<?php echo esc_attr($image_option_input_name); ?>" value="<?php echo esc_url($image_url); ?>" class="glory-image-url-field">
-                                                                    <button type="button" class="button glory-upload-image-button"><?php _e('Set/Change Image', 'glory'); ?></button>
-                                                                    <button type="button" class="button glory-remove-image-button"><?php _e('Remove Image', 'glory'); ?></button>
+                                                                    <button type="button" class="button glory-upload-image-button"><?php _e('Establecer/Cambiar Imagen', 'glory'); ?></button>
+                                                                    <button type="button" class="button glory-remove-image-button"><?php _e('Quitar Imagen', 'glory'); ?></button>
                                                                 </div>
-                                                                <label for="<?php echo esc_attr($alt_key); ?>"><?php _e('Alt Text:', 'glory'); ?> (<?php echo esc_html($image_label); ?>)</label>
+                                                                <label for="<?php echo esc_attr($alt_key); ?>"><?php _e('Texto Alternativo:', 'glory'); ?> (<?php echo esc_html($image_label); ?>)</label>
                                                                 <input type="text" id="<?php echo esc_attr($alt_key); ?>" name="<?php echo esc_attr($alt_option_input_name); ?>" value="<?php echo esc_attr($alt_text); ?>" class="regular-text">
                                                             </div>
                                                     <?php
@@ -256,7 +256,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                                 if (!empty($remaining_fields_in_section)):
                                                 ?>
                                                     <hr>
-                                                    <p><em><?php _e('Other settings for this section:', 'glory'); ?></em></p>
+                                                    <p><em><?php _e('Otros ajustes para esta sección:', 'glory'); ?></em></p>
                                                     <table class="form-table" role="presentation">
                                                         <tbody>
                                                             <?php foreach ($remaining_fields_in_section as $key => $config):
@@ -312,7 +312,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                 </div>
                                 <?php if (!empty($fields_to_render_in_section)): ?>
                                     <div class="glory-form-actions">
-                                        <?php submit_button(__('Save Changes for this Section', 'glory'), 'primary', 'submit_save', false); ?>
+                                        <?php submit_button(__('Guardar Cambios para esta Sección', 'glory'), 'primary', 'submit_save', false); ?>
                                     </div>
                                 <?php endif; ?>
                             </form>
@@ -322,7 +322,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
                                     <input type="hidden" name="action" value="glory_reset_section">
                                     <input type="hidden" name="glory_active_section" value="<?php echo esc_attr($section_slug); ?>">
                                     <?php wp_nonce_field('glory_content_reset_action_' . $section_slug, '_wpnonce_glory_content_reset'); ?>
-                                    <?php submit_button(__('Reset This Section to Defaults', 'glory'), 'delete button-secondary', 'submit_reset', false, ['onclick' => "return confirm('" . esc_js(sprintf(__('Are you sure you want to reset the section "%s" to its default values? This action cannot be undone.', 'glory'), esc_js($section_display_name_raw))) . "');"]); ?>
+                                    <?php submit_button(__('Restablecer Esta Sección a los Valores Predeterminados', 'glory'), 'delete button-secondary', 'submit_reset', false, ['onclick' => "return confirm('" . esc_js(sprintf(__('¿Está seguro de que desea restablecer la sección "%s" a sus valores predeterminados? Esta acción no se puede deshacer.', 'glory'), esc_js($section_display_name_raw))) . "');"]); ?>
                                 </form>
                             <?php endif; ?>
                         </div>

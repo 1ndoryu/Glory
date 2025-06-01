@@ -76,8 +76,8 @@ class ContentAdminPanel
                 'nonce'               => wp_create_nonce('glory_admin_ajax_nonce'),
                 'menuSlug'            => self::$menu_slug,
                 'i18n'                => [
-                    'selectOrUploadImage' => esc_js(__('Select or Upload Image', 'glory')),
-                    'useThisImage'        => esc_js(__('Use this image', 'glory')),
+                    'selectOrUploadImage' => esc_js(__('Seleccionar o Subir Imagen', 'glory')),
+                    'useThisImage'        => esc_js(__('Usar esta imagen', 'glory')),
                 ],
                 'codeEditorSettings' => $code_editor_settings, // Pasar settings del editor JSON
             ]);
@@ -88,8 +88,8 @@ class ContentAdminPanel
     public static function add_admin_page(): void
     {
         add_menu_page(
-            __('Glory', 'glory'),
-            __('Glory', 'glory'),
+            __('Panel', 'glory'),
+            __('Panel', 'glory'),
             'manage_options',
             self::$menu_slug,
             [self::class, 'render_admin_page_html'],
@@ -110,7 +110,7 @@ class ContentAdminPanel
                 self::handle_save_data($active_section_key); // Este método ya redirige
             } else {
                 GloryLogger::error("ContentAdminPanel: Nonce verification FAILED for SAVE action, section {$active_section_key}.");
-                wp_die(__('Nonce verification failed for save action!', 'glory'), __('Error', 'glory'), ['response' => 403]);
+                wp_die(__('¡Falló la verificación Nonce para la acción de guardar!', 'glory'), __('Error', 'glory'), ['response' => 403]);
             }
             return; // Salir después de manejar el guardado
         }
@@ -124,7 +124,7 @@ class ContentAdminPanel
             if (wp_verify_nonce($_POST['_wpnonce_glory_content_reset'], 'glory_content_reset_action_' . $active_section_key)) {
                 if (!current_user_can('manage_options')) {
                     GloryLogger::error("ContentAdminPanel: User without 'manage_options' tried to RESET section {$active_section_key}.");
-                    wp_die(__('You do not have sufficient permissions to perform this action.', 'glory'));
+                    wp_die(__('No tiene permisos suficientes para realizar esta acción.', 'glory'));
                 }
 
                 $reset_results = ContentManager::resetSectionToDefaults($active_section_key);
@@ -135,7 +135,7 @@ class ContentAdminPanel
                         'glory_content_messages',
                         'glory_content_reset_success',
                         sprintf(
-                            __('Section "%s" has been successfully reset to default values. %d field(s) were reset.', 'glory'),
+                            __('La sección "%s" se ha restablecido correctamente a los valores predeterminados. Se restablecieron %d campo(s).', 'glory'),
                             esc_html($section_display_name),
                             $reset_results['fields_processed_count']
                         ),
@@ -146,7 +146,7 @@ class ContentAdminPanel
                         'glory_content_messages',
                         'glory_content_reset_no_fields',
                         sprintf(
-                            __('Section "%s" was not found, is empty, or contained no fields applicable for reset by this panel.', 'glory'),
+                            __('La sección "%s" no se encontró, está vacía o no contenía campos aplicables para restablecer por este panel.', 'glory'),
                             esc_html($section_display_name)
                         ),
                         'warning'
@@ -155,7 +155,7 @@ class ContentAdminPanel
                     add_settings_error(
                         'glory_content_messages',
                         'glory_content_reset_failed',
-                        sprintf(__('Could not reset section "%s". Please check logs.', 'glory'), esc_html($section_display_name)),
+                        sprintf(__('No se pudo restablecer la sección "%s". Por favor, revise los registros.', 'glory'), esc_html($section_display_name)),
                         'error'
                     );
                 }
@@ -165,7 +165,7 @@ class ContentAdminPanel
                 exit;
             } else {
                 GloryLogger::error("ContentAdminPanel: Nonce verification FAILED for RESET action, section {$active_section_key}.");
-                wp_die(__('Nonce verification failed for reset action!', 'glory'), __('Error', 'glory'), ['response' => 403]);
+                wp_die(__('¡Falló la verificación Nonce para la acción de restablecer!', 'glory'), __('Error', 'glory'), ['response' => 403]);
             }
             return; // Salir después de manejar el reseteo
         }
@@ -175,7 +175,7 @@ class ContentAdminPanel
     {
         if (!current_user_can('manage_options')) {
             GloryLogger::error("ContentAdminPanel: User without 'manage_options' tried to save data for section {$active_section_key}.");
-            wp_die(__('You do not have sufficient permissions to access this page.', 'glory'));
+            wp_die(__('No tiene permisos suficientes para acceder a esta página.', 'glory'));
         }
 
         $all_registered_fields = ContentManager::getRegisteredContentFields();
@@ -220,7 +220,7 @@ class ContentAdminPanel
                             if ($status === 'open' && !empty($open_time) && !empty($close_time)) {
                                 $hours_str = $open_time . '-' . $close_time;
                             } elseif ($status === 'closed') {
-                                $hours_str = 'Cerrado';
+                                $hours_str = 'Cerrado'; // Ya está en español
                                 $open_time = '';
                                 $close_time = '';
                             }
@@ -237,7 +237,7 @@ class ContentAdminPanel
                         } else {
                             $value_to_save = $json_string_from_textarea;
                             GloryLogger::info("ContentAdminPanel: Raw field '{$key}' contained invalid JSON. Saved as raw string. Error: " . json_last_error_msg());
-                            add_settings_error('glory_content_messages', 'glory_invalid_json_' . $key, sprintf(__('Warning: The content for "%s" was not valid JSON and has been saved as a raw string. Please correct it.', 'glory'), $config['label']), 'warning');
+                            add_settings_error('glory_content_messages', 'glory_invalid_json_' . $key, sprintf(__('Advertencia: El contenido para "%s" no era JSON válido y se ha guardado como una cadena de texto sin formato. Por favor, corríjalo.', 'glory'), $config['label']), 'warning');
                         }
                     } else {
                         $value_to_save = $config['default'] ?? [];
@@ -279,10 +279,10 @@ class ContentAdminPanel
             }
 
             if ($processed_at_least_one_field) {
-                add_settings_error('glory_content_messages', 'glory_content_message', __('Settings Saved for section:', 'glory') . ' ' . esc_html(ucfirst(str_replace('-', ' ', $active_section_key))), 'updated');
+                add_settings_error('glory_content_messages', 'glory_content_message', __('Ajustes guardados para la sección:', 'glory') . ' ' . esc_html(ucfirst(str_replace('-', ' ', $active_section_key))), 'updated');
             } else {
                 // Si todos los campos eran 'menu_structure' (o no había campos procesables)
-                add_settings_error('glory_content_messages', 'glory_no_fields_processed_message', __('No applicable fields were processed for saving in this section for ContentAdminPanel.', 'glory'), 'info');
+                add_settings_error('glory_content_messages', 'glory_no_fields_processed_message', __('No se procesaron campos aplicables para guardar en esta sección para el Panel de Contenido.', 'glory'), 'info');
             }
             set_transient('settings_errors', get_settings_errors(), 30);
 
@@ -290,7 +290,7 @@ class ContentAdminPanel
             wp_redirect($redirect_url);
             exit;
         } else { // $fields_in_current_section estaba vacío desde el inicio
-            add_settings_error('glory_content_messages', 'glory_no_fields_saved', __('No fields were configured for saving in this section.', 'glory'), 'warning');
+            add_settings_error('glory_content_messages', 'glory_no_fields_saved', __('No se configuraron campos para guardar en esta sección.', 'glory'), 'warning');
             set_transient('settings_errors', get_settings_errors(), 30);
 
             $redirect_url = admin_url('admin.php?page=' . self::$menu_slug . '&tab=' . $active_section_key);
@@ -302,7 +302,7 @@ class ContentAdminPanel
     public static function render_admin_page_html(): void
     {
         if (!current_user_can('manage_options')) {
-            wp_die(__('You do not have sufficient permissions to access this page.', 'glory'));
+            wp_die(__('No tiene permisos suficientes para acceder a esta página.', 'glory'));
         }
 
         $all_fields = ContentManager::getRegisteredContentFields();
@@ -324,7 +324,7 @@ class ContentAdminPanel
         if (function_exists('renderContentPanel')) {
             echo renderContentPanel($fields_by_section, $active_tab, self::$menu_slug);
         } else {
-            echo '<div class="wrap"><h1>Error</h1><p>Admin panel rendering function is missing.</p></div>';
+            echo '<div class="wrap"><h1>Error</h1><p>' . __('Falta la función de renderizado del panel de administración.', 'glory') . '</p></div>';
             GloryLogger::error("ContentAdminPanel: renderContentPanel() function not found.");
         }
     }
