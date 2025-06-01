@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
 class formManagerComponent
 {
     private string $id;
-    private string $actionUrlOriginal; // URL de redirección original (para fallback muy básico o referencia)
+    private string $actionUrlOriginal;
     private string $method;
     private array $attributes = [];
     private array $fields = [];
@@ -74,12 +74,17 @@ class formManagerComponent
 
             if (empty($submissions) || !is_array($submissions)) {
                 $html .= '<p>' . esc_html__('No hay envíos para este formulario todavía.', 'glory-domain') . '</p>';
+                // Botón para borrar todos aunque no haya (por si queda un registro huérfano de formID)
+                // No, si no hay envíos, no tiene sentido mostrar el botón de borrar todos aquí.
+                // Se podría tener un mecanismo para limpiar formIDs activos sin envíos, pero es otro tema.
+                $html .= '<hr style="margin: 20px 0;">';
                 continue;
             }
 
-            $html .= '<table class="wp-list-table widefat fixed striped">';
+            $html .= '<table class="wp-list-table widefat fixed striped glory-submissions-table" data-form-id="' . esc_attr($formId) . '">';
             $html .= '<thead><tr>';
 
+            // Determinar cabeceras dinámicamente
             $firstSubmissionWithData = null;
             foreach ($submissions as $sub) {
                 if (isset($sub['formData']) && is_array($sub['formData']) && !empty($sub['formData'])) {
@@ -91,29 +96,35 @@ class formManagerComponent
             $headers = [];
             if ($firstSubmissionWithData) {
                 foreach (array_keys($firstSubmissionWithData['formData']) as $headerKey) {
-                    $headers[] = $headerKey;
+                    $headers[] = $headerKey; // Guardar las claves originales para usarlas luego
                     $html .= '<th>' . esc_html(ucwords(str_replace(['_', '-'], ' ', $headerKey))) . '</th>';
                 }
             } else {
-                $html .= '<th>' . esc_html__('Datos', 'glory-domain') . '</th>';
+                $html .= '<th>' . esc_html__('Datos', 'glory-domain') . '</th>'; // Fallback si no hay datos estructurados
             }
 
-            $dateColumnHeader = esc_html__('Fecha de Envío', 'glory-domain');
-            $html .= '<th>' . $dateColumnHeader . '</th>';
-
+            $html .= '<th>' . esc_html__('Fecha de Envío', 'glory-domain') . '</th>';
+            $html .= '<th>' . esc_html__('Acciones', 'glory-domain') . '</th>'; // Nueva columna para acciones
             $html .= '</tr></thead>';
+
             $html .= '<tbody>';
 
-            foreach (array_reverse($submissions) as $submissionData) {
-                $html .= '<tr>';
+            // Usar array_reverse con true para preservar las claves originales
+            foreach (array_reverse($submissions, true) as $index => $submissionData) {
+                $html .= '<tr data-submission-index="' . esc_attr($index) . '">'; // Añadir data-submission-index a la fila
+
                 if (isset($submissionData['formData']) && is_array($submissionData['formData'])) {
+                    // Renderizar datos basados en las cabeceras identificadas
                     if (!empty($headers)) {
                         foreach ($headers as $key) {
                             $html .= '<td>' . esc_html($submissionData['formData'][$key] ?? '') . '</td>';
                         }
                     } else {
+                        // Fallback si no se pudieron determinar las cabeceras (ej. todos los envíos están vacíos)
                         $html .= '<td>' . esc_html(print_r($submissionData['formData'], true)) . '</td>';
                     }
+
+                    // Fecha de envío
                     if (isset($submissionData['dateTimeFormatted'])) {
                         $html .= '<td>' . esc_html($submissionData['dateTimeFormatted']) . '</td>';
                     } elseif (isset($submissionData['timestamp'])) {
@@ -121,16 +132,39 @@ class formManagerComponent
                     } else {
                         $html .= '<td>' . esc_html__('N/A', 'glory-domain') . '</td>';
                     }
+
+                    // Acciones
+                    $deleteNonce = wp_create_nonce('glory_delete_single_submission_' . $formId . '_' . $index);
+                    $html .= '<td>';
+                    $html .= '<button class="button button-link-delete glory-delete-single-submission" ';
+                    $html .= 'data-form-id="' . esc_attr($formId) . '" ';
+                    $html .= 'data-submission-index="' . esc_attr($index) . '" ';
+                    $html .= 'data-nonce="' . esc_attr($deleteNonce) . '">';
+                    $html .= esc_html__('Borrar', 'glory-domain');
+                    $html .= '</button>';
+                    $html .= '</td>';
                 } else {
-                    $columnCount = (!empty($headers) ? count($headers) : 1) + 1;
+                    // Si submissionData['formData'] no es un array o no está seteado
+                    $columnCount = (!empty($headers) ? count($headers) : 1) + 2; // +1 por fecha, +1 por acciones
                     $html .= '<td colspan="' . esc_attr($columnCount) . '">' . esc_html__('Datos no disponibles en el formato esperado.', 'glory-domain') . '</td>';
                 }
                 $html .= '</tr>';
             }
             $html .= '</tbody></table>';
+
+            // Botón para borrar todos los mensajes de este formulario
+            $deleteAllNonce = wp_create_nonce('glory_delete_all_submissions_' . $formId);
+            $html .= '<div style="margin-top: 10px; margin-bottom: 20px;">';
+            $html .= '<button class="button button-danger glory-delete-all-submissions" ';
+            $html .= 'data-form-id="' . esc_attr($formId) . '" ';
+            $html .= 'data-nonce="' . esc_attr($deleteAllNonce) . '">';
+            $html .= esc_html__('Borrar Todos los Mensajes de este Formulario', 'glory-domain');
+            $html .= '</button>';
+            $html .= '</div>';
+
             $html .= '<hr style="margin: 20px 0;">';
         }
-        $html .= '</div>';
+        $html .= '</div>'; // Cierre de .wrap
         return $html;
     }
 
