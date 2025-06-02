@@ -264,6 +264,62 @@ class ContentManager
         return $final_value;
     }
 
+    public static function resetSectionToDefaults(string $section_key_slug_to_reset): array
+    {
+        if (self::$db_sentinel === null) { // Asegurar inicialización si no se ha hecho
+            self::static_init();
+        }
+
+        $reset_results = ['success' => [], 'error' => [], 'not_found_or_empty' => false, 'fields_processed_count' => 0];
+        $section_exists_in_config = false;
+
+        if (empty(self::$registered_content)) {
+            //GloryLogger::warning("ContentManager::resetSectionToDefaults: No content fields are currently registered. Cannot reset section '{$section_key_slug_to_reset}'. This might indicate that content registration hooks haven't run yet or no fields are defined.");
+            $reset_results['not_found_or_empty'] = true;
+            return $reset_results;
+        }
+
+        foreach (self::$registered_content as $key => $config) {
+            // Asegurarse de que 'section' exista y obtener el slug. Usar 'general' como default si no está definido.
+            $field_section_raw = $config['section'] ?? 'general';
+            $field_section_slug = sanitize_title($field_section_raw);
+
+            if ($field_section_slug === $section_key_slug_to_reset) {
+                $section_exists_in_config = true; // Marcamos que al menos un campo pertenece a esta sección.
+
+                // No procesar campos de tipo 'menu_structure' aquí, ya que pueden tener su propio manejo
+                if (isset($config['type']) && $config['type'] === 'menu_structure') {
+                    // GloryLogger::info("ContentManager::resetSectionToDefaults: Skipping '{$key}' (menu_structure) in section '{$section_key_slug_to_reset}'.");
+                    continue;
+                }
+
+                $option_name = self::OPTION_PREFIX . $key;
+                $code_default_value = $config['default']; // Este es el default definido en el código
+
+                // GloryLogger::info("ContentManager::resetSectionToDefaults: Resetting '{$key}' in section '{$section_key_slug_to_reset}' to its code default value.");
+
+                update_option($option_name, $code_default_value);
+                delete_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX);
+                delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
+
+                $reset_results['success'][] = $key;
+                $reset_results['fields_processed_count']++;
+            }
+        }
+
+        if (!$section_exists_in_config) {
+            //GloryLogger::warning("ContentManager::resetSectionToDefaults: Section '{$section_key_slug_to_reset}' not found among registered content fields, or it contains no processable fields.");
+            $reset_results['not_found_or_empty'] = true;
+        } elseif ($section_exists_in_config && $reset_results['fields_processed_count'] === 0) {
+            // La sección existe, pero todos sus campos eran, por ejemplo, 'menu_structure' que se omitieron.
+            GloryLogger::info("ContentManager::resetSectionToDefaults: Section '{$section_key_slug_to_reset}' found, but contained no fields applicable for reset by this method (e.g., only menu_structure fields).");
+            // no_found_or_empty podría ser true si no hay campos procesables
+            $reset_results['not_found_or_empty'] = true; // Considerar esto como "nada que hacer"
+        }
+
+        return $reset_results;
+    }
+
     public static function text(string $key, string $default = '', ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): string
     {
         return (string) self::get($key, $default, true, $panel_title, $panel_section, null, $panel_description, 'text');

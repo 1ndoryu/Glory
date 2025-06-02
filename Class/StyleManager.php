@@ -88,7 +88,8 @@ if (!class_exists('StyleManager')) {
             array $defaultDeps = [],
             string $defaultMedia = 'all', // Default media
             ?bool $folderDevMode = null,
-            string $handlePrefix = ''
+            string $handlePrefix = '',
+            array $excludeFiles = [] // Archivos a excluir
         ): void {
             $fullFolderPath = get_template_directory() . '/' . trim($folderRelPath, '/\\');
 
@@ -122,6 +123,11 @@ if (!class_exists('StyleManager')) {
                     '/',
                     trim($folderRelPath, '/\\') . '/' . basename($file)
                 );
+
+                // Comprobar si el archivo está en la lista de exclusión
+                if (in_array(basename($file), $excludeFiles)) {
+                    continue; // Saltar este archivo
+                }
 
                 if (!isset(self::$styles[$handle])) { // Avoid overriding individually defined styles
                     self::define(

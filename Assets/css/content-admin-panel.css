@@ -1,11 +1,5 @@
 /* En Glory/assets/css/content-admin-panel.css */
 
-.glory-menu-items-list {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 10px;
-}
-
 .metabox-holder tr {
     display: flex;
     flex-direction: column;
@@ -53,14 +47,18 @@
 .glory-menu-item .button.glory-remove-menu-item,
 .glory-menu-tab-item .button.glory-remove-menu-tab {
     position: absolute;
-    top: 5px;
-    right: 5px;
+    top: 10px;
+    right: 10px;
     padding: 0 5px !important;
     line-height: 1.5 !important;
     height: auto !important;
     min-width: auto !important;
     color: red;
     border-color: red;
+}
+
+.glory-menu-items-list .glory-menu-item-standard p {
+    margin: 5px 0px;
 }
 
 .glory-menu-tabs-editor .glory-menu-tab-item {
@@ -229,4 +227,96 @@ textarea.code {
 .glory-gallery-item .glory-image-controls button {
     margin-right: 5px;
     margin-bottom: 5px;
+}
+
+.glory-menu-items-list input.regular-text {
+    width: 99%;
+}
+
+.divPanelP p {
+    width: 100%;
+}
+.divPanelP {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 10px;
+}
+
+.glory-menu-pack-details-list.ui-sortable {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.glory-menu-pack-detail-item.glory-menu-pack-detail-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-left: 20px;
+}
+.glory-menu-pack-detail-item.glory-menu-pack-detail-heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    margin-left: 0px !important;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.glory-header-price-field-wrapper {
+    width: 100%;
+}
+
+.glory-menu-item-multi-price p {
+    margin: 5px 0px;
+}
+
+.glory-item-prices-row.glory-header-row-prices {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    align-content: center;
+}
+
+.glory-item-prices-row.glory-standard-multi-prices-row {
+    display: flex;
+    gap: 5px;
+}
+
+span.dashicons.dashicons-trash {
+    text-decoration: unset;
+}
+
+.handle-actions.hide-if-no-js {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    align-content: center;
+    padding: 10px;
+    margin-bottom: -5px;
+}
+
+button.button.button-small.button-link-delete.glory-remove-header-price-field-from-row .dashicons {
+    /* width: 20px; */
+    height: 8px;
+    width: 20px;
+}
+
+button.button.button-small.button-link-delete.glory-remove-header-price-field-from-row {
+    padding: 2px;
+    height: 8px;
+    width: 27px;
+}
+
+button.button.glory-add-menu-tab {
+    margin-top: 10px;
+}
+
+span.glory-section-title-display {
+    margin-right: auto;
 }
