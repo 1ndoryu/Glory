@@ -61,7 +61,7 @@ class RestaurantMenuAdminPanel
                 $css_general_handle,
                 $css_general_file_url,
                 ['wp-codemirror'], // Añadida dependencia para consistencia
-                filemtime($css_general_file_path)
+                null // Evitar el versionado automático que añade ?ver=
             );
             error_log('[Glory DEBUG - RestaurantMenuAdminPanel.php] CSS encolado CORRECTAMENTE: ' . $css_general_file_url . ' (Hook: ' . $hook_suffix . ')');
         } else {
@@ -80,7 +80,7 @@ class RestaurantMenuAdminPanel
                 $js_handle,
                 $js_file_url,
                 ['jquery', 'jquery-ui-sortable', 'wp-util'],
-                filemtime($js_file_systempath),
+                null, // Evitar el versionado automático que añade ?ver=
                 true
             );
 

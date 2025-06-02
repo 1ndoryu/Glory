@@ -49,7 +49,7 @@ class ContentAdminPanel
                 $css_handle,
                 $css_file_url,
                 ['wp-codemirror'], // Dependencia de los estilos de CodeMirror
-                filemtime($css_file_path)
+                null // Evitar el versionado automático que añade ?ver=
             );
             error_log('[Glory DEBUG - ContentAdminPanel.php] CSS encolado CORRECTAMENTE: ' . $css_file_url . ' (Hook: ' . $hook_suffix . ')');
         } else {
@@ -68,7 +68,7 @@ class ContentAdminPanel
                 $js_handle,
                 $js_file_url,
                 ['jquery', 'media-editor', 'code-editor'], // Añadir 'code-editor' como dependencia
-                filemtime($js_file_systempath),
+                null, // Evitar el versionado automático que añade ?ver=
                 true
             );
 
