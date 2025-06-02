@@ -7,7 +7,11 @@ jQuery(document).ready(function ($) {
     //console.log('Restaurant Menu Admin JS Loaded and conditions met.');
 
     // === UTILITIES ===
-    function generarIdUnico() {
+    function generarIdUnico(length = 5) {
+        if (length === 5) { // Specific request for 5-digit random number
+            return Math.floor(10000 + Math.random() * 90000).toString();
+        }
+        // Fallback to original method for other cases if needed, or adjust as necessary
         var id = 'gloryid_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         return id;
     }
@@ -195,7 +199,7 @@ jQuery(document).ready(function ($) {
 
         $menuEditorInstance.on('click', '.glory-add-menu-section', function () {
             var $sectionsEditor = $(this).closest('.menu-sections-container').find('.glory-menu-sections-editor');
-            var newSectionId = generarIdUnico();
+            var newSectionId = generarIdUnico(5); // Generate 5-digit ID
             var baseNameForNewSection = `${baseInputNameForMenu}[sections][${newSectionId}]`;
             var html = `
             <div class="glory-menu-section postbox" data-section-id="${newSectionId}">
@@ -203,7 +207,14 @@ jQuery(document).ready(function ($) {
                     <h2 class="hndle">
                         <span class="dashicons dashicons-menu glory-sortable-handle" title="${i18n.dragToReorder || 'Drag to reorder'}"></span>
                         <span class="glory-section-title-display">${i18n.newSectionLabel || 'New Section'}</span>
-                        <span class="glory-section-id-display">(ID: ${newSectionId})</span>
+                        (<label for="${baseNameForNewSection}_id_input_field_new" style="font-weight: normal; font-size: inherit;">${i18n.sectionIdLabel || 'ID:'} </label>
+                        <input type="text"
+                               id="${baseNameForNewSection}_id_input_field_new"
+                               name="${baseNameForNewSection}[id_value]"
+                               value="${newSectionId}"
+                               class="glory-section-id-input regular-text"
+                               style="width: 100px; margin-left: 3px; font-weight: normal; display: inline-block; padding: 2px 4px; line-height: normal; height: auto; font-size: 13px;"
+                               placeholder="${i18n.sectionIdPlaceholder || 'Unique ID'}">)
                     </h2>
                     <div class="handle-actions hide-if-no-js">
                          <button type="button" class="button-link glory-remove-menu-section" title="${i18n.removeSection || 'Remove Section'}"><span class="dashicons dashicons-trash"></span></button>
@@ -237,6 +248,37 @@ jQuery(document).ready(function ($) {
             $newSection.find('textarea.glory-textarea-autosize').trigger('input'); 
             activarSortableParaItems($newSection.find('.glory-menu-items-list, .glory-menu-packs-list, .glory-price-headers-editor, .glory-menu-pack-details-list'));
         });
+
+        // Update data-section-id when the ID input changes
+        $menuEditorInstance.on('change keyup', '.glory-section-id-input', function() {
+            var $input = $(this);
+            var newId = $input.val().trim();
+            var $section = $input.closest('.glory-menu-section.postbox');
+            var oldId = $section.data('section-id');
+
+            if (newId && newId !== oldId) {
+                // Basic validation: ensure it's not empty and potentially other checks (e.g., uniqueness within the page)
+                // For now, just update it.
+                $section.attr('data-section-id', newId);
+                // console.log(`Section ID changed from ${oldId} to ${newId}`);
+
+                // IMPORTANT: Update the name attribute of all child inputs of this section to reflect the new ID in the key
+                // This is crucial for the form submission to be correct.
+                // Example: glory_content[menu_principal][sections][OLD_ID_HERE][title] -> glory_content[menu_principal][sections][NEW_ID_HERE][title]
+                $section.find('input, textarea, select').each(function() {
+                    var $el = $(this);
+                    var name = $el.attr('name');
+                    if (name) {
+                        var newName = name.replace(new RegExp(`(\[sections\]\[)${oldId}(\])`), `$1${newId}$2`);
+                        if (name !== newName) {
+                            $el.attr('name', newName);
+                            // console.log(`Renamed input: ${name} -> ${newName}`);
+                        }
+                    }
+                });
+            }
+        });
+
 
         $menuEditorInstance.on('input', '.glory-section-title-input', function () {
             var $input = $(this);

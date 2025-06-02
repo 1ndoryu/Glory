@@ -211,16 +211,25 @@ class RestaurantMenuAdminPanel
 
             // 2. Reconstruir Secciones
             if (isset($submitted_structure_for_key['sections']) && is_array($submitted_structure_for_key['sections'])) {
-                foreach ($submitted_structure_for_key['sections'] as $section_id_from_post_key => $section_data) {
-                    $section_id = sanitize_key($section_id_from_post_key);
+                foreach ($submitted_structure_for_key['sections'] as $original_section_key_from_post => $section_data) {
+                    // Determine the definitive section ID:
+                    // 1. Prefer 'id_value' if submitted and valid.
+                    // 2. Fallback to the key from the POST array.
+                    $definitive_section_id = '';
+                    if (isset($section_data['id_value']) && !empty(trim($section_data['id_value']))) {
+                        $definitive_section_id = sanitize_key(trim($section_data['id_value']));
+                    } else {
+                        $definitive_section_id = sanitize_key($original_section_key_from_post);
+                    }
 
-                    if (empty($section_id) || empty($section_data['title'])) {
+                    if (empty($definitive_section_id) || empty($section_data['title'])) {
                         // GloryLogger::info("RestaurantMenuAdminPanel: Section '{$section_id}' skipped due to missing Title. Data: " . print_r($section_data, true));
                         continue;
                     }
 
                     $current_section_type = sanitize_text_field($section_data['type'] ?? 'standard');
                     $new_section_data = [
+                        'id_value' => $definitive_section_id, // Store the definitive ID
                         'title' => sanitize_text_field($section_data['title']),
                         'description' => isset($section_data['description']) ? sanitize_textarea_field($section_data['description']) : null,
                         'type' => $current_section_type,
@@ -321,7 +330,7 @@ class RestaurantMenuAdminPanel
                             }
                         }
                     }
-                    $reconstructed_menu['sections'][$section_id] = $new_section_data;
+                    $reconstructed_menu['sections'][$definitive_section_id] = $new_section_data;
                 }
             }
 

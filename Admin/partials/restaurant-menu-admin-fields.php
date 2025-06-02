@@ -149,7 +149,14 @@ function render_menu_section_admin_html(string $base_menu_input_name, string $se
                 <!-- No debería existir porque manejar la ubicación de las secciones es algo que se maneja en la configuración de pestañas -->
                 <span class="dashicons dashicons-menu glory-sortable-handle" title="<?php esc_attr_e('Arrastrar para reordenar sección', 'glory'); ?>" style="display: none;"></span>
                 <span class="glory-section-title-display"><?php echo esc_html($section_title ?: __('Nueva Sección', 'glory')); ?></span>
-                <span class="glory-section-id-display">(ID: <?php echo esc_html($section_id); ?>)</span>
+                (<label for="<?php echo esc_attr($base_section_name_attr . '_id_input_field'); ?>" style="font-weight: normal; font-size: inherit;"><?php _e('ID:', 'glory'); ?> </label>
+                <input type="text"
+                       id="<?php echo esc_attr($base_section_name_attr . '_id_input_field'); ?>"
+                       name="<?php echo esc_attr($base_section_name_attr . '[id_value]'); ?>"
+                       value="<?php echo esc_attr($section_id); ?>"
+                       class="glory-section-id-input regular-text"
+                       style="width: 100px; margin-left: 3px; font-weight: normal; display: inline-block; padding: 2px 4px; line-height: normal; height: auto; font-size: 13px;"
+                       placeholder="<?php esc_attr_e('ID único', 'glory'); ?>">)
             </h2>
             <div class="handle-actions hide-if-no-js">
                 <button type="button" class="button-link glory-remove-menu-section" title="<?php esc_attr_e('Eliminar Sección', 'glory'); ?>">
@@ -164,7 +171,7 @@ function render_menu_section_admin_html(string $base_menu_input_name, string $se
         <div class="inside">
             <p>
                 <label for="<?php echo $base_section_name_attr . '[title]'; ?>"><?php _e('Título de la Sección:', 'glory'); ?></label><br>
-                <input type="text" id="<?php echo $base_section_name_attr . '[title]'; ?>" name="<?php echo $base_section_name_attr . '[title]'; ?>" value="<?php echo esc_attr($section_title); ?>" class="large-text glory-section-title-input">
+                <input type="text" id="<?php echo $base_section_name_attr . '[title]'; ?>" name="<?php echo $base_section_name_attr . '[title]'; ?>" value="<?php echo esc_attr($section_title); ?>" class="large-text glory-section-title-input" placeholder="<?php esc_attr_e('Título visible de la sección', 'glory'); ?>">
             </p>
             <p>
                 <label for="<?php echo $base_section_name_attr . '[description]'; ?>"><?php _e('Descripción de la Sección (opcional):', 'glory'); ?></label><br>
