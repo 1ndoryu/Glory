@@ -42,8 +42,8 @@ class formAdminPanel
         // Parche temporal para cargar CSS directamente
         if (function_exists('get_stylesheet_directory_uri')) {
             $css_url = get_stylesheet_directory_uri() . '/Glory/assets/css/content-admin-panel.css';
-            echo '<link rel="stylesheet" id="glory-content-admin-panel-style-direct-form" href="' . esc_url($css_url) . '?ver=' . time() . '" type="text/css" media="all" />';
-            error_log('[Glory DEBUG - formAdminPanel.php] Parche CSS directo aplicado en renderizarContenidoPanel: ' . $css_url);
+            echo '<link rel="stylesheet" id="glory-content-admin-panel-style-direct-form" href="' . esc_url($css_url) . '" type="text/css" media="all" />';
+            error_log('[Glory DEBUG - formAdminPanel.php] Parche CSS directo aplicado en renderizarContenidoPanel (sin ?ver=): ' . $css_url);
         } else {
             error_log('[Glory DEBUG - formAdminPanel.php] ERROR: get_stylesheet_directory_uri() no existe al aplicar parche CSS en renderizarContenidoPanel.');
         }

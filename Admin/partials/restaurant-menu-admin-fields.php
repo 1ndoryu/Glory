@@ -27,8 +27,8 @@ function render_menu_structure_field_admin_html(string $key, array $config, $cur
 
     if (function_exists('get_stylesheet_directory_uri')) {
         $css_url = get_stylesheet_directory_uri() . '/Glory/assets/css/content-admin-panel.css';
-        echo '<link rel="stylesheet" id="glory-content-admin-panel-style-direct-menu" href="' . esc_url($css_url) . '?ver=' . time() . '" type="text/css" media="all" />';
-        error_log('[Glory DEBUG - restaurant-menu-admin-fields.php] Parche CSS directo aplicado: ' . $css_url);
+        echo '<link rel="stylesheet" id="glory-content-admin-panel-style-direct-menu" href="' . esc_url($css_url) . '" type="text/css" media="all" />';
+        error_log('[Glory DEBUG - restaurant-menu-admin-fields.php] Parche CSS directo aplicado (sin ?ver=): ' . $css_url);
     } else {
         error_log('[Glory DEBUG - restaurant-menu-admin-fields.php] ERROR: get_stylesheet_directory_uri() no existe al aplicar parche CSS.');
     }
