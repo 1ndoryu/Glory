@@ -230,14 +230,30 @@ class ContentAdminPanel
                     $value_to_save = $schedule_data;
                 } elseif ($config['type'] === 'raw') {
                     if ($panel_value_exists_in_post) {
-                        $json_string_from_textarea = sanitize_textarea_field(stripslashes($posted_options[$key]));
-                        $decoded_value = json_decode($json_string_from_textarea, true);
-                        if (json_last_error() === JSON_ERROR_NONE) {
-                            $value_to_save = $decoded_value;
+                        $raw_value_from_textarea = stripslashes($posted_options[$key]); // No sanitizar aquí para no alterar scripts
+                        // Intentar decodificar como JSON solo si se espera que sea JSON (podríamos añadir una sub-propiedad en config, ej. 'is_json_raw')
+                        // Por ahora, para 'header_scripts', asumimos que no es JSON y lo guardamos tal cual.
+                        // Si en el futuro tenemos campos 'raw' que SÍ son JSON, necesitaremos una forma de distinguirlos.
+                        // Una opción simple es verificar si el 'default' es un array o si el string parece JSON.
+                        $is_likely_json = (is_array($config['default']) || (is_string($raw_value_from_textarea) && (strpos(trim($raw_value_from_textarea), '{') === 0 || strpos(trim($raw_value_from_textarea), '[') === 0)));
+
+                        if ($is_likely_json) {
+                            $decoded_value = json_decode($raw_value_from_textarea, true);
+                            if (json_last_error() === JSON_ERROR_NONE) {
+                                $value_to_save = $decoded_value;
+                            } else {
+                                $value_to_save = sanitize_textarea_field($raw_value_from_textarea); // Sanitizar si era JSON inválido
+                                GloryLogger::info("ContentAdminPanel: Raw field '{$key}' (expected JSON) contained invalid JSON. Saved as sanitized string. Error: " . json_last_error_msg());
+                                add_settings_error('glory_content_messages', 'glory_invalid_json_' . $key, sprintf(__('Advertencia: El contenido para "%s" (esperado como JSON) no era JSON válido y se ha guardado como una cadena de texto sanitizada. Por favor, corríjalo.', 'glory'), $config['label']), 'warning');
+                            }
                         } else {
-                            $value_to_save = $json_string_from_textarea;
-                            GloryLogger::info("ContentAdminPanel: Raw field '{$key}' contained invalid JSON. Saved as raw string. Error: " . json_last_error_msg());
-                            add_settings_error('glory_content_messages', 'glory_invalid_json_' . $key, sprintf(__('Advertencia: El contenido para "%s" no era JSON válido y se ha guardado como una cadena de texto sin formato. Por favor, corríjalo.', 'glory'), $config['label']), 'warning');
+                            // No es JSON, guardar como texto crudo (scripts, HTML, etc.)
+                            // Usar wp_kses_post o una sanitización más permisiva si es necesario, 
+                            // pero para scripts <script>...</script> necesitamos que se guarde tal cual.
+                            // La función sanitize_textarea_field es demasiado agresiva para scripts.
+                            // Considerar usar wp_kses($raw_value_from_textarea, 'post') si se quiere permitir HTML seguro pero no scripts.
+                            // Para scripts, realmente no queremos sanitización que los rompa.
+                            $value_to_save = $raw_value_from_textarea; 
                         }
                     } else {
                         $value_to_save = $config['default'] ?? [];

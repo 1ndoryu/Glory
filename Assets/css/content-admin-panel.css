@@ -320,3 +320,7 @@ button.button.glory-add-menu-tab {
 span.glory-section-title-display {
     margin-right: auto;
 }
+
+.CodeMirror-gutter-elt {
+    display: none !important; /* Using !important to ensure the element stays hidden */
+}
