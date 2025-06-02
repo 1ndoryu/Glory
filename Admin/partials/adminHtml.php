@@ -112,13 +112,7 @@ function renderContentPanel(array $fields_by_section, string $active_tab, string
 ?>
 
 <?php
-if (function_exists('get_stylesheet_directory_uri')) {
-    $css_url = get_stylesheet_directory_uri() . '/Glory/assets/css/content-admin-panel.css';
-    echo '<link rel="stylesheet" id="glory-content-admin-panel-style-direct" href="' . esc_url($css_url) . '" type="text/css" media="all" />';
-    error_log('[Glory DEBUG - adminHtml.php] Parche CSS directo aplicado (sin ?ver=): ' . $css_url);
-} else {
-    error_log('[Glory DEBUG - adminHtml.php] ERROR: get_stylesheet_directory_uri() no existe al aplicar parche CSS.');
-}
+
 ?>
     <div class="wrap glory-content-panel">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>

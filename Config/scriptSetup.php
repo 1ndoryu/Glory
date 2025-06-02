@@ -35,7 +35,7 @@ ScriptManager::defineFolder(
     ]
 );
 StyleManager::defineFolder(
-    '/Glory/assets/css',
+    '/Glory/Assets/css',
     [], // dependencias por defecto
     'all', // media por defecto
     null, // devMode por defecto

@@ -52,7 +52,7 @@ class RestaurantMenuAdminPanel
 
         // === CSS ===
         $css_general_handle = 'glory-content-admin-panel-style';
-        $css_general_relative = '/Glory/assets/css/content-admin-panel.css';
+        $css_general_relative = '/Glory/Assets/css/content-admin-panel.css';
         $css_general_file_url = $theme_uri . $css_general_relative;
         $css_general_file_path = $theme_path . $css_general_relative;
 
@@ -71,7 +71,7 @@ class RestaurantMenuAdminPanel
         // === JAVASCRIPT ===
         $js_handle          = 'glory-restaurant-menu-admin-script';
         $js_filename        = 'restaurant-menu-admin.js';
-        $js_relative        = "/Glory/assets/js/{$js_filename}";
+        $js_relative        = "/Glory/Assets/js/{$js_filename}";
         $js_file_url        = $theme_uri . $js_relative;
         $js_file_systempath = $theme_path . $js_relative;
 

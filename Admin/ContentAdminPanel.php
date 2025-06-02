@@ -40,7 +40,7 @@ class ContentAdminPanel
 
         // === CSS ===
         $css_handle       = 'glory-content-admin-panel-style';
-        $css_relative     = '/Glory/assets/css/content-admin-panel.css';
+        $css_relative     = '/Glory/Assets/css/content-admin-panel.css';
         $css_file_url     = $theme_uri . $css_relative;
         $css_file_path    = $theme_path . $css_relative;
 
@@ -59,7 +59,7 @@ class ContentAdminPanel
         // === JAVASCRIPT ===
         $js_handle          = 'glory-content-admin-panel-script';
         $js_filename        = 'content-admin-panel.js';
-        $js_relative        = "/Glory/assets/js/{$js_filename}";
+        $js_relative        = "/Glory/Assets/js/{$js_filename}";
         $js_file_url        = $theme_uri . $js_relative;
         $js_file_systempath = $theme_path . $js_relative;
 
