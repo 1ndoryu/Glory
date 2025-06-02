@@ -59,7 +59,7 @@ class RestaurantMenuAdminPanel
             wp_enqueue_style(
                 $css_general_handle,
                 $css_general_file_url,
-                [],
+                ['wp-codemirror'], // Añadida dependencia para consistencia
                 filemtime($css_general_file_path)
             );
         }
