@@ -37,6 +37,7 @@ class RestaurantMenuAdminPanel
     {
         // El hook para una página de menú de nivel superior es: toplevel_page_{menu_slug}
         $expected_hook_suffix = 'toplevel_page_' . self::$menu_slug;
+        error_log('[Glory DEBUG - RestaurantMenuAdminPanel.php] enqueue_admin_assets llamado. Hook actual: ' . $hook_suffix . '. Hook esperado: ' . $expected_hook_suffix);
 
         if ($hook_suffix !== $expected_hook_suffix) {
             // GloryLogger::info("RestaurantMenuAdminPanel enqueued_assets: Hook '{$hook_suffix}' does not match expected '{$expected_hook_suffix}'. Skipping.");
@@ -62,6 +63,9 @@ class RestaurantMenuAdminPanel
                 ['wp-codemirror'], // Añadida dependencia para consistencia
                 filemtime($css_general_file_path)
             );
+            error_log('[Glory DEBUG - RestaurantMenuAdminPanel.php] CSS encolado CORRECTAMENTE: ' . $css_general_file_url . ' (Hook: ' . $hook_suffix . ')');
+        } else {
+            error_log('[Glory DEBUG - RestaurantMenuAdminPanel.php] ERROR CSS: Archivo no encontrado en ' . $css_general_file_path . ' (Hook: ' . $hook_suffix . ')');
         }
 
         // === JAVASCRIPT ===

@@ -1,6 +1,8 @@
 <?php
 // Admin/partials/adminHtml.php
 
+
+
 use Glory\Class\ContentManager;
 use Glory\Class\GloryLogger;
 
@@ -107,6 +109,16 @@ function renderFieldInput(string $key, array $config, $current_value, string $op
 function renderContentPanel(array $fields_by_section, string $active_tab, string $menu_slug_for_url_building): string
 {
     ob_start();
+?>
+
+<?php
+if (function_exists('get_stylesheet_directory_uri')) {
+    $css_url = get_stylesheet_directory_uri() . '/Glory/assets/css/content-admin-panel.css';
+    echo '<link rel="stylesheet" id="glory-content-admin-panel-style-direct" href="' . esc_url($css_url) . '?ver=' . time() . '" type="text/css" media="all" />';
+    error_log('[Glory DEBUG - adminHtml.php] Parche CSS directo aplicado: ' . $css_url);
+} else {
+    error_log('[Glory DEBUG - adminHtml.php] ERROR: get_stylesheet_directory_uri() no existe al aplicar parche CSS.');
+}
 ?>
     <div class="wrap glory-content-panel">
         <h1><?php echo esc_html(get_admin_page_title()); ?></h1>

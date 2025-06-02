@@ -20,6 +20,7 @@ class ContentAdminPanel
     {
         // Solo en nuestra página de admin
         $actual_hook = 'toplevel_page_' . self::$menu_slug;
+        error_log('[Glory DEBUG - ContentAdminPanel.php] enqueue_admin_assets llamado. Hook actual: ' . $hook_suffix . '. Hook esperado: ' . $actual_hook);
         if ($hook_suffix !== $actual_hook) {
             return;
         }
@@ -50,6 +51,9 @@ class ContentAdminPanel
                 ['wp-codemirror'], // Dependencia de los estilos de CodeMirror
                 filemtime($css_file_path)
             );
+            error_log('[Glory DEBUG - ContentAdminPanel.php] CSS encolado CORRECTAMENTE: ' . $css_file_url . ' (Hook: ' . $hook_suffix . ')');
+        } else {
+            error_log('[Glory DEBUG - ContentAdminPanel.php] ERROR CSS: Archivo no encontrado en ' . $css_file_path . ' (Hook: ' . $hook_suffix . ')');
         }
 
         // === JAVASCRIPT ===
