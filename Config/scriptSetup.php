@@ -30,6 +30,7 @@ ScriptManager::defineFolder(
         'content-admin-panel.js',
         'restaurant-menu-admin.js',
         'FormPanel.js',
+        'GloryLogs.js',
         // Añade aquí otros scripts específicos del admin si es necesario
     ]
 );

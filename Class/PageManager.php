@@ -24,7 +24,7 @@ if (!class_exists('PageManager')) {
          * @param string|null $title
          * @param string|null $template
          */
-        public static function define(string $slug, string $title = null, string $template = null)
+        public static function define(string $slug, ?string $title = null, ?string $template = null)
         {
             // Input validation for slug
             if (empty($slug) || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
