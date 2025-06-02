@@ -41,10 +41,10 @@ StyleManager::defineFolder(
     null, // devMode por defecto
     '', // prefijo de handle por defecto
     [ // Archivos CSS a excluir de la carga global (CSS de admin)
-        'content-admin-panel.css',
+        //'content-admin-panel.css',
         // Añade aquí otros CSS específicos del admin si es necesario
     ]
 );
-// Glory\Assets\css\adminPanel.css
+
 
 GloryLogger::init();
