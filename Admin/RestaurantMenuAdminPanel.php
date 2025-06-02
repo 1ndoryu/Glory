@@ -126,9 +126,10 @@ class RestaurantMenuAdminPanel
                     'isHeaderRowLabel' => __('Es Fila de Encabezado (define nuevas columnas de precio para elementos inferiores)', 'glory'),
                     'isSinglePriceLabel' => __('Es Elemento de Precio Único (ignora columnas, usa un campo de precio)', 'glory'),
                     'columnHeadersDefinedByThisRowLabel' => __('Encabezados de Columna Definidos por esta Fila (estos textos se usarán para elementos subsiguientes):', 'glory'),
-                    'headerRowNameLabel' => __('Nombre de Fila de Encabezado (HTML permitido):', 'glory'), 
+                    'headerRowNameLabel' => __('Nombre de Fila de Encabezado (HTML permitido):', 'glory'),
                     'headerTextLabelN' => __('Texto de Encabezado %d', 'glory'),
                     'addHeaderPriceFieldTitle' => __('Añadir otro campo de texto de encabezado para esta fila', 'glory'),
+                    'removeHeaderPriceFieldTitle' => __('Eliminar este campo de encabezado', 'glory'),
                 ],
             ]);
         } else {

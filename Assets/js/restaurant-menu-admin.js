@@ -45,7 +45,6 @@ jQuery(document).ready(function ($) {
         //console.log('reindexarElementos finished for container:', $container.prop('tagName') + '.' + $container.attr('class'));
     }
 
-
     function inicializarTextareaAutosize() {
         //console.log('inicializarTextareaAutosize called');
         $(document).on('input', 'textarea.glory-textarea-autosize', function () {
@@ -58,6 +57,24 @@ jQuery(document).ready(function ($) {
         //console.log('inicializarTextareaAutosize finished initial trigger.');
     }
     inicializarTextareaAutosize();
+
+    function reindexarHeaderPriceFields($headerPricesRowContainer, baseNameForItem, i18n) {
+        $headerPricesRowContainer.find('.glory-header-price-field-wrapper').each(function(newIndex, wrapper) {
+            var $wrapper = $(wrapper);
+            var $input = $wrapper.find('input[type="text"].regular-text');
+            
+            var newName = `${baseNameForItem}[prices][${newIndex}]`;
+            
+            var placeholderTextFormat = (i18n && i18n.headerTextLabelN && typeof i18n.headerTextLabelN === 'string' && i18n.headerTextLabelN.includes('%d')) 
+                                        ? i18n.headerTextLabelN 
+                                        : 'Texto de Encabezado %d'; // Fallback por si i18n no está completo
+            var newPlaceholder = placeholderTextFormat.replace('%d', newIndex + 1);
+    
+            $input.attr('name', newName);
+            $input.attr('placeholder', newPlaceholder);
+        });
+    }
+
 
     $('.glory-menu-structure-admin').each(function (instanceIndex) {
         //console.log(`Initializing Menu Editor Instance #${instanceIndex + 1}`);
@@ -95,35 +112,24 @@ jQuery(document).ready(function ($) {
             if (!$itemsList.hasClass('ui-sortable')) {
                 //console.log('  Initializing sortable on:', $itemsList.prop('tagName') + '.' + $itemsList.attr('class'));
                 
-                // MODIFICADO: Regex más general para diferentes tipos de items y sus contenedores.
-                // Ajustar el regex para que coincida con los detalles del pack también
-                // glory_content[menu_principal][sections][ID_SECCION][packs][INDICE_PACK][details][INDICE_DETALLE][campo]
-                // glory_content[menu_principal][sections][ID_SECCION][items][INDICE_ITEM][campo]
-                // glory_content[menu_principal][sections][ID_SECCION][price_headers][INDICE_HEADER]
-                
                 var baseNamePattern = new RegExp(
                     '^(' + baseInputNameForMenu.replace(/\[/g, '\\[').replace(/\]/g, '\\]') + // glory_content[key]
                     '\\[sections\\]\\[[^\\s\\]]+\\]' +  // [sections][section_id]
-                    '\\[(?:items|packs|price_headers|details)\\]' + // MODIFICADO: Añadido 'details'
-                    '(?:\\[\\d+\\])?' + // Para packs: [pack_index] (opcional si es solo items o price_headers)
-                    '\\[(?:details\\])?' + // Para packs details: [details] (opcional)
-                    '\\[)\\d+(\\](?:\\[.*\\])?)$' // Índice final del item/detalle y sufijo
+                    '\\[(?:items|packs|price_headers|details)\\]' + 
+                    '(?:\\[\\d+\\])?' + 
+                    '\\[(?:details\\])?' + 
+                    '\\[)\\d+(\\](?:\\[.*\\])?)$' 
                 );
 
-                // NUEVO: Patrón específico para reindexar detalles dentro de un pack.
-                // El patrón captura:
-                // $1: glory_content[menu_key][sections][section_id][packs][pack_index][details][
-                // $2: ][field_name]
                 var packDetailNamePattern = new RegExp(
-                    '^(' + baseInputNameForMenu.replace(/\[/g, '\\[').replace(/\]/g, '\\]') + // glory_content[key]
-                    '\\[sections\\]\\[[^\\s\\]]+\\]' +  // [sections][section_id]
-                    '\\[packs\\]\\[\\d+\\]' +        // [packs][pack_index]
-                    '\\[details\\]\\[)\\d+(\\]\\[(?:type|text)\\])$' // [details][INDEX_A_CAMBIAR][type/text]
+                    '^(' + baseInputNameForMenu.replace(/\[/g, '\\[').replace(/\]/g, '\\]') + 
+                    '\\[sections\\]\\[[^\\s\\]]+\\]' +  
+                    '\\[packs\\]\\[\\d+\\]' +        
+                    '\\[details\\]\\[)\\d+(\\]\\[(?:type|text)\\])$' 
                 );
 
 
                 $itemsList.sortable({
-                    // MODIFICADO: Selector más específico para cada tipo de lista
                     items: $itemsList.hasClass('glory-menu-pack-details-list') ? '.glory-menu-pack-detail-item' 
                          : ($itemsList.hasClass('glory-price-headers-editor') ? '.glory-price-header-item' 
                          : '.glory-menu-item'),
@@ -132,21 +138,19 @@ jQuery(document).ready(function ($) {
                     update: function (event, ui) {
                         //console.log('  Items sortable updated in list:', $(this).prop('tagName') + '.' + $(this).attr('class'), 'Item class:', ui.item.attr('class'));
                         let itemSelector;
-                        let currentPattern = baseNamePattern; // Patrón por defecto
-                        let dataAttribute = 'data-item-index'; // Atributo data por defecto
+                        let currentPattern = baseNamePattern; 
+                        let dataAttribute = 'data-item-index'; 
 
                         if (ui.item.hasClass('glory-menu-pack-detail-item')) {
                             itemSelector = '.glory-menu-pack-detail-item';
-                            currentPattern = packDetailNamePattern; // Usar patrón específico para detalles de pack
+                            currentPattern = packDetailNamePattern; 
                             dataAttribute = 'data-detail-index';
                             //console.log('    Re-indexing PACK DETAILS with selector:', itemSelector, 'and pattern:', currentPattern, 'data-attr:', dataAttribute);
                         } else if (ui.item.hasClass('glory-price-header-item')) {
                             itemSelector = '.glory-price-header-item';
                              //console.log('    Re-indexing PRICE HEADERS with selector:', itemSelector, 'and pattern:', currentPattern, 'data-attr:', dataAttribute);
-                        } else { // glory-menu-item (standard, multi-price, pack)
+                        } else { 
                             itemSelector = '.glory-menu-item';
-                            // El baseNamePattern ya está preparado para items y packs.
-                            // Para packs, dataAttribute es 'data-item-index' (el índice del pack).
                             //console.log('    Re-indexing MENU ITEMS/PACKS with selector:', itemSelector, 'and pattern:', currentPattern, 'data-attr:', dataAttribute);
                         }
                         reindexarElementos($(this), itemSelector, currentPattern, dataAttribute);
@@ -155,7 +159,7 @@ jQuery(document).ready(function ($) {
             }
         }
 
-        $menuEditorInstance.find('.glory-menu-items-list, .glory-menu-packs-list, .glory-price-headers-editor, .glory-menu-pack-details-list').each(function () { // MODIFICADO: Incluir .glory-menu-pack-details-list
+        $menuEditorInstance.find('.glory-menu-items-list, .glory-menu-packs-list, .glory-price-headers-editor, .glory-menu-pack-details-list').each(function () { 
             //console.log('  Activating sortable for existing list on load:', $(this).prop('tagName') + '.' + $(this).attr('class'));
             activarSortableParaItems($(this));
         });
@@ -231,7 +235,7 @@ jQuery(document).ready(function ($) {
             $sectionsEditor.append($newSection);
             $newSection.find('.glory-section-type-select').trigger('change');
             $newSection.find('textarea.glory-textarea-autosize').trigger('input'); 
-            activarSortableParaItems($newSection.find('.glory-menu-items-list, .glory-menu-packs-list, .glory-price-headers-editor, .glory-menu-pack-details-list')); // MODIFICADO
+            activarSortableParaItems($newSection.find('.glory-menu-items-list, .glory-menu-packs-list, .glory-price-headers-editor, .glory-menu-pack-details-list'));
         });
 
         $menuEditorInstance.on('input', '.glory-section-title-input', function () {
@@ -280,7 +284,7 @@ jQuery(document).ready(function ($) {
                 </div>`;
             }
             $contentContainer.html(html);
-            var $newListToSort = $contentContainer.find('.glory-menu-items-list, .glory-menu-packs-list, .glory-price-headers-editor, .glory-menu-pack-details-list'); // MODIFICADO
+            var $newListToSort = $contentContainer.find('.glory-menu-items-list, .glory-menu-packs-list, .glory-price-headers-editor, .glory-menu-pack-details-list'); 
             activarSortableParaItems($newListToSort);
             $contentContainer.find('textarea.glory-textarea-autosize').trigger('input');
         });
@@ -350,7 +354,7 @@ jQuery(document).ready(function ($) {
             } else if (itemType === 'menu_pack') {
                 $packsList = $sectionPostbox.find('.glory-menu-packs-list');
                 newItemIndex = $packsList.find('.glory-menu-item-pack').length;
-                baseNameForPacks = `${baseNameForSection}[packs]`; // Este es el nombre base para UN pack
+                baseNameForPacks = `${baseNameForSection}[packs]`; 
                 html = `
                 <div class="glory-menu-item glory-menu-item-pack" data-item-index="${newItemIndex}">
                     <span class="dashicons dashicons-menu glory-sortable-handle" title="${i18n.dragToReorder || 'Drag to reorder'}"></span>
@@ -366,13 +370,12 @@ jQuery(document).ready(function ($) {
                 </div>`;
                 var $newPack = $(html);
                 $packsList.append($newPack);
-                activarSortableParaItems($packsList); // Sortable para los packs en sí
-                activarSortableParaItems($newPack.find('.glory-menu-pack-details-list')); // Sortable para los detalles DENTRO del nuevo pack
+                activarSortableParaItems($packsList); 
+                activarSortableParaItems($newPack.find('.glory-menu-pack-details-list')); 
                 $newPack.find('textarea.glory-textarea-autosize').last().trigger('input');
             }
         });
 
-        // Eliminar Item (genérico para standard, multi_price, pack)
         $menuEditorInstance.on('click', '.glory-remove-menu-item', function () {
             var $itemDiv = $(this).closest('.glory-menu-item');
             var itemName = $itemDiv.find('input[name*="[name]"], input[name*="[pack_title]"]').first().val() || 'Unnamed Item/Pack';
@@ -389,17 +392,14 @@ jQuery(document).ready(function ($) {
             }
         });
         
-        // --- NUEVO: Gestión de Detalles de Menu Pack ---
         $menuEditorInstance.on('click', '.glory-add-menu-pack-detail', function () {
             var $button = $(this);
-            var detailType = $button.data('detail-type'); // 'item' o 'heading'
-            var packIndex = $button.data('pack-index'); // Índice del pack al que pertenece este detalle
+            var detailType = $button.data('detail-type'); 
+            var packIndex = $button.data('pack-index'); 
             var $packItemDiv = $button.closest('.glory-menu-item-pack');
             var $detailsList = $packItemDiv.find('.glory-menu-pack-details-list');
             var newDetailIndex = $detailsList.find('.glory-menu-pack-detail-item').length;
 
-            // Construir el nombre base para los inputs de este nuevo detalle
-            // Ej: glory_content[menu_key][sections][section_id][packs][pack_index][details][newDetailIndex]
             var baseNameForPack = $packItemDiv.find('input[name*="[pack_title]"]').attr('name').replace(/\[pack_title\]$/, '');
             var baseNameForNewDetail = `${baseNameForPack}[details][${newDetailIndex}]`;
             //console.log(`Adding pack detail. Type: ${detailType}, Pack Index: ${packIndex}, New Detail Index: ${newDetailIndex}, Base Name: ${baseNameForNewDetail}`);
@@ -417,7 +417,7 @@ jQuery(document).ready(function ($) {
                 </button>
             </div>`;
             $detailsList.append(html);
-            activarSortableParaItems($detailsList); // Asegurarse que la lista de detalles es sortable
+            activarSortableParaItems($detailsList); 
         });
 
         $menuEditorInstance.on('click', '.glory-remove-menu-pack-detail', function () {
@@ -426,20 +426,15 @@ jQuery(document).ready(function ($) {
             //console.log('Remove Pack Detail clicked for text:', detailText);
 
             if (confirm(i18n.confirmRemovePackDetail || 'Are you sure you want to remove this detail?')) {
-                var $detailsList = $detailItemDiv.parent(); // .glory-menu-pack-details-list
+                var $detailsList = $detailItemDiv.parent(); 
                 var $packItemDiv = $detailsList.closest('.glory-menu-item-pack');
                 
                 $detailItemDiv.remove();
-
-                // Reindexar los detalles restantes dentro de este pack
-                // El patrón captura:
-                // $1: glory_content[menu_key][sections][section_id][packs][pack_index][details][
-                // $2: ][field_name] (donde field_name es type o text)
                 var packDetailNamePattern = new RegExp(
-                    '^(' + baseInputNameForMenu.replace(/\[/g, '\\[').replace(/\]/g, '\\]') + // glory_content[key]
-                    '\\[sections\\]\\[[^\\s\\]]+\\]' +  // [sections][section_id]
-                    '\\[packs\\]\\[\\d+\\]' +        // [packs][pack_index] - el \d+ aquí es el índice del pack, no se cambia
-                    '\\[details\\]\\[)\\d+(\\]\\[(?:type|text)\\])$' // [details][INDEX_A_CAMBIAR][type/text]
+                    '^(' + baseInputNameForMenu.replace(/\[/g, '\\[').replace(/\]/g, '\\]') + 
+                    '\\[sections\\]\\[[^\\s\\]]+\\]' +  
+                    '\\[packs\\]\\[\\d+\\]' +        
+                    '\\[details\\]\\[)\\d+(\\]\\[(?:type|text)\\])$' 
                 );
                 reindexarElementos($detailsList, '.glory-menu-pack-detail-item', packDetailNamePattern, 'data-detail-index');
             }
@@ -474,7 +469,7 @@ jQuery(document).ready(function ($) {
 
         $menuEditorInstance.find('.glory-menu-section.postbox').each(function(idx) {
             var $section = $(this);
-            var $listsToSort = $section.find('.glory-menu-items-list, .glory-menu-packs-list, .glory-price-headers-editor, .glory-menu-pack-details-list'); // MODIFICADO
+            var $listsToSort = $section.find('.glory-menu-items-list, .glory-menu-packs-list, .glory-price-headers-editor, .glory-menu-pack-details-list'); 
             if($listsToSort.length) {
                  activarSortableParaItems($listsToSort);
             }
@@ -494,6 +489,8 @@ jQuery(document).ready(function ($) {
             var $singlePriceCheckbox = $itemDiv.find('.glory-item-is-single-price-checkbox');
             var $priceFieldsContainer = $itemDiv.find('.glory-item-price-fields');
             var baseNameForItem = $itemDiv.find('.glory-item-name').attr('name').replace(/\[name\]$/, ''); 
+            var removeButtonTitle = (i18n && i18n.removeHeaderPriceFieldTitle) ? i18n.removeHeaderPriceFieldTitle : 'Eliminar este campo de encabezado';
+
             if (isChecked) {
                 if ($singlePriceCheckbox.is(':checked')) { $singlePriceCheckbox.prop('checked', false).triggerHandler('change'); }
                 $itemDiv.attr('data-is-header-row', 'true').addClass('glory-menu-item-row-header');
@@ -501,7 +498,19 @@ jQuery(document).ready(function ($) {
                 var headerPricesHtml = ''; var existingPrices = [];
                 $priceFieldsContainer.find('.glory-item-prices-row input[type="text"]').each(function() { existingPrices.push($(this).val()); });
                 var numInitialHeaders = Math.max(1, existingPrices.length); 
-                for (var i = 0; i < numInitialHeaders; i++) { headerPricesHtml += `<input type="text" name="${baseNameForItem}[prices][${i}]" value="${existingPrices[i] || ''}" placeholder="${(i18n.headerTextLabelN || 'Header Text %d').replace('%d', i + 1)}" class="regular-text"> `; }
+                for (var i = 0; i < numInitialHeaders; i++) { 
+                    var placeholderTextFormat = (i18n && i18n.headerTextLabelN && typeof i18n.headerTextLabelN === 'string' && i18n.headerTextLabelN.includes('%d')) 
+                                                ? i18n.headerTextLabelN 
+                                                : 'Texto de Encabezado %d';
+                     var placeholder = placeholderTextFormat.replace('%d', i + 1);
+                    headerPricesHtml += `
+                    <div class="glory-header-price-field-wrapper" style="display: flex; align-items: center; margin-bottom: 5px;">
+                        <input type="text" name="${baseNameForItem}[prices][${i}]" value="${existingPrices[i] || ''}" placeholder="${placeholder}" class="regular-text" style="flex-grow: 1; margin-right: 5px;">
+                        <button type="button" class="button button-small button-link-delete glory-remove-header-price-field-from-row" title="${removeButtonTitle}">
+                            <span class="dashicons dashicons-no-alt"></span>
+                        </button>
+                    </div>`;
+                }
                 $priceFieldsContainer.html(`<label class="glory-item-prices-label">${i18n.columnHeadersDefinedByThisRowLabel || 'Column Headers Defined by this Row:'}</label><div class="glory-item-prices-row glory-header-row-prices">${headerPricesHtml}</div><button type="button" class="button button-small glory-add-header-price-field-to-row" title="${i18n.addHeaderPriceFieldTitle || 'Add another header text field'}">+</button>`);
                 $itemDiv.find('.glory-item-name').siblings('label').text(i18n.headerRowNameLabel || 'Header Row Name (HTML allowed):');
             } else { 
@@ -509,10 +518,10 @@ jQuery(document).ready(function ($) {
                 if (!$singlePriceCheckbox.is(':checked')) { 
                     let activeHeaders = []; let $itemsList = $itemDiv.closest('.glory-menu-items-multi-price');
                     let prevHeaderRow = $itemDiv.prevAll('.glory-menu-item-row-header[data-is-header-row="true"]:first');
-                    if (prevHeaderRow.length) { prevHeaderRow.find('.glory-header-row-prices input[type="text"]').each(function () { activeHeaders.push($(this).val() || ''); });
+                    if (prevHeaderRow.length) { prevHeaderRow.find('.glory-header-row-prices .glory-header-price-field-wrapper input[type="text"]').each(function () { activeHeaders.push($(this).val() || ''); });
                     } else { $itemDiv.closest('.glory-menu-section.postbox').find('.glory-global-price-headers-editor .glory-price-header-item input[type="text"]').each(function () { activeHeaders.push($(this).val() || ''); }); }
                     var numPriceColumns = activeHeaders.length; var pricesHtml = '';
-                    var existingHeaderTextsAsPrices = []; $priceFieldsContainer.find('.glory-header-row-prices input[type="text"]').each(function() { existingHeaderTextsAsPrices.push($(this).val()); });
+                    var existingHeaderTextsAsPrices = []; $priceFieldsContainer.find('.glory-header-row-prices .glory-header-price-field-wrapper input[type="text"]').each(function() { existingHeaderTextsAsPrices.push($(this).val()); });
                     if (numPriceColumns > 0) { for (var i = 0; i < numPriceColumns; i++) { let placeholder = activeHeaders[i] ? activeHeaders[i] : (i18n.priceLabelN || 'Price %d').replace('%d', i + 1); pricesHtml += `<input type="text" name="${baseNameForItem}[prices][${i}]" value="${existingHeaderTextsAsPrices[i] || ''}" placeholder="${placeholder}" class="regular-text"> `; }
                     } else { pricesHtml = `<input type="text" name="${baseNameForItem}[prices][0]" value="${existingHeaderTextsAsPrices[0] || ''}" placeholder="${i18n.priceLabelGeneral || 'Price'}" class="regular-text">`; }
                     $priceFieldsContainer.html(`<label class="glory-item-prices-label">${i18n.multiPriceItemsLabel || 'Prices:'}</label><div class="glory-item-prices-row glory-standard-multi-prices-row">${pricesHtml}</div>`);
@@ -541,7 +550,7 @@ jQuery(document).ready(function ($) {
                 if (!$headerRowCheckbox.is(':checked')) { 
                     let activeHeaders = []; let $itemsList = $itemDiv.closest('.glory-menu-items-multi-price');
                     let prevHeaderRow = $itemDiv.prevAll('.glory-menu-item-row-header[data-is-header-row="true"]:first');
-                    if (prevHeaderRow.length) { prevHeaderRow.find('.glory-header-row-prices input[type="text"]').each(function () { activeHeaders.push($(this).val() || ''); });
+                    if (prevHeaderRow.length) { prevHeaderRow.find('.glory-header-row-prices .glory-header-price-field-wrapper input[type="text"]').each(function () { activeHeaders.push($(this).val() || ''); });
                     } else { $itemDiv.closest('.glory-menu-section.postbox').find('.glory-global-price-headers-editor .glory-price-header-item input[type="text"]').each(function () { activeHeaders.push($(this).val() || ''); }); }
                     var numPriceColumns = activeHeaders.length; var pricesHtml = '';
                     var existingSinglePrice = $priceFieldsContainer.find('.glory-single-price-row input[type="text"]').val();
@@ -554,12 +563,39 @@ jQuery(document).ready(function ($) {
         });
 
         $menuEditorInstance.on('click', '.glory-add-header-price-field-to-row', function () {
-            var $button = $(this); var $itemDiv = $button.closest('.glory-menu-item-multi-price');
-            var $headerPricesRow = $button.siblings('.glory-header-row-prices');
-            var numCurrentFields = $headerPricesRow.find('input[type="text"]').length;
+            var $button = $(this); 
+            var $itemDiv = $button.closest('.glory-menu-item-multi-price');
+            var $headerPricesRowContainer = $button.closest('.glory-header-row-prices'); 
+            
+            var numCurrentFields = $headerPricesRowContainer.find('.glory-header-price-field-wrapper').length;
             var baseNameForItem = $itemDiv.find('.glory-item-name').attr('name').replace(/\[name\]$/, '');
-            var newFieldHtml = ` <input type="text" name="${baseNameForItem}[prices][${numCurrentFields}]" value="" placeholder="${(i18n.headerTextLabelN || 'Header Text %d').replace('%d', numCurrentFields + 1)}" class="regular-text">`;
-            $headerPricesRow.append(newFieldHtml);
+
+            var placeholderTextFormat = (i18n && i18n.headerTextLabelN && typeof i18n.headerTextLabelN === 'string' && i18n.headerTextLabelN.includes('%d')) 
+                                        ? i18n.headerTextLabelN 
+                                        : 'Texto de Encabezado %d';
+            var newPlaceholder = placeholderTextFormat.replace('%d', numCurrentFields + 1);
+            var removeButtonTitle = (i18n && i18n.removeHeaderPriceFieldTitle) ? i18n.removeHeaderPriceFieldTitle : 'Eliminar este campo de encabezado';
+
+            var newFieldHtml = `
+            <div class="glory-header-price-field-wrapper" style="display: flex; align-items: center; margin-bottom: 5px;">
+                <input type="text" name="${baseNameForItem}[prices][${numCurrentFields}]" value="" placeholder="${newPlaceholder}" class="regular-text" style="flex-grow: 1; margin-right: 5px;">
+                <button type="button" class="button button-small button-link-delete glory-remove-header-price-field-from-row" title="${removeButtonTitle}">
+                    <span class="dashicons dashicons-no-alt"></span>
+                </button>
+            </div>`;
+            
+            $(newFieldHtml).insertBefore($button);
+        });
+
+        $menuEditorInstance.on('click', '.glory-remove-header-price-field-from-row', function () {
+            var $button = $(this);
+            var $fieldWrapper = $button.closest('.glory-header-price-field-wrapper');
+            var $headerPricesRowContainer = $fieldWrapper.parent(); 
+            var $itemDiv = $headerPricesRowContainer.closest('.glory-menu-item-multi-price');
+            var baseNameForItem = $itemDiv.find('.glory-item-name').attr('name').replace(/\[name\]$/, '');
+
+            $fieldWrapper.remove();
+            reindexarHeaderPriceFields($headerPricesRowContainer, baseNameForItem, i18n);
         });
     }); 
 });

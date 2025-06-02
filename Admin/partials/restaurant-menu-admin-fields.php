@@ -336,10 +336,18 @@ function render_menu_item_multi_price_admin_html(string $base_items_input_name, 
                 <label><?php _e('Encabezados de Columna Definidos por esta Fila (estos textos se usarán para elementos subsiguientes):', 'glory'); ?></label>
                 <div class="glory-item-prices-row glory-header-row-prices">
                     <?php
-                    $header_item_prices = $item_data['prices'] ?? []; 
-                    $num_headers_defined_by_row = $num_price_columns_for_item; 
+                    $header_item_prices = $item_data['prices'] ?? [];
+                    // $num_price_columns_for_item ya se calcula correctamente antes de llamar a esta función.
+                    // Representa cuántos campos de 'prices' existen para esta fila de cabecera.
+                    $num_headers_defined_by_row = $num_price_columns_for_item;
+
                     for ($i = 0; $i < $num_headers_defined_by_row; $i++): ?>
-                        <input type="text" name="<?php echo $base_item_name_attr . '[prices][' . $i . ']'; ?>" value="<?php echo esc_attr($header_item_prices[$i] ?? ''); ?>" placeholder="<?php printf(esc_attr__('Texto de Encabezado %d', 'glory'), $i + 1); ?>" class="regular-text">
+                        <div class="glory-header-price-field-wrapper" style="display: flex; align-items: center;">
+                            <input type="text" name="<?php echo $base_item_name_attr . '[prices][' . $i . ']'; ?>" value="<?php echo esc_attr($header_item_prices[$i] ?? ''); ?>" placeholder="<?php printf(esc_attr__('Texto de Encabezado %d', 'glory'), $i + 1); ?>" class="regular-text" style="flex-grow: 1; margin-right: 5px;">
+                            <button type="button" class="button button-small button-link-delete glory-remove-header-price-field-from-row" title="<?php esc_attr_e('Eliminar este campo de encabezado', 'glory'); ?>">
+                                <span class="dashicons dashicons-no-alt"></span>
+                            </button>
+                        </div>
                     <?php endfor; ?>
                     <!-- Botón para añadir más campos de texto de cabecera dinámicamente si es necesario -->
                     <button type="button" class="button button-small glory-add-header-price-field-to-row" title="<?php esc_attr_e('Añadir otro campo de texto de encabezado para esta fila', 'glory'); ?>">+</button>

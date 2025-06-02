@@ -268,6 +268,10 @@ textarea.code {
     margin-top: 10px;
 }
 
+.glory-header-price-field-wrapper {
+    width: 100%;
+}
+
 .glory-menu-item-multi-price p {
     margin: 5px 0px;
 }
@@ -275,6 +279,8 @@ textarea.code {
 .glory-item-prices-row.glory-header-row-prices {
     display: flex;
     gap: 5px;
+    align-items: center;
+    align-content: center;
 }
 
 .glory-item-prices-row.glory-standard-multi-prices-row {
@@ -293,4 +299,20 @@ span.dashicons.dashicons-trash {
     align-content: center;
     padding: 10px;
     margin-bottom: -5px;
+}
+
+button.button.button-small.button-link-delete.glory-remove-header-price-field-from-row .dashicons {
+    /* width: 20px; */
+    height: 8px;
+    width: 20px;
+}
+
+button.button.button-small.button-link-delete.glory-remove-header-price-field-from-row {
+    padding: 2px;
+    height: 8px;
+    width: 27px;
+}
+
+button.button.glory-add-menu-tab {
+    margin-top: 10px;
 }
