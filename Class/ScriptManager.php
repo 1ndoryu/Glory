@@ -77,7 +77,8 @@ if (!class_exists('ScriptManager')) {
             array $defaultDeps = [],
             bool $defaultInFooter = true,
             ?bool $folderDevMode = null,
-            string $handlePrefix = ''
+            string $handlePrefix = '',
+            array $excludeFiles = []
         ): void {
             $themeDir = get_template_directory(); 
 
@@ -98,6 +99,11 @@ if (!class_exists('ScriptManager')) {
             }
 
             foreach ($files as $file) {
+                $filenameWithExtension = basename($file);
+                if (in_array($filenameWithExtension, $excludeFiles)) {
+                    GloryLogger::info("ScriptManager: Excluding file '{$filenameWithExtension}' from folder '{$folderRelPath}'.");
+                    continue; // Saltar este archivo si está en la lista de exclusión
+                }
                 $filename = basename($file, '.js');
                 $raw_handle = $handlePrefix . $filename;
                 $handle = strtolower(preg_replace('/[^a-zA-Z0-9_-]+/', '-', $raw_handle));
@@ -210,4 +216,4 @@ if (!class_exists('ScriptManager')) {
             } 
         } 
     } 
-} 
+}

@@ -20,8 +20,30 @@ ScriptManager::define(
     ],
 );
 
-ScriptManager::defineFolder('/Glory/Assets/js');
-StyleManager::defineFolder('/Glory/assets/css');
+ScriptManager::defineFolder(
+    '/Glory/Assets/js',
+    [],    // dependencias por defecto
+    true,  // defaultInFooter (booleano)
+    null,  // folderDevMode (?bool)
+    '',    // prefijo de handle por defecto (string)
+    [      // Archivos a excluir de la carga global (scripts de admin)
+        'content-admin-panel.js',
+        'restaurant-menu-admin.js',
+        'FormPanel.js',
+        // Añade aquí otros scripts específicos del admin si es necesario
+    ]
+);
+StyleManager::defineFolder(
+    '/Glory/assets/css',
+    [], // dependencias por defecto
+    'all', // media por defecto
+    null, // devMode por defecto
+    '', // prefijo de handle por defecto
+    [ // Archivos CSS a excluir de la carga global (CSS de admin)
+        'content-admin-panel.css',
+        // Añade aquí otros CSS específicos del admin si es necesario
+    ]
+);
 // Glory\Assets\css\adminPanel.css
 
 GloryLogger::init();
