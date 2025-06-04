@@ -36,7 +36,7 @@ class ContentManager {
 			'etiquetaSeccion' => ucfirst(str_replace(['_', '-'], ' ', $configuracion['seccion'] ?? 'general')),
 			'descripcion' => '',
 			'comportamientoEscape' => ($tipoDefault === 'text'),
-			'forzarDefaultAlRegistrar' => false,
+			'forzarDefault' => false,
 		];
 		$configParseada = wp_parse_args($configuracion, $defaults);
 		$defaultCodigoParaHash = $configParseada['valorDefault'];
