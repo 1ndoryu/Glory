@@ -1,389 +1,273 @@
-<?php
+<?
 # /Glory/Class/ContentManager.php
 
 namespace Glory\Class;
 
-// use Glory\Class\GloryLogger; // Ya está en el namespace
-use DateTime;
-use DateTimeZone;
-use DateInterval;
-use Glory\Helper\ScheduleManager; // Added for the new ScheduleManager class
+use Glory\Class\GloryLogger;
+use Glory\Helper\ScheduleManager;
 
-class ContentManager
-{
-    public const OPTION_PREFIX = 'glory_content_';
-    public const OPTION_META_CODE_HASH_SUFFIX = '_code_hash_on_save';
-    public const OPTION_META_PANEL_SAVED_SUFFIX = '_is_panel_value';
+class ContentManager {
+	const opcionPrefijo = 'glory_content_';
+	const metaHashCodigoSufijo = '_code_hash_on_save';
+	const metaPanelGuardadoSufijo = '_is_panel_value';
 
-    private static array $registered_content = [];
-    private static $db_sentinel;
+	private static array $contenidoRegistrado = [];
+	private static $centinelaBd;
 
-    // Llamar a esto una vez, e.g., en un hook 'init' de tu plugin.
-    public static function static_init()
-    {
-        if (self::$db_sentinel === null) {
-            self::$db_sentinel = new \stdClass();
-        }
-    }
+	// ANTERIOR: static_init
+	public static function initEstatico() {
+		if (self::$centinelaBd === null) {
+			self::$centinelaBd = new \stdClass();
+		}
+	}
 
-    public static function register(string $key, array $args = []): void
-    {
-        if (self::$db_sentinel === null) {
-            self::static_init();
-        } // Asegurar inicialización
+	public static function register(string $key, array $configuracion = []): void {
+		if (self::$centinelaBd === null) {
+			self::initEstatico();
+		}
 
-        $default_type = $args['type'] ?? 'text';
-        $defaults = [
-            'default'                   => '',
-            'type'                      => $default_type,
-            'label'                     => ucfirst(str_replace(['_', '-'], ' ', $key)),
-            'section'                   => 'general',
-            'sub_section'               => 'general', // Nuevo campo para subsección
-            'section_label'             => ucfirst(str_replace(['_', '-'], ' ', $args['section'] ?? 'general')),
-            'description'               => '',
-            'escape'                    => ($default_type === 'text'),
-            'force_default_on_register' => false,
-        ];
-        $parsed_args = wp_parse_args($args, $defaults);
-        $code_default_for_hash = $parsed_args['default'];
-        $parsed_args['code_version_hash'] = md5(is_scalar($code_default_for_hash) ? (string)$code_default_for_hash : serialize($code_default_for_hash));
+		$tipoDefault = $configuracion['tipo'] ?? 'text';
+		$defaults = [
+			'valorDefault' => '',
+			'tipo' => $tipoDefault,
+			'etiqueta' => ucfirst(str_replace(['_', '-'], ' ', $key)),
+			'seccion' => 'general',
+			'subSeccion' => 'general',
+			'etiquetaSeccion' => ucfirst(str_replace(['_', '-'], ' ', $configuracion['seccion'] ?? 'general')),
+			'descripcion' => '',
+			'comportamientoEscape' => ($tipoDefault === 'text'),
+			'forzarDefaultAlRegistrar' => false,
+		];
+		$configParseada = wp_parse_args($configuracion, $defaults);
+		$defaultCodigoParaHash = $configParseada['valorDefault'];
+		$configParseada['hashVersionCodigo'] = md5(is_scalar($defaultCodigoParaHash) ? (string)$defaultCodigoParaHash : serialize($defaultCodigoParaHash));
 
-        // No sobreescribir si ya existe y solo se está llamando de nuevo (e.g. desde registerOnTheFly)
-        // Solo la primera llamada a register() para una clave debe establecer la configuración completa.
-        // Las llamadas subsecuentes (ej: de get() -> registerOnTheFly()) no deberían alterar la config original.
-        if (!isset(self::$registered_content[$key])) {
-            self::$registered_content[$key] = $parsed_args;
-        } else {
-            // Si ya está registrado, solo actualizamos el hash del default del código por si acaso ha cambiado
-            // entre la registración inicial y una llamada posterior a register() para la misma clave (poco común pero posible).
-            self::$registered_content[$key]['code_version_hash'] = $parsed_args['code_version_hash'];
-            // Y nos aseguramos que el default en memoria también esté actualizado con el último `register` call.
-            // Esto es importante si `register` se llama múltiples veces con diferentes defaults para la misma clave ANTES de `get`.
-            self::$registered_content[$key]['default'] = $parsed_args['default'];
-        }
+		if (!isset(self::$contenidoRegistrado[$key])) {
+			self::$contenidoRegistrado[$key] = $configParseada;
+		} else {
+			self::$contenidoRegistrado[$key]['hashVersionCodigo'] = $configParseada['hashVersionCodigo'];
+			self::$contenidoRegistrado[$key]['valorDefault'] = $configParseada['valorDefault'];
+		}
+		self::sincronizarOpcionRegistrada($key);
+	}
 
-        self::_synchronizeRegisteredOption($key);
-    }
+	// ANTERIOR: _synchronizeRegisteredOption
+	private static function sincronizarOpcionRegistrada(string $key): void {
+		$configCampo = self::$contenidoRegistrado[$key];
+		$nombreOpcion = self::opcionPrefijo . $key;
+		$valorDefaultCodigo = $configCampo['valorDefault'];
+		$hashCodigoActual = $configCampo['hashVersionCodigo'];
 
-    private static function _synchronizeRegisteredOption(string $key): void
-    {
-        // --- Lógica de Sincronización Código vs Panel ---
-        // Esta lógica se ejecuta CADA VEZ que se registra un campo (típicamente una vez por carga de página por campo).
-        $config = self::$registered_content[$key]; // Usar la config en memoria que podría haber sido actualizada
-        $option_name = self::OPTION_PREFIX . $key;
-        $code_default_value = $config['default'];
-        $current_code_hash = $config['code_version_hash']; // Hash del default del código actual
+		$valorBd = get_option($nombreOpcion, self::$centinelaBd);
+		$esValorPanelFlag = get_option($nombreOpcion . self::metaPanelGuardadoSufijo, false);
+		$hashAlGuardarPanel = get_option($nombreOpcion . self::metaHashCodigoSufijo, self::$centinelaBd);
 
-        $db_value = get_option($option_name, self::$db_sentinel);
-        $is_panel_value_flag = get_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX, false); // false si no existe
-        $hash_on_panel_save = get_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX, self::$db_sentinel); // Sentinel si no existe
+		if ($configCampo['forzarDefaultAlRegistrar']) {
+			if ($valorBd === self::$centinelaBd || $valorBd !== $valorDefaultCodigo) {
+				update_option($nombreOpcion, $valorDefaultCodigo);
+			}
+			if ($esValorPanelFlag) delete_option($nombreOpcion . self::metaPanelGuardadoSufijo);
+			if ($hashAlGuardarPanel !== self::$centinelaBd) delete_option($nombreOpcion . self::metaHashCodigoSufijo);
+		} else {
+			if ($esValorPanelFlag) {
+				if ($hashAlGuardarPanel === self::$centinelaBd) {
+					GloryLogger::error("SYNC ERROR [$key]: Panel value flag is TRUE, but NO HASH was stored from panel save. This is inconsistent. The code default for this key might have changed, or the hash was lost. To ensure data integrity, the current code default will be applied, and panel flags will be cleared. Please review the value in the panel. Current code default: " . print_r($valorDefaultCodigo, true));
+					update_option($nombreOpcion, $valorDefaultCodigo);
+					delete_option($nombreOpcion . self::metaPanelGuardadoSufijo);
+				} elseif ($hashCodigoActual !== $hashAlGuardarPanel) {
+					GloryLogger::error("SYNC MISMATCH [$key]: Panel value OVERWRITTEN. The code's default value has changed since this content was last saved in the panel. Applying new code default and clearing panel flags. Old code hash (at panel save): '{$hashAlGuardarPanel}', New code hash (current): '{$hashCodigoActual}'. New code default: " . print_r($valorDefaultCodigo, true));
+					update_option($nombreOpcion, $valorDefaultCodigo);
+					delete_option($nombreOpcion . self::metaPanelGuardadoSufijo);
+					delete_option($nombreOpcion . self::metaHashCodigoSufijo);
+				}
+			} else {
+				if ($valorBd === self::$centinelaBd) {
+					update_option($nombreOpcion, $valorDefaultCodigo);
+				} else {
+					if ($valorBd !== $valorDefaultCodigo) {
+						update_option($nombreOpcion, $valorDefaultCodigo);
+					}
+				}
+				if ($esValorPanelFlag) {
+					delete_option($nombreOpcion . self::metaPanelGuardadoSufijo);
+				}
+				if ($hashAlGuardarPanel !== self::$centinelaBd) {
+					delete_option($nombreOpcion . self::metaHashCodigoSufijo);
+				}
+			}
+		}
+	}
 
-        // GloryLogger::info("SYNC [$key]: Initiating. Code default hash: '$current_code_hash'. force_default_on_register: " . ($config['force_default_on_register'] ? 'true':'false'));
-        // GloryLogger::info("SYNC [$key]: DB state before sync: panel_flag=".($is_panel_value_flag?'true':'false').", hash_on_save=".($hash_on_panel_save === self::$db_sentinel ? 'NOT_SET' : $hash_on_panel_save).", db_value=".($db_value === self::$db_sentinel ? 'NOT_SET' : substr(print_r($db_value, true),0,100)."...") );
+	// ANTERIOR: getCodeDefaultHash
+	public static function getHashDefaultCodigo(string $key): ?string {
+		if (isset(self::$contenidoRegistrado[$key]['hashVersionCodigo'])) {
+			return self::$contenidoRegistrado[$key]['hashVersionCodigo'];
+		}
+		if (isset(self::$contenidoRegistrado[$key]['valorDefault'])) {
+			$valorDefault = self::$contenidoRegistrado[$key]['valorDefault'];
+			return md5(is_scalar($valorDefault) ? (string)$valorDefault : serialize($valorDefault));
+		}
+		GloryLogger::error("getHashDefaultCodigo: CRITICAL - No default value found for key '{$key}' in registered content to calculate hash. This indicates an issue with registration flow.");
+		return null;
+	}
 
-        if ($config['force_default_on_register']) {
-            // GloryLogger::info("SYNC [$key]: 'force_default_on_register' is TRUE. Applying code default.");
-            if ($db_value === self::$db_sentinel || $db_value !== $code_default_value) {
-                update_option($option_name, $code_default_value);
-                // GloryLogger::info("SYNC [$key]: Value updated to code default.");
-            }
-            if ($is_panel_value_flag) delete_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX);
-            if ($hash_on_panel_save !== self::$db_sentinel) delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
-            // GloryLogger::info("SYNC [$key]: Panel flags cleared due to force_default.");
-        } else { // force_default_on_register is FALSE
-            if ($is_panel_value_flag) { // Un valor fue guardado explícitamente desde el panel.
-                // GloryLogger::info("SYNC [$key]: Panel flag is TRUE. Checking hash consistency.");
-                if ($hash_on_panel_save === self::$db_sentinel) {
-                    GloryLogger::error("SYNC ERROR [$key]: Panel value flag is TRUE, but NO HASH was stored from panel save. This is inconsistent. The code default for this key might have changed, or the hash was lost. To ensure data integrity, the current code default will be applied, and panel flags will be cleared. Please review the value in the panel. Current code default: " . print_r($code_default_value, true));
-                    update_option($option_name, $code_default_value);
-                    delete_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX);
-                    // No hay hash que borrar si era sentinel
-                } elseif ($current_code_hash !== $hash_on_panel_save) {
-                    GloryLogger::error("SYNC MISMATCH [$key]: Panel value OVERWRITTEN. The code's default value has changed since this content was last saved in the panel. Applying new code default and clearing panel flags. Old code hash (at panel save): '{$hash_on_panel_save}', New code hash (current): '{$current_code_hash}'. New code default: " . print_r($code_default_value, true));
-                    update_option($option_name, $code_default_value);
-                    delete_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX);
-                    delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
-                } else {
-                    // GloryLogger::info("SYNC [$key]: Panel value RETAINED. Hashes match ('$current_code_hash').");
-                    // El valor en $db_value (que es el del panel) se mantiene. No se hace nada.
-                }
-            } else { // Panel flag is FALSE (o no existe). El panel no ha guardado este valor, o fue invalidado.
-                // GloryLogger::info("SYNC [$key]: Panel flag is FALSE. Code default logic applies.");
-                if ($db_value === self::$db_sentinel) { // La opción principal no existe en la BD.
-                    // GloryLogger::info("SYNC [$key]: Option does not exist in DB. Initializing with code default.");
-                    update_option($option_name, $code_default_value);
-                } else { // La opción existe, pero no tiene flag de panel. Pudo ser un default anterior.
-                    // Si el valor actual en BD (sin flag de panel) es diferente al default del código actual,
-                    // actualizamos para reflejar el default del código más reciente.
-                    if ($db_value !== $code_default_value) {
-                        // GloryLogger::info("SYNC [$key]: Option exists in DB without panel flag, but its value differs from current code default. Updating to current code default: " . print_r($code_default_value, true));
-                        update_option($option_name, $code_default_value);
-                    } else {
-                        // GloryLogger::info("SYNC [$key]: Option exists in DB without panel flag, and its value matches current code default. No change needed.");
-                    }
-                }
-                // En ambos casos (inicializado o actualizado a default del código sin flag de panel), los flags de panel (_is_panel_value y _code_hash_on_save)
-                // no se establecen o se borran si existieran, porque el valor ahora es gobernado por el código.
-                if ($is_panel_value_flag) { /* Esto no debería pasar si is_panel_value_flag ya es false */
-                    delete_option($option_name . ContentManager::OPTION_META_PANEL_SAVED_SUFFIX);
-                }
-                if ($hash_on_panel_save !== self::$db_sentinel) {
-                    delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
-                }
-            }
-        }
-        // GloryLogger::info("SYNC [$key]: Finished.");
-    }
+	// ANTERIOR: registerOnTheFly
+	private static function registrarAlVuelo(string $key, $valorDefault, string $tipo, ?string $etiqueta, ?string $seccion, ?string $subSeccion, ?string $descripcion, bool $comportamientoEscape): void {
+		if (!isset(self::$contenidoRegistrado[$key])) {
+			self::registrar($key, [
+				'valorDefault' => $valorDefault,
+				'tipo' => $tipo,
+				'etiqueta' => $etiqueta,
+				'seccion' => $seccion,
+				'subSeccion' => $subSeccion,
+				'descripcion' => $descripcion,
+				'comportamientoEscape' => $comportamientoEscape,
+			]);
+		}
+	}
 
-    public static function getCodeDefaultHash(string $key): ?string
-    {
-        if (isset(self::$registered_content[$key]['code_version_hash'])) {
-            return self::$registered_content[$key]['code_version_hash'];
-        }
-        // Fallback si se llama antes de que 'code_version_hash' esté poblado (poco probable con el flujo actual si register siempre se llama primero)
-        // o si el campo fue registrado "on-the-fly" y por alguna razón no se calculó el hash en ese momento (se arregló).
-        if (isset(self::$registered_content[$key]['default'])) {
-            $default_value = self::$registered_content[$key]['default'];
-            // GloryLogger::info("getCodeDefaultHash: Calculating hash on-the-fly for key '{$key}' as 'code_version_hash' was not pre-set in memory (should be rare).");
-            return md5(is_scalar($default_value) ? (string)$default_value : serialize($default_value));
-        }
-        GloryLogger::error("getCodeDefaultHash: CRITICAL - No default value found for key '{$key}' in registered content to calculate hash. This indicates an issue with registration flow.");
-        return null;
-    }
+	// ANTERIOR: menu
+	public static function menu(
+		string $key,
+		array $estructuraDefault = [],
+		?string $tituloPanel = null,
+		?string $seccionPanel = null,
+		?string $subSeccionPanel = null,
+		?string $descripcionPanel = null
+	): array {
+		$valor = self::get(
+			$key,
+			$estructuraDefault,
+			false,
+			$tituloPanel,
+			$seccionPanel,
+			$subSeccionPanel,
+			$descripcionPanel,
+			'menu_structure'
+		);
+		return is_array($valor) ? $valor : $estructuraDefault;
+	}
 
+	public static function get(
+		string $key,
+		$defaultParam = '',
+		bool $escaparSalida = true,
+		?string $tituloPanel = null,
+		?string $seccionPanel = null,
+		?string $subSeccionPanel = null,
+		?string $descripcionPanel = null,
+		string $tipoContenido = 'text'
+	) {
+		if (self::$centinelaBd === null) {
+			self::initEstatico();
+		}
 
-    private static function registerOnTheFly(string $key, $default_value, string $type, ?string $label, ?string $section, ?string $sub_section, ?string $description, bool $escape_behavior): void
-    {
-        if (!isset(self::$registered_content[$key])) {
-            // GloryLogger::info("ContentManager: Registering on-the-fly for key: $key. This will trigger full sync logic.");
-            // Los campos "on-the-fly" se registran con `force_default_on_register = false` por defecto
-            // y su 'default' es el $default_param pasado a get().
-            self::register($key, [
-                'default'     => $default_value, // El default para on-the-fly es el que se pasó a get()
-                'type'        => $type,
-                'label'       => $label, // Puede ser null, register() lo manejará
-                'section'     => $section, // Puede ser null
-                'sub_section' => $sub_section, // Puede ser null
-                'description' => $description, // Puede ser null
-                'escape'      => $escape_behavior,
-                // 'force_default_on_register' se quedará en false por defecto en register().
-            ]);
-        } else {
-            // Si ya está registrado, nos aseguramos que su 'default' en memoria y 'code_version_hash'
-            // reflejen la llamada MÁS RECIENTE a register() o registerOnTheFly() para esa clave,
-            // ya que el $default_param de get() podría ser diferente al $default del register() original.
-            // Esto es sutil: el 'default' para la lógica de SINCRONIZACIÓN (en register()) es el del PRIMER register().
-            // Pero el 'default' para fallback en GET() si la opción no existe (después de sync) podría ser el de registerOnTheFly.
-            // La forma en que está ahora, register() actualizará el 'default' y 'code_version_hash' en self::$registered_content[$key]
-            // con los valores de la última llamada. Esto significa que la lógica de sincronización usará
-            // el default de la llamada más reciente a register/registerOnTheFly.
-            // Esto es generalmente lo que se quiere: la última definición de "default del código" es la que cuenta.
-        }
-    }
+		self::registrarAlVuelo($key, $defaultParam, $tipoContenido, $tituloPanel, $seccionPanel, $subSeccionPanel, $descripcionPanel, $escaparSalida);
+		
+		$nombreOpcion = self::opcionPrefijo . $key;
+		$valorFinal = get_option($nombreOpcion, self::$centinelaBd);
 
-    // --- INICIO DE CÓDIGO NUEVO O MODIFICADO ---
+		if ($valorFinal === self::$centinelaBd) {
+			GloryLogger::error("GET ERROR [$key]: Option '$nombreOpcion' NOT FOUND in DB even after sync logic in registrar() should have run. This is unexpected. Fallback to in-memory registered default for '$key'.");
+			$valorFinal = self::$contenidoRegistrado[$key]['valorDefault'] ?? $defaultParam;
+		}
 
-    /**
-     * Obtiene o registra una estructura de menú.
-     * Las estructuras de menú se almacenan como arrays PHP.
-     *
-     * @param string $key               La clave única para esta estructura de menú.
-     * @param array  $defaultStructure  La estructura del menú por defecto (array PHP).
-     * @param string|null $panel_title       Título para el panel de administración.
-     * @param string|null $panel_section     Sección en el panel de administración.
-     * @param string|null $panel_sub_section Sub-sección en el panel de administración.
-     * @param string|null $panel_description Descripción para el panel de administración.
-     * @return array La estructura del menú.
-     */
-    public static function menu(
-        string $key,
-        array $defaultStructure = [],
-        ?string $panel_title = null,
-        ?string $panel_section = null,
-        ?string $panel_sub_section = null,
-        ?string $panel_description = null
-    ): array {
-        // El tipo 'menu_structure' se pasará a get().
-        // La estructura del menú se almacena como un array, no necesita escape de HTML.
-        $value = self::get(
-            $key,
-            $defaultStructure,      // Valor por defecto si no existe o se resetea
-            false,                 // escape_output = false para estructuras complejas
-            $panel_title,
-            $panel_section,
-            $panel_sub_section,
-            $panel_description,
-            'menu_structure'       // Nuevo content_type
-        );
+		if (is_string($valorFinal) && $escaparSalida) {
+			return esc_html($valorFinal);
+		}
+		return $valorFinal;
+	}
 
-        // Asegurarse de que siempre devolvemos un array
-        return is_array($value) ? $value : $defaultStructure;
-    }
+	// ANTERIOR: resetSectionToDefaults
+	public static function resetSeccionDefaults(string $seccionSlugAResetear): array {
+		if (self::$centinelaBd === null) {
+			self::initEstatico();
+		}
 
+		$resultadosReset = ['exito' => [], 'error' => [], 'noEncontradoOVacio' => false, 'camposProcesadosContador' => 0];
+		$seccionExisteEnConfig = false;
 
-    public static function get(
-        string $key,
-        $default_param = '', // Default de último recurso si la opción no existe después de la sincronización
-        bool $escape_output = true,
-        ?string $panel_title = null,
-        ?string $panel_section = null,
-        ?string $panel_sub_section = null, // Nuevo parámetro
-        ?string $panel_description = null,
-        string $content_type = 'text'
-    ) {
-        if (self::$db_sentinel === null) {
-            self::static_init();
-        }
+		if (empty(self::$contenidoRegistrado)) {
+			$resultadosReset['noEncontradoOVacio'] = true;
+			return $resultadosReset;
+		}
 
-        // GloryLogger::info("GET [$key]: Called. Default param value: " . substr(print_r($default_param, true),0,100)."..." );
+		foreach (self::$contenidoRegistrado as $key => $configCampo) {
+			$seccionCampoRaw = $configCampo['seccion'] ?? 'general';
+			$seccionCampoSlug = sanitize_title($seccionCampoRaw);
 
-        // PASO 1: Asegurar que el campo esté "registrado" y la lógica de sincronización se ejecute.
-        // Si $key no está en self::$registered_content, se registrará aquí.
-        // Si ya está, registerOnTheFly no hará nada más que actualizar el hash/default en memoria si es necesario.
-        // El `default_value` para `registerOnTheFly` es `$default_param` de `get()`.
-        self::registerOnTheFly($key, $default_param, $content_type, $panel_title, $panel_section, $panel_sub_section, $panel_description, $escape_output);
-        // PASO 2: Obtener el valor de la opción de la BD.
-        // En este punto, la lógica de `register()` (incluida la sincronización) ya se ha ejecutado.
-        // El valor en la opción `$option_name` DEBERÍA ser el valor final y correcto.
-        $option_name = self::OPTION_PREFIX . $key;
-        $final_value = get_option($option_name, self::$db_sentinel);
+			if ($seccionCampoSlug === $seccionSlugAResetear) {
+				$seccionExisteEnConfig = true;
+				if (isset($configCampo['tipo']) && $configCampo['tipo'] === 'menu_structure') {
+					continue;
+				}
 
-        if ($final_value === self::$db_sentinel) {
-            // Esto NO debería suceder si `register()` funcionó correctamente, ya que siempre inicializaría la opción.
-            // Indica un problema en la lógica de `register()` o un estado inesperado.
-            GloryLogger::error("GET ERROR [$key]: Option '$option_name' NOT FOUND in DB even after sync logic in register() should have run. This is unexpected. Fallback to in-memory registered default for '$key'.");
-            // Como fallback, usar el default del código que está en memoria (que fue establecido por la última llamada a register/registerOnTheFly).
-            $final_value = self::$registered_content[$key]['default'] ?? $default_param; // Doble fallback
-        } else {
-            // GloryLogger::info("GET [$key]: Retrieved final value from DB option '$option_name' (post-sync): " . substr(print_r($final_value, true),0,100)."..." );
-        }
+				$nombreOpcion = self::opcionPrefijo . $key;
+				$valorDefaultCodigo = $configCampo['valorDefault'];
 
-        if (is_string($final_value) && $escape_output) {
-            return esc_html($final_value);
-        }
-        return $final_value;
-    }
+				update_option($nombreOpcion, $valorDefaultCodigo);
+				delete_option($nombreOpcion . self::metaPanelGuardadoSufijo);
+				delete_option($nombreOpcion . self::metaHashCodigoSufijo);
 
-    public static function resetSectionToDefaults(string $section_key_slug_to_reset): array
-    {
-        if (self::$db_sentinel === null) { // Asegurar inicialización si no se ha hecho
-            self::static_init();
-        }
+				$resultadosReset['exito'][] = $key;
+				$resultadosReset['camposProcesadosContador']++;
+			}
+		}
 
-        $reset_results = ['success' => [], 'error' => [], 'not_found_or_empty' => false, 'fields_processed_count' => 0];
-        $section_exists_in_config = false;
+		if (!$seccionExisteEnConfig) {
+			$resultadosReset['noEncontradoOVacio'] = true;
+		} elseif ($seccionExisteEnConfig && $resultadosReset['camposProcesadosContador'] === 0) {
+			$resultadosReset['noEncontradoOVacio'] = true;
+		}
+		return $resultadosReset;
+	}
 
-        if (empty(self::$registered_content)) {
-            //GloryLogger::warning("ContentManager::resetSectionToDefaults: No content fields are currently registered. Cannot reset section '{$section_key_slug_to_reset}'. This might indicate that content registration hooks haven't run yet or no fields are defined.");
-            $reset_results['not_found_or_empty'] = true;
-            return $reset_results;
-        }
+	// ANTERIOR: text
+	public static function texto(string $key, string $valorDefault = '', ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $descripcionPanel = null): string {
+		return (string) self::get($key, $valorDefault, true, $tituloPanel, $seccionPanel, null, $descripcionPanel, 'text');
+	}
 
-        foreach (self::$registered_content as $key => $config) {
-            // Asegurarse de que 'section' exista y obtener el slug. Usar 'general' como default si no está definido.
-            $field_section_raw = $config['section'] ?? 'general';
-            $field_section_slug = sanitize_title($field_section_raw);
+	// ANTERIOR: richText
+	public static function richText(string $key, string $valorDefault = '', ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $descripcionPanel = null): string {
+		$valor = self::get($key, $valorDefault, false, $tituloPanel, $seccionPanel, null, $descripcionPanel, 'richText');
+		return wp_kses_post((string)$valor);
+	}
 
-            if ($field_section_slug === $section_key_slug_to_reset) {
-                $section_exists_in_config = true; // Marcamos que al menos un campo pertenece a esta sección.
+	// ANTERIOR: image
+	public static function imagen(string $key, string $valorDefault = '', ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $descripcionPanel = null): string {
+		return (string) self::get($key, $valorDefault, false, $tituloPanel, $seccionPanel, null, $descripcionPanel, 'image');
+	}
 
-                // No procesar campos de tipo 'menu_structure' aquí, ya que pueden tener su propio manejo
-                if (isset($config['type']) && $config['type'] === 'menu_structure') {
-                    // GloryLogger::info("ContentManager::resetSectionToDefaults: Skipping '{$key}' (menu_structure) in section '{$section_key_slug_to_reset}'.");
-                    continue;
-                }
+	// ANTERIOR: schedule
+	public static function horario(string $key, array $horarioDefault = [], ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $descripcionPanel = null): array {
+		return ScheduleManager::getScheduleData($key, $horarioDefault, $tituloPanel, $seccionPanel, $descripcionPanel, 'schedule');
+	}
 
-                $option_name = self::OPTION_PREFIX . $key;
-                $code_default_value = $config['default']; // Este es el default definido en el código
+	// ANTERIOR: getCurrentStatus
+	public static function scheduleStatus(string $claveHorario, array $horarioDefault, string $zonaHoraria = 'Europe/Madrid'): array {
+		return ScheduleManager::getCurrentScheduleStatus($claveHorario, $horarioDefault, $zonaHoraria);
+	}
 
-                // GloryLogger::info("ContentManager::resetSectionToDefaults: Resetting '{$key}' in section '{$section_key_slug_to_reset}' to its code default value.");
+	// ANTERIOR: getRegisteredContentFields
+	public static function getCamposContenidoRegistrados(): array {
+		if (self::$centinelaBd === null) {
+			self::initEstatico();
+		}
+		$camposConValoresActuales = [];
 
-                update_option($option_name, $code_default_value);
-                delete_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX);
-                delete_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX);
+		foreach (self::$contenidoRegistrado as $key => $configCampo) {
+			$nombreOpcion = self::opcionPrefijo . $key;
+			$valorActualBd = get_option($nombreOpcion, self::$centinelaBd);
 
-                $reset_results['success'][] = $key;
-                $reset_results['fields_processed_count']++;
-            }
-        }
-
-        if (!$section_exists_in_config) {
-            //GloryLogger::warning("ContentManager::resetSectionToDefaults: Section '{$section_key_slug_to_reset}' not found among registered content fields, or it contains no processable fields.");
-            $reset_results['not_found_or_empty'] = true;
-        } elseif ($section_exists_in_config && $reset_results['fields_processed_count'] === 0) {
-            // La sección existe, pero todos sus campos eran, por ejemplo, 'menu_structure' que se omitieron.
-            GloryLogger::info("ContentManager::resetSectionToDefaults: Section '{$section_key_slug_to_reset}' found, but contained no fields applicable for reset by this method (e.g., only menu_structure fields).");
-            // no_found_or_empty podría ser true si no hay campos procesables
-            $reset_results['not_found_or_empty'] = true; // Considerar esto como "nada que hacer"
-        }
-
-        return $reset_results;
-    }
-
-    public static function text(string $key, string $default = '', ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): string
-    {
-        return (string) self::get($key, $default, true, $panel_title, $panel_section, null, $panel_description, 'text');
-    }
-
-    public static function richText(string $key, string $default = '', ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): string
-    {
-        $value = self::get($key, $default, false, $panel_title, $panel_section, null, $panel_description, 'richText');
-        return wp_kses_post((string)$value);
-    }
-
-    public static function image(string $key, string $default = '', ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): string
-    {
-        return (string) self::get($key, $default, false, $panel_title, $panel_section, null, $panel_description, 'image');
-    }
-
-    public static function schedule(string $key, array $defaultSchedule = [], ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null): array
-    {
-        return ScheduleManager::getScheduleData($key, $defaultSchedule, $panel_title, $panel_section, $panel_description, 'schedule');
-    }
-
-
-    public static function getCurrentStatus(string $schedule_key, array $default_schedule, string $timezone_string = 'Europe/Madrid'): array
-    {
-        return ScheduleManager::getCurrentScheduleStatus($schedule_key, $default_schedule, $timezone_string);
-    }
-
-
-    public static function getRegisteredContentFields(): array
-    {
-        if (self::$db_sentinel === null) {
-            self::static_init();
-        }
-        // GloryLogger::info("getRegisteredContentFields: Preparing fields for admin panel.");
-        $fields_with_current_values = [];
-
-        // Asegurarse de que todos los campos definidos en el código estén en self::$registered_content
-        // Esto es importante si se llaman directamente a getRegisteredContentFields() antes que a todos los `get()` o `register()` individuales.
-        // Sin embargo, el flujo normal es que `register()` se llama para cada campo durante la carga del plugin/tema.
-
-        foreach (self::$registered_content as $key => $config) {
-            // La lógica de `register()` ya se ha ejecutado para este $key (o se ejecutará si es un `registerOnTheFly` indirecto).
-            // El valor en la BD ya debería estar sincronizado.
-            $option_name = self::OPTION_PREFIX . $key;
-            $current_db_value = get_option($option_name, self::$db_sentinel);
-
-            $new_config = $config; // Copiar la configuración base
-            if ($current_db_value !== self::$db_sentinel) {
-                $new_config['current_value'] = $current_db_value;
-                // GloryLogger::info("getRegisteredContentFields [$key]: Value for panel display (from DB after sync): " . substr(print_r($new_config['current_value'], true),0,100)."..." );
-            } else {
-                // Esto sería un error grave si register() no inicializó la opción.
-                $new_config['current_value'] = $config['default'] ?? null; // Fallback al default en memoria
-                GloryLogger::error("getRegisteredContentFields ERROR [$key]: Option '$option_name' NOT FOUND in DB for panel. Using code default: " . substr(print_r($new_config['current_value'], true), 0, 100) . "...");
-            }
-
-            // // Añadir metadatos de depuración si es necesario
-            // $new_config['debug_is_panel_value'] = get_option($option_name . self::OPTION_META_PANEL_SAVED_SUFFIX, false);
-            // $new_config['debug_code_hash_on_save'] = get_option($option_name . self::OPTION_META_CODE_HASH_SUFFIX, '--NOT SET--');
-            // $new_config['debug_current_code_hash'] = $config['code_version_hash'] ?? '--UNKNOWN--';
-            // $new_config['debug_option_exists_in_db'] = ($current_db_value !== self::$db_sentinel);
-
-            $fields_with_current_values[$key] = $new_config;
-        }
-        return $fields_with_current_values;
-    }
+			$nuevaConfig = $configCampo;
+			if ($valorActualBd !== self::$centinelaBd) {
+				$nuevaConfig['valorActual'] = $valorActualBd;
+			} else {
+				$nuevaConfig['valorActual'] = $configCampo['valorDefault'] ?? null;
+				GloryLogger::error("getCamposContenidoRegistrados ERROR [$key]: Option '$nombreOpcion' NOT FOUND in DB for panel. Using code default: " . substr(print_r($nuevaConfig['valorActual'], true), 0, 100) . "...");
+			}
+			$camposConValoresActuales[$key] = $nuevaConfig;
+		}
+		return $camposConValoresActuales;
+	}
 }

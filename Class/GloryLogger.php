@@ -342,16 +342,4 @@ class GloryLogger
         }
     }
 
-} // Fin de la clase GloryLogger
-
-// Para activar el cron la primera vez si el plugin se activa
-// register_activation_hook(__FILE__, function() { // Reemplaza __FILE__ con la ruta real a tu archivo de plugin principal
-// if (!wp_next_scheduled('glory_log_cleanup_hook')) {
-// wp_schedule_event(time(), 'daily', 'glory_log_cleanup_hook');
-// }
-// });
-
-// Para desactivar el cron si el plugin se desactiva
-// register_deactivation_hook(__FILE__, function() { // Reemplaza __FILE__ con la ruta real
-// wp_clear_scheduled_hook('glory_log_cleanup_hook');
-// });
+} 
