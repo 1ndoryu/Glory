@@ -1,4 +1,4 @@
-<?
+<?php
 # /Glory/Class/ContentManager.php
 
 namespace Glory\Class;
