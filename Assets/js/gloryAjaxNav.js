@@ -281,6 +281,13 @@
     }
 
     // --- Initialization ---
+    // Evitar doble inicialización
+    if (window.gloryAjaxNavInitialized) {
+        // console.log('Glory AJAX Nav already initialized.');
+        return;
+    }
+    window.gloryAjaxNavInitialized = true;
+
     document.addEventListener('DOMContentLoaded', () => {
         const contentElement = document.querySelector(config.contentSelector);
         if (!contentElement) {
@@ -306,7 +313,7 @@
         // Use requestAnimationFrame to ensure layout is stable before firing
         requestAnimationFrame(triggerPageReady);
 
-        // console.log('Glory AJAX Navigation Initialized with config:', config);
+        console.log('Glory AJAX Navigation Initialized with config:', config);
     });
 
 })();

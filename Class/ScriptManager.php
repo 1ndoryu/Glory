@@ -1,7 +1,7 @@
 <?php 
-namespace Glory\Clase;
+namespace Glory\Class;
 
-use Glory\Clase\GloryLogger;
+use Glory\Class\GloryLogger;
 
 class ScriptManager {
     private static $coleccionScripts = [];

@@ -4,14 +4,14 @@ use Glory\Class\ScriptManager;
 
 ScriptManager::define(
     'gloryAjaxNav',
-    '/Glory/Assets/js/gloryAjaxNav.js',
+    '/Glory/assets/js/gloryAjaxNav.js',
     [],
     null,
     true,
     [
-        'object_name' => 'gloryAjaxNavConfig',
-        'data' => [
-            'enabled' => false,
+        'nombreObjeto' => 'gloryAjaxNavConfig',
+        'datos' => [
+            'enabled' => true,
             'contentSelector' => '#contentAjax',
             'mainScrollSelector' => '#contentAjax',
             'loadingBarSelector' => '#loadingBar',
