@@ -23,7 +23,9 @@ ScriptManager::define(
             ],
             'ignoreUrlParams' => ['s', 'nocache', 'preview'],
             'noAjaxClass' => 'no-ajax',
+            'idUsuario' => get_current_user_id(),
         ],
     ],
     null,
 );
+
