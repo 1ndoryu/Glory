@@ -36,13 +36,13 @@
         const contentElement = document.querySelector(config.contentSelector);
         if (!contentElement) return; // Should not happen if config is valid
 
-        const event = new CustomEvent('themePageReady', {
+        const event = new CustomEvent('gloryRecarga', {
             bubbles: true,
             cancelable: true,
             detail: { contentElement: contentElement }
         });
         document.dispatchEvent(event);
-        // console.log('Event themePageReady dispatched.');
+        // console.log('Event gloryRecarga dispatched.');
     }
 
     /**

@@ -83,4 +83,4 @@ window.inicializarAlerta = function () {
     }
 };
 
-document.addEventListener('themePageReady', inicializarAlerta);
+document.addEventListener('gloryRecarga', inicializarAlerta);

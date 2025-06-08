@@ -199,7 +199,7 @@ class GloryEmailSignup {
 }
 
 // Initialization
-document.addEventListener('themePageReady', () => {
+document.addEventListener('gloryRecarga', () => {
     // Check dependencies
     if (typeof GloryAjax === 'function' && typeof ajaxUrl !== 'undefined' && typeof window.GloryModalService !== 'undefined') {
         new GloryEmailSignup();

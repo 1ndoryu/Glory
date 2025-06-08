@@ -159,7 +159,7 @@ class GloryModalForm {
 }
 
 // Initialize on theme ready or equivalent event
-document.addEventListener('themePageReady', () => {
+document.addEventListener('gloryRecarga', () => {
     // Check dependencies
     if (typeof GloryAjax === 'function' && typeof window.GloryModalService !== 'undefined') {
         new GloryModalForm();

@@ -55,11 +55,12 @@ class ServidorChat implements MessageComponentInterface
             $this->mapeoUsuarios[$idUsuario] = $from;
             echo "Usuario {$idUsuario} registrado a la conexión {$from->resourceId}\n";
             
-            // Confirmar registro al cliente
+            /*
             $from->send(json_encode([
                 'tipo' => 'sistema',
                 'mensaje' => 'Registro exitoso.'
             ]));
+            */
         }
     }
 
