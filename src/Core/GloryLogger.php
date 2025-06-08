@@ -1,7 +1,6 @@
 <?php
-// App/Glory/Class/GloryLogger.php
 
-namespace Glory\Class;
+namespace Glory\Core;
 
 class GloryLogger
 {

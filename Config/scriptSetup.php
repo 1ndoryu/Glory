@@ -1,8 +1,8 @@
 <?php
 
-use Glory\Class\GloryLogger;
-use Glory\Class\ScriptManager;
-use Glory\Class\StyleManager;
+use Glory\Core\GloryLogger;
+use Glory\Core\ScriptManager;
+use Glory\Core\StyleManager;
 
 // Esto no esta preparado para ejecutarse en el wp-admin, aún no se como hacer que scriptmanager funcione en wp-admin
 ScriptManager::define(
@@ -33,7 +33,7 @@ ScriptManager::defineFolder(
 );
 
 StyleManager::defineFolder(
-    '/Glory/assets/css',
+    '/Glory/Assets/css',
     [], // dependencias por defecto
     'all', // media por defecto
     null, // devMode por defecto

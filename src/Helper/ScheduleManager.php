@@ -5,8 +5,8 @@ namespace Glory\Helper;
 use DateTime;
 use DateTimeZone;
 use DateInterval;
-use Glory\Class\GloryLogger;
-use Glory\Class\ContentManager; // Added for ContentManager::get()
+use Glory\Core\GloryLogger;
+use Glory\Manager\ContentManager; 
 
 class ScheduleManager
 {

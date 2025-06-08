@@ -18,7 +18,7 @@ function logPage()
     $unique_classes = [];
     $unique_methods = [];
 
-    if (class_exists('Glory\Class\GloryLogger')) { // Chequea si la clase existe
+    if (class_exists('Glory\GloryLogger')) { // Chequea si la clase existe
         if (function_exists('get_unique_glory_log_classes_and_methods')) {
             list($unique_classes, $unique_methods) = get_unique_glory_log_classes_and_methods();
         }

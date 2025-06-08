@@ -1,12 +1,13 @@
 <?php
 # /Glory/Class/ContentManager.php
 
-namespace Glory\Class;
+namespace Glory\Manager;
 
-use Glory\Class\GloryLogger;
+use Glory\Core\GloryLogger;
 use Glory\Helper\ScheduleManager;
 
 class ContentManager {
+
 	const opcionPrefijo = 'glory_content_';
 	const metaHashCodigoSufijo = '_code_hash_on_save';
 	const metaPanelGuardadoSufijo = '_is_panel_value';
@@ -114,7 +115,7 @@ class ContentManager {
 	// ANTERIOR: registerOnTheFly
 	private static function registrarAlVuelo(string $key, $valorDefault, string $tipo, ?string $etiqueta, ?string $seccion, ?string $subSeccion, ?string $descripcion, bool $comportamientoEscape): void {
 		if (!isset(self::$contenidoRegistrado[$key])) {
-			self::registrar($key, [
+			self::register($key, [
 				'valorDefault' => $valorDefault,
 				'tipo' => $tipo,
 				'etiqueta' => $etiqueta,

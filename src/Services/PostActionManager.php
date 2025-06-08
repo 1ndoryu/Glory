@@ -1,9 +1,9 @@
 <?
 // App/Glory/Class/PostActionManager.php
 
-namespace Glory\Class;
+namespace Glory\Services;
 
-use Glory\Class\GloryLogger;
+use Glory\Core\GloryLogger;
 use WP_Error;
 use WP_Post;
 

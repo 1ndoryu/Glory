@@ -1,7 +1,8 @@
 <?php
 
-namespace Glory\Class;
-use Glory\Class\GloryLogger;
+namespace Glory\Core;
+
+use Glory\Core\GloryLogger;
 
 class StyleManager {
     private static $estilos = [];

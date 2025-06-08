@@ -1,6 +1,6 @@
 <?php
 
-use Glory\Class\ScriptManager;
+use Glory\Core\ScriptManager;
 
 ScriptManager::define(
     'gloryAjaxNav',

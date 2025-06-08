@@ -1,21 +1,11 @@
 function gloryModal() {
     let modalActivo = null;
-    let fondoModal = null;
 
-    const crearFondo = () => {
-        if (fondoModal) return;
-        fondoModal = document.createElement('div');
-        fondoModal.id = 'modalBackground';
-        fondoModal.style.position = 'fixed';
-        fondoModal.style.top = '0';
-        fondoModal.style.left = '0';
-        fondoModal.style.width = '100%';
-        fondoModal.style.height = '100%';
-        fondoModal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        fondoModal.style.display = 'none';
-        fondoModal.style.zIndex = '999';
-        document.body.appendChild(fondoModal);
-        fondoModal.addEventListener('click', cerrarModalActivo);
+    // La función de cierre ahora es mucho más simple.
+    // Llama a la función global y resetea la variable local.
+    const cerrarModalActivo = () => {
+        window.ocultarFondo(); // Oculta el fondo y TODOS los elementos con clase .modal
+        modalActivo = null;
     };
 
     const abrirModal = idModal => {
@@ -25,50 +15,45 @@ function gloryModal() {
             return;
         }
 
-        if (modalActivo) cerrarModalActivo();
-
-        crearFondo();
-
-        modalActivo = modal;
-        modalActivo.style.display = 'flex'; // O 'flex', según tu CSS
-        fondoModal.style.display = 'block';
-    };
-
-    const cerrarModalActivo = () => {
-        if (!modalActivo) return;
-        modalActivo.style.display = 'none';
-        if (fondoModal) {
-            fondoModal.style.display = 'none';
+        // Si ya hay un modal abierto, lo cerramos antes de abrir el nuevo.
+        if (modalActivo) {
+            cerrarModalActivo();
         }
-        modalActivo = null;
+
+        // 1. Mostramos el fondo global
+        window.mostrarFondo();
+
+        // 2. Mostramos el modal específico
+        modalActivo = modal;
+        // Asegúrate de que tus modales tengan la clase "modal" en su HTML
+        // para que window.ocultarFondo() pueda encontrarlos.
+        modalActivo.style.display = 'flex'; // O 'block', según tu CSS
     };
 
+    // Listener para los disparadores que abren los modales.
     document.addEventListener('click', event => {
         const disparador = event.target.closest('.openModal');
-        if (disparador) {
-            event.preventDefault();
-            const idModal = disparador.dataset.modal;
-            if (!idModal) return; // Si el modal solicitado ya está activo, ciérralo. De lo contrario, ábrelo.
+        if (!disparador) return;
 
-            if (modalActivo && modalActivo.id === idModal) {
-                cerrarModalActivo();
-            } else {
-                abrirModal(idModal);
-            }
-            return;
-        }
+        event.preventDefault();
+        const idModal = disparador.dataset.modal;
+        if (!idModal) return;
 
-        if (event.target.closest('.modalBackground')) {
-            event.preventDefault();
+        // Lógica para abrir/cerrar el modal al hacer clic en su disparador.
+        if (modalActivo && modalActivo.id === idModal) {
             cerrarModalActivo();
+        } else {
+            abrirModal(idModal);
         }
     });
 
+    // Listener para la tecla 'Escape'.
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && modalActivo) {
             cerrarModalActivo();
         }
     });
 }
+
 
 document.addEventListener('gloryRecarga', gloryModal);

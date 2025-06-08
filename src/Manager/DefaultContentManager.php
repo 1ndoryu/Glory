@@ -1,8 +1,9 @@
 <?php
 
-namespace Glory\Class;
+namespace Glory\Manager;
 
-use Glory\Class\GloryLogger;
+use Glory\Core\GloryLogger;
+
 use WP_Query;
 use WP_Post;
 use WP_Error;

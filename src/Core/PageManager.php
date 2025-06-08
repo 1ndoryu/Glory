@@ -1,8 +1,8 @@
 <?php
 
-namespace Glory\Class;
+namespace Glory\Core;
 
-use Glory\Class\GloryLogger;
+use Glory\Core\GloryLogger;
 
 class PageManager {
     private const claveMetaGestion = '_page_manager_managed';
