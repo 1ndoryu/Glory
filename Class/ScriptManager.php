@@ -1,18 +1,22 @@
-<?php 
+<?php
+
 namespace Glory\Class;
 
 use Glory\Class\GloryLogger;
 
-class ScriptManager {
+class ScriptManager
+{
     private static $coleccionScripts = [];
     private static $modoDesarrolloGlobal = false;
     private static $versionTema = '1.0.0';
 
-    public static function setGlobalDevMode(bool $activado): void {
+    public static function setGlobalDevMode(bool $activado): void
+    {
         self::$modoDesarrolloGlobal = $activado;
     }
 
-    public static function setThemeVersion(string $version): void {
+    public static function setThemeVersion(string $version): void
+    {
         self::$versionTema = $version;
     }
 
@@ -46,7 +50,7 @@ class ScriptManager {
                 GloryLogger::error("Datos ('datos') inválidos (debe ser un array) para la localización del identificador '{$identificador}'. Localización omitida.");
                 $datosLocalizacion = null;
             } elseif (empty($datosLocalizacion['datos'])) {
-                 GloryLogger::error("ADVERTENCIA: El array de datos ('datos') está VACÍO para la localización del identificador '{$identificador}'.");
+                GloryLogger::error("ADVERTENCIA: El array de datos ('datos') está VACÍO para la localización del identificador '{$identificador}'.");
             }
         }
 
@@ -60,6 +64,7 @@ class ScriptManager {
             'identificador' => $identificador
         ];
     }
+
 
     public static function defineFolder(
         string $rutaRelativaCarpeta = 'js',
@@ -80,47 +85,67 @@ class ScriptManager {
             return;
         }
 
-        $archivosJs = glob($rutaCompletaCarpeta . DIRECTORY_SEPARATOR . '*.js');
-        if ($archivosJs === false || empty($archivosJs)) {
+        try {
+            $directoryIterator = new \RecursiveDirectoryIterator($rutaCompletaCarpeta, \FilesystemIterator::SKIP_DOTS);
+            $iterator = new \RecursiveIteratorIterator($directoryIterator, \RecursiveIteratorIterator::LEAVES_ONLY);
+
+            foreach ($iterator as $fileInfo) {
+                // Solo procesamos archivos .js
+                if (strtolower($fileInfo->getExtension()) !== 'js') {
+                    continue;
+                }
+
+                $nombreArchivoConExtension = $fileInfo->getFilename();
+
+                if (in_array($nombreArchivoConExtension, $archivosExcluidos)) {
+                    continue;
+                }
+
+                $archivo = $fileInfo->getPathname();
+                // Genera la ruta relativa web, correcta para la URL del script. ej: 'js/vendor/some-script.js'
+                $rutaRelativaWeb = ltrim(str_replace([$directorioTema, DIRECTORY_SEPARATOR], ['', '/'], $archivo), '/');
+
+                // Crea un identificador único a partir de la ruta del archivo relativa a la carpeta escaneada
+                // ej: 'vendor-some-script' para 'js/vendor/some-script.js'
+                $subPath = ltrim(str_replace($rutaCompletaCarpeta, '', $fileInfo->getPath()), DIRECTORY_SEPARATOR);
+                $baseName = $fileInfo->getBasename('.js');
+
+                $pathForId = !empty($subPath) ? str_replace(DIRECTORY_SEPARATOR, '-', $subPath) . '-' : '';
+                $identificadorCrudo = $prefijoIdentificador . $pathForId . $baseName;
+
+                $identificador = strtolower(preg_replace('/[^a-zA-Z0-9_-]+/', '-', $identificadorCrudo));
+                $identificador = trim($identificador, '-');
+
+                if (empty($identificador)) {
+                    GloryLogger::error("El identificador generado está vacío para el archivo '{$nombreArchivoConExtension}' en la carpeta '{$rutaRelativaCarpeta}'. Omitiendo.");
+                    continue;
+                }
+
+                if (!isset(self::$coleccionScripts[$identificador])) {
+                    self::define(
+                        $identificador,
+                        $rutaRelativaWeb,
+                        $dependenciasDefault,
+                        null,
+                        $enPiePaginaDefault,
+                        null,
+                        $modoDesarrolloCarpeta
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            GloryLogger::error("Error al iterar la carpeta {$rutaCompletaCarpeta}: " . $e->getMessage());
             return;
-        }
-
-        foreach ($archivosJs as $archivo) {
-            $nombreArchivoConExtension = basename($archivo);
-            if (in_array($nombreArchivoConExtension, $archivosExcluidos)) {
-                continue;
-            }
-            $nombreArchivoBase = basename($archivo, '.js');
-            $identificadorCrudo = $prefijoIdentificador . $nombreArchivoBase;
-            $identificador = strtolower(preg_replace('/[^a-zA-Z0-9_-]+/', '-', $identificadorCrudo));
-            $identificador = trim($identificador, '-');
-
-            if (empty($identificador)) {
-                GloryLogger::error("El identificador generado está vacío para el archivo '{$nombreArchivoBase}' en la carpeta '{$rutaRelativaCarpeta}'. Omitiendo.");
-                continue;
-            }
-
-            $rutaRelativaWeb = trim(str_replace(DIRECTORY_SEPARATOR, '/', $rutaRelativaCarpetaNormalizada), '/') . '/' . basename($archivo);
-
-            if (!isset(self::$coleccionScripts[$identificador])) {
-                self::define(
-                    $identificador,
-                    $rutaRelativaWeb,
-                    $dependenciasDefault,
-                    null,
-                    $enPiePaginaDefault,
-                    null,
-                    $modoDesarrolloCarpeta
-                );
-            }
         }
     }
 
-    public static function register(): void {
+    public static function register(): void
+    {
         add_action('wp_enqueue_scripts', [self::class, 'enqueueScripts'], 20);
     }
 
-    public static function enqueueScripts(): void {
+    public static function enqueueScripts(): void
+    {
         if (empty(self::$coleccionScripts)) {
             return;
         }

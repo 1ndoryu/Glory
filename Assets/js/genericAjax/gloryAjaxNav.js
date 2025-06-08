@@ -15,11 +15,11 @@
             '\\.(pdf|zip|rar|jpg|jpeg|png|gif|webp|mp3|mp4|xml|txt|docx|xlsx)$' // Common file extensions
         ],
         ignoreUrlParams: ['s', 'nocache'], // Query params that prevent caching
-        noAjaxClass: 'no-ajax' // Class name to manually disable AJAX on links/containers
+        noAjaxClass: 'noAjax' // Class name to manually disable AJAX on links/containers
     };
 
     // Merge defaults with user-provided config (if available)
-    const config = { ...defaults, ...(window.gloryAjaxNavConfig || {}) };
+    const config = { ...defaults, ...(window.dataGlobal || {}) };
 
     // Exit immediately if disabled via config
     if (!config.enabled) {

@@ -21,19 +21,17 @@ ScriptManager::define(
 );
 
 ScriptManager::defineFolder(
-    '/Glory/assets/js',
+    '/Glory/Assets/js',
     [],    // dependencias por defecto
     true,  // defaultInFooter (booleano)
     null,  // folderDevMode (?bool)
     '',    // prefijo de handle por defecto (string)
-    [      // Archivos a excluir de la carga global (scripts de admin)
-        'content-admin-panel.js',
-        'restaurant-menu-admin.js',
-        'FormPanel.js',
-        'GloryLogs.js',
-        // Añade aquí otros scripts específicos del admin si es necesario
+    [     
+        'adminPanel.js',
+        'gloryLogs.js',
     ]
 );
+
 StyleManager::defineFolder(
     '/Glory/assets/css',
     [], // dependencias por defecto

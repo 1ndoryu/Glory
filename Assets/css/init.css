@@ -1,0 +1,361 @@
+:root {
+	--fondo: #070707; /*Post*/
+	--borde: 1px #161616 solid; 
+	--radius: 5px;
+	--bordeBoton: 1px #1f1f1f8c solid;
+	--padding: 20px;
+	--ancho: 600px;
+    --blanco: #efefef;
+}
+
+html {
+    background: var(--bg-color);
+}
+
+.firefox * {
+	scrollbar-width: thin;
+	scrollbar-color: #373737 transparent;
+}
+
+* {
+	-webkit-tap-highlight-color: transparent; 
+	-webkit-tap-highlight-color: rgba(0, 0, 0, 0); 
+}
+
+img {
+	border-style: none;
+	vertical-align: top;
+	max-width: 100%;
+	height: auto;
+}
+
+.gap {
+    display: flex;
+    gap: 10px;
+}
+
+.columna {
+    flex-direction: column;
+}	
+
+body, body p, textarea {
+	font-size: 13px;
+	/* line-height: 12px; */
+	display: block;
+	margin-block-start: 0em;
+	margin-block-end: 0em;
+	margin-inline-start: 0px;
+	margin-inline-end: 0px;
+	unicode-bidi: isolate;
+	color: #d4d4d4;
+	line-height: 1.6;
+	font-family: "Source Sans 3", Arial, Helvetica, sans-serif;
+	letter-spacing: 0px;
+	font-weight: 400px !important;
+	text-decoration: none;
+	text-wrap: pretty;
+}
+
+
+body, body p, textarea {
+	font-family: "Source Sans 3", Arial, Helvetica, sans-serif !important;
+	letter-spacing: letter-spacing: 0px;
+	font-weight: 400px;
+	font-style: normal;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	text-rendering: optimizeLegibility;
+	text-decoration: none;
+	text-wrap: pretty;
+}
+
+.firefox *::-webkit-scrollbar {
+	width: 4px; 
+	background: transparent;
+}
+
+.firefox *::-webkit-scrollbar-thumb {
+	border-radius: 10px;
+	border: 2px solid transparent; 
+	background-clip: padding-box; 
+}
+
+.firefox .menu-container {
+	filter: url(#blur-effect) !important;
+	background-color: rgba(9, 9, 9, 0.85);
+}
+
+.firefox .panelperfilsupsec {
+	background: #070707;
+	background-color: rgb(7, 7, 7);
+	filter: url(#blur-effect) !important;
+	background-color: rgba(9, 9, 9, 0.85);
+}
+
+::-webkit-scrollbar {
+	width: 4px;
+	height: 4px;
+	transition: width 0.3s ease, height 0.3s ease;
+}
+::-webkit-scrollbar-track {
+	background: none;
+}
+::-webkit-scrollbar-thumb {
+	background: #555;
+	border-radius: 10px;
+}
+
+.scroll-visible::-webkit-scrollbar {
+	width: 4px;
+	height: 4px;
+}
+.scroll-visible::-webkit-scrollbar-thumb {
+	background: unset;
+}
+.scroll-visible::-webkit-scrollbar-thumb:hover {
+	background: #888;
+}
+
+
+.appAndroid p {
+	font-size: 14px;
+}
+
+
+.appAndroid button {
+	font-size: 14px !important;
+}
+
+
+.appAndroid a {
+	font-size: 14px;
+}
+
+.appAndroid .JHVSFW a {
+	font-size: 15px !important;
+}
+
+.appAndroid .ZVJVZA {
+	padding-bottom: 0px;
+	line-height: 13px;
+	padding-top: 5px;
+}
+
+.appAndroid .HQLXWD a {
+	font-size: 12px;
+}
+@media (max-width: 640px) {
+	::-webkit-scrollbar {
+		width: 0px;
+		height: 0px;
+		transition: width 0.3s ease, height 0.3s ease;
+	}
+
+	.scroll-visible::-webkit-scrollbar {
+		width: 0px;
+		height: 0px;
+	}
+}
+
+.appAndroid .infoIA-btn, .appAndroid span.postTag, .appAndroid .badge, .appAndroid .postTagToggle {
+	font-size: 13px !important;
+
+}
+
+ul {
+	list-style: none;
+}
+
+
+.bloque {
+	display: flex;
+	background: var(--fondo);
+	border-radius: var(--radius);
+	padding: var(--padding);
+	border: var(--borde);
+	width: var(--ancho);
+	max-width: 100%;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.borde {
+	border: var(--borde);
+}
+
+
+textarea {
+	color: #fff;
+	border: none;
+	padding: 0px;
+	margin-bottom: 10px;
+	font-size: 12px;
+	background: none;
+	resize: none;
+	width: 100%;
+}
+
+.seleccionado {
+	filter: brightness(2);
+	opacity: 1 !important;
+	border: 1px solid #676767;
+}
+
+
+.botonesBloques button {
+    width: -webkit-fill-available;
+    justify-content: center;
+}
+
+button {
+    all: unset;
+    display: flex;
+    margin: 0px;
+    color: #fff;
+    font-size: 11px;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 8px 15px;
+    align-items: center;
+    height: fit-content;
+    gap: 5px;
+}
+
+.botonprincipal {
+	background: white !important;
+	color: black !important;
+	border: 1px #00000000 solid !important;
+}
+
+
+.preview {
+	border: var(--borde);
+	border-radius: var(--radius);
+	display: flex;
+	align-content: center;
+	text-align: center;
+	padding: var(--padding);
+	min-height: 60px;
+	cursor: pointer;
+	width: 100%;
+    place-content: center;
+}
+
+
+.noborde {
+	border: unset;
+}
+
+body {
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+}
+
+label {
+    font-size: 12px;
+    color: #a2a2a2;
+}
+
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+
+form {
+	display: flex;
+	flex-direction: column;
+}
+
+.heart-animation {
+	animation: fade 2s ease forwards;
+	color: red;
+	font-size: 30px;
+}
+
+
+.waveform-container {
+	cursor: pointer;
+}
+
+.modal {
+    display: none;
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background-color: var(--fondo);
+	border: var(--borde);
+	padding: 20px;
+	border-radius: var(--radius);
+	width: 400px;
+	max-width: 90%;
+	z-index: 1006;
+	font-size: 11px;
+	flex-direction: column;
+	flex-wrap: nowrap;
+	gap: 10px;
+    max-height: 82%;
+    overflow: auto;
+}
+
+.customCheckbox {
+	display: flex;
+	cursor: pointer;
+	padding: 8px;
+	user-select: none;
+	color: #6b6b6b;
+	border: var(--borde);
+	border-radius: 5px;
+	width: 100%;
+	justify-content: center;
+}
+
+input, textarea {
+    background: unset !important;
+    padding: 7px 0px !important;
+    border-bottom: var(--borde) !important;
+    font-size: 12px !important;
+    color: #d4d4d4 !important;
+    border-radius: 0px;
+    border: none;
+    resize: none;
+    line-height: 1.5;
+    width: 100%;
+    margin: 4px 0;
+}
+
+input:focus, textarea:focus {
+    outline: none;
+}
+
+.preview img {
+    max-height: 200px;
+    object-fit: cover !important;
+}
+
+.openModal {
+    cursor: pointer;
+}
+
+.activa {
+    opacity: 1 !important;
+}
+
+.pestanas button {
+    font-size: 12px;
+    padding: 0px;
+    font-weight: 500;
+    opacity: 0.6;
+}
+.pestanas {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 18px;
+}
