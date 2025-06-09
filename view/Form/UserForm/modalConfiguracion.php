@@ -10,8 +10,11 @@ function modalConfiguracion()
             <p>Configuracion de perfil</p>
 
             <?
-            // Aquí comienza la magia del FormBuilder
-            echo Form::inicio(['extraClasses' => 'flex gap columna']);
+            // 1. AÑADIMOS EL CONTEXTO: 'user'. El objectId se obtiene automáticamente (usuario actual).
+            echo Form::inicio([
+                'metaTarget' => 'user',
+                'extraClasses' => 'flex gap columna'
+            ]);
 
             echo Form::campoArchivo([
                 'nombre' => 'imagenPerfil',
@@ -29,8 +32,9 @@ function modalConfiguracion()
                 'extraClassesContenedor' => 'nombreInput'
             ]);
 
+            // 3. CAMBIAMOS 'username' por 'user_login' para mayor claridad.
             echo Form::campoTexto([
-                'nombre' => 'username',
+                'nombre' => 'user_login',
                 'label' => 'Username',
                 'limite' => 20,
                 'extraClassesContenedor' => 'usernameInput'
@@ -54,10 +58,9 @@ function modalConfiguracion()
 
             <div class="flex botonesBloques">
             <?
+            // 2. CORREGIMOS LA ACCIÓN para usar el nuevo handler genérico.
             echo Form::botonEnviar([
-                // Esta acción debe coincidir con el nombre de una clase Handler.
-                // 'guardarPerfil' -> buscará la clase 'GuardarPerfilHandler'
-                'accion' => 'guardarPerfil', 
+                'accion' => 'guardarMeta', 
                 'texto' => 'Guardar',
                 'extraClasses' => 'borde'
             ]);

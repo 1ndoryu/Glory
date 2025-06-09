@@ -80,10 +80,21 @@ function gloryForm() {
             alert('Error de configuración de seguridad. No se puede enviar el formulario.');
             return;
         }
-
+        
         const datosParaEnviar = new FormData();
         datosParaEnviar.append('subAccion', subAccion);
         datosParaEnviar.append('nonce', window.dataGlobal.nonce);
+        
+        // Adjuntar datos del contenedor para generalizar el guardado
+        const metaTarget = contenedor.dataset.metaTarget;
+        const objectId = contenedor.dataset.objectId;
+
+        if (metaTarget) {
+            datosParaEnviar.append('metaTarget', metaTarget);
+        }
+        if (objectId) {
+            datosParaEnviar.append('objectId', objectId);
+        }
 
         for (const input of campos) {
             if (!input.name) {
@@ -113,11 +124,10 @@ function gloryForm() {
         try {
             const respuesta = await gloryAjax('gloryFormHandler', datosParaEnviar);
             
-            // Si la respuesta es exitosa y contiene datos con una alerta, la mostramos
             if (respuesta.success && respuesta.data && respuesta.data.alert) {
+                ocultarFondo();
                 alert(respuesta.data.alert);
             } else if (!respuesta.success && respuesta.data && respuesta.data.alert) {
-                // También manejamos alertas en respuestas de error (enviadas con wp_send_json_error)
                 alert(respuesta.data.alert);
             }
 

@@ -349,6 +349,7 @@ input:focus, textarea:focus {
 .preview img {
     max-height: 200px;
     object-fit: cover !important;
+    width: 100% !important;
 }
 
 .openModal {

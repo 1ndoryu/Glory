@@ -1,21 +1,67 @@
 <?
+
 namespace Glory\Component;
 
 class FormBuilder
 {
+    private static ?string $currentMetaTarget = null;
+    private static ?int $currentObjectId = null;
+
     public static function inicio(array $opciones = []): string
     {
+        self::$currentMetaTarget = $opciones['metaTarget'] ?? null;
+        self::$currentObjectId = !empty($opciones['objectId']) ? intval($opciones['objectId']) : null;
+
         $id = !empty($opciones['id']) ? 'id="' . esc_attr($opciones['id']) . '"' : '';
         $action = !empty($opciones['action']) ? 'action="' . esc_attr($opciones['action']) . '"' : 'javascript:void(0);';
         $method = !empty($opciones['method']) ? 'method="' . esc_attr($opciones['method']) . '"' : 'post';
         $clases = 'gloryForm ' . ($opciones['extraClasses'] ?? '');
+        
+        $metaTargetAttr = self::$currentMetaTarget ? 'data-meta-target="' . esc_attr(self::$currentMetaTarget) . '"' : '';
+        $objectIdAttr = self::$currentObjectId ? 'data-object-id="' . esc_attr(self::$currentObjectId) . '"' : '';
 
-        return "<div {$id} class=\"{$clases}\" action=\"{$action}\" method=\"{$method}\">";
+        return "<div {$id} class=\"{$clases}\" action=\"{$action}\" method=\"{$method}\" {$metaTargetAttr} {$objectIdAttr}>";
     }
 
     public static function fin(): string
     {
+        // Limpiamos el estado estático al finalizar el formulario
+        self::$currentMetaTarget = null;
+        self::$currentObjectId = null;
         return "</div>";
+    }
+
+    private static function obtenerValorMeta(array $opciones): string
+    {
+        $nombre = $opciones['nombre'] ?? '';
+        
+        // El contexto se toma de las propiedades estáticas de la clase
+        $metaTarget = self::$currentMetaTarget;
+        $objectId = self::$currentObjectId;
+
+        if (empty($nombre) || empty($metaTarget)) {
+            return '';
+        }
+
+        switch ($metaTarget) {
+            case 'user':
+                $userId = $objectId ?? get_current_user_id();
+                if (!$userId) return '';
+
+                if ($nombre === 'user_login') {
+                    $usuario = get_userdata($userId);
+                    return $usuario ? $usuario->user_login : '';
+                }
+                
+                return get_user_meta($userId, $nombre, true) ?? '';
+
+            case 'post':
+                if (!$objectId) return '';
+                return get_post_meta($objectId, $nombre, true) ?? '';
+            
+            default:
+                return '';
+        }
     }
 
     public static function campoTexto(array $opciones): string
@@ -23,17 +69,19 @@ class FormBuilder
         $nombre = $opciones['nombre'] ?? '';
         $id = 'form-' . $nombre;
         $label = !empty($opciones['label']) ? "<label for=\"{$id}\">" . esc_html($opciones['label']) . "</label>" : '';
-        $valor = $opciones['valor'] ?? '';
+        
+        $valor = $opciones['valor'] ?? self::obtenerValorMeta($opciones);
+
         $limite = !empty($opciones['limite']) ? 'data-limit="' . intval($opciones['limite']) . '"' : '';
         $placeholder = !empty($opciones['placeholder']) ? 'placeholder="' . esc_attr($opciones['placeholder']) . '"' : '';
         $clasesInput = $opciones['extraClassesInput'] ?? '';
         $clasesContenedor = 'formCampo ' . ($opciones['extraClassesContenedor'] ?? '');
 
         $html = "
-        <div class=\"{$clasesContenedor}\">
-            {$label}
-            <input type=\"text\" id=\"{$id}\" name=\"{$nombre}\" value=\"{$valor}\" {$limite} {$placeholder} class=\"{$clasesInput}\" />
-        </div>";
+    <div class=\"{$clasesContenedor}\">
+      {$label}
+      <input type=\"text\" id=\"{$id}\" name=\"{$nombre}\" value=\"" . esc_attr($valor) . "\" {$limite} {$placeholder} class=\"{$clasesInput}\" />
+    </div>";
 
         return $html;
     }
@@ -43,18 +91,20 @@ class FormBuilder
         $nombre = $opciones['nombre'] ?? '';
         $id = 'form-' . $nombre;
         $label = !empty($opciones['label']) ? "<label for=\"{$id}\">" . esc_html($opciones['label']) . "</label>" : '';
-        $valor = $opciones['valor'] ?? '';
+
+        $valor = $opciones['valor'] ?? self::obtenerValorMeta($opciones);
+
         $limite = !empty($opciones['limite']) ? 'data-limit="' . intval($opciones['limite']) . '"' : '';
         $rows = !empty($opciones['rows']) ? 'rows="' . intval($opciones['rows']) . '"' : '';
         $placeholder = !empty($opciones['placeholder']) ? 'placeholder="' . esc_attr($opciones['placeholder']) . '"' : '';
         $clasesInput = $opciones['extraClassesInput'] ?? '';
         $clasesContenedor = 'formCampo ' . ($opciones['extraClassesContenedor'] ?? '');
-        
+
         $html = "
-        <div class=\"{$clasesContenedor}\">
-            {$label}
-            <textarea id=\"{$id}\" name=\"{$nombre}\" {$limite} {$rows} {$placeholder} class=\"{$clasesInput}\">" . esc_textarea($valor) . "</textarea>
-        </div>";
+    <div class=\"{$clasesContenedor}\">
+      {$label}
+      <textarea id=\"{$id}\" name=\"{$nombre}\" {$limite} {$rows} {$placeholder} class=\"{$clasesInput}\">" . esc_textarea($valor) . "</textarea>
+    </div>";
 
         return $html;
     }
@@ -65,15 +115,26 @@ class FormBuilder
         $id = 'form-' . $nombre;
         $idPreview = !empty($opciones['idPreview']) ? 'id="' . esc_attr($opciones['idPreview']) . '"' : '';
         $textoPreview = $opciones['textoPreview'] ?? 'Seleccionar archivo';
+        $previewContent = esc_html($textoPreview);
+
+        $attachmentId = self::obtenerValorMeta($opciones);
+        
+        if (!empty($attachmentId)) {
+            $imagenGuardada = wp_get_attachment_image($attachmentId, 'thumbnail');
+            if (!empty($imagenGuardada)) {
+                $previewContent = $imagenGuardada;
+            }
+        }
+
         $limite = !empty($opciones['limite']) ? 'data-limit="' . intval($opciones['limite']) . '"' : '';
         $accept = !empty($opciones['accept']) ? 'accept="' . esc_attr($opciones['accept']) . '"' : '';
         $clasesContenedor = 'formCampo ' . ($opciones['extraClassesContenedor'] ?? '');
 
         $html = "
-        <div class=\"{$clasesContenedor}\">
-            <div class=\"preview\" {$idPreview}>" . esc_html($textoPreview) . "</div>
-            <input type=\"file\" id=\"{$id}\" name=\"{$nombre}\" {$limite} {$accept} style=\"display:none;\" />
-        </div>";
+    <div class=\"{$clasesContenedor}\">
+      <div class=\"preview\" {$idPreview}>{$previewContent}</div>
+      <input type=\"file\" id=\"{$id}\" name=\"{$nombre}\" {$limite} {$accept} style=\"display:none;\" />
+    </div>";
 
         return $html;
     }
@@ -83,7 +144,7 @@ class FormBuilder
         $accion = $opciones['accion'] ?? '';
         $texto = $opciones['texto'] ?? 'Enviar';
         $clases = 'dataSubir ' . ($opciones['extraClasses'] ?? '');
-        
+
         return "<button class=\"{$clases}\" data-accion=\"{$accion}\">" . esc_html($texto) . "</button>";
     }
 }
