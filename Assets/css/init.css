@@ -29,10 +29,22 @@ img {
 	height: auto;
 }
 
-.gap {
+.flex {
     display: flex;
+}
+
+.gap {
     gap: 10px;
 }
+
+.gap15 {
+    gap: 15px;
+}
+
+.gap20{
+    gap: 20px;
+}
+
 
 .columna {
     flex-direction: column;

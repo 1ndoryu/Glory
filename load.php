@@ -2,6 +2,8 @@
 // Glory/load.php
 namespace Glory;
 
+use Glory\Core\Setup;
+
 
 // Asegúrate de que las constantes estén definidas (si las usas aquí)
 if (!defined('GLORY_FRAMEWORK_PATH')) {
@@ -25,6 +27,6 @@ if ($config_files) {
         }
     }
 }
-unset($config_files, $config_file); // Limpia variables
+unset($config_files, $config_file); 
 
-
+new Setup();

@@ -1,46 +1,73 @@
-<?php
-
+<?
+use Glory\Component\FormBuilder as Form;
 
 function modalConfiguracion()
 {
+    // La estructura del modal se mantiene, pero el formulario interno se construye con el Builder.
 ?>
-    <div class="bloque modal gloryForm" id="modalConfiguracion">
+    <div class="bloque modal" id="modalConfiguracion">
         <div class="modalContenido flex gap columna">
             <p>Configuracion de perfil</p>
 
-            <div class="imagenInput">
-                <div class="preview" id="previewImagenPerfil">
-                    Arrastra tu foto de perfil
-                </div>
-                <input type="file" id="imagenPerfil" accept="image/*" style="display:none;" data-limit="2048576">
-            </div>
+            <?
+            // Aquí comienza la magia del FormBuilder
+            echo Form::inicio(['extraClasses' => 'flex gap columna']);
 
-            <div class="nombreInput">
-                <label for="nombre">Nombre</label>
-                <input type="text" name="nombreUsuario" data-limit="20"/>
-            </div>
+            echo Form::campoArchivo([
+                'nombre' => 'imagenPerfil',
+                'idPreview' => 'previewImagenPerfil',
+                'textoPreview' => 'Arrastra tu foto de perfil',
+                'limite' => 2048576, // 2MB
+                'accept' => 'image/*',
+                'extraClassesContenedor' => 'imagenInput'
+            ]);
 
-            <div class="usernameInput">
-                <label for="username">Username</label>
-                <input type="text" name="username" data-limit="20"/>
-            </div>
+            echo Form::campoTexto([
+                'nombre' => 'nombreUsuario',
+                'label' => 'Nombre',
+                'limite' => 20,
+                'extraClassesContenedor' => 'nombreInput'
+            ]);
 
-            <div class="descripcionInput">
-                <label for="descripcion">Descripcion</label>
-                <textarea name="descripcion" rows="2" data-limit="260"></textarea>
-            </div>
+            echo Form::campoTexto([
+                'nombre' => 'username',
+                'label' => 'Username',
+                'limite' => 20,
+                'extraClassesContenedor' => 'usernameInput'
+            ]);
 
-            <div class="enlaceInput">
-                <label for="enlace">Enlace</label>
-                <input type="text" name="enlace" data-limit="100"/>
-            </div>
+            echo Form::campoTextarea([
+                'nombre' => 'descripcion',
+                'label' => 'Descripcion',
+                'rows' => 2,
+                'limite' => 260,
+                'extraClassesContenedor' => 'descripcionInput'
+            ]);
+
+            echo Form::campoTexto([
+                'nombre' => 'enlace',
+                'label' => 'Enlace',
+                'limite' => 100,
+                'extraClassesContenedor' => 'enlaceInput'
+            ]);
+            ?>
 
             <div class="flex botonesBloques">
-                <button class="dataSubir borde" data-accion="userDataService">Guardar</button>
+            <?
+            echo Form::botonEnviar([
+                // Esta acción debe coincidir con el nombre de una clase Handler.
+                // 'guardarPerfil' -> buscará la clase 'GuardarPerfilHandler'
+                'accion' => 'guardarPerfil', 
+                'texto' => 'Guardar',
+                'extraClasses' => 'borde'
+            ]);
+            ?>
             </div>
 
+            <?
+            echo Form::fin();
+            ?>
         </div>
-
     </div>
 <?
 }

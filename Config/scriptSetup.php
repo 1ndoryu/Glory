@@ -3,6 +3,7 @@
 use Glory\Core\GloryLogger;
 use Glory\Core\ScriptManager;
 use Glory\Core\StyleManager;
+use Glory\Core\Setup;
 
 // Esto no esta preparado para ejecutarse en el wp-admin, aún no se como hacer que scriptmanager funcione en wp-admin
 ScriptManager::define(
@@ -45,4 +46,5 @@ StyleManager::defineFolder(
 );
 
 
-GloryLogger::init();
+
+

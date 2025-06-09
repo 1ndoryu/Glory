@@ -1,5 +1,5 @@
 <?
-// Glory/src/Ajax/busquedaAjax.php
+// Glory/src/Handler/busquedaAjax.php
 
 use Glory\Services\BusquedaService;
 use Glory\Components\BusquedaRenderer;
