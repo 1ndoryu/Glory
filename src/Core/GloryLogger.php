@@ -2,119 +2,122 @@
 
 namespace Glory\Core;
 
+/**
+ * GloryLogger gestiona el registro de eventos y errores de la aplicación.
+ *
+ * En lugar de guardar logs en la base de datos, utiliza el sistema de logs nativo de PHP (error_log).
+ * Los logs se acumulan en un buffer durante la ejecución y se escriben todos juntos al final del script (hook 'shutdown'),
+ * optimizando el rendimiento. Permite configurar un nivel mínimo de log para controlar la verbosidad.
+ */
 class GloryLogger
 {
-    const tipoContenidoSlug        = 'glory_log';
-    const nivelInfo                = 10;
-    const nivelAdvertencia         = 20;
-    const nivelError               = 30;
-    const nivelCritico             = 50;
-    const metaClaveFuncionCompleta = '_glory_log_function';
-    const metaClaveNombreClase     = '_glory_log_class_name';
-    const metaClaveNombreMetodo    = '_glory_log_method_name';
-    const metaClaveEstado          = '_glory_log_status';
-    const metaClaveNivel           = '_glory_log_level';
-    const metaClaveMarcaTiempo     = '_glory_log_timestamp';
-    const maxLogsInfo              = 300;
-    const maxLogsError             = 100;
+    // Niveles de Log
+    const nivelInfo        = 10;
+    const nivelAdvertencia = 20;
+    const nivelError       = 30;
+    const nivelCritico     = 50;
+
+    private static $nivelesValidos = [
+        self::nivelInfo,
+        self::nivelAdvertencia,
+        self::nivelError,
+        self::nivelCritico,
+    ];
 
     private static $nivelMinimoGuardado       = self::nivelError;
     private static $bufferLogs                = [];
     private static $hookGuardarLogsRegistrado = false;
 
+    /**
+     * Inicializa el logger y opcionalmente establece el nivel mínimo de log a registrar.
+     *
+     * @param int|null $nivel El nivel mínimo para que los logs se guarden.
+     */
     public static function init(?int $nivel = null): void
     {
-        if (!is_null($nivel) && in_array($nivel, [self::nivelInfo, self::nivelError], true)) {
-            self::$nivelMinimoGuardado = $nivel;
-        }
-        add_action('init', [self::class, 'registrarTipoContenido'], 0);
-        if (!wp_next_scheduled('limpiarLogsHook')) {
-            wp_schedule_event(time(), 'daily', 'limpiarLogsHook');
-        }
-        add_action('limpiarLogsHook', [self::class, 'limpiarLogsAntiguos']);
-    }
-
-    public static function registrarTipoContenido(): void
-    {
-        if (post_type_exists(self::tipoContenidoSlug)) {
-            return;
-        }
-
-        $etiquetas  = [
-            'name'               => _x('Glory Logs', 'post type general name', 'glory'),
-            'singular_name'      => _x('Glory Log', 'post type singular name', 'glory'),
-            'menu_name'          => _x('Glory Logs', 'admin menu', 'glory'),
-            'name_admin_bar'     => _x('Glory Log', 'add new on admin bar', 'glory'),
-            'add_new'            => _x('Add New', 'log', 'glory'),
-            'add_new_item'       => __('Add New Log', 'glory'),
-            'new_item'           => __('New Log', 'glory'),
-            'edit_item'          => __('Edit Log', 'glory'),
-            'view_item'          => __('View Log', 'glory'),
-            'all_items'          => __('All Glory Logs', 'glory'),
-            'search_items'       => __('Search Logs', 'glory'),
-            'parent_item_colon'  => __('Parent Logs:', 'glory'),
-            'not_found'          => __('No logs found.', 'glory'),
-            'not_found_in_trash' => __('No logs found in Trash.', 'glory')
-        ];
-        $argumentos = [
-            'labels'             => $etiquetas,
-            'description'        => __('Stores execution logs from the Glory Framework.', 'glory'),
-            'public'             => false,
-            'publicly_queryable' => false,
-            'show_ui'            => true,
-            'show_in_menu'       => 'tools.php',
-            'query_var'          => false,
-            'rewrite'            => false,
-            'capability_type'    => 'post',
-            'map_meta_cap'       => true,
-            'has_archive'        => false,
-            'hierarchical'       => false,
-            'menu_position'      => 80,
-            'supports'           => ['title', 'editor', 'custom-fields'],
-            'show_in_rest'       => false,
-        ];
-
-        $resultado = register_post_type(self::tipoContenidoSlug, $argumentos);
-
-        if (is_wp_error($resultado)) {
-            error_log('[GloryLogger] registrarTipoContenido() - FAILED to register CPT! WP_Error: ' . $resultado->get_error_message());
+        if (!is_null($nivel)) {
+            self::setNivelMinimoGuardado($nivel);
         }
     }
 
+    /**
+     * Establece el nivel mínimo de log que se debe guardar.
+     *
+     * Solo los grupos de logs cuya criticidad máxima sea igual o superior a este nivel serán guardados.
+     *
+     * @param int $nivel El nivel de log (ej. self::nivelInfo, self::nivelError).
+     */
     public static function setNivelMinimoGuardado(int $nivel): void
     {
-        if (in_array($nivel, [self::nivelInfo, self::nivelError], true)) {
+        if (in_array($nivel, self::$nivelesValidos, true)) {
             self::$nivelMinimoGuardado = $nivel;
         }
     }
 
+    /**
+     * Registra un mensaje de nivel informativo.
+     */
     public static function info(string $mensaje, array $contexto = []): void
     {
         self::registrar(self::nivelInfo, $mensaje, $contexto);
     }
 
-    public static function error(string $mensaje, array $contexto = []): void
-    {
-        self::registrar(self::nivelError, $mensaje, $contexto);
-    }
-
+    /**
+     * Registra un mensaje de advertencia.
+     */
     public static function warning(string $mensaje, array $contexto = []): void
     {
         self::registrar(self::nivelAdvertencia, $mensaje, $contexto);
     }
 
+    /**
+     * Registra un mensaje de error.
+     */
+    public static function error(string $mensaje, array $contexto = []): void
+    {
+        self::registrar(self::nivelError, $mensaje, $contexto);
+    }
+
+    /**
+     * Registra un mensaje crítico.
+     */
     public static function critical(string $mensaje, array $contexto = []): void
     {
         self::registrar(self::nivelCritico, $mensaje, $contexto);
     }
 
+    /**
+     * Guarda los logs acumulados en el buffer al final de la ejecución.
+     *
+     * Este método se engancha al hook 'shutdown' de WordPress.
+     */
+    public static function guardarLogsEnBuffer(): void
+    {
+        if (empty(self::$bufferLogs)) {
+            return;
+        }
+        foreach (self::$bufferLogs as $nombreFuncion => $datosLog) {
+            if ($datosLog['nivelMaximo'] >= self::$nivelMinimoGuardado) {
+                self::crearEntradaLog($nombreFuncion, $datosLog);
+            }
+        }
+        // Limpiar el buffer para la siguiente petición
+        self::$bufferLogs                = [];
+        self::$hookGuardarLogsRegistrado = false;
+    }
+
+    /**
+     * Añade un registro al buffer de logs.
+     *
+     * @param int    $nivel   Nivel del log.
+     * @param string $mensaje Mensaje del log.
+     * @param array  $contexto Datos adicionales.
+     */
     private static function registrar(int $nivel, string $mensaje, array $contexto = []): void
     {
         $nombreLlamador = self::getNombreLlamador();
-        if (!$nombreLlamador) {
-            return;
-        }
-        $huellaLog = md5($nivel . '|' . $mensaje . '|' . serialize($contexto));
+        $huellaLog      = md5($nivel . '|' . $mensaje . '|' . serialize($contexto));
+
         if (!isset(self::$bufferLogs[$nombreLlamador])) {
             self::$bufferLogs[$nombreLlamador] = [
                 'mensajes'     => [],
@@ -122,24 +125,33 @@ class GloryLogger
                 'hashesUnicos' => [],
             ];
         }
+
+        // Evitar duplicados exactos en la misma ejecución
         if (isset(self::$bufferLogs[$nombreLlamador]['hashesUnicos'][$huellaLog])) {
             return;
         }
+
         self::$bufferLogs[$nombreLlamador]['hashesUnicos'][$huellaLog] = true;
-        $marcaTiempo                                                   = time();
-        self::$bufferLogs[$nombreLlamador]['mensajes'][]               = [
-            'marcaTiempo' => $marcaTiempo,
+        self::$bufferLogs[$nombreLlamador]['mensajes'][]              = [
+            'marcaTiempo' => microtime(true),
             'nivel'       => $nivel,
             'mensaje'     => $mensaje,
-            'contexto'    => $contexto
+            'contexto'    => $contexto,
         ];
+
         if ($nivel > self::$bufferLogs[$nombreLlamador]['nivelMaximo']) {
             self::$bufferLogs[$nombreLlamador]['nivelMaximo'] = $nivel;
         }
+
         self::registrarHookGuardarLogs();
     }
 
-    private static function getNombreLlamador(): ?string
+    /**
+     * Obtiene el nombre de la función o método que invocó al logger.
+     *
+     * @return string
+     */
+    private static function getNombreLlamador(): string
     {
         $traza = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
         for ($i = 2; $i < count($traza); $i++) {
@@ -152,191 +164,71 @@ class GloryLogger
                 if (isset($infoLlamador['class'])) {
                     $funcion = $infoLlamador['class'] . '::' . $funcion;
                 }
-
                 return $funcion;
             }
         }
-
         return '[unknown_caller]';
     }
 
+    /**
+     * Registra el hook de 'shutdown' una sola vez por petición.
+     */
     private static function registrarHookGuardarLogs(): void
     {
         if (!self::$hookGuardarLogsRegistrado) {
-            add_action('shutdown', [self::class, 'guardarLogsEnBuffer'], PHP_INT_MAX);
+            add_action('shutdown', [self::class, 'guardarLogsEnBuffer'], 100);
             self::$hookGuardarLogsRegistrado = true;
         }
     }
 
-    public static function guardarLogsEnBuffer(): void
-    {
-        if (empty(self::$bufferLogs)) {
-            return;
-        }
-        foreach (self::$bufferLogs as $nombreFuncion => $datosLog) {
-            $nivelMaximoEncontrado = $datosLog['nivelMaximo'];
-            if (empty($datosLog['mensajes'])) {
-                continue;
-            }
-            if ($nivelMaximoEncontrado >= self::$nivelMinimoGuardado) {
-                self::crearEntradaLog($nombreFuncion, $datosLog);
-            }
-        }
-        self::$bufferLogs                = [];
-        self::$hookGuardarLogsRegistrado = false;
-    }
-
+    /**
+     * Formatea y escribe un grupo de logs en el archivo de error del servidor.
+     *
+     * @param string $nombreFuncion El nombre de la función/método que generó los logs.
+     * @param array  $datosLog      Los datos del log (mensajes, nivel, etc.).
+     */
     private static function crearEntradaLog(string $nombreFuncion, array $datosLog): void
     {
         if (empty($datosLog['mensajes'])) {
             return;
         }
 
-        $tiempoInicio = $datosLog['mensajes'][0]['marcaTiempo'] ?? time();
-        $nivelMaximo  = $datosLog['nivelMaximo'];
-
-        $estado = 'INFO';
-        if ($nivelMaximo === self::nivelError)
-            $estado = 'ERROR';
-        else if ($nivelMaximo === self::nivelAdvertencia)
-            $estado = 'WARNING';
-        else if ($nivelMaximo === self::nivelCritico)
-            $estado = 'CRITICAL';
-
-        $tituloEntrada = sprintf(
-            '[%s] %s - %s',
-            $estado,
-            $nombreFuncion,
-            wp_date('Y-m-d H:i:s', $tiempoInicio)
-        );
-
-        $contenidoEntrada  = "Log entries for function/method: {$nombreFuncion}\n";
-        $contenidoEntrada .= "Overall Execution Status based on logs: {$estado}\n";
-        $contenidoEntrada .= "--------------------------------------------------\n\n";
+        $bloqueMensajes = "--- GloryLogger Start: {$nombreFuncion} ---\n";
 
         foreach ($datosLog['mensajes'] as $registro) {
             $nivelTexto = 'INFO';
-            if ($registro['nivel'] === self::nivelError)
-                $nivelTexto = 'ERROR';
-            else if ($registro['nivel'] === self::nivelAdvertencia)
-                $nivelTexto = 'WARNING';
-            else if ($registro['nivel'] === self::nivelCritico)
-                $nivelTexto = 'CRITICAL';
+            switch ($registro['nivel']) {
+                case self::nivelAdvertencia:
+                    $nivelTexto = 'WARNING';
+                    break;
+                case self::nivelError:
+                    $nivelTexto = 'ERROR';
+                    break;
+                case self::nivelCritico:
+                    $nivelTexto = 'CRITICAL';
+                    break;
+            }
 
-            $contenidoEntrada .= sprintf(
-                "[%s] [%s] %s\n",
-                wp_date('H:i:s', $registro['marcaTiempo']) . '.' . substr(sprintf('%03d', ($registro['marcaTiempo'] - floor($registro['marcaTiempo'])) * 1000), 0, 3),
+            $micro = sprintf("%06d", ($registro['marcaTiempo'] - floor($registro['marcaTiempo'])) * 1000000);
+            $fecha = new \DateTime(date('Y-m-d H:i:s.' . $micro, (int)$registro['marcaTiempo']));
+
+            $lineaLog = sprintf(
+                "[%s] [%s] %s",
+                $fecha->format("Y-m-d H:i:s.u"),
                 $nivelTexto,
-                esc_html($registro['mensaje'])
+                $registro['mensaje']
             );
+
             if (!empty($registro['contexto'])) {
-                $contextoTexto     = print_r($registro['contexto'], true);
-                $contenidoEntrada .= '  Context: ' . esc_html($contextoTexto) . "\n";
-            }
-            $contenidoEntrada .= "\n";
-        }
-
-        $datosEntrada = [
-            'post_title'   => $tituloEntrada,
-            'post_content' => $contenidoEntrada,
-            'post_status'  => 'publish',
-            'post_type'    => self::tipoContenidoSlug,
-            'post_author'  => 0,
-        ];
-
-        $nivelFiltroActualDatos   = did_action('wp_insert_post_data');
-        $nivelFiltroActualEntrada = did_action('wp_insert_post');
-
-        if ($nivelFiltroActualDatos < 10)
-            remove_all_filters('wp_insert_post_data');
-        if ($nivelFiltroActualEntrada < 10)
-            remove_all_filters('wp_insert_post');
-
-        $idEntrada = wp_insert_post($datosEntrada, true);
-
-        if (!is_wp_error($idEntrada) && $idEntrada > 0) {
-            $nombreClase  = '';
-            $nombreMetodo = $nombreFuncion;
-
-            if (strpos($nombreFuncion, '::') !== false) {
-                list($nombreClase, $nombreMetodo) = explode('::', $nombreFuncion, 2);
+                $contexto = preg_replace('/\s+/', ' ', print_r($registro['contexto'], true));
+                $lineaLog .= " | Context: " . $contexto;
             }
 
-            update_post_meta($idEntrada, self::metaClaveFuncionCompleta, $nombreFuncion);
-            update_post_meta($idEntrada, self::metaClaveNombreClase, $nombreClase);
-            update_post_meta($idEntrada, self::metaClaveNombreMetodo, $nombreMetodo);
-            update_post_meta($idEntrada, self::metaClaveEstado, $estado);
-            update_post_meta($idEntrada, self::metaClaveNivel, $nivelMaximo);
-            update_post_meta($idEntrada, self::metaClaveMarcaTiempo, $tiempoInicio);
-        } else {
-            $mensajeError = is_wp_error($idEntrada) ? $idEntrada->get_error_message() : 'Unknown error (Invalid Post ID returned: ' . print_r($idEntrada, true) . ')';
-            error_log('[GloryLogger] crearEntradaLog() - FAILED to create log post for ' . $nombreFuncion . '. Error: ' . $mensajeError);
+            $bloqueMensajes .= $lineaLog . "\n";
         }
-    }
 
-    public static function limpiarLogsAntiguos(): void
-    {
-        error_log('[GloryLogger Cron] limpiarLogsAntiguos() - Iniciando limpieza de logs antiguos.');
-        self::recortarLogsPorEstado('INFO', self::maxLogsInfo);
-        self::recortarLogsPorEstado('ERROR', self::maxLogsError);
-        // Podríamos añadir limpieza para WARNING y CRITICAL si se desea, o agruparlos con ERROR.
-        // Por ahora, solo INFO y ERROR tienen límites explícitos.
-        error_log('[GloryLogger Cron] limpiarLogsAntiguos() - Limpieza completada.');
-    }
+        $bloqueMensajes .= "--- GloryLogger End: {$nombreFuncion} ---\n";
 
-    private static function recortarLogsPorEstado(string $estadoRecortar, int $limite): void
-    {
-        $consultaConteo = new \WP_Query([
-            'post_type'      => self::tipoContenidoSlug,
-            'post_status'    => 'publish',
-            'posts_per_page' => 1,
-            'meta_query'     => [
-                [
-                    'key'   => self::metaClaveEstado,
-                    'value' => $estadoRecortar,
-                ]
-            ],
-            'fields'         => 'ids',
-        ]);
-
-        $totalLogsPorEstado = $consultaConteo->found_posts;
-        error_log("[GloryLogger Cron] recortarLogsPorEstado() - Estado: {$estadoRecortar}. Total actual: {$totalLogsPorEstado}. Límite: {$limite}.");
-
-        if ($totalLogsPorEstado > $limite) {
-            $cantidadEntradasAEliminar = $totalLogsPorEstado - $limite;
-            error_log("[GloryLogger Cron] recortarLogsPorEstado() - Estado: {$estadoRecortar}. Necesita eliminar {$cantidadEntradasAEliminar} logs.");
-
-            $consultaMasAntiguos = new \WP_Query([
-                'post_type'      => self::tipoContenidoSlug,
-                'post_status'    => 'publish',
-                'posts_per_page' => $cantidadEntradasAEliminar,
-                'orderby'        => 'date',
-                'order'          => 'ASC',
-                'meta_query'     => [
-                    [
-                        'key'   => self::metaClaveEstado,
-                        'value' => $estadoRecortar,
-                    ]
-                ],
-                'fields'         => 'ids',
-            ]);
-
-            if (!empty($consultaMasAntiguos->posts)) {
-                $contadorEliminados = 0;
-                foreach ($consultaMasAntiguos->posts as $idEntradaAEliminar) {
-                    $eliminado = wp_delete_post($idEntradaAEliminar, true);
-                    if ($eliminado) {
-                        $contadorEliminados++;
-                    } else {
-                        error_log("[GloryLogger Cron] recortarLogsPorEstado() - Estado: {$estadoRecortar}. No se pudo eliminar el post ID: {$idEntradaAEliminar}.");
-                    }
-                }
-                error_log("[GloryLogger Cron] recortarLogsPorEstado() - Estado: {$estadoRecortar}. Se eliminaron {$contadorEliminados} de {$cantidadEntradasAEliminar} logs.");
-            } else {
-                error_log("[GloryLogger Cron] recortarLogsPorEstado() - Estado: {$estadoRecortar}. No se encontraron posts para eliminar (consultaMasAntiguos vacía), aunque el conteo inicial era mayor al límite.");
-            }
-        } else {
-            error_log("[GloryLogger Cron] recortarLogsPorEstado() - Estado: {$estadoRecortar}. No se necesita eliminar logs.");
-        }
+        error_log($bloqueMensajes);
     }
 }

@@ -3,6 +3,8 @@
 
 namespace Glory\Components;
 
+use Glory\Core\GloryLogger;
+
 /**
  * Gestiona la renderización de los resultados de búsqueda.
  *
@@ -19,23 +21,29 @@ class BusquedaRenderer
      */
     public static function renderizarResultados(array $datos): string
     {
+        GloryLogger::info('Iniciando renderizado de resultados.', ['datos_recibidos' => $datos]);
         $htmlFinal = '';
         $totalResultados = array_reduce($datos, function ($carry, $items) {
             return $carry + (is_array($items) ? count($items) : 0);
         }, 0);
 
         if ($totalResultados === 0) {
+            GloryLogger::info('No se encontraron resultados para renderizar.');
             return '<div class="resultadoItemNoEncontrado">No se encontraron resultados.</div>';
         }
 
-        foreach ($datos as $grupoItems) {
+        GloryLogger::info("Renderizando un total de {$totalResultados} resultados.");
+
+        foreach ($datos as $grupo => $grupoItems) {
             if (is_array($grupoItems)) {
+                GloryLogger::info("Renderizando grupo '{$grupo}'.", ['numero_items' => count($grupoItems)]);
                 foreach ($grupoItems as $item) {
                     $htmlFinal .= self::renderizarItem($item);
                 }
             }
         }
 
+        GloryLogger::info('Renderizado de HTML completado.');
         return $htmlFinal;
     }
 
@@ -61,14 +69,14 @@ class BusquedaRenderer
 
         return sprintf(
             '<a href="%s" class="resultadoEnlace">
-                <div class="resultadoItem">
-                    %s
-                    <div class="resultadoInfo">
-                        <h3>%s</h3>
-                        <p>%s</p>
-                    </div>
-                </div>
-            </a>',
+        <div class="resultadoItem">
+          %s
+          <div class="resultadoInfo">
+            <h3>%s</h3>
+            <p>%s</p>
+          </div>
+        </div>
+      </a>',
             $url,
             $imagenHtml,
             $titulo,

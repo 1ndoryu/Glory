@@ -5,6 +5,7 @@ namespace Glory\Services;
 
 use WP_Query;
 use WP_User_Query;
+use Glory\Core\GloryLogger;
 
 /**
  * Gestiona la lógica de negocio para las operaciones de búsqueda en todo el sitio.
@@ -48,23 +49,30 @@ class BusquedaService
      */
     public function ejecutar(): self
     {
+        GloryLogger::info('Iniciando ejecución de BusquedaService.', ['configuracion' => $this->configuracionBusqueda]);
         foreach ($this->configuracionBusqueda as $tipo => $args) {
+            GloryLogger::info("Procesando tipo de búsqueda: {$tipo}", ['argumentos' => $args]);
             switch ($tipo) {
                 case 'post':
                     $postType = $args['post_type'] ?? 'post';
-                    $this->resultados[$postType] = $this->buscarPosts(
+                    $resultadosPost = $this->buscarPosts(
                         $postType,
                         $args['limite'] ?? 3
                     );
+                    $this->resultados[$postType] = $resultadosPost;
+                    GloryLogger::info("Búsqueda de posts '{$postType}' completada.", ['cantidad' => count($resultadosPost)]);
                     break;
 
                 case 'usuario':
-                    $this->resultados['perfiles'] = $this->buscarUsuarios(
+                    $resultadosUsuarios = $this->buscarUsuarios(
                         $args['limite'] ?? 3
                     );
+                    $this->resultados['perfiles'] = $resultadosUsuarios;
+                    GloryLogger::info('Búsqueda de usuarios completada.', ['cantidad' => count($resultadosUsuarios)]);
                     break;
             }
         }
+        GloryLogger::info('Ejecución de BusquedaService finalizada.', ['resultados_totales' => $this->resultados]);
         return $this;
     }
 
@@ -103,9 +111,9 @@ class BusquedaService
     {
         $resultadosFormateados = [];
         $query = new WP_Query([
-            'post_type'      => $postType,
-            'post_status'    => 'publish',
-            's'              => $this->texto,
+            'post_type'   => $postType,
+            'post_status'  => 'publish',
+            's'       => $this->texto,
             'posts_per_page' => $limite,
         ]);
 
@@ -114,8 +122,8 @@ class BusquedaService
                 $query->the_post();
                 $resultadosFormateados[] = [
                     'titulo' => get_the_title(),
-                    'url'    => get_permalink(),
-                    'tipo'   => ucfirst(str_replace(['_', '-'], ' ', $postType)),
+                    'url'  => get_permalink(),
+                    'tipo' => ucfirst(str_replace(['_', '-'], ' ', $postType)),
                     'imagen' => $this->obtenerImagenPost(get_the_ID()),
                 ];
             }
@@ -134,9 +142,9 @@ class BusquedaService
     {
         $resultadosFormateados = [];
         $query = new WP_User_Query([
-            'search'         => '*' . esc_attr($this->texto) . '*',
+            'search'    => '*' . esc_attr($this->texto) . '*',
             'search_columns' => ['user_login', 'display_name', 'user_email'],
-            'number'         => $limite,
+            'number'    => $limite,
         ]);
 
         $usuarios = $query->get_results();
@@ -144,8 +152,8 @@ class BusquedaService
             foreach ($usuarios as $usuario) {
                 $resultadosFormateados[] = [
                     'titulo' => $usuario->display_name,
-                    'url'    => get_author_posts_url($usuario->ID),
-                    'tipo'   => 'Perfil',
+                    'url'  => get_author_posts_url($usuario->ID),
+                    'tipo' => 'Perfil',
                     'imagen' => get_avatar_url($usuario->ID),
                 ];
             }

@@ -19,9 +19,7 @@ function gloryBusqueda() {
             tipos: input.dataset.tipos,
             cantidad: input.dataset.cantidad || 2,
             target: input.dataset.target,
-            renderer: input.dataset.renderer,
-            callbackShow: input.dataset.callbackShow,
-            callbackHide: input.dataset.callbackHide
+            renderer: input.dataset.renderer
         };
 
         const contenedorResultados = document.querySelector(config.target);
@@ -34,18 +32,24 @@ function gloryBusqueda() {
         clearTimeout(debounceTimeout);
 
         if (texto.length > 2) {
-            if (config.callbackShow && typeof window[config.callbackShow] === 'function') {
-                window[config.callbackShow]();
+            // Mostramos el fondo y preparamos para los resultados.
+            if (typeof window.mostrarFondo === 'function') {
+                window.mostrarFondo();
             }
-            
+            // Hacemos visible el contenedor específico de resultados
+            contenedorResultados.style.display = 'flex';
+
             debounceTimeout = setTimeout(() => {
                 ejecutarBusqueda(texto, config, contenedorResultados);
             }, 350);
         } else {
-            if (config.callbackHide && typeof window[config.callbackHide] === 'function') {
-                window[config.callbackHide]();
+            // Si el texto es muy corto o se borra, ocultamos todo.
+            if (typeof window.ocultarFondo === 'function') {
+                window.ocultarFondo();
             }
+            // Adicionalmente, limpiamos y ocultamos el contenedor por si acaso.
             contenedorResultados.innerHTML = '';
+            contenedorResultados.style.display = 'none';
         }
     }
 
@@ -56,29 +60,30 @@ function gloryBusqueda() {
      * @param {HTMLElement} contenedor - El elemento donde se mostrarán los resultados.
      */
     async function ejecutarBusqueda(texto, config, contenedor) {
+        console.log(`Ejecutando búsqueda para: "${texto}"`);
         const datosParaEnviar = {
             texto: texto,
             tipos: config.tipos,
             cantidad: config.cantidad,
-            renderer: config.renderer // Se envía el nombre del renderer a PHP
+            renderer: config.renderer
         };
 
         try {
             const respuesta = await gloryAjax('busquedaAjax', datosParaEnviar);
 
-            // La respuesta ahora contiene el HTML pre-renderizado.
-            if (respuesta && typeof respuesta.html !== 'undefined') {
-                contenedor.innerHTML = respuesta.html;
+            if (respuesta && respuesta.success && respuesta.data && typeof respuesta.data.html !== 'undefined') {
+                contenedor.innerHTML = respuesta.data.html;
             } else {
-                contenedor.innerHTML = '<div class="resultado-item">Error al cargar resultados.</div>';
+                contenedor.innerHTML = '<div class="resultado-item">No se encontraron resultados.</div>';
             }
         } catch (error) {
-            console.error('Error en la búsqueda AJAX:', error);
+            console.error('Error catastrófico en la búsqueda AJAX:', error);
             contenedor.innerHTML = '<div class="resultado-item">Ocurrió un error.</div>';
         }
     }
 
     inputsBusqueda.forEach(input => {
+        // Aseguramos que no haya listeners duplicados en recargas.
         input.removeEventListener('input', manejarInput);
         input.addEventListener('input', manejarInput);
     });
