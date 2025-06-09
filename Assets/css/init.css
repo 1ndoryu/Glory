@@ -8,6 +8,8 @@
     --blanco: #efefef;
 }
 
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Source+Sans+3:wght@200..900&display=swap');
+
 html {
     background: var(--bg-color);
 }
@@ -224,7 +226,7 @@ button {
     display: flex;
     margin: 0px;
     color: #fff;
-    font-size: 11px;
+    font-size: 12px;
     border-radius: 4px;
     cursor: pointer;
     padding: 8px 15px;
@@ -361,7 +363,7 @@ input:focus, textarea:focus {
 }
 
 .pestanas button {
-    font-size: 12px;
+    font-size: 13px;
     padding: 0px;
     font-weight: 500;
     opacity: 0.6;
@@ -371,4 +373,37 @@ input:focus, textarea:focus {
     align-items: center;
     gap: 20px;
     padding: 10px 18px;
+}
+
+.submenus {
+    display: none;
+    background: #080808;
+    padding: 10px 6px;
+    border-radius: 5px;
+    width: 150px;
+    overflow: auto;
+    border: var(--borde);
+    z-index: 1010;
+    position: fixed;
+    flex-direction: column;
+}
+
+.submenus a {
+    font-size: 12px;
+    padding: 5px;
+    padding-left: 10px;
+    cursor: pointer;
+    color: white;
+    width: -webkit-fill-available;
+    width: -moz-available;
+}
+
+/* Muestra el menú cuando está activo */
+.submenus.activo {
+    display: flex;
+}
+
+/* Evita el scroll en el body cuando un menú está abierto */
+body.noScroll {
+    overflow: hidden;
 }
