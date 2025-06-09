@@ -57,30 +57,33 @@ class BusquedaRenderer
     {
         $url = !empty($item['url']) ? esc_url($item['url']) : '#';
         $titulo = !empty($item['titulo']) ? esc_html($item['titulo']) : 'Sin título';
-        $tipo = !empty($item['tipo']) ? esc_html($item['tipo']) : 'Desconocido';
+        $tipo = !empty($item['tipo']) ? $item['tipo'] : 'Desconocido';
 
         $imagenHtml = !empty($item['imagen'])
             ? sprintf(
-                '<img class="resultado-imagen" src="%s" alt="%s">',
+                '<img class="resultadoImagen" src="%s" alt="%s">',
                 esc_url($item['imagen']),
                 esc_attr($titulo)
             )
-            : '<div class="resultado-imagen placeholder"></div>';
+            : '<div class="resultadoImagen placeholder"></div>';
+
+        $claseTipo = sanitize_title($tipo);
 
         return sprintf(
             '<a href="%s" class="resultadoEnlace">
-        <div class="resultadoItem">
-          %s
-          <div class="resultadoInfo">
-            <h3>%s</h3>
-            <p>%s</p>
-          </div>
-        </div>
-      </a>',
+				<div class="resultadoItem %s">
+					%s
+					<div class="resultadoInfo">
+						<h3>%s</h3>
+						<p>%s</p>
+					</div>
+				</div>
+			</a>',
             $url,
+            esc_attr($claseTipo),
             $imagenHtml,
             $titulo,
-            $tipo
+            esc_html($tipo)
         );
     }
 }
