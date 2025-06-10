@@ -24,6 +24,17 @@ html {
 	-webkit-tap-highlight-color: rgba(0, 0, 0, 0); 
 }
 
+.bloque {
+	display: flex;
+	background: var(--fondo);
+	border-radius: var(--radius);
+	padding: var(--padding);
+	border: var(--borde);
+	width: var(--ancho);
+	max-width: 100%;
+	gap: 10px;
+}
+
 img {
 	border-style: none;
 	vertical-align: top;
@@ -47,10 +58,38 @@ img {
     gap: 20px;
 }
 
+body.noScroll {
+    overflow: hidden;
+}
+
+.oculto {
+    display: none;
+}
+
+.flexRow {
+    flex-direction: row;
+}
+
+.spaceBetween {
+    justify-content: space-between;
+}
+
+.alignItemCenter {
+    align-items: center;
+}
+
 
 .columna {
     flex-direction: column;
 }	
+
+.w100 {
+    width: 100%;
+}
+
+.w50 {
+    width: 50%;
+}
 
 body, body p, textarea {
 	font-size: 13px;
@@ -181,17 +220,7 @@ ul {
 }
 
 
-.bloque {
-	display: flex;
-	background: var(--fondo);
-	border-radius: var(--radius);
-	padding: var(--padding);
-	border: var(--borde);
-	width: var(--ancho);
-	max-width: 100%;
-	flex-direction: column;
-	gap: 10px;
-}
+
 
 .borde {
 	border: var(--borde);
@@ -330,6 +359,10 @@ form {
 	justify-content: center;
 }
 
+.customCheckbox input[type="checkbox"] {
+	display: none !important;
+}
+
 input, textarea {
     background: unset !important;
     padding: 7px 0px !important;
@@ -404,6 +437,3 @@ input:focus, textarea:focus {
 }
 
 /* Evita el scroll en el body cuando un menú está abierto */
-body.noScroll {
-    overflow: hidden;
-}

@@ -1,5 +1,4 @@
 <?
-
 namespace Glory\Component;
 
 class FormBuilder
@@ -15,7 +14,7 @@ class FormBuilder
         $id = !empty($opciones['id']) ? 'id="' . esc_attr($opciones['id']) . '"' : '';
         $action = !empty($opciones['action']) ? 'action="' . esc_attr($opciones['action']) . '"' : 'javascript:void(0);';
         $method = !empty($opciones['method']) ? 'method="' . esc_attr($opciones['method']) . '"' : 'post';
-        $clases = 'gloryForm ' . ($opciones['extraClasses'] ?? '');
+        $clases = 'gloryForm ' . ($opciones['extraClass'] ?? '');
         
         $metaTargetAttr = self::$currentMetaTarget ? 'data-meta-target="' . esc_attr(self::$currentMetaTarget) . '"' : '';
         $objectIdAttr = self::$currentObjectId ? 'data-object-id="' . esc_attr(self::$currentObjectId) . '"' : '';
@@ -74,8 +73,8 @@ class FormBuilder
 
         $limite = !empty($opciones['limite']) ? 'data-limit="' . intval($opciones['limite']) . '"' : '';
         $placeholder = !empty($opciones['placeholder']) ? 'placeholder="' . esc_attr($opciones['placeholder']) . '"' : '';
-        $clasesInput = $opciones['extraClassesInput'] ?? '';
-        $clasesContenedor = 'formCampo ' . ($opciones['extraClassesContenedor'] ?? '');
+        $clasesInput = $opciones['extraClassInput'] ?? '';
+        $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
 
         $html = "
     <div class=\"{$clasesContenedor}\">
@@ -97,8 +96,8 @@ class FormBuilder
         $limite = !empty($opciones['limite']) ? 'data-limit="' . intval($opciones['limite']) . '"' : '';
         $rows = !empty($opciones['rows']) ? 'rows="' . intval($opciones['rows']) . '"' : '';
         $placeholder = !empty($opciones['placeholder']) ? 'placeholder="' . esc_attr($opciones['placeholder']) . '"' : '';
-        $clasesInput = $opciones['extraClassesInput'] ?? '';
-        $clasesContenedor = 'formCampo ' . ($opciones['extraClassesContenedor'] ?? '');
+        $clasesInput = $opciones['extraClassInput'] ?? '';
+        $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
 
         $html = "
     <div class=\"{$clasesContenedor}\">
@@ -128,7 +127,7 @@ class FormBuilder
 
         $limite = !empty($opciones['limite']) ? 'data-limit="' . intval($opciones['limite']) . '"' : '';
         $accept = !empty($opciones['accept']) ? 'accept="' . esc_attr($opciones['accept']) . '"' : '';
-        $clasesContenedor = 'formCampo ' . ($opciones['extraClassesContenedor'] ?? '');
+        $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
 
         $html = "
     <div class=\"{$clasesContenedor}\">
@@ -139,11 +138,40 @@ class FormBuilder
         return $html;
     }
 
+    public static function campoCheckbox(array $opciones): string
+    {
+        $nombre = $opciones['nombre'] ?? '';
+        $id = 'form-' . $nombre;
+        $label = $opciones['label'] ?? '';
+        $valorInput = $opciones['valorInput'] ?? '1';
+
+        $valorGuardado = self::obtenerValorMeta($opciones);
+        $checked = !empty($valorGuardado) ? 'checked' : '';
+
+        $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
+        $clasesLabel = $opciones['extraClassLabel'] ?? 'customCheckbox';
+        $tooltip = !empty($opciones['tooltip']) ? 'data-tooltip="' . esc_attr($opciones['tooltip']) . '"' : '';
+
+        // El contenido del label puede ser texto o HTML (ej. un icono)
+        $labelContent = $opciones['labelIcono'] ?? esc_html($label);
+
+        $html = "
+        <div class=\"{$clasesContenedor}\">
+            <label for=\"{$id}\" class=\"{$clasesLabel}\" {$tooltip}>
+                <input type=\"checkbox\" id=\"{$id}\" name=\"{$nombre}\" value=\"{$valorInput}\" {$checked}>
+                <span class=\"checkmark\"></span>
+                {$labelContent}
+            </label>
+        </div>";
+
+        return $html;
+    }
+
     public static function botonEnviar(array $opciones): string
     {
         $accion = $opciones['accion'] ?? '';
         $texto = $opciones['texto'] ?? 'Enviar';
-        $clases = 'dataSubir ' . ($opciones['extraClasses'] ?? '');
+        $clases = 'dataSubir ' . ($opciones['extraClass'] ?? '');
 
         return "<button class=\"{$clases}\" data-accion=\"{$accion}\">" . esc_html($texto) . "</button>";
     }
