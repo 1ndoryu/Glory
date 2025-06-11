@@ -1,4 +1,4 @@
-<?php
+<?
 
 namespace Glory\Component;
 
@@ -74,6 +74,7 @@ class FormBuilder
         $clasesInput = $opciones['extraClassInput'] ?? '';
         $placeholder = $opciones['placeholder'] ?? '';
         $limite = !empty($opciones['limite']) ? intval($opciones['limite']) : 0;
+        $minimo = !empty($opciones['minimo']) ? intval($opciones['minimo']) : 0;
         $obligatorio = $opciones['obligatorio'] ?? false;
         $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
 
@@ -83,7 +84,7 @@ class FormBuilder
                 <? if ($label): ?>
                     <label for="<? echo esc_attr($id) ?>"><? echo esc_html($label) ?><? if ($obligatorio): ?><span class="obligatorio">*</span><? endif; ?></label>
                 <? endif; ?>
-                <input type="text" id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" value="<? echo esc_attr($valor) ?>" class="<? echo esc_attr($clasesInput) ?>" <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?> />
+                <input type="text" id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" value="<? echo esc_attr($valor) ?>" class="<? echo esc_attr($clasesInput) ?>" <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($minimo): ?>data-minimo="<? echo $minimo ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?> />
             </div>
         <?
         return ob_get_clean();
@@ -99,6 +100,7 @@ class FormBuilder
         $clasesInput = $opciones['extraClassInput'] ?? '';
         $placeholder = $opciones['placeholder'] ?? '';
         $limite = !empty($opciones['limite']) ? intval($opciones['limite']) : 0;
+        $minimo = !empty($opciones['minimo']) ? intval($opciones['minimo']) : 0;
         $rows = !empty($opciones['rows']) ? intval($opciones['rows']) : 1;
         $obligatorio = $opciones['obligatorio'] ?? false;
         $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
@@ -109,7 +111,7 @@ class FormBuilder
                 <? if ($label): ?>
                     <label for="<? echo esc_attr($id) ?>"><? echo esc_html($label) ?><? if ($obligatorio): ?><span class="obligatorio">*</span><? endif; ?></label>
                 <? endif; ?>
-                <textarea id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" class="<? echo esc_attr($clasesInput) ?>" rows="<? echo $rows ?>" <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?>><? echo esc_textarea($valor) ?></textarea>
+                <textarea id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" class="<? echo esc_attr($clasesInput) ?>" rows="<? echo $rows ?>" <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($minimo): ?>data-minimo="<? echo $minimo ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?>><? echo esc_textarea($valor) ?></textarea>
             </div>
         <?
         return ob_get_clean();
@@ -127,7 +129,7 @@ class FormBuilder
         $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
         $obligatorio = $opciones['obligatorio'] ?? false;
         $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
-
+        $minimo = !empty($opciones['minimo']) ? intval($opciones['minimo']) : 0;
         $attachmentId = self::obtenerValorMeta($opciones);
         if (!empty($attachmentId)) {
             $imagenGuardada = wp_get_attachment_image($attachmentId, 'thumbnail');
@@ -140,7 +142,7 @@ class FormBuilder
         ?>
 
             <div class="<? echo esc_attr($clasesContenedor) ?>" <? if ($idPreview): ?>id="<? echo esc_attr($idPreview) ?>" <? endif; ?>><? echo $previewContent ?></div>
-            <input type="file" id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" style="display:none;" <? if ($accept): ?>accept="<? echo esc_attr($accept) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?> />
+            <input type="file" id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" style="display:none;" <? if ($accept): ?>accept="<? echo esc_attr($accept) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($minimo): ?>data-minimo="<? echo $minimo ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?> />
 
         <?
         return ob_get_clean();
