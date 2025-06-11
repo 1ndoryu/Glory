@@ -49,7 +49,6 @@ class OpcionManager
     {
         $config = OpcionRegistry::getDefinicion($key);
         if (!$config) {
-            // Esto no debería ocurrir si register() se llama justo antes.
             return;
         }
 
@@ -117,69 +116,61 @@ class OpcionManager
 
         return ['NO_HACER_NADA', null];
     }
-    
-    /**
-     * Define una opción si aún no existe en el registro. Usado para llamadas "al vuelo".
-     */
-    private static function definirSiNoExiste(string $key, $defaultParam, bool $escapar, ?string $titulo, ?string $seccion, ?string $subSeccion, ?string $desc, string $tipo): void
-    {
-        if (OpcionRegistry::getDefinicion($key) === null) {
-            self::register($key, [
-                'valorDefault' => $defaultParam,
-                'tipo' => $tipo,
-                'etiqueta' => $titulo,
-                'seccion' => $seccion,
-                'subSeccion' => $subSeccion,
-                'descripcion' => $desc,
-                'comportamientoEscape' => $escapar,
-            ]);
-        }
-    }
 
     /**
-     * Obtiene el valor de una opción. Este es el getter principal.
+     * Obtiene el valor de una opción. Este es el getter principal y único.
+     * Ya no define opciones al vuelo; la opción debe estar predefinida mediante register().
+     *
+     * @param string $key La clave única de la opción.
+     * @param mixed|null $valorPorDefecto Opcional. Valor a devolver si la opción no tiene un valor guardado.
+     * Si es null, se usará el 'valorDefault' de la definición.
+     * @return mixed El valor de la opción.
      */
-    public static function get(string $key, $defaultParam = '', bool $escapar = true, ?string $titulo = null, ?string $seccion = null, ?string $sub = null, ?string $desc = null, string $tipo = 'text')
+    public static function get(string $key, $valorPorDefecto = null)
     {
-        self::definirSiNoExiste($key, $defaultParam, $escapar, $titulo, $seccion, $sub, $desc, $tipo);
+        $config = OpcionRegistry::getDefinicion($key);
+
+        if (!$config) {
+            GloryLogger::warning("OpcionManager: Se intentó obtener la opción no definida '{$key}'. Es necesario definirla con OpcionManager::register().");
+            return $valorPorDefecto;
+        }
         
         $valorObtenido = OpcionRepository::get($key);
 
         if ($valorObtenido === OpcionRepository::getCentinela()) {
-            $config = OpcionRegistry::getDefinicion($key);
-            $valorFinal = $config['valorDefault'] ?? $defaultParam;
+            $valorFinal = $valorPorDefecto ?? $config['valorDefault'];
         } else {
             $valorFinal = $valorObtenido;
         }
 
-        $config = OpcionRegistry::getDefinicion($key);
-        $debeEscapar = $config['comportamientoEscape'] ?? $escapar;
+        $debeEscapar = $config['comportamientoEscape'] ?? false;
 
         if (is_string($valorFinal) && $debeEscapar) {
             return esc_html($valorFinal);
         }
+
         return $valorFinal;
     }
 
-    public static function texto(string $key, string $default = '', ?string $titulo = null, ?string $seccion = null, ?string $desc = null): string
+    public static function texto(string $key, string $default = ''): string
     {
-        return (string) self::get($key, $default, true, $titulo, $seccion, null, $desc, 'text');
+        return (string) self::get($key, $default);
     }
 
-    public static function richText(string $key, string $default = '', ?string $titulo = null, ?string $seccion = null, ?string $desc = null): string
+    public static function richText(string $key, string $default = ''): string
     {
-        $valor = self::get($key, $default, false, $titulo, $seccion, null, $desc, 'richText');
+        $valor = self::get($key, $default);
         return wp_kses_post((string)$valor);
     }
 
-    public static function imagen(string $key, string $default = '', ?string $titulo = null, ?string $seccion = null, ?string $desc = null): string
+    public static function imagen(string $key, string $default = ''): string
     {
-        return (string) self::get($key, $default, false, $titulo, $seccion, null, $desc, 'image');
+        return (string) self::get($key, $default);
     }
 
-    public static function menu(string $key, array $default = [], ?string $titulo = null, ?string $seccion = null, ?string $sub = null, ?string $desc = null): array
+    public static function menu(string $key, array $default = []): array
     {
-        $valor = self::get($key, $default, false, $titulo, $seccion, $sub, $desc, 'menu_structure');
+        $valor = self::get($key, $default);
         return is_array($valor) ? $valor : $default;
     }
 
