@@ -1,109 +1,241 @@
 /**
- * Gestiona la previsualización de imágenes para inputs de tipo "file",
- * incluyendo funcionalidad de arrastrar y soltar (drag and drop).
+ * Gestiona la previsualización interactiva de archivos (imágenes, audio, etc.)
+ * para inputs de tipo "file", soportando arrastrar y soltar (drag & drop) y
+ * selección por clic.
  *
- * La estructura HTML esperada es un contenedor padre (.imagenInput) con:
- * - Un elemento para previsualizar (.preview).
- * - Un input[type="file"].
+ * --- ESTRUCTURA HTML REQUERIDA ---
+ * Se necesita un contenedor principal con la clase `.previewContenedor`. Dentro de él,
+ * deben coexistir el input de archivo y el/los elemento(s) de previsualización.
  *
- * Se recomienda añadir estilos para la clase '.drag-over', por ejemplo:
- * <style>
- * .preview.drag-over {
- * border-color: #007bff;
- * border-style: dashed;
- * box-shadow: inset 0 0 10px rgba(0, 123, 255, 0.5);
- * }
- * </style>
+ * <div class="previewContenedor">
+ * * <input type="file" name="mi_archivo" style="display: none;">
+ *
+ * * <div class="previewImagen oculto">
+ * * </div>
+ *
+ * * <button type="button" class="botonPreviewImagen">Seleccionar Imagen</button>
+ * </div>
+ *
+ * --- CLASES DE PREVIEW Y BOTONES ---
+ * El script identifica los elementos por sus clases:
+ * - Previews: `.previewImagen`, `.previewAudio`, `.previewFile`. Usa `.oculto` para ocultarlos inicialmente.
+ * - Botones: `.botonPreviewImagen`, `.botonPreviewAudio`, `.botonPreviewFile`. Un clic en ellos activa el input.
+ * - Genérico: `.preview` puede usarse como fallback para imágenes.
+ *
+ * --- FUNCIONAMIENTO AUTOMÁTICO ---
+ * 1. Arrastrar y Soltar: Al arrastrar un archivo sobre `.previewContenedor`, el área
+ * de preview correspondiente al tipo de archivo se hará visible (quitando `.oculto`)
+ * y al soltar, se mostrará la previsualización.
+ * 2. Clic: Un clic en un botón (`.botonPreview...`) o en un área de preview ya visible
+ * abrirá el selector de archivos.
+ *
+ * --- ATRIBUTOS DE CONFIGURACIÓN (Opcionales) ---
+ * - data-uploadclick="true": En `.previewContenedor`, permite que un clic en cualquier
+ * parte del contenedor abra el selector de archivos.
+ * - data-preview-id="mi-id" y data-preview-for="mi-id": Permiten vincular manualmente
+ * un input y su preview si no están en la misma jerarquía `.previewContenedor`.
+ * - data-extrapreview=".selector": Muestra un elemento extra (usando un selector CSS)
+ * durante la operación de arrastre.
  */
-function previeImagen() {
+function gestionarPreviews() {
 
     /**
-     * Muestra un archivo de imagen en un elemento de previsualización.
-     * @param {File} archivo El archivo de imagen a mostrar.
-     * @param {HTMLElement} previewElement El elemento del DOM donde se mostrará la imagen.
+     * Muestra la previsualización de un archivo de imagen.
      */
-    function mostrarImagen(archivo, previewElement) {
-        // Valida que el archivo sea una imagen.
+    function mostrarImagen(archivo, elementoPreview) {
         if (!archivo || !archivo.type.startsWith('image/')) {
-            console.warn('El archivo proporcionado no es una imagen válida.');
+            console.warn('El archivo no es una imagen válida.');
+            elementoPreview.innerHTML = '<span class="preview-text">Archivo no válido</span>';
             return;
         }
-
         const lector = new FileReader();
         lector.onload = function(e) {
-            previewElement.innerHTML = ''; // Limpia el contenido anterior.
+            elementoPreview.innerHTML = '';
             const img = document.createElement('img');
             img.src = e.target.result;
             img.style.width = '100%';
             img.style.height = '100%';
             img.style.objectFit = 'contain';
-            previewElement.appendChild(img);
+            elementoPreview.appendChild(img);
         };
         lector.readAsDataURL(archivo);
     }
 
-    // --- Manejo de Clic para abrir selector de archivos ---
-    document.addEventListener('click', function(evento) {
-        const preview = evento.target.closest('.preview');
-        if (!preview) return;
-
-        const inputFile = preview.parentElement.querySelector('input[type="file"]');
-        if (inputFile) {
-            inputFile.click();
-        } else {
-            console.error('No se encontró un input[type="file"] asociado.', preview);
-        }
-    });
-
-    // --- Manejo de Selección de Archivo ---
-    document.addEventListener('change', function(evento) {
-        const inputFile = evento.target;
-        if (!inputFile.matches('input[type="file"]') || !inputFile.parentElement.querySelector('.preview')) {
-            return;
-        }
-
-        if (inputFile.files && inputFile.files[0]) {
-            const preview = inputFile.parentElement.querySelector('.preview');
-            mostrarImagen(inputFile.files[0], preview);
-        }
-    });
-
-    // --- Manejo de Arrastrar y Soltar (Drag and Drop) ---
-
-    // Previene el comportamiento por defecto cuando un archivo se arrastra sobre la zona.
-    document.addEventListener('dragover', function(evento) {
-        const preview = evento.target.closest('.preview');
-        if (preview) {
-            evento.preventDefault();
-            preview.classList.add('drag-over');
-        }
-    });
-
-    // Quita el indicador visual cuando el archivo sale de la zona.
-    document.addEventListener('dragleave', function(evento) {
-        const preview = evento.target.closest('.preview');
-        if (preview) {
-            evento.preventDefault();
-            preview.classList.remove('drag-over');
-        }
-    });
-
-    // Maneja el archivo cuando se suelta en la zona.
-    document.addEventListener('drop', function(evento) {
-        const preview = evento.target.closest('.preview');
-        if (preview) {
-            evento.preventDefault();
-            preview.classList.remove('drag-over');
-
-            const inputFile = preview.parentElement.querySelector('input[type="file"]');
-            const archivos = evento.dataTransfer.files;
-
-            if (inputFile && archivos && archivos.length > 0) {
-                inputFile.files = archivos; // Asigna el archivo soltado al input.
-                mostrarImagen(archivos[0], preview); // Muestra la previsualización.
+    /**
+     * Busca los componentes asociados (input y preview) con una lógica híbrida.
+     * @param {HTMLElement} origen - El elemento que inició la acción.
+     * @param {File|null} archivo - Opcional. El archivo para determinar el tipo de preview a buscar.
+     * @returns {{input: HTMLElement, preview: HTMLElement}|null}
+     */
+    function obtenerComponentes(origen, archivo = null) {
+        const previewPorId = origen.closest('[data-preview-id]');
+        if (previewPorId) {
+            const previewId = previewPorId.dataset.previewId;
+            const contenedorBusqueda = origen.closest('.previewContenedor') || document.body;
+            const inputPorFor = contenedorBusqueda.querySelector(`input[type="file"][data-preview-for="${previewId}"]`);
+            if (inputPorFor) {
+                return { input: inputPorFor, preview: previewPorId };
             }
         }
-    });
+        if (origen.matches('input[type="file"][data-preview-for]')) {
+            const previewId = origen.dataset.previewFor;
+            const contenedorBusqueda = origen.closest('.previewContenedor') || document.body;
+            const previewEncontrado = contenedorBusqueda.querySelector(`[data-preview-id="${previewId}"]`);
+            if (previewEncontrado) {
+                return { input: origen, preview: previewEncontrado };
+            }
+        }
+
+        const contenedor = origen.closest('.previewContenedor') || origen.parentElement;
+        if (!contenedor) return null;
+
+        let preview = null;
+        if (archivo) {
+            if (archivo.type.startsWith('image/')) {
+                preview = contenedor.querySelector('.previewImagen') || contenedor.querySelector('.preview');
+            } else if (archivo.type.startsWith('audio/')) {
+                preview = contenedor.querySelector('.previewAudio');
+            } else {
+                preview = contenedor.querySelector('.previewFile');
+            }
+        } else {
+            preview = origen.closest('.preview, .previewImagen, .previewAudio, .previewFile') ||
+                      contenedor.querySelector('.preview, .previewImagen, .previewAudio, .previewFile');
+        }
+
+        const input = contenedor.querySelector('input[type="file"]');
+        return (input && preview) ? { input, preview } : null;
+    }
+
+    function alHacerClick(evento) {
+        const botonPreview = evento.target.closest('[class*="botonPreview"]');
+        let inputADisparar = null;
+
+        if (botonPreview) {
+            const contenedor = botonPreview.closest('.previewContenedor');
+            if (contenedor) {
+                inputADisparar = contenedor.querySelector('input[type="file"]');
+            }
+        } else {
+            const zonaInteractiva = evento.target.closest('.preview, .previewImagen, .previewAudio, .previewFile, .previewContenedor');
+            if (zonaInteractiva) {
+                if (zonaInteractiva.matches('.previewContenedor') && zonaInteractiva.dataset.uploadclick !== 'true') {
+                    return;
+                }
+                const componentes = obtenerComponentes(zonaInteractiva, null);
+                if (componentes) {
+                    inputADisparar = componentes.input;
+                }
+            }
+        }
+
+        if (inputADisparar) {
+            inputADisparar.click();
+        }
+    }
+
+    function alCambiarArchivo(evento) {
+        if (!evento.target.matches('input[type="file"]')) return;
+        const input = evento.target;
+
+        if (!input.files || input.files.length === 0) return;
+
+        const archivo = input.files[0];
+        const componentes = obtenerComponentes(input, archivo);
+
+        if (componentes && componentes.preview) {
+            componentes.preview.classList.remove('oculto');
+            const contenedorPadre = componentes.preview.closest('.previewContenedor');
+            if (contenedorPadre) {
+                contenedorPadre.classList.remove('oculto');
+            }
+
+            if (archivo.type.startsWith('image/')) {
+                mostrarImagen(archivo, componentes.preview);
+            } else if (archivo.type.startsWith('audio/')) {
+                componentes.preview.innerHTML = `<span><svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V7h4V3h-6Z"/></svg> Audio: ${archivo.name}</span>`;
+            } else {
+                componentes.preview.innerHTML = `<span><svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Zm-1 13v-3h-2v3H9v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4h-2Zm-1-5a1 1 0 0 1-1-1V5.5L14.5 9H12Z"/></svg> Archivo: ${archivo.name}</span>`;
+            }
+        }
+    }
+
+    function alArrastrarSobre(evento) {
+        evento.preventDefault();
+        const contenedor = evento.target.closest('.previewContenedor');
+        if (!contenedor) return;
+
+        contenedor.classList.add('arrastrando');
+
+        if (evento.dataTransfer?.items?.length > 0) {
+            const tipo = evento.dataTransfer.items[0].type;
+            let previewTarget;
+            if (tipo.startsWith('image/')) {
+                previewTarget = contenedor.querySelector('.previewImagen') || contenedor.querySelector('.preview');
+            } else if (tipo.startsWith('audio/')) {
+                previewTarget = contenedor.querySelector('.previewAudio');
+            } else {
+                previewTarget = contenedor.querySelector('.previewFile');
+            }
+
+            if (previewTarget) {
+                previewTarget.classList.remove('oculto');
+                previewTarget.classList.add('arrastrando');
+            }
+        } else {
+            const previewDirecto = evento.target.closest('.preview, .previewImagen, .previewAudio, .previewFile');
+            if (previewDirecto) {
+                previewDirecto.classList.add('arrastrando');
+            }
+        }
+
+        if (contenedor.dataset.extrapreview) {
+            document.querySelectorAll(contenedor.dataset.extrapreview).forEach(el => {
+                el.classList.add('activo');
+                el.classList.remove('oculto');
+            });
+        }
+    }
+
+    function alDejarDeArrastrar(evento) {
+        const zonaDejada = evento.target.closest('.preview, .previewImagen, .previewAudio, .previewFile, .previewContenedor');
+
+        if (zonaDejada && !zonaDejada.contains(evento.relatedTarget)) {
+            const contenedor = zonaDejada.closest('.previewContenedor') || zonaDejada;
+            contenedor.classList.remove('arrastrando');
+            contenedor.querySelectorAll('.arrastrando').forEach(el => el.classList.remove('arrastrando'));
+
+            if (contenedor.dataset.extrapreview) {
+                document.querySelectorAll(contenedor.dataset.extrapreview).forEach(el => el.classList.remove('activo'));
+            }
+        }
+    }
+
+    function alSoltarArchivo(evento) {
+        const zonaDrop = evento.target.closest('.preview, .previewImagen, .previewAudio, .previewFile, .previewContenedor');
+        if (zonaDrop) {
+            evento.preventDefault();
+            const contenedor = zonaDrop.closest('.previewContenedor') || zonaDrop;
+            contenedor.classList.remove('arrastrando');
+            contenedor.querySelectorAll('.arrastrando').forEach(el => el.classList.remove('arrastrando'));
+
+            const archivos = evento.dataTransfer.files;
+            if (archivos?.length > 0) {
+                const componentes = obtenerComponentes(contenedor, archivos[0]);
+                if (componentes?.input) {
+                    componentes.input.files = archivos;
+                    const eventoChange = new Event('change', { bubbles: true });
+                    componentes.input.dispatchEvent(eventoChange);
+                }
+            }
+        }
+    }
+
+    document.addEventListener('click', alHacerClick);
+    document.addEventListener('change', alCambiarArchivo);
+    document.addEventListener('dragover', alArrastrarSobre);
+    document.addEventListener('dragleave', alDejarDeArrastrar);
+    document.addEventListener('drop', alSoltarArchivo);
 }
 
-document.addEventListener('gloryRecarga', previeImagen);
+document.addEventListener('gloryRecarga', gestionarPreviews);

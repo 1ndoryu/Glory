@@ -1,4 +1,5 @@
 <?
+
 namespace Glory\Component;
 
 class FormBuilder
@@ -11,20 +12,25 @@ class FormBuilder
         self::$currentMetaTarget = $opciones['metaTarget'] ?? null;
         self::$currentObjectId = !empty($opciones['objectId']) ? intval($opciones['objectId']) : null;
 
-        $id = !empty($opciones['id']) ? 'id="' . esc_attr($opciones['id']) . '"' : '';
-        $action = !empty($opciones['action']) ? 'action="' . esc_attr($opciones['action']) . '"' : 'javascript:void(0);';
-        $method = !empty($opciones['method']) ? 'method="' . esc_attr($opciones['method']) . '"' : 'post';
+        $id = $opciones['id'] ?? '';
+        $action = $opciones['action'] ?? 'javascript:void(0);';
+        $method = $opciones['method'] ?? 'post';
         $clases = 'gloryForm ' . ($opciones['extraClass'] ?? '');
-        
-        $metaTargetAttr = self::$currentMetaTarget ? 'data-meta-target="' . esc_attr(self::$currentMetaTarget) . '"' : '';
-        $objectIdAttr = self::$currentObjectId ? 'data-object-id="' . esc_attr(self::$currentObjectId) . '"' : '';
 
-        return "<div {$id} class=\"{$clases}\" action=\"{$action}\" method=\"{$method}\" {$metaTargetAttr} {$objectIdAttr}>";
+        ob_start();
+?>
+        <div <? if ($id): ?>id="<? echo esc_attr($id) ?>" <? endif; ?>
+            class="<? echo esc_attr($clases) ?>"
+            action="<? echo esc_attr($action) ?>"
+            method="<? echo esc_attr($method) ?>"
+            <? if (self::$currentMetaTarget): ?>data-meta-target="<? echo esc_attr(self::$currentMetaTarget) ?>" <? endif; ?>
+            <? if (self::$currentObjectId): ?>data-object-id="<? echo esc_attr(self::$currentObjectId) ?>" <? endif; ?>>
+        <?
+        return ob_get_clean();
     }
 
     public static function fin(): string
     {
-        // Limpiamos el estado estático al finalizar el formulario
         self::$currentMetaTarget = null;
         self::$currentObjectId = null;
         return "</div>";
@@ -33,8 +39,6 @@ class FormBuilder
     private static function obtenerValorMeta(array $opciones): string
     {
         $nombre = $opciones['nombre'] ?? '';
-        
-        // El contexto se toma de las propiedades estáticas de la clase
         $metaTarget = self::$currentMetaTarget;
         $objectId = self::$currentObjectId;
 
@@ -51,13 +55,13 @@ class FormBuilder
                     $usuario = get_userdata($userId);
                     return $usuario ? $usuario->user_login : '';
                 }
-                
+
                 return get_user_meta($userId, $nombre, true) ?? '';
 
             case 'post':
                 if (!$objectId) return '';
                 return get_post_meta($objectId, $nombre, true) ?? '';
-            
+
             default:
                 return '';
         }
@@ -67,57 +71,72 @@ class FormBuilder
     {
         $nombre = $opciones['nombre'] ?? '';
         $id = 'form-' . $nombre;
-        $label = !empty($opciones['label']) ? "<label for=\"{$id}\">" . esc_html($opciones['label']) . "</label>" : '';
-        
+        $label = $opciones['label'] ?? '';
         $valor = $opciones['valor'] ?? self::obtenerValorMeta($opciones);
-
-        $limite = !empty($opciones['limite']) ? 'data-limit="' . intval($opciones['limite']) . '"' : '';
-        $placeholder = !empty($opciones['placeholder']) ? 'placeholder="' . esc_attr($opciones['placeholder']) . '"' : '';
-        $clasesInput = $opciones['extraClassInput'] ?? '';
         $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
+        $clasesInput = $opciones['extraClassInput'] ?? '';
+        $placeholder = $opciones['placeholder'] ?? '';
+        $limite = !empty($opciones['limite']) ? intval($opciones['limite']) : 0;
 
-        $html = "
-    <div class=\"{$clasesContenedor}\">
-      {$label}
-      <input type=\"text\" id=\"{$id}\" name=\"{$nombre}\" value=\"" . esc_attr($valor) . "\" {$limite} {$placeholder} class=\"{$clasesInput}\" />
-    </div>";
-
-        return $html;
+        ob_start();
+        ?>
+            <div class="<? echo esc_attr($clasesContenedor) ?>">
+                <? if ($label): ?>
+                    <label for="<? echo esc_attr($id) ?>"><? echo esc_html($label) ?></label>
+                <? endif; ?>
+                <input type="text"
+                    id="<? echo esc_attr($id) ?>"
+                    name="<? echo esc_attr($nombre) ?>"
+                    value="<? echo esc_attr($valor) ?>"
+                    class="<? echo esc_attr($clasesInput) ?>"
+                    <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?>
+                    <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> />
+            </div>
+        <?
+        return ob_get_clean();
     }
 
     public static function campoTextarea(array $opciones): string
     {
         $nombre = $opciones['nombre'] ?? '';
         $id = 'form-' . $nombre;
-        $label = !empty($opciones['label']) ? "<label for=\"{$id}\">" . esc_html($opciones['label']) . "</label>" : '';
-
+        $label = $opciones['label'] ?? '';
         $valor = $opciones['valor'] ?? self::obtenerValorMeta($opciones);
-
-        $limite = !empty($opciones['limite']) ? 'data-limit="' . intval($opciones['limite']) . '"' : '';
-        $rows = !empty($opciones['rows']) ? 'rows="' . intval($opciones['rows']) . '"' : '';
-        $placeholder = !empty($opciones['placeholder']) ? 'placeholder="' . esc_attr($opciones['placeholder']) . '"' : '';
-        $clasesInput = $opciones['extraClassInput'] ?? '';
         $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
+        $clasesInput = $opciones['extraClassInput'] ?? '';
+        $placeholder = $opciones['placeholder'] ?? '';
+        $limite = !empty($opciones['limite']) ? intval($opciones['limite']) : 0;
+        $rows = !empty($opciones['rows']) ? intval($opciones['rows']) : 1;
 
-        $html = "
-    <div class=\"{$clasesContenedor}\">
-      {$label}
-      <textarea id=\"{$id}\" name=\"{$nombre}\" {$limite} {$rows} {$placeholder} class=\"{$clasesInput}\">" . esc_textarea($valor) . "</textarea>
-    </div>";
-
-        return $html;
+        ob_start();
+        ?>
+            <div class="<? echo esc_attr($clasesContenedor) ?>">
+                <? if ($label): ?>
+                    <label for="<? echo esc_attr($id) ?>"><? echo esc_html($label) ?></label>
+                <? endif; ?>
+                <textarea id="<? echo esc_attr($id) ?>"
+                    name="<? echo esc_attr($nombre) ?>"
+                    class="<? echo esc_attr($clasesInput) ?>"
+                    rows="<? echo $rows ?>"
+                    <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?>
+                    <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?>><? echo esc_textarea($valor) ?></textarea>
+            </div>
+        <?
+        return ob_get_clean();
     }
 
     public static function campoArchivo(array $opciones): string
     {
         $nombre = $opciones['nombre'] ?? '';
         $id = 'form-' . $nombre;
-        $idPreview = !empty($opciones['idPreview']) ? 'id="' . esc_attr($opciones['idPreview']) . '"' : '';
+        $idPreview = $opciones['idPreview'] ?? '';
         $textoPreview = $opciones['textoPreview'] ?? 'Seleccionar archivo';
         $previewContent = esc_html($textoPreview);
+        $accept = $opciones['accept'] ?? '';
+        $limite = !empty($opciones['limite']) ? intval($opciones['limite']) : 0;
+        $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
 
         $attachmentId = self::obtenerValorMeta($opciones);
-        
         if (!empty($attachmentId)) {
             $imagenGuardada = wp_get_attachment_image($attachmentId, 'thumbnail');
             if (!empty($imagenGuardada)) {
@@ -125,17 +144,19 @@ class FormBuilder
             }
         }
 
-        $limite = !empty($opciones['limite']) ? 'data-limit="' . intval($opciones['limite']) . '"' : '';
-        $accept = !empty($opciones['accept']) ? 'accept="' . esc_attr($opciones['accept']) . '"' : '';
-        $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
+        ob_start();
+        ?>
 
-        $html = "
-    <div class=\"{$clasesContenedor}\">
-      <div class=\"preview\" {$idPreview}>{$previewContent}</div>
-      <input type=\"file\" id=\"{$id}\" name=\"{$nombre}\" {$limite} {$accept} style=\"display:none;\" />
-    </div>";
+            <div class="<? echo esc_attr($clasesContenedor) ?>" <? if ($idPreview): ?>id="<? echo esc_attr($idPreview) ?>" <? endif; ?>><? echo $previewContent ?></div>
+            <input type="file"
+                id="<? echo esc_attr($id) ?>"
+                name="<? echo esc_attr($nombre) ?>"
+                style="display:none;"
+                <? if ($accept): ?>accept="<? echo esc_attr($accept) ?>" <? endif; ?>
+                <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> />
 
-        return $html;
+        <?
+        return ob_get_clean();
     }
 
     public static function campoCheckbox(array $opciones): string
@@ -144,27 +165,29 @@ class FormBuilder
         $id = 'form-' . $nombre;
         $label = $opciones['label'] ?? '';
         $valorInput = $opciones['valorInput'] ?? '1';
+        $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
+        $clasesLabel = $opciones['extraClassLabel'] ?? 'customCheckbox';
+        $tooltip = $opciones['tooltip'] ?? '';
+        $labelContent = $opciones['labelIcono'] ?? esc_html($label);
 
         $valorGuardado = self::obtenerValorMeta($opciones);
         $checked = !empty($valorGuardado) ? 'checked' : '';
 
-        $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
-        $clasesLabel = $opciones['extraClassLabel'] ?? 'customCheckbox';
-        $tooltip = !empty($opciones['tooltip']) ? 'data-tooltip="' . esc_attr($opciones['tooltip']) . '"' : '';
-
-        // El contenido del label puede ser texto o HTML (ej. un icono)
-        $labelContent = $opciones['labelIcono'] ?? esc_html($label);
-
-        $html = "
-        <div class=\"{$clasesContenedor}\">
-            <label for=\"{$id}\" class=\"{$clasesLabel}\" {$tooltip}>
-                <input type=\"checkbox\" id=\"{$id}\" name=\"{$nombre}\" value=\"{$valorInput}\" {$checked}>
-                <span class=\"checkmark\"></span>
-                {$labelContent}
-            </label>
-        </div>";
-
-        return $html;
+        ob_start();
+        ?>
+            <div class="<? echo esc_attr($clasesContenedor) ?>">
+                <label for="<? echo esc_attr($id) ?>" class="<? echo esc_attr($clasesLabel) ?>" <? if ($tooltip): ?>data-tooltip="<? echo esc_attr($tooltip) ?>" <? endif; ?>>
+                    <input type="checkbox"
+                        id="<? echo esc_attr($id) ?>"
+                        name="<? echo esc_attr($nombre) ?>"
+                        value="<? echo esc_attr($valorInput) ?>"
+                        <? echo $checked ?>>
+                    <span class="checkmark"></span>
+                    <? echo $labelContent ?>
+                </label>
+            </div>
+    <?
+        return ob_get_clean();
     }
 
     public static function botonEnviar(array $opciones): string

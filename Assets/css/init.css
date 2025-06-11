@@ -350,7 +350,7 @@ form {
 .customCheckbox {
 	display: flex;
 	cursor: pointer;
-	padding: 8px;
+	padding: 5px;
 	user-select: none;
 	color: #6b6b6b;
 	border: var(--borde);
@@ -434,6 +434,14 @@ input:focus, textarea:focus {
 /* Muestra el menú cuando está activo */
 .submenus.activo {
     display: flex;
+}
+
+.arrastrando {
+    filter: brightness(1.2);
+}
+
+.previewsForms.activo {
+  display: flex; /* o flex, grid, etc., según necesites */
 }
 
 /* Evita el scroll en el body cuando un menú está abierto */
