@@ -6,14 +6,14 @@ use DateTime;
 use DateTimeZone;
 use DateInterval;
 use Glory\Core\GloryLogger;
-use Glory\Manager\ContentManager; 
+use Glory\Manager\OpcionManager; 
 
 class ScheduleManager
 {
     public static function getScheduleData(string $key, array $defaultSchedule = [], ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null, string $content_type = 'schedule'): array
     {
-        // Internally call ContentManager::get() for the key.
-        $schedule_data = ContentManager::get($key, $defaultSchedule, false, $panel_title, $panel_section, null, $panel_description, $content_type);
+        // El único cambio es aquí: De ContentManager a OpcionManager
+        $schedule_data = OpcionManager::get($key, $defaultSchedule, false, $panel_title, $panel_section, null, $panel_description, $content_type);
 
         if (!is_array($schedule_data)) { 
             GloryLogger::error("SCHEDULE ERROR [$key]: Retrieved data is not an array. Value: " . print_r($schedule_data, true) . ". Falling back to default schedule parameter."); 

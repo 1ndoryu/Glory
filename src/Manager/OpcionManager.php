@@ -3,30 +3,25 @@
 namespace Glory\Manager;
 
 use Glory\Core\GloryLogger;
-use Glory\Helper\ScheduleManager;
+use Glory\Core\OpcionRegistry;
+use Glory\Core\OpcionRepository;
 
+/**
+ * Orquesta la lógica de negocio para las opciones del tema.
+ *
+ * Actúa como un Service/Facade que utiliza OpcionRegistry para las definiciones
+ * y OpcionRepository para el acceso a datos. Contiene la lógica de
+ * sincronización y es el punto de entrada principal para acceder a los valores
+ * de las opciones desde el resto de la aplicación.
+ */
 class OpcionManager
 {
-    const OPCION_PREFIJO = 'glory_opcion_';
-    const META_HASH_CODIGO_SUFIJO = '_code_hash_on_save';
-    const META_PANEL_GUARDADO_SUFIJO = '_is_panel_value';
-
-    private static array $opcionesRegistradas = [];
-    private static ?\stdClass $centinelaBd = null;
-
-    public static function initEstatico()
-    {
-        if (self::$centinelaBd === null) {
-            self::$centinelaBd = new \stdClass();
-        }
-    }
-
+    /**
+     * Define una opción, la registra y la sincroniza con la base de datos.
+     * Este es el método principal para declarar una opción desde el código.
+     */
     public static function register(string $key, array $configuracion = []): void
     {
-        if (self::$centinelaBd === null) {
-            self::initEstatico();
-        }
-
         $tipoDefault = $configuracion['tipo'] ?? 'text';
         $defaults = [
             'valorDefault' => '',
@@ -37,56 +32,45 @@ class OpcionManager
             'etiquetaSeccion' => ucfirst(str_replace(['_', '-'], ' ', $configuracion['seccion'] ?? 'general')),
             'descripcion' => '',
             'comportamientoEscape' => ($tipoDefault === 'text'),
-            'forzarDefault' => false,
             'forzarDefaultAlRegistrar' => false,
         ];
         $configParseada = wp_parse_args($configuracion, $defaults);
-        $defaultCodigoParaHash = $configParseada['valorDefault'];
-        $configParseada['hashVersionCodigo'] = md5(is_scalar($defaultCodigoParaHash) ? (string)$defaultCodigoParaHash : serialize($defaultCodigoParaHash));
+        
+        OpcionRegistry::define($key, $configParseada);
 
-        self::$opcionesRegistradas[$key] = $configParseada;
-
-        self::sincronizarOpcionRegistrada($key);
+        self::sincronizarOpcion($key);
     }
 
     /**
-     * Orquesta la sincronización de una opción, delegando la lectura,
-     * la decisión y la escritura a métodos especializados.
+     * Sincroniza una opción individual, comparando su estado en la base de datos
+     * con su definición en el código y aplicando la lógica necesaria.
      */
-    private static function sincronizarOpcionRegistrada(string $key): void
+    private static function sincronizarOpcion(string $key): void
     {
-        $config = self::$opcionesRegistradas[$key];
-        $estadoActual = self::_leerEstadoOpcion($key);
+        $config = OpcionRegistry::getDefinicion($key);
+        if (!$config) {
+            // Esto no debería ocurrir si register() se llama justo antes.
+            return;
+        }
 
-        list($accion, $mensajeLog) = self::_decidirAccionSincronizacion($config, $estadoActual);
+        $estadoActual = [
+            'valor' => OpcionRepository::get($key),
+        ] + OpcionRepository::getPanelMeta($key);
+
+        list($accion, $mensajeLog) = self::decidirAccionSincronizacion($config, $estadoActual);
 
         switch ($accion) {
             case 'SOBREESCRIBIR_CON_DEFAULT':
-                self::_escribirValorDefault($key, $config['valorDefault']);
+                OpcionRepository::save($key, $config['valorDefault']);
+                OpcionRepository::deletePanelMeta($key);
                 if ($mensajeLog) {
                     GloryLogger::info($mensajeLog);
                 }
                 break;
             case 'LIMPIAR_METADATOS':
-                self::_limpiarMetadatosPanel($key);
+                OpcionRepository::deletePanelMeta($key);
                 break;
         }
-    }
-
-    /**
-     * Lee el estado completo de una opción desde la base de datos.
-     * Encapsula todas las llamadas a get_option para una clave.
-     *
-     * @return array Un array con 'valor', 'esPanel', y 'hashPanel'.
-     */
-    private static function _leerEstadoOpcion(string $key): array
-    {
-        $nombreOpcion = self::OPCION_PREFIJO . $key;
-        return [
-            'valor' => get_option($nombreOpcion, self::$centinelaBd),
-            'esPanel' => get_option($nombreOpcion . self::META_PANEL_GUARDADO_SUFIJO, false),
-            'hashPanel' => get_option($nombreOpcion . self::META_HASH_CODIGO_SUFIJO, self::$centinelaBd),
-        ];
     }
 
     /**
@@ -95,153 +79,128 @@ class OpcionManager
      *
      * @return array Una tupla con la acción a tomar y un mensaje para el log.
      */
-    private static function _decidirAccionSincronizacion(array $config, array $estado): array
+    private static function decidirAccionSincronizacion(array $config, array $estado): array
     {
-        $key = $config['etiqueta']; // Usamos la etiqueta para el log, que es más legible
+        $key = $config['etiqueta'];
+        $centinela = OpcionRepository::getCentinela();
         $hashCodigoActual = $config['hashVersionCodigo'];
 
-        if ($config['forzarDefaultAlRegistrar'] ?? false) {
-            if ($estado['valor'] === self::$centinelaBd || $estado['valor'] !== $config['valorDefault']) {
+        if ($config['forzarDefaultAlRegistrar']) {
+            if ($estado['valor'] === $centinela || $estado['valor'] !== $config['valorDefault']) {
                 $mensaje = "OpcionManager: '{$key}' se actualizará a default de código debido a 'forzarDefaultAlRegistrar'.";
                 return ['SOBREESCRIBIR_CON_DEFAULT', $mensaje];
             }
         }
 
         if ($estado['esPanel']) {
-            if ($estado['hashPanel'] === self::$centinelaBd) {
-                $mensaje = "OpcionManager: '{$key}' (valor de panel) inconsistente (sin hash guardado). Se revierte a default de código.";
+            if ($estado['hashPanel'] === $centinela) {
+                $mensaje = "OpcionManager: '{$key}' (valor de panel) inconsistente (sin hash guardado). Se revierte a default.";
                 GloryLogger::error($mensaje);
                 return ['SOBREESCRIBIR_CON_DEFAULT', null];
             }
             if ($hashCodigoActual !== $estado['hashPanel']) {
-                $mensaje = "OpcionManager: '{$key}' (valor de panel) obsoleto (default de código cambió). Se revierte a default de código.";
+                $mensaje = "OpcionManager: '{$key}' (valor de panel) obsoleto (default de código cambió). Se revierte a default.";
                 GloryLogger::warning($mensaje);
                 return ['SOBREESCRIBIR_CON_DEFAULT', null];
             }
-            // Los hashes coinciden, el valor del panel es válido y se mantiene.
             return ['MANTENER_VALOR_PANEL', null];
         }
 
-        // No es valor de panel Y no se fuerza al registrar.
-        if ($estado['valor'] === self::$centinelaBd) {
+        if ($estado['valor'] === $centinela) {
             $mensaje = "OpcionManager: '{$key}' no existe en BD. Se establece a default de código.";
             return ['SOBREESCRIBIR_CON_DEFAULT', $mensaje];
         }
 
-        if (($config['forzarDefault'] ?? false) && $estado['valor'] !== $config['valorDefault']) {
-            $mensaje = "OpcionManager: '{$key}' se actualizará a default de código debido a 'forzarDefault' y diferencia con valor en BD.";
-            return ['SOBREESCRIBIR_CON_DEFAULT', $mensaje];
-        }
-
-        // El valor existe, no se fuerza y no es de panel. Limpiar metadatos por si acaso.
-        if ($estado['hashPanel'] !== self::$centinelaBd) {
+        if ($estado['hashPanel'] !== $centinela) {
             return ['LIMPIAR_METADATOS', null];
         }
 
         return ['NO_HACER_NADA', null];
     }
-
+    
     /**
-     * Escribe el valor por defecto de una opción en la base de datos y limpia sus metadatos de panel.
+     * Define una opción si aún no existe en el registro. Usado para llamadas "al vuelo".
      */
-    private static function _escribirValorDefault(string $key, $valorDefault): void
+    private static function definirSiNoExiste(string $key, $defaultParam, bool $escapar, ?string $titulo, ?string $seccion, ?string $subSeccion, ?string $desc, string $tipo): void
     {
-        $nombreOpcion = self::OPCION_PREFIJO . $key;
-        update_option($nombreOpcion, $valorDefault);
-        self::_limpiarMetadatosPanel($key);
-    }
-
-    /**
-     * Limpia los metadatos específicos de panel para una opción.
-     */
-    private static function _limpiarMetadatosPanel(string $key): void
-    {
-        $nombreOpcion = self::OPCION_PREFIJO . $key;
-        delete_option($nombreOpcion . self::META_PANEL_GUARDADO_SUFIJO);
-        delete_option($nombreOpcion . self::META_HASH_CODIGO_SUFIJO);
-    }
-
-    public static function getHashDefaultCodigo(string $key): ?string
-    {
-        if (isset(self::$opcionesRegistradas[$key]['hashVersionCodigo'])) {
-            return self::$opcionesRegistradas[$key]['hashVersionCodigo'];
-        }
-        if (isset(self::$opcionesRegistradas[$key]['valorDefault'])) {
-            $valorDefault = self::$opcionesRegistradas[$key]['valorDefault'];
-            return md5(is_scalar($valorDefault) ? (string)$valorDefault : serialize($valorDefault));
-        }
-        GloryLogger::error("Obtener Hash Default Código (getHashDefaultCodigo): CRÍTICO - No se encontró valor por defecto para la clave '{$key}'.");
-        return null;
-    }
-
-    private static function registrarAlVuelo(string $key, $valorDefault, string $tipo, ?string $etiqueta, ?string $seccion, ?string $subSeccion, ?string $descripcion, bool $comportamientoEscape): void
-    {
-        if (!isset(self::$opcionesRegistradas[$key])) {
+        if (OpcionRegistry::getDefinicion($key) === null) {
             self::register($key, [
-                'valorDefault' => $valorDefault,
+                'valorDefault' => $defaultParam,
                 'tipo' => $tipo,
-                'etiqueta' => $etiqueta,
+                'etiqueta' => $titulo,
                 'seccion' => $seccion,
                 'subSeccion' => $subSeccion,
-                'descripcion' => $descripcion,
-                'comportamientoEscape' => $comportamientoEscape,
+                'descripcion' => $desc,
+                'comportamientoEscape' => $escapar,
             ]);
         }
     }
 
-    public static function menu(string $key, array $estructuraDefault = [], ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $subSeccionPanel = null, ?string $descripcionPanel = null): array
+    /**
+     * Obtiene el valor de una opción. Este es el getter principal.
+     */
+    public static function get(string $key, $defaultParam = '', bool $escapar = true, ?string $titulo = null, ?string $seccion = null, ?string $sub = null, ?string $desc = null, string $tipo = 'text')
     {
-        $valor = self::get($key, $estructuraDefault, false, $tituloPanel, $seccionPanel, $subSeccionPanel, $descripcionPanel, 'menu_structure');
-        return is_array($valor) ? $valor : $estructuraDefault;
-    }
+        self::definirSiNoExiste($key, $defaultParam, $escapar, $titulo, $seccion, $sub, $desc, $tipo);
+        
+        $valorObtenido = OpcionRepository::get($key);
 
-    public static function get(string $key, $defaultParam = '', bool $escaparSalida = true, ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $subSeccionPanel = null, ?string $descripcionPanel = null, string $tipoContenido = 'text')
-    {
-        if (self::$centinelaBd === null) {
-            self::initEstatico();
+        if ($valorObtenido === OpcionRepository::getCentinela()) {
+            $config = OpcionRegistry::getDefinicion($key);
+            $valorFinal = $config['valorDefault'] ?? $defaultParam;
+        } else {
+            $valorFinal = $valorObtenido;
         }
 
-        self::registrarAlVuelo($key, $defaultParam, $tipoContenido, $tituloPanel, $seccionPanel, $subSeccionPanel, $descripcionPanel, $escaparSalida);
+        $config = OpcionRegistry::getDefinicion($key);
+        $debeEscapar = $config['comportamientoEscape'] ?? $escapar;
 
-        $nombreOpcion = self::OPCION_PREFIJO . $key;
-        $valorFinal = get_option($nombreOpcion, self::$centinelaBd);
-
-        if ($valorFinal === self::$centinelaBd) {
-            GloryLogger::error("Error GET para '{$key}': La opción '{$nombreOpcion}' NO SE ENCONTRÓ en la BD. Usando valor por defecto en memoria.");
-            $valorFinal = self::$opcionesRegistradas[$key]['valorDefault'] ?? $defaultParam;
-        }
-
-        $debeEscapar = self::$opcionesRegistradas[$key]['comportamientoEscape'] ?? $escaparSalida;
         if (is_string($valorFinal) && $debeEscapar) {
             return esc_html($valorFinal);
         }
         return $valorFinal;
     }
 
+    public static function texto(string $key, string $default = '', ?string $titulo = null, ?string $seccion = null, ?string $desc = null): string
+    {
+        return (string) self::get($key, $default, true, $titulo, $seccion, null, $desc, 'text');
+    }
+
+    public static function richText(string $key, string $default = '', ?string $titulo = null, ?string $seccion = null, ?string $desc = null): string
+    {
+        $valor = self::get($key, $default, false, $titulo, $seccion, null, $desc, 'richText');
+        return wp_kses_post((string)$valor);
+    }
+
+    public static function imagen(string $key, string $default = '', ?string $titulo = null, ?string $seccion = null, ?string $desc = null): string
+    {
+        return (string) self::get($key, $default, false, $titulo, $seccion, null, $desc, 'image');
+    }
+
+    public static function menu(string $key, array $default = [], ?string $titulo = null, ?string $seccion = null, ?string $sub = null, ?string $desc = null): array
+    {
+        $valor = self::get($key, $default, false, $titulo, $seccion, $sub, $desc, 'menu_structure');
+        return is_array($valor) ? $valor : $default;
+    }
+
     public static function resetSeccionDefaults(string $seccionSlugAResetear): array
     {
-        if (self::$centinelaBd === null) {
-            self::initEstatico();
-        }
-
         $resultadosReset = ['exito' => [], 'error' => [], 'noEncontradoOVacio' => true, 'camposProcesadosContador' => 0];
-        if (empty(self::$opcionesRegistradas)) {
+        $definiciones = OpcionRegistry::getDefiniciones();
+
+        if (empty($definiciones)) {
             return $resultadosReset;
         }
 
         $seccionExisteEnConfig = false;
-        foreach (self::$opcionesRegistradas as $key => $configCampo) {
-            $seccionCampoSlug = sanitize_title($configCampo['seccion'] ?? 'general');
-            if ($seccionCampoSlug !== $seccionSlugAResetear) {
+        foreach ($definiciones as $key => $config) {
+            if (sanitize_title($config['seccion'] ?? 'general') !== $seccionSlugAResetear) {
                 continue;
             }
 
             $seccionExisteEnConfig = true;
-            if (($configCampo['tipo'] ?? 'text') === 'menu_structure') {
-                continue;
-            }
-
-            self::_escribirValorDefault($key, $configCampo['valorDefault']);
+            OpcionRepository::save($key, $config['valorDefault']);
+            OpcionRepository::deletePanelMeta($key);
             $resultadosReset['exito'][] = $key;
             $resultadosReset['camposProcesadosContador']++;
         }
@@ -252,36 +211,12 @@ class OpcionManager
 
         return $resultadosReset;
     }
-
-    public static function texto(string $key, string $valorDefault = '', ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $descripcionPanel = null): string
-    {
-        return (string) self::get($key, $valorDefault, true, $tituloPanel, $seccionPanel, null, $descripcionPanel, 'text');
-    }
-
-    public static function richText(string $key, string $valorDefault = '', ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $descripcionPanel = null): string
-    {
-        $valor = self::get($key, $valorDefault, false, $tituloPanel, $seccionPanel, null, $descripcionPanel, 'richText');
-        return wp_kses_post((string)$valor);
-    }
-
-    public static function imagen(string $key, string $valorDefault = '', ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $descripcionPanel = null): string
-    {
-        return (string) self::get($key, $valorDefault, false, $tituloPanel, $seccionPanel, null, $descripcionPanel, 'image');
-    }
-
-    public static function horario(string $key, array $horarioDefault = [], ?string $tituloPanel = null, ?string $seccionPanel = null, ?string $descripcionPanel = null): array
-    {
-        self::registrarAlVuelo($key, $horarioDefault, 'schedule', $tituloPanel, $seccionPanel, null, $descripcionPanel, false);
-        return ScheduleManager::getScheduleData($key, $horarioDefault, $tituloPanel, $seccionPanel, $descripcionPanel, 'schedule');
-    }
-
-    public static function scheduleStatus(string $claveHorario, array $horarioDefault, string $zonaHoraria = 'Europe/Madrid'): array
-    {
-        return ScheduleManager::getCurrentScheduleStatus($claveHorario, $horarioDefault, $zonaHoraria);
-    }
-
+    
+    /**
+     * Devuelve las definiciones registradas. Actúa como un proxy a OpcionRegistry.
+     */
     public static function getDefinicionesRegistradas(): array
     {
-        return self::$opcionesRegistradas;
+        return OpcionRegistry::getDefiniciones();
     }
 }
