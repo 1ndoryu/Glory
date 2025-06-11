@@ -8,6 +8,7 @@ namespace Glory\Core;
  * Utiliza el sistema de logs nativo de PHP (error_log) en lugar de sistemas más pesados para el registro inmediato.
  * Los logs se acumulan en un buffer durante la ejecución y se escriben todos juntos al final del script (hook 'shutdown'),
  * optimizando el rendimiento. Permite configurar un nivel mínimo de log para controlar la verbosidad.
+ * @author @wandorius
  */
 class GloryLogger
 {
@@ -156,9 +157,11 @@ class GloryLogger
 
     /**
      * Obtiene el nombre de la función o método que invocó al logger.
+     *
      * Esta función analiza la traza de depuración para encontrar el origen de la llamada al log.
      * La lógica actual es adecuada para la mayoría de los casos en WordPress.
-     * Una posible mejora futura podría ser limitar la profundidad de búsqueda en debug_backtrace para optimizar ligeramente. - Jules
+     * Una posible mejora futura podría ser limitar la profundidad de búsqueda en `debug_backtrace`
+     * para optimizar ligeramente el rendimiento en entornos de alta carga.
      * @return string Nombre del llamador (Clase::metodo o funcion).
      */
     private static function getNombreLlamador(): string

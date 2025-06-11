@@ -1,32 +1,45 @@
 <?php
-// Glory/load.php
+/**
+ * Glory Framework - Punto de Entrada Principal.
+ *
+ * Este archivo es responsable de definir constantes básicas, cargar archivos de configuración
+ * e inicializar el núcleo del framework Glory.
+ *
+ * @author @wandorius
+ */
 namespace Glory;
 
 use Glory\Core\Setup;
 
-
-// Asegúrate de que las constantes estén definidas (si las usas aquí)
+// Asegura que las constantes necesarias del framework estén definidas.
 if (!defined('GLORY_FRAMEWORK_PATH')) {
-    define('GLORY_FRAMEWORK_PATH', __DIR__); // __DIR__ apunta al directorio actual (Glory)
+    // GLORY_FRAMEWORK_PATH: Ruta absoluta al directorio raíz del framework Glory.
+    // __DIR__ apunta al directorio actual del archivo (que se espera sea el directorio 'Glory').
+    define('GLORY_FRAMEWORK_PATH', __DIR__);
 }
 if (!defined('GLORY_CONFIG_PATH')) {
+    // GLORY_CONFIG_PATH: Ruta absoluta al directorio de configuración del framework.
     define('GLORY_CONFIG_PATH', GLORY_FRAMEWORK_PATH . '/Config');
 }
 
 // --- Carga Automática de Archivos de Configuración ---
+// Encuentra todos los archivos .php en el directorio de configuración.
+$configFiles = glob(GLORY_CONFIG_PATH . '/*.php');
 
-$config_files = glob(GLORY_CONFIG_PATH . '/*.php'); // Encuentra todos los archivos .php en Config/
-
-if ($config_files) {
-    foreach ($config_files as $config_file) {
-        if (is_readable($config_file)) {
-            require_once $config_file; // Carga cada archivo de configuración
+if ($configFiles) {
+    foreach ($configFiles as $configFile) {
+        if (is_readable($configFile)) {
+            // Carga cada archivo de configuración encontrado.
+            require_once $configFile;
         } else {
-            // Opcional: Registrar un error si un archivo no es legible
-            error_log("Glory Framework: No se pudo leer el archivo de configuración {$config_file}");
+            // Si un archivo de configuración no es legible, se registra un error.
+            // Se utiliza error_log directamente porque GloryLogger podría no estar inicializado aún.
+            error_log("Glory Framework: No se pudo leer el archivo de configuración: {$configFile}");
         }
     }
 }
-unset($config_files, $config_file); 
+// Limpia las variables del bucle para evitar contaminación del ámbito global.
+unset($configFiles, $configFile);
 
+// Inicializa el núcleo del framework.
 new Setup();
