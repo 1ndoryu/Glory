@@ -11,6 +11,8 @@ use Glory\Core\AssetManager; // Importa la clase base
  * @tarea Jules: Corregida implementación de AssetManager (uso de assetsDefinidos y método enqueueItems). Revisión general.
  * @tarea-completada Jules: Cambiada la visibilidad de enqueueItems a public para corregir error fatal con add_action.
  * @tarea-pendiente Jules: Revisar los métodos `define` y `defineFolder` para asegurar consistencia y optimización después de los cambios en AssetManager.
+ * @tarea-completada Jules: Corregida advertencia PHP por clave 'medios' no definida en enqueueItems usando un valor por defecto.
+ * @tarea-completada Jules: Asegurada la inclusión de la clave 'medios' por defecto en construirConfiguracionAssetDesdeCarpeta.
  */
 class StyleManager extends AssetManager // Hereda de AssetManager
 {
@@ -98,7 +100,7 @@ class StyleManager extends AssetManager // Hereda de AssetManager
             'ruta' => $rutaRelativaWeb,
             'dependencias' => $dependenciasDefault,
             'version' => null, // La versión se calculará en enqueueItems
-            'medios' => $opcionesDefault, // $opcionesDefault es $mediosDefault
+            'medios' => $opcionesDefault ?? 'all', // $opcionesDefault es $mediosDefault, por defecto 'all'
             'modoDesarrollo' => $modoDesarrollo,
             'identificador' => $identificador,
         ];
@@ -144,12 +146,15 @@ class StyleManager extends AssetManager // Hereda de AssetManager
                 $versionEstilo = ($esDesarrollo && file_exists($rutaArchivo)) ? (string)filemtime($rutaArchivo) : self::$versionTema;
             }
 
+            // Asegura que 'medios' tenga un valor por defecto si no está definido.
+            $medios = $definicionEstilo['medios'] ?? 'all'; // Valor por defecto 'all'
+
             wp_enqueue_style(
                 $handle,
                 $urlArchivo,
                 $definicionEstilo['dependencias'],
                 (string)$versionEstilo, // Asegura que la versión sea un string.
-                $definicionEstilo['medios']
+                $medios // Usa la variable con valor por defecto
             );
         }
     }
