@@ -1,4 +1,5 @@
 <?
+
 namespace Glory\Admin;
 
 use Glory\Admin\PanelDataProvider;
@@ -47,7 +48,7 @@ class OpcionPanelController
      * Gestiona los envíos de formularios y renderiza la página.
      * Esta función es el "controlador" principal de la página.
      */
-public function gestionarYRenderizarPagina(): void
+    public function gestionarYRenderizarPagina(): void
     {
         // 1. Gestión del envío de formularios (POST request)
         if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['glory_opciones_nonce']) && wp_verify_nonce($_POST['glory_opciones_nonce'], 'glory_guardar_opciones')) {
@@ -56,7 +57,6 @@ public function gestionarYRenderizarPagina(): void
                 // Acción de guardar: Llama al saver y muestra notificación.
                 $resultado = OpcionPanelSaver::guardarDesdePanel($_POST);
                 add_settings_error('glory_opciones', 'guardado_exitoso', "Se guardaron {$resultado['guardadas']} opciones.", 'success');
-
             } elseif (isset($_POST['resetear_seccion']) && !empty($_POST['seccion_a_resetear'])) {
                 // Acción de resetear: Llama al saver y muestra notificación.
                 $slugSeccion = sanitize_title($_POST['seccion_a_resetear']);
@@ -71,7 +71,7 @@ public function gestionarYRenderizarPagina(): void
         // 3. Renderizado de la vista
         settings_errors('glory_opciones');
 
-        // Llama al nuevo renderizador en lugar de incluir un archivo de vista.
+        // Llama al renderizador con el nombre de clase corregido.
         PanelRenderer::renderizar($datosParaVista);
     }
 }
