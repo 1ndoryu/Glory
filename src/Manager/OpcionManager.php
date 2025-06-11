@@ -12,6 +12,7 @@ use Glory\Core\OpcionRepository;
  * Actúa como una Fachada (Facade) para el subsistema de opciones, utilizando OpcionRegistry
  * para las definiciones y OpcionRepository para el acceso a datos.
  * Esta clase consolida las responsabilidades de OpcionManager y OpcionConfigurator.
+ * Principio de Responsabilidad Única (SRP) no aplica aqui porque tener register y get en una misma clase es mas facil de entender y usar!
  */
 class OpcionManager
 {
