@@ -13,7 +13,8 @@ use Glory\Core\GloryLogger;
  *
  * @author @wandorius
  * // @tarea Jules: Considerar la implementación de paginación para los resultados de búsqueda si el volumen de datos esperado es alto.
- * // @tarea Jules: Evaluar separar la responsabilidad de consulta de la responsabilidad de formateo de resultados en BusquedaService para un mejor SRP.
+ * // @tarea Jules: Evaluar separar la responsabilidad de consulta de la responsabilidad de formateo de resultados en BusquedaService para un mejor SRP. (Implementado parcialmente mediante métodos _formatearResultadoPost y _formatearResultadoUsuario)
+ * @tarea Jules: Refactorizado para separar consulta y formateo de resultados. Método buscarUsuarios renombrado a _buscarUsuariosPredeterminado.
  */
 class BusquedaService
 {
@@ -149,7 +150,8 @@ class BusquedaService
     /**
      * Realiza una búsqueda de posts predeterminada utilizando WP_Query.
      * Este método se usa como fallback si no se proporciona un manejador específico para un tipo 'post'
-     * o un tipo de contenido personalizado (CPT).
+     * o un tipo de contenido personalizado (CPT). Delega el formateo de cada post
+     * al método `_formatearResultadoPost`.
      *
      * @param string $tipoPostSlug Slug del tipo de post a buscar (ej. 'post', 'page', 'mi_cpt').
      * @param int $limite El número máximo de resultados a devolver.
@@ -169,14 +171,7 @@ class BusquedaService
         if ($query->have_posts()) {
             while ($query->have_posts()) {
                 $query->the_post();
-                // Prepara los argumentos para obtenerImagenPost, usando el post_type actual como posible meta_key.
-                $metaClavesParaImagen = ['imagenDestacada', $tipoPostSlug . '_imagen_destacada'];
-                $resultadosFormateados[] = [
-                    'titulo' => get_the_title(),
-                    'url'    => get_permalink(),
-                    'tipo'   => ucfirst(str_replace(['_', '-'], ' ', $tipoPostSlug)), // Nombre legible del tipo.
-                    'imagen' => $this->obtenerImagenPost(get_the_ID(), $metaClavesParaImagen),
-                ];
+                $resultadosFormateados[] = $this->_formatearResultadoPost(get_post(), $tipoPostSlug);
             }
         }
         wp_reset_postdata();
@@ -184,13 +179,36 @@ class BusquedaService
     }
 
     /**
+     * Formatea un objeto WP_Post para los resultados de búsqueda.
+     *
+     * @param \WP_Post $post Objeto del post a formatear.
+     * @param string $tipoPostSlug Slug del tipo de post (usado para generar el tipo legible y meta keys de imagen).
+     * @return array Datos del post formateados para la búsqueda.
+     * @author @wandorius (Refactorizado por Jules)
+     */
+    private function _formatearResultadoPost(\WP_Post $post, string $tipoPostSlug): array
+    {
+        // Nota: get_the_title(), get_permalink(), get_the_ID() funcionan con el post global.
+        // Es importante que the_post() haya sido llamado antes si se usan estas funciones directamente.
+        // En este caso, _buscarPostsPredeterminado hace the_post().
+        $metaClavesParaImagen = ['imagenDestacada', $tipoPostSlug . '_imagen_destacada'];
+        return [
+            'titulo' => get_the_title($post->ID),
+            'url'    => get_permalink($post->ID),
+            'tipo'   => ucfirst(str_replace(['_', '-'], ' ', $tipoPostSlug)),
+            'imagen' => $this->obtenerImagenPost($post->ID, $metaClavesParaImagen),
+        ];
+    }
+
+    /**
      * Realiza una búsqueda de usuarios predeterminada utilizando WP_User_Query.
      * Este método se usa como fallback si no se proporciona un manejador específico para el tipo 'usuario'.
+     * Delega el formateo de cada usuario al método `_formatearResultadoUsuario`.
      *
      * @param int $limite El número máximo de resultados a devolver.
      * @return array Lista de resultados formateados para usuarios.
      */
-    private function buscarUsuarios(int $limite): array
+    private function _buscarUsuariosPredeterminado(int $limite): array
     {
         $resultadosFormateados = [];
         $queryArgs = [
@@ -205,15 +223,27 @@ class BusquedaService
         $usuarios = $query->get_results();
         if (!empty($usuarios)) {
             foreach ($usuarios as $usuario) {
-                $resultadosFormateados[] = [
-                    'titulo' => $usuario->display_name,
-                    'url'  => get_author_posts_url($usuario->ID),
-                    'tipo' => 'Perfil', // Tipo de resultado específico para usuarios.
-                    'imagen' => get_avatar_url($usuario->ID),
-                ];
+                $resultadosFormateados[] = $this->_formatearResultadoUsuario($usuario);
             }
         }
         return $resultadosFormateados;
+    }
+
+    /**
+     * Formatea un objeto WP_User para los resultados de búsqueda.
+     *
+     * @param \WP_User $usuario Objeto del usuario a formatear.
+     * @return array Datos del usuario formateados para la búsqueda.
+     * @author @wandorius (Refactorizado por Jules)
+     */
+    private function _formatearResultadoUsuario(\WP_User $usuario): array
+    {
+        return [
+            'titulo' => $usuario->display_name,
+            'url'    => get_author_posts_url($usuario->ID),
+            'tipo'   => 'Perfil', // Tipo de resultado específico para usuarios.
+            'imagen' => get_avatar_url($usuario->ID),
+        ];
     }
 
     /**

@@ -26,6 +26,7 @@ use Glory\Helper\ScheduleManager;
  * y el sistema maneja conflictos o actualizaciones de manera predecible.
  *
  * @author @wandorius
+ * @tarea Jules: Corregidos errores de método indefinido (getLastMessage) y propiedad indefinida (contenidoRegistrado).
  * // @tarea Jules: Evaluar si la gestión de la UI (panel de opciones inferido) y la persistencia de datos en OpcionManager
  * // podrían separarse más claramente si se desarrolla un panel de administración complejo.
  */
@@ -161,7 +162,7 @@ class OpcionManager {
 
 		if ($sobrescribirConDefaultCodigo) {
 			update_option($nombreOpcion, $valorDefaultCodigo);
-			if (!empty($mensajeLog) && $mensajeLog !== GloryLogger::getLastMessage()) GloryLogger::info($mensajeLog); // Evitar logs duplicados si ya se hizo error/warning.
+			if (!empty($mensajeLog)) GloryLogger::info($mensajeLog); // Evitar logs duplicados si ya se hizo error/warning.
 
 			// Si se sobrescribe, siempre se limpian los flags de panel, ya que el valor del código toma precedencia.
 			if ($esValorPanelFlag) { delete_option($nombreOpcion . self::META_PANEL_GUARDADO_SUFIJO); }
@@ -191,12 +192,12 @@ class OpcionManager {
 	 * @return string|null El hash MD5 del valor por defecto, o null si no se puede calcular.
 	 */
 	public static function getHashDefaultCodigo(string $key): ?string {
-		if (isset(self::$contenidoRegistrado[$key]['hashVersionCodigo'])) {
-			return self::$contenidoRegistrado[$key]['hashVersionCodigo'];
+		if (isset(self::$opcionesRegistradas[$key]['hashVersionCodigo'])) {
+			return self::$opcionesRegistradas[$key]['hashVersionCodigo'];
 		}
 		// Fallback por si el hash no se calculó en el registro (no debería ocurrir).
-		if (isset(self::$contenidoRegistrado[$key]['valorDefault'])) {
-			$valorDefault = self::$contenidoRegistrado[$key]['valorDefault'];
+		if (isset(self::$opcionesRegistradas[$key]['valorDefault'])) {
+			$valorDefault = self::$opcionesRegistradas[$key]['valorDefault'];
 			return md5(is_scalar($valorDefault) ? (string)$valorDefault : serialize($valorDefault));
 		}
 		GloryLogger::error("Obtener Hash Default Código (getHashDefaultCodigo): CRÍTICO - No se encontró valor por defecto para la clave '{$key}' en el contenido registrado para calcular el hash. Esto indica un problema con el flujo de registro.");
@@ -221,7 +222,7 @@ class OpcionManager {
 	 * @param bool $comportamientoEscape Comportamiento de escapado.
 	 */
 	private static function registrarAlVuelo(string $key, $valorDefault, string $tipo, ?string $etiqueta, ?string $seccion, ?string $subSeccion, ?string $descripcion, bool $comportamientoEscape): void {
-		if (!isset(self::$contenidoRegistrado[$key])) {
+		if (!isset(self::$opcionesRegistradas[$key])) {
 			// Registra el contenido con la configuración proporcionada si aún no existe.
 			// Esto permite que los métodos get (texto, imagen, etc.) funcionen sin un registro explícito previo,
 			// usando los parámetros proporcionados como configuración temporal para la sincronización.
@@ -320,12 +321,12 @@ class OpcionManager {
 		// es un estado inesperado. Se recurre al valor por defecto en memoria.
 		if ($valorFinal === self::$centinelaBd) {
 			GloryLogger::error("Error GET para '{$key}': La opción '{$nombreOpcion}' NO SE ENCONTRÓ en la BD incluso después de que la lógica de sincronización en registrar() debería haberse ejecutado. Esto es inesperado. Se recurrirá al valor por defecto registrado en memoria para '{$key}'.");
-			$valorFinal = self::$contenidoRegistrado[$key]['valorDefault'] ?? $defaultParam;
+			$valorFinal = self::$opcionesRegistradas[$key]['valorDefault'] ?? $defaultParam;
 		}
 
 		// Aplica el escapado HTML si es una cadena y se ha solicitado.
 		// El comportamiento de escapado definido en el registro del campo tiene prioridad.
-		$debeEscapar = $self::$contenidoRegistrado[$key]['comportamientoEscape'] ?? $escaparSalida;
+		$debeEscapar = self::$opcionesRegistradas[$key]['comportamientoEscape'] ?? $escaparSalida;
 		if (is_string($valorFinal) && $debeEscapar) {
 			return esc_html($valorFinal);
 		}
@@ -355,12 +356,12 @@ class OpcionManager {
 		$resultadosReset = ['exito' => [], 'error' => [], 'noEncontradoOVacio' => false, 'camposProcesadosContador' => 0];
 		$seccionExisteEnConfig = false;
 
-		if (empty(self::$contenidoRegistrado)) {
+		if (empty(self::$opcionesRegistradas)) {
 			$resultadosReset['noEncontradoOVacio'] = true; // No hay campos registrados, nada que resetear.
 			return $resultadosReset;
 		}
 
-		foreach (self::$contenidoRegistrado as $key => $configCampo) {
+		foreach (self::$opcionesRegistradas as $key => $configCampo) {
 			$seccionCampoRaw = $configCampo['seccion'] ?? 'general';
 			$seccionCampoSlug = sanitize_title($seccionCampoRaw); // Normaliza el nombre de la sección a un slug.
 
@@ -496,7 +497,7 @@ class OpcionManager {
 		}
 		$camposConValoresActuales = [];
 
-		foreach (self::$contenidoRegistrado as $key => $configCampo) {
+		foreach (self::$opcionesRegistradas as $key => $configCampo) {
 			$nombreOpcion = self::OPCION_PREFIJO . $key;
 			$valorActualBd = get_option($nombreOpcion, self::$centinelaBd);
 
