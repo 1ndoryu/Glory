@@ -8,6 +8,7 @@ use Glory\Core\AssetManager; // Importa la clase base
  * Gestiona la definición, registro y puesta en cola de scripts JavaScript en WordPress.
  * Hereda de AssetManager para funcionalidades comunes de gestión de assets.
  * @author @wandorius
+ * @tarea Jules: Corregido error fatal de método abstracto no implementado.
  */
 class ScriptManager extends AssetManager // Hereda de AssetManager
 {
@@ -132,7 +133,7 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
      */
     public static function register(): void
     {
-        add_action('wp_enqueue_scripts', [self::class, 'enqueueScripts'], 20);
+        add_action('wp_enqueue_scripts', [self::class, 'enqueueItems'], 20);
     }
 
     /**
@@ -141,13 +142,13 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
      * Procesa cada script, determina su versión, lo registra y lo pone en cola,
      * además de localizar datos si se especificaron.
      */
-    public static function enqueueScripts(): void
+    protected static function enqueueItems(): void
     {
-        if (empty(self::$coleccionScripts)) {
+        if (empty(self::$assetsDefinidos)) { // Cambiado de self::$coleccionScripts a self::$assetsDefinidos
             return; // No hay scripts definidos para procesar.
         }
 
-        foreach (self::$coleccionScripts as $identificador => $definicionScript) {
+        foreach (self::$assetsDefinidos as $identificador => $definicionScript) { // Cambiado de self::$coleccionScripts a self::$assetsDefinidos
             // Si el script ya está en cola (ej. por otro plugin/tema o manualmente),
             // solo intenta localizar datos si es necesario y luego continúa.
             if (wp_script_is($identificador, 'enqueued')) {

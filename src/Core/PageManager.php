@@ -13,6 +13,7 @@ use Glory\Core\GloryLogger;
  * Se podría considerar a futuro un mecanismo para permitir que plugins o temas
  * extiendan o modifiquen las páginas definidas por el framework de forma segura.
  * @author @wandorius
+ * @tarea Jules: Revisión general de código y comentarios.
  */
 class PageManager {
     private const CLAVE_META_GESTION = '_page_manager_managed'; // Clave para marcar páginas gestionadas.
@@ -107,7 +108,7 @@ class PageManager {
     {
         $datosPagina = [
             'post_title' => $defPagina['titulo'],
-            'post_content' => "<!-- Página gestionada por Glory PageManager. Slug: {$defPagina['slug']} -->",
+            'post_content' => "<!-- Contenido autogenerado por Glory PageManager. Slug de referencia: {$defPagina['slug']}. Modificar directamente desde el editor de WordPress. -->",
             'post_status' => 'publish',
             'post_type' => 'page',
             'post_name' => $defPagina['slug'],

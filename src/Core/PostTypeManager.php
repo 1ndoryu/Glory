@@ -12,6 +12,7 @@ use WP_Post;
  * @author @wandorius
  * // @tarea Jules: Evaluar si la generación de etiquetas o el manejo de metaDefault podrían extraerse
  * // a clases colaboradoras si la complejidad de PostTypeManager aumenta significativamente.
+ * @tarea Jules: Revisión general de código y comentarios. Clarificada lógica de log en agregarMetaDefault.
  */
 class PostTypeManager
 {
@@ -237,10 +238,10 @@ class PostTypeManager
                 // Si add_post_meta devuelve false, significa que el meta ya existía o falló.
                 // Se verifica si el valor existente es una cadena vacía, lo que podría indicar un problema si se esperaba un valor.
                 if ($added === false) {
-                    $valorExistente = get_post_meta($idEntrada, $metaClave, true);
-                    if ($valorExistente === '') { // Solo loguear si el meta existente está vacío, ya que podría ser intencional que ya exista.
-                        GloryLogger::error("PostTypeManager (agregarMetaDefault): Falló al agregar el metadato '{$metaClave}' para el ID de entrada {$idEntrada} (el metadato ya existía pero estaba vacío).");
-                    }
+                    // add_post_meta con $unique = true devuelve false si la clave ya existe.
+                    // No se considera un error grave a menos que se necesite una lógica específica aquí.
+                    // Se podría loguear como advertencia si se quiere estar al tanto de los metas no añadidos.
+                    // GloryLogger::warning("PostTypeManager (agregarMetaDefault): Metadato '{$metaClave}' para ID {$idEntrada} no añadido porque ya existía.");
                 }
             }
         }

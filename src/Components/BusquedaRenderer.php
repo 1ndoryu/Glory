@@ -9,8 +9,8 @@ use Glory\Core\GloryLogger;
  * Transforma un array de datos de resultados en una representación HTML.
  * Es agnóstico a la fuente de los datos, simplemente los formatea.
  * @author @wandorius
- * // @tarea Jules: Considerar la implementación de un sistema de plantillas simple (ej. get_template_part)
- * // o filtros de WordPress para permitir una personalización más sencilla del HTML de los resultados de búsqueda.
+ * // @tarea Jules: MEJORA FUTURA - Considerar la implementación de un sistema de plantillas (ej. get_template_part o un sistema de micro-plantillas basado en closures/filtros) para permitir una personalización más sencilla y desacoplada del HTML de los resultados de búsqueda. Esta mejora aumentaría significativamente la flexibilidad del componente.
+ * @tarea Jules: Revisión de seguridad (escapado de HTML) y actualización de comentarios/tareas pendientes.
  */
 class BusquedaRenderer
 {
@@ -56,20 +56,22 @@ class BusquedaRenderer
      */
     private static function renderizarItem(array $item): string
     {
+        // Asegurar el escapado correcto de todas las variables para prevenir XSS.
         $url = !empty($item['url']) ? esc_url($item['url']) : '#';
         $titulo = !empty($item['titulo']) ? esc_html($item['titulo']) : 'Sin título';
-        $tipo = !empty($item['tipo']) ? $item['tipo'] : 'Desconocido';
+        $tipo = !empty($item['tipo']) ? esc_html($item['tipo']) : 'Desconocido'; // Escapar también el tipo por si se muestra directamente.
+        $claseTipo = sanitize_title(!empty($item['tipo']) ? $item['tipo'] : 'desconocido'); // Usar el tipo original para la clase, luego sanitizar.
 
         $imagenHtml = !empty($item['imagen'])
             ? sprintf(
                 '<img class="resultadoImagen" src="%s" alt="%s">',
-                esc_url($item['imagen']),
-                esc_attr($titulo)
+                esc_url($item['imagen']), // URL de imagen ya escapada.
+                esc_attr($titulo) // Título ya escapado, usado como alt.
             )
-            : '<div class="resultadoImagen placeholder"></div>';
+            : '<div class="resultadoImagen placeholder"></div>'; // Placeholder si no hay imagen.
 
-        $claseTipo = sanitize_title($tipo);
-
+        // El HTML se genera usando sprintf para mayor claridad.
+        // Todas las variables dinámicas ($url, $claseTipo, $titulo, $tipo) ya están escapadas.
         return sprintf(
             '<a href="%s" class="resultadoEnlace">
 				<div class="resultadoItem %s">
@@ -80,11 +82,11 @@ class BusquedaRenderer
 					</div>
 				</div>
 			</a>',
-            $url,
-            esc_attr($claseTipo),
-            $imagenHtml,
-            $titulo,
-            esc_html($tipo)
+            $url, // Ya escapada
+            esc_attr($claseTipo), // Sanitizada y luego escapada como atributo de clase
+            $imagenHtml, // Contiene HTML seguro (img con URL y alt escapados, o div placeholder)
+            $titulo, // Ya escapada
+            $tipo    // Ya escapada
         );
     }
 }

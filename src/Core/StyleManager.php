@@ -8,6 +8,7 @@ use Glory\Core\AssetManager; // Importa la clase base
  * Gestiona la definición, registro y puesta en cola de hojas de estilo CSS en WordPress.
  * Hereda de AssetManager para funcionalidades comunes de gestión de assets.
  * @author @wandorius
+ * @tarea Jules: Corregida implementación de AssetManager (uso de assetsDefinidos y método enqueueItems). Revisión general.
  */
 class StyleManager extends AssetManager // Hereda de AssetManager
 {
@@ -108,7 +109,7 @@ class StyleManager extends AssetManager // Hereda de AssetManager
     public static function register(): void {
         // Se usa una prioridad de 15 para asegurar que se ejecute después de registros base,
         // pero antes de la puesta en cola principal de scripts (prioridad 20 en ScriptManager).
-        add_action('wp_enqueue_scripts', [self::class, 'enqueueStyles'], 15);
+        add_action('wp_enqueue_scripts', [self::class, 'enqueueItems'], 15);
     }
 
     /**
@@ -116,12 +117,12 @@ class StyleManager extends AssetManager // Hereda de AssetManager
      * Este método es llamado por el hook 'wp_enqueue_scripts'.
      * Procesa cada estilo, determina su versión, y lo pone en cola.
      */
-    public static function enqueueStyles(): void {
-        if (empty(self::$estilos)) {
+    protected static function enqueueItems(): void {
+        if (empty(self::$assetsDefinidos)) {
             return; // No hay estilos definidos para procesar.
         }
 
-        foreach (self::$estilos as $handle => $definicionEstilo) {
+        foreach (self::$assetsDefinidos as $handle => $definicionEstilo) {
             // Normaliza la ruta relativa y construye la ruta física y la URL del archivo.
             $rutaRelativa = ltrim($definicionEstilo['ruta'], '/\\');
             $rutaArchivo = get_template_directory() . '/' . $rutaRelativa; // Ruta física al archivo.
