@@ -1,26 +1,33 @@
-
 window.inicializarAlerta = function () {
-    window.originalAlert = window.alert;
-    window.originalConfirm = window.confirm;
+    let notificationContainer = document.getElementById('glory-notification-container');
+    if (!notificationContainer) {
+        notificationContainer = document.createElement('div');
+        notificationContainer.id = 'glory-notification-container';
+        document.body.appendChild(notificationContainer);
+    }
 
-    window.alert = (message) => {
-        return showCustomNotification(message, 'alert');
-    };
+    // Sobrescribe alert y confirm solo si no han sido personalizados previamente.
+    if (!window.alert.isCustom) {
+        window.originalAlert = window.alert;
+        window.alert = (message) => showCustomNotification(message, 'alert');
+        window.alert.isCustom = true;
+    }
 
-    window.confirm = (message) => {
-        return showCustomNotification(message, 'confirm');
-    };
+    if (!window.confirm.isCustom) {
+        window.originalConfirm = window.confirm;
+        window.confirm = (message) => showCustomNotification(message, 'confirm');
+        window.confirm.isCustom = true;
+    }
 
     function showCustomNotification(message, type) {
         return new Promise((resolve) => {
             const notificationDiv = document.createElement('div');
-            notificationDiv.className = `custom-notification${type === 'confirm'? ' alertop' : ''}`;
+            notificationDiv.className = `custom-notification${type === 'confirm' ? ' alertop' : ''}`;
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'notification-content';
             contentDiv.textContent = message;
             notificationDiv.appendChild(contentDiv);
-            
 
             const modalBackground = document.getElementById('modalBackground');
             if (modalBackground && type === 'confirm') {
@@ -42,21 +49,20 @@ window.inicializarAlerta = function () {
 
                 const confirmButton = document.createElement('button');
                 confirmButton.textContent = 'Confirmar';
-                confirmButton.className = 'botonprincipal'; 
+                confirmButton.className = 'botonprincipal';
                 confirmButton.onclick = () => {
                     closeNotification(true);
                 };
 
                 const cancelButton = document.createElement('button');
                 cancelButton.textContent = 'Cancelar';
-                cancelButton.className = 'botonsecundario'; 
+                cancelButton.className = 'botonsecundario';
                 cancelButton.onclick = () => {
                     closeNotification(false);
                 };
 
-                buttonsDiv.appendChild(cancelButton); 
+                buttonsDiv.appendChild(cancelButton);
                 buttonsDiv.appendChild(confirmButton);
-
                 notificationDiv.appendChild(buttonsDiv);
             } else {
                 setTimeout(() => {
@@ -64,12 +70,20 @@ window.inicializarAlerta = function () {
                 }, 3000);
             }
 
-            document.body.appendChild(notificationDiv);
+            // Añade la notificación al contenedor principal
+            notificationContainer.appendChild(notificationDiv);
 
             function closeNotification(result) {
-                if (notificationDiv) {
-                    document.body.removeChild(notificationDiv);
-                }
+                // Agrega una clase para la animación de salida
+                notificationDiv.classList.add('notification-fade-out');
+
+                // Elimina el elemento del DOM después de que termine la animación
+                notificationDiv.addEventListener('animationend', () => {
+                    if (notificationContainer.contains(notificationDiv)) {
+                        notificationContainer.removeChild(notificationDiv);
+                    }
+                }, { once: true });
+
                 if (modalBackground && type === 'confirm') {
                     modalBackground.style.display = 'none';
                     modalBackground.style.visibility = 'hidden';
