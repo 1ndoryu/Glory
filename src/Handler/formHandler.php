@@ -22,6 +22,7 @@ class FormHandler
 
         try {
             /*
+            desactivado temporalmente
             if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'glory_nonce')) {
                 throw new \Exception('Falló la verificación de seguridad (nonce).');
             }
