@@ -173,41 +173,4 @@ class OpcionManager
         $valor = self::get($key, $default);
         return is_array($valor) ? $valor : $default;
     }
-
-    public static function resetSeccionDefaults(string $seccionSlugAResetear): array
-    {
-        $resultadosReset = ['exito' => [], 'error' => [], 'noEncontradoOVacio' => true, 'camposProcesadosContador' => 0];
-        $definiciones = OpcionRegistry::getDefiniciones();
-
-        if (empty($definiciones)) {
-            return $resultadosReset;
-        }
-
-        $seccionExisteEnConfig = false;
-        foreach ($definiciones as $key => $config) {
-            if (sanitize_title($config['seccion'] ?? 'general') !== $seccionSlugAResetear) {
-                continue;
-            }
-
-            $seccionExisteEnConfig = true;
-            OpcionRepository::save($key, $config['valorDefault']);
-            OpcionRepository::deletePanelMeta($key);
-            $resultadosReset['exito'][] = $key;
-            $resultadosReset['camposProcesadosContador']++;
-        }
-
-        if ($seccionExisteEnConfig && $resultadosReset['camposProcesadosContador'] > 0) {
-            $resultadosReset['noEncontradoOVacio'] = false;
-        }
-
-        return $resultadosReset;
-    }
-    
-    /**
-     * Devuelve las definiciones registradas. Actúa como un proxy a OpcionRegistry.
-     */
-    public static function getDefinicionesRegistradas(): array
-    {
-        return OpcionRegistry::getDefiniciones();
-    }
 }
