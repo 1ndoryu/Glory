@@ -1,5 +1,5 @@
 <?
-//nota: me gustaría usar clases camelCase, cortas y en español
+//nota: me gustaría usar clases camelCase, cortas y en español, no me gusta plantillas, me gusta agrupar en funciones el codigo y luego usarlo cuando quiera. 
 /**
  * Vista para el panel de opciones de Glory.
  *
@@ -9,7 +9,7 @@
  * @var array $datosParaVista Datos completos de las opciones a renderizar.
  */
 
-// 1. Agrupar opciones por sección y sub-sección para facilitar el renderizado.
+/*
 $opcionesAgrupadas = [];
 if (!empty($datosParaVista)) {
     foreach ($datosParaVista as $key => $config) {
@@ -108,3 +108,4 @@ if (!empty($datosParaVista)) {
         </div>
     </div>
 </div>
+*/
