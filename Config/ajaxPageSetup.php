@@ -10,7 +10,7 @@ use Glory\Core\AssetManager;
 AssetManager::define(
     'script',                                           // Tipo de asset
     'gloryAjaxNav',                                     // Handle único
-    '/Assets/js/genericAjax/gloryAjaxNav.js',           // Ruta al archivo JS
+    '/Glory/assets/js/genericAjax/gloryAjaxNav.js',           // Ruta al archivo JS
     [                                                   // Array de configuración
         'deps'      => ['jquery'],
         'in_footer' => true,

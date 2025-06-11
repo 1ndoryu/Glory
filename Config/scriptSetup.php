@@ -17,7 +17,7 @@ use Glory\Core\AssetManager;
 // Definición de todos los scripts en la carpeta de JavaScript.
 AssetManager::defineFolder(
     'script',                                  // Tipo de asset
-    '/Assets/js/',                             // Ruta de la carpeta relativa al tema
+    '/Glory/assets/js/',                             // Ruta de la carpeta relativa al tema
     [                                          // Configuración por defecto para estos scripts
         'deps'      => ['jquery'],
         'in_footer' => true,
@@ -32,7 +32,7 @@ AssetManager::defineFolder(
 // Definición de todos los estilos en la carpeta de CSS.
 AssetManager::defineFolder(
     'style',                                   // Tipo de asset
-    '/Assets/css/',                            // Ruta de la carpeta relativa al tema
+    '/Glory/assets/css/',                            // Ruta de la carpeta relativa al tema
     [                                          // Configuración por defecto para estos estilos
         'deps'  => [],
         'media' => 'all',
