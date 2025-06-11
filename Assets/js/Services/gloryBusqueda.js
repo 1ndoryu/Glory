@@ -1,3 +1,4 @@
+// @tarea-pendiente Jules: Realizar una revisión más exhaustiva de este archivo JavaScript en una tarea futura para optimización y refactorización avanzada.
 /**
  * Gestiona todas las funcionalidades de búsqueda dinámica en el sitio.
  * Se inicializa en el evento 'gloryRecarga' y se asocia a los inputs
@@ -60,7 +61,7 @@ function gloryBusqueda() {
      * @param {HTMLElement} contenedor - El elemento donde se mostrarán los resultados.
      */
     async function ejecutarBusqueda(texto, config, contenedor) {
-        console.log(`Ejecutando búsqueda para: "${texto}"`);
+        // console.log(`Ejecutando búsqueda para: "${texto}"`); // Log opcional para depuración
         const datosParaEnviar = {
             texto: texto,
             tipos: config.tipos,

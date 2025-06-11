@@ -9,6 +9,8 @@ use Glory\Core\AssetManager; // Importa la clase base
  * Hereda de AssetManager para funcionalidades comunes de gestión de assets.
  * @author @wandorius
  * @tarea Jules: Corregida implementación de AssetManager (uso de assetsDefinidos y método enqueueItems). Revisión general.
+ * @tarea-completada Jules: Cambiada la visibilidad de enqueueItems a public para corregir error fatal con add_action.
+ * @tarea-pendiente Jules: Revisar los métodos `define` y `defineFolder` para asegurar consistencia y optimización después de los cambios en AssetManager.
  */
 class StyleManager extends AssetManager // Hereda de AssetManager
 {
@@ -27,7 +29,7 @@ class StyleManager extends AssetManager // Hereda de AssetManager
      * @param string $medios Tipo de medio (ej: 'all', 'screen').
      * @param bool|null $modoDesarrolloEspecifico Modo desarrollo para este estilo.
      */
-    public static function define( // Mantiene la firma original para compatibilidad
+    public static function define(
         string $handle, // Nombre único del estilo
         ?string $rutaCss = null, // Ruta al archivo CSS, relativa al tema
         array $dependencias = [], // Otros estilos de los que depende
@@ -62,7 +64,7 @@ class StyleManager extends AssetManager // Hereda de AssetManager
      * @param string $prefijoManejador Prefijo para los handles generados.
      * @param array $archivosExcluidos Archivos a excluir.
      */
-    public static function defineFolder( // Mantiene la firma para compatibilidad
+    public static function defineFolder(
         string $rutaRelativaCarpeta = 'css', // Carpeta por defecto para CSS
         array $dependenciasDefault = [],
         string $mediosDefault = 'all', // Opción específica de CSS
@@ -117,7 +119,7 @@ class StyleManager extends AssetManager // Hereda de AssetManager
      * Este método es llamado por el hook 'wp_enqueue_scripts'.
      * Procesa cada estilo, determina su versión, y lo pone en cola.
      */
-    protected static function enqueueItems(): void {
+    public static function enqueueItems(): void {
         if (empty(self::$assetsDefinidos)) {
             return; // No hay estilos definidos para procesar.
         }
@@ -129,7 +131,7 @@ class StyleManager extends AssetManager // Hereda de AssetManager
             $urlArchivo = get_template_directory_uri() . '/' . $rutaRelativa; // URL del archivo.
 
             if (!file_exists($rutaArchivo)) {
-                GloryLogger::error("El archivo de estilo '{$rutaArchivo}' para el manejador '{$handle}' no fue encontrado. Se omite su puesta en cola.");
+                GloryLogger::error("StyleManager: Archivo de estilo '{$rutaArchivo}' (handle: '{$handle}') no encontrado. Se omite.");
                 continue;
             }
 
