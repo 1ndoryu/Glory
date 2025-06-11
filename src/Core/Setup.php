@@ -2,6 +2,7 @@
 namespace Glory\Core;
 
 use Glory\Handler\FormHandler;
+use Glory\Core\OpcionConfigurator;
 
 /**
  * Clase de inicialización principal.
@@ -16,11 +17,14 @@ class Setup
      */
     public function __construct()
     {
+        // Inicializa el sistema de logging.
+        GloryLogger::init();
+
         // Inicializa el manejador de formularios.
         new FormHandler();
         
-        // Inicializa el sistema de logging.
-        GloryLogger::init();
+        // Inicializa y engancha el sincronizador de opciones del tema.
+        OpcionConfigurator::inicializarSincronizacion();
 
         // Ejemplo de cómo se podrían inicializar otros componentes en el futuro:
         // new \Glory\Service\OtroServicio(); // Activa un nuevo servicio.

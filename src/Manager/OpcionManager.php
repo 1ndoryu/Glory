@@ -7,119 +7,20 @@ use Glory\Core\OpcionRegistry;
 use Glory\Core\OpcionRepository;
 
 /**
- * Orquesta la lógica de negocio para las opciones del tema.
+ * Gestiona el acceso en tiempo de ejecución a los valores de las opciones.
  *
  * Actúa como un Service/Facade que utiliza OpcionRegistry para las definiciones
- * y OpcionRepository para el acceso a datos. Contiene la lógica de
- * sincronización y es el punto de entrada principal para acceder a los valores
- * de las opciones desde el resto de la aplicación.
+ * y OpcionRepository para el acceso a datos. Su única responsabilidad es
+ * proveer una API simple y segura para OBTENER los valores de las opciones
+ * desde cualquier parte de la aplicación.
+ *
+ * La lógica de registro y sincronización fue movida a Glory\Core\OpcionConfigurator.
  */
 class OpcionManager
 {
     /**
-     * Define una opción, la registra y la sincroniza con la base de datos.
-     * Este es el método principal para declarar una opción desde el código.
-     */
-    public static function register(string $key, array $configuracion = []): void
-    {
-        $tipoDefault = $configuracion['tipo'] ?? 'text';
-        $defaults = [
-            'valorDefault' => '',
-            'tipo' => $tipoDefault,
-            'etiqueta' => ucfirst(str_replace(['_', '-'], ' ', $key)),
-            'seccion' => 'general',
-            'subSeccion' => 'general',
-            'etiquetaSeccion' => ucfirst(str_replace(['_', '-'], ' ', $configuracion['seccion'] ?? 'general')),
-            'descripcion' => '',
-            'comportamientoEscape' => ($tipoDefault === 'text'),
-            'forzarDefaultAlRegistrar' => false,
-        ];
-        $configParseada = wp_parse_args($configuracion, $defaults);
-        
-        OpcionRegistry::define($key, $configParseada);
-
-        self::sincronizarOpcion($key);
-    }
-
-    /**
-     * Sincroniza una opción individual, comparando su estado en la base de datos
-     * con su definición en el código y aplicando la lógica necesaria.
-     */
-    private static function sincronizarOpcion(string $key): void
-    {
-        $config = OpcionRegistry::getDefinicion($key);
-        if (!$config) {
-            return;
-        }
-
-        $estadoActual = [
-            'valor' => OpcionRepository::get($key),
-        ] + OpcionRepository::getPanelMeta($key);
-
-        list($accion, $mensajeLog) = self::decidirAccionSincronizacion($config, $estadoActual);
-
-        switch ($accion) {
-            case 'SOBREESCRIBIR_CON_DEFAULT':
-                OpcionRepository::save($key, $config['valorDefault']);
-                OpcionRepository::deletePanelMeta($key);
-                if ($mensajeLog) {
-                    GloryLogger::info($mensajeLog);
-                }
-                break;
-            case 'LIMPIAR_METADATOS':
-                OpcionRepository::deletePanelMeta($key);
-                break;
-        }
-    }
-
-    /**
-     * Contiene la lógica pura de decisión para la sincronización.
-     * No interactúa con la base de datos, solo decide qué hacer.
-     *
-     * @return array Una tupla con la acción a tomar y un mensaje para el log.
-     */
-    private static function decidirAccionSincronizacion(array $config, array $estado): array
-    {
-        $key = $config['etiqueta'];
-        $centinela = OpcionRepository::getCentinela();
-        $hashCodigoActual = $config['hashVersionCodigo'];
-
-        if ($config['forzarDefaultAlRegistrar']) {
-            if ($estado['valor'] === $centinela || $estado['valor'] !== $config['valorDefault']) {
-                $mensaje = "OpcionManager: '{$key}' se actualizará a default de código debido a 'forzarDefaultAlRegistrar'.";
-                return ['SOBREESCRIBIR_CON_DEFAULT', $mensaje];
-            }
-        }
-
-        if ($estado['esPanel']) {
-            if ($estado['hashPanel'] === $centinela) {
-                $mensaje = "OpcionManager: '{$key}' (valor de panel) inconsistente (sin hash guardado). Se revierte a default.";
-                GloryLogger::error($mensaje);
-                return ['SOBREESCRIBIR_CON_DEFAULT', null];
-            }
-            if ($hashCodigoActual !== $estado['hashPanel']) {
-                $mensaje = "OpcionManager: '{$key}' (valor de panel) obsoleto (default de código cambió). Se revierte a default.";
-                GloryLogger::warning($mensaje);
-                return ['SOBREESCRIBIR_CON_DEFAULT', null];
-            }
-            return ['MANTENER_VALOR_PANEL', null];
-        }
-
-        if ($estado['valor'] === $centinela) {
-            $mensaje = "OpcionManager: '{$key}' no existe en BD. Se establece a default de código.";
-            return ['SOBREESCRIBIR_CON_DEFAULT', $mensaje];
-        }
-
-        if ($estado['hashPanel'] !== $centinela) {
-            return ['LIMPIAR_METADATOS', null];
-        }
-
-        return ['NO_HACER_NADA', null];
-    }
-
-    /**
      * Obtiene el valor de una opción. Este es el getter principal y único.
-     * Ya no define opciones al vuelo; la opción debe estar predefinida mediante register().
+     * La opción debe estar previamente definida mediante OpcionConfigurator::register().
      *
      * @param string $key La clave única de la opción.
      * @param mixed|null $valorPorDefecto Opcional. Valor a devolver si la opción no tiene un valor guardado.
@@ -131,7 +32,7 @@ class OpcionManager
         $config = OpcionRegistry::getDefinicion($key);
 
         if (!$config) {
-            GloryLogger::warning("OpcionManager: Se intentó obtener la opción no definida '{$key}'. Es necesario definirla con OpcionManager::register().");
+            GloryLogger::warning("OpcionManager: Se intentó obtener la opción no definida '{$key}'. Es necesario definirla con OpcionConfigurator::register().");
             return $valorPorDefecto;
         }
         
