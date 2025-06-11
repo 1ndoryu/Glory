@@ -3,6 +3,7 @@ namespace Glory\Admin;
 
 use Glory\Admin\PanelDataProvider;
 use Glory\Admin\OpcionPanelSaver;
+use Glory\Admin\PanelRenderer;
 
 /**
  * Orquesta la página de opciones del tema en el panel de administración.
@@ -46,7 +47,7 @@ class OpcionPanelController
      * Gestiona los envíos de formularios y renderiza la página.
      * Esta función es el "controlador" principal de la página.
      */
-    public function gestionarYRenderizarPagina(): void
+public function gestionarYRenderizarPagina(): void
     {
         // 1. Gestión del envío de formularios (POST request)
         if ('POST' === $_SERVER['REQUEST_METHOD'] && isset($_POST['glory_opciones_nonce']) && wp_verify_nonce($_POST['glory_opciones_nonce'], 'glory_guardar_opciones')) {
@@ -65,19 +66,12 @@ class OpcionPanelController
         }
 
         // 2. Preparación de datos para la vista
-        // Llama al data provider para obtener todos los datos necesarios.
         $datosParaVista = PanelDataProvider::obtenerDatosParaPanel();
 
         // 3. Renderizado de la vista
-        // Muestra cualquier notificación de WordPress registrada.
         settings_errors('glory_opciones');
 
-        // Carga el archivo de la vista. Se pasa $datosParaVista para que esté disponible en ese scope.
-        $rutaVista = GLORY_FRAMEWORK_PATH . '/view/admin/panelOpcionesView.php';
-        if (file_exists($rutaVista)) {
-            include $rutaVista;
-        } else {
-            echo '<div class="notice notice-error"><p>Error Crítico: No se encuentra el archivo de la vista para el panel de opciones.</p></div>';
-        }
+        // Llama al nuevo renderizador en lugar de incluir un archivo de vista.
+        PanelRenderer::renderizar($datosParaVista);
     }
 }
