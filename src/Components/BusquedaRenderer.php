@@ -1,6 +1,4 @@
-<?
-// Glory/src/Components/BusquedaRenderer.php
-
+<?php
 namespace Glory\Components;
 
 use Glory\Core\GloryLogger;
@@ -10,6 +8,9 @@ use Glory\Core\GloryLogger;
  *
  * Transforma un array de datos de resultados en una representación HTML.
  * Es agnóstico a la fuente de los datos, simplemente los formatea.
+ * @author @wandorius
+ * // @tarea Jules: Considerar la implementación de un sistema de plantillas simple (ej. get_template_part)
+ * // o filtros de WordPress para permitir una personalización más sencilla del HTML de los resultados de búsqueda.
  */
 class BusquedaRenderer
 {

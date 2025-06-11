@@ -1,6 +1,4 @@
 <?php
-// Glory/src/Services/BusquedaService.php
-
 namespace Glory\Services;
 
 use WP_Query;
@@ -10,16 +8,20 @@ use Glory\Core\GloryLogger;
 /**
  * Gestiona la lógica de negocio para las operaciones de búsqueda en todo el sitio.
  *
- * Se encarga de ejecutar consultas para diferentes tipos de contenido (posts, usuarios)
+ * Se encarga de ejecutar consultas para diferentes tipos de contenido (posts, usuarios, o tipos personalizados mediante manejadores)
  * y devolver los datos estructurados, listos para ser renderizados.
  *
- * *Comentario por Jules:* El servicio de búsqueda es bastante completo. Considerar la paginación
- * para los resultados de búsqueda si se esperan muchos ítems.
+ * @author @wandorius
+ * // @tarea Jules: Considerar la implementación de paginación para los resultados de búsqueda si el volumen de datos esperado es alto.
+ * // @tarea Jules: Evaluar separar la responsabilidad de consulta de la responsabilidad de formateo de resultados en BusquedaService para un mejor SRP.
  */
 class BusquedaService
 {
+    /** @var string El término de búsqueda sanitizado. */
     private string $terminoBusqueda;
+    /** @var array Configuración de los tipos de entidades a buscar y sus argumentos. */
     private array $configuracionBusqueda = [];
+    /** @var array Almacena los resultados de la búsqueda. */
     private array $resultados = [];
 
     /**
@@ -35,59 +37,100 @@ class BusquedaService
     /**
      * Agrega un tipo de contenido para incluir en la búsqueda.
      *
-     * @param string $tipoEntidad El identificador del tipo de entidad (ej. 'post', 'usuario').
-     * @param array $argumentos Argumentos específicos para este tipo de entidad de búsqueda.
-     * @return self Permite encadenar métodos.
+     * @param string $tipoEntidad Identificador único para el tipo de entidad (ej. 'post', 'usuario', 'productos_especiales').
+     *                            Esta clave se usará para almacenar los resultados.
+     * @param array $argumentos Argumentos específicos para la búsqueda de esta entidad.
+     *                          Para tipos predeterminados como 'post', puede incluir 'post_type', 'limite'.
+     *                          Para manejadores personalizados, la estructura de estos argumentos dependerá del manejador.
+     * @param callable|null $manejadorBusqueda Un callable que ejecutará la lógica de búsqueda para este tipo.
+     *                                         Debe tener la firma: `function(string $terminoBusqueda, array $argumentos): array`.
+     *                                         Si es null, se intentará usar un método de búsqueda predeterminado basado en `$tipoEntidad`.
+     * @return self Permite encadenar métodos para una configuración fluida.
      */
-    public function agregarTipoBusqueda(string $tipoEntidad, array $argumentos = []): self
+    public function agregarTipoBusqueda(string $tipoEntidad, array $argumentos = [], ?callable $manejadorBusqueda = null): self
     {
-        $this->configuracionBusqueda[$tipoEntidad] = $argumentos;
+        $this->configuracionBusqueda[$tipoEntidad] = [
+            'argumentos' => $argumentos,
+            'manejadorBusqueda' => $manejadorBusqueda
+        ];
         return $this;
     }
 
     /**
      * Ejecuta todas las búsquedas configuradas.
+     * Itera sobre los tipos de entidad configurados. Si se ha definido un manejador de búsqueda personalizado (`callable`)
+     * para un tipo, se invoca dicho manejador. De lo contrario, se intenta utilizar un método de búsqueda
+     * predeterminado interno (ej., para 'post', 'usuario'). Los resultados de cada tipo de entidad
+     * se almacenan en el array `$this->resultados` utilizando `$tipoEntidad` como clave.
      *
      * @return self Permite encadenar métodos.
      */
     public function ejecutar(): self
     {
-        GloryLogger::info('Iniciando ejecución de BusquedaService.', ['configuracion' => $this->configuracionBusqueda, 'termino' => $this->terminoBusqueda]);
-        foreach ($this->configuracionBusqueda as $tipoEntidad => $argumentos) {
-            GloryLogger::info("Procesando tipo de entidad para búsqueda: {$tipoEntidad}", ['argumentos' => $argumentos]);
-            switch ($tipoEntidad) {
-                case 'post':
-                    $tipoPost = $argumentos['post_type'] ?? 'post'; // Clave 'post_type' es de WP_Query, no traducir.
-                    $resultadosPosts = $this->buscarPosts(
-                        $tipoPost,
-                        $argumentos['limite'] ?? 3
-                    );
-                    $this->resultados[$tipoPost] = $resultadosPosts; // Usa $tipoPost como clave para consistencia si es CPT.
-                    GloryLogger::info("Búsqueda de posts '{$tipoPost}' completada.", ['cantidad' => count($resultadosPosts)]);
-                    break;
+        GloryLogger::info('Iniciando ejecución de BusquedaService.', [
+            'configuracion' => array_map(function($config) {
+                // No se puede serializar un Closure, así que lo representamos como string.
+                if (is_callable($config['manejadorBusqueda'])) {
+                    $config['manejadorBusqueda'] = 'callable';
+                }
+                return $config;
+            }, $this->configuracionBusqueda),
+            'termino' => $this->terminoBusqueda
+        ]);
 
-                case 'usuario':
-                    $resultadosUsuarios = $this->buscarUsuarios(
-                        $argumentos['limite'] ?? 3
-                    );
-                    $this->resultados['perfiles'] = $resultadosUsuarios; // Clave 'perfiles' para diferenciar de tipos de post.
-                    GloryLogger::info('Búsqueda de usuarios completada.', ['cantidad' => count($resultadosUsuarios)]);
-                    break;
+        $this->resultados = []; // Limpiar resultados previos
+
+        foreach ($this->configuracionBusqueda as $tipoEntidad => $config) {
+            $argumentos = $config['argumentos'] ?? [];
+            $manejador = $config['manejadorBusqueda'] ?? null;
+            $resultadosEntidad = [];
+
+            GloryLogger::info("Procesando tipo de entidad para búsqueda: {$tipoEntidad}", ['argumentos' => $argumentos, 'tiene_manejador' => !is_null($manejador)]);
+
+            if (is_callable($manejador)) {
+                $resultadosEntidad = call_user_func($manejador, $this->terminoBusqueda, $argumentos);
+            } else {
+                // Fallback a la lógica predeterminada si no hay manejador
+                // o si el manejador no es callable (aunque la firma del método ya lo sugiere).
+                switch ($tipoEntidad) {
+                    case 'post': // Podría ser un tipo genérico 'post' o un CPT específico.
+                        $tipoPostEspecifico = $argumentos['post_type'] ?? 'post';
+                        $resultadosEntidad = $this->_buscarPostsPredeterminado(
+                            $tipoPostEspecifico,
+                            $argumentos['limite'] ?? 3
+                        );
+                        // La clave en $this->resultados será $tipoEntidad (ej. 'post', o si se registró un CPT como 'evento', será 'evento').
+                        break;
+                    case 'usuario':
+                        $resultadosEntidad = $this->_buscarUsuariosPredeterminado(
+                            $argumentos['limite'] ?? 3
+                        );
+                        break;
+                    // Aquí se podrían añadir más casos predeterminados si es necesario.
+                    default:
+                        GloryLogger::warning("BusquedaService: No hay un manejador de búsqueda predeterminado ni uno personalizado válido para el tipo de entidad '{$tipoEntidad}'.");
+                        break;
+                }
             }
+
+            $this->resultados[$tipoEntidad] = $resultadosEntidad;
+            GloryLogger::info("Búsqueda para '{$tipoEntidad}' completada.", ['cantidad' => count($resultadosEntidad)]);
         }
-        GloryLogger::info('Ejecución de BusquedaService finalizada.', ['resultados_totales' => $this->resultados]);
+        GloryLogger::info('Ejecución de BusquedaService finalizada.', ['tipos_procesados' => array_keys($this->resultados)]);
         return $this;
     }
 
     /**
      * Balancea los resultados para limitar el número de ítems por tipo.
+     * Asegura que ningún tipo de resultado domine la visualización final.
      *
      * @param int $maximoPorTipo El número máximo de ítems por cada tipo de resultado.
      * @return self Permite encadenar métodos.
      */
     public function balancear(int $maximoPorTipo = 2): self
     {
-        foreach ($this->resultados as $tipo => &$items) { // $tipo aquí es la clave del array $this->resultados (ej. 'post', 'page', 'perfiles')
+        // $tipo es la clave del array $this->resultados (ej. 'post', 'page', 'perfiles').
+        foreach ($this->resultados as $tipo => &$items) {
             $items = array_slice($items, 0, $maximoPorTipo);
         }
         return $this;
@@ -96,7 +139,7 @@ class BusquedaService
     /**
      * Devuelve los resultados finales de la búsqueda.
      *
-     * @return array Los resultados de la búsqueda, listos para ser renderizados.
+     * @return array Los resultados de la búsqueda, estructurados y listos para ser renderizados.
      */
     public function obtenerResultados(): array
     {
@@ -104,19 +147,21 @@ class BusquedaService
     }
 
     /**
-     * Realiza una búsqueda de posts basada en un tipo de post específico.
+     * Realiza una búsqueda de posts predeterminada utilizando WP_Query.
+     * Este método se usa como fallback si no se proporciona un manejador específico para un tipo 'post'
+     * o un tipo de contenido personalizado (CPT).
      *
-     * @param string $tipoPost Slug del tipo de post (ej. 'post', 'page', 'producto').
+     * @param string $tipoPostSlug Slug del tipo de post a buscar (ej. 'post', 'page', 'mi_cpt').
      * @param int $limite El número máximo de resultados a devolver.
-     * @return array Lista de resultados para este tipo de post.
+     * @return array Lista de resultados formateados para este tipo de post.
      */
-    private function buscarPosts(string $tipoPost, int $limite): array
+    private function _buscarPostsPredeterminado(string $tipoPostSlug, int $limite): array
     {
         $resultadosFormateados = [];
         $queryArgs = [
-            'post_type'   => $tipoPost,
-            'post_status'  => 'publish',
-            's'       => $this->terminoBusqueda, // Usa el término de búsqueda de la instancia.
+            'post_type'      => $tipoPostSlug,
+            'post_status'    => 'publish',
+            's'              => $this->terminoBusqueda,
             'posts_per_page' => $limite,
         ];
         $query = new WP_Query($queryArgs);
@@ -124,11 +169,13 @@ class BusquedaService
         if ($query->have_posts()) {
             while ($query->have_posts()) {
                 $query->the_post();
+                // Prepara los argumentos para obtenerImagenPost, usando el post_type actual como posible meta_key.
+                $metaClavesParaImagen = ['imagenDestacada', $tipoPostSlug . '_imagen_destacada'];
                 $resultadosFormateados[] = [
                     'titulo' => get_the_title(),
-                    'url'  => get_permalink(),
-                    'tipo' => ucfirst(str_replace(['_', '-'], ' ', $tipoPost)), // Muestra un nombre legible del tipo de post.
-                    'imagen' => $this->obtenerImagenPost(get_the_ID()),
+                    'url'    => get_permalink(),
+                    'tipo'   => ucfirst(str_replace(['_', '-'], ' ', $tipoPostSlug)), // Nombre legible del tipo.
+                    'imagen' => $this->obtenerImagenPost(get_the_ID(), $metaClavesParaImagen),
                 ];
             }
         }
@@ -137,18 +184,21 @@ class BusquedaService
     }
 
     /**
-     * Realiza una búsqueda de usuarios.
+     * Realiza una búsqueda de usuarios predeterminada utilizando WP_User_Query.
+     * Este método se usa como fallback si no se proporciona un manejador específico para el tipo 'usuario'.
      *
-     * @param int $limite El número máximo de resultados.
-     * @return array Lista de perfiles de usuario encontrados.
+     * @param int $limite El número máximo de resultados a devolver.
+     * @return array Lista de resultados formateados para usuarios.
      */
     private function buscarUsuarios(int $limite): array
     {
         $resultadosFormateados = [];
         $queryArgs = [
             'search'    => '*' . esc_attr($this->terminoBusqueda) . '*', // Usa el término de búsqueda de la instancia.
-            'search_columns' => ['user_login', 'display_name', 'user_email'], // Columnas de WP_User_Query, no traducir.
-            'number'    => $limite, // 'number' es de WP_User_Query, no traducir.
+            // Las claves 'search_columns' son específicas de WP_User_Query y no deben traducirse.
+            'search_columns' => ['user_login', 'display_name', 'user_email'],
+            // La clave 'number' es específica de WP_User_Query y no debe traducirse.
+            'number'    => $limite,
         ];
         $query = new WP_User_Query($queryArgs);
 
@@ -168,29 +218,38 @@ class BusquedaService
 
     /**
      * Obtiene la URL de la imagen destacada de un post o de un campo personalizado.
-     * *Comentario por Jules:* Esta función actualmente prioriza la imagen destacada y luego un metadato específico ('imagenDestacada').
-     * Para mayor flexibilidad, podría extenderse para buscar en una lista configurable de metadatos
-     * o incluso permitir un filtro para que otros módulos modifiquen la lógica de obtención de imagen.
+     *
+     * Esta función prioriza la imagen destacada estándar de WordPress. Si no existe,
+     * itera sobre un array de claves de metadatos proporcionadas para encontrar un ID de adjunto de imagen.
+     * Finalmente, permite modificar la URL de la imagen o la lógica de obtención mediante un filtro.
      *
      * @param int $idPost El ID del post.
+     * @param array $metaClavesImagen Array de claves de metadatos donde buscar el ID de la imagen. Por defecto ['imagenDestacada'].
      * @return string|false La URL de la imagen en tamaño 'thumbnail' o false si no se encuentra.
      */
-    private function obtenerImagenPost(int $idPost)
+    private function obtenerImagenPost(int $idPost, array $metaClavesImagen = ['imagenDestacada']): string|false
     {
-        if (has_post_thumbnail($idPost)) {
-            return get_the_post_thumbnail_url($idPost, 'thumbnail');
-        }
+        $imagenUrl = false;
 
-        // Se busca en un metadato con formato camelCase.
-        // El nombre 'imagenDestacada' es un ejemplo, podría ser cualquier clave de metadato.
-        $imagenId = get_post_meta($idPost, 'imagenDestacada', true);
-        if ($imagenId) {
-            // Asegura que $imagenId sea numérico (ID de adjunto) antes de pasarlo a wp_get_attachment_image_url.
-            if (is_numeric($imagenId)) {
-                return wp_get_attachment_image_url((int) $imagenId, 'thumbnail');
+        if (has_post_thumbnail($idPost)) {
+            $imagenUrl = get_the_post_thumbnail_url($idPost, 'thumbnail');
+        } else {
+            foreach ($metaClavesImagen as $metaClave) {
+                $imagenId = get_post_meta($idPost, $metaClave, true);
+                if ($imagenId && is_numeric($imagenId)) { // Asegura que sea un ID numérico.
+                    $urlObtenida = wp_get_attachment_image_url((int) $imagenId, 'thumbnail');
+                    if ($urlObtenida) {
+                        $imagenUrl = $urlObtenida;
+                        break; // Imagen encontrada, salir del bucle.
+                    }
+                }
             }
         }
 
-        return false; // Retorna false si no se encuentra ninguna imagen.
+        // Permitir modificación externa de la URL de la imagen o lógica de obtención.
+        // @author @wandorius
+        $imagenUrlFiltrada = apply_filters('glory_busqueda_imagen_post', $imagenUrl, $idPost, $metaClavesImagen);
+
+        return $imagenUrlFiltrada;
     }
 }

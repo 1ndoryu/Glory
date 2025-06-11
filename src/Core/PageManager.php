@@ -9,8 +9,10 @@ use Glory\Core\GloryLogger;
  * Permite definir páginas a través de código y asegura que existan en la base de datos,
  * actualizando sus plantillas y opcionalmente configurándolas como página de inicio.
  *
- * *Comentario por Jules:* La gestión de páginas por código es útil. Considerar si se necesita un mecanismo
- * para que los plugins/temas extiendan o modifiquen páginas definidas por el framework de forma segura.
+ * Nota: La gestión de páginas mediante código es una funcionalidad central.
+ * Se podría considerar a futuro un mecanismo para permitir que plugins o temas
+ * extiendan o modifiquen las páginas definidas por el framework de forma segura.
+ * @author @wandorius
  */
 class PageManager {
     private const CLAVE_META_GESTION = '_page_manager_managed'; // Clave para marcar páginas gestionadas.
@@ -65,48 +67,18 @@ class PageManager {
 
         if (!empty(self::$paginasDefinidas)) {
             foreach (self::$paginasDefinidas as $slug => $defPagina) {
-                $slugPagina = $defPagina['slug'];
-                $tituloPagina = $defPagina['titulo'];
-                $plantillaPagina = $defPagina['plantilla'];
+                $paginaExistente = get_page_by_path($defPagina['slug'], OBJECT, 'page');
                 $idPaginaActual = null;
 
-                $paginaExistente = get_page_by_path($slugPagina, OBJECT, 'page');
-
                 if (!$paginaExistente) {
-                    $datosPagina = [
-                        'post_title' => $tituloPagina,
-                        'post_content' => "<!-- Página gestionada por Glory PageManager. Slug: {$slugPagina} -->",
-                        'post_status' => 'publish',
-                        'post_type' => 'page',
-                        'post_name' => $slugPagina,
-                        'page_template' => $plantillaPagina ?: '', // Si no hay plantilla, se usa string vacío.
-                    ];
-                    $idInsertado = wp_insert_post($datosPagina, true); // El segundo parámetro true devuelve WP_Error en caso de fallo.
-
-                    if (!is_wp_error($idInsertado) && $idInsertado > 0) {
-                        $idPaginaActual = $idInsertado;
-                        update_post_meta($idPaginaActual, self::CLAVE_META_GESTION, true); // Marca la página como gestionada.
-                    } else {
-                        $mensajeError = is_wp_error($idInsertado) ? $idInsertado->get_error_message() : 'Error desconocido (ID 0)';
-                        GloryLogger::error("PageManager: FALLÓ al crear página '{$slugPagina}': " . $mensajeError);
-                        continue; // Continúa con la siguiente página definida.
-                    }
+                    $idPaginaActual = self::_crearPaginaDefinida($defPagina);
                 } else {
-                    // La página ya existe, se asegura que esté marcada como gestionada y actualiza la plantilla si es necesario.
-                    $idPaginaActual = $paginaExistente->ID;
-                    update_post_meta($idPaginaActual, self::CLAVE_META_GESTION, true);
-                    $plantillaActual = get_post_meta($idPaginaActual, '_wp_page_template', true);
-                    $nuevoValorPlantilla = $plantillaPagina ?: '';
-
-                    if ($plantillaActual !== $nuevoValorPlantilla) {
-                        update_post_meta($idPaginaActual, '_wp_page_template', $nuevoValorPlantilla);
-                    }
+                    $idPaginaActual = self::_actualizarPaginaExistente($paginaExistente, $defPagina);
                 }
 
                 if ($idPaginaActual) {
                     $idsPaginasProcesadas[] = $idPaginaActual;
-                    // Si la página tiene slug 'home', se considera para ser la página de inicio.
-                    if ($slugPagina === 'home') {
+                    if ($defPagina['slug'] === 'home') {
                         $idPaginaInicioProcesada = $idPaginaActual;
                     }
                 }
@@ -115,20 +87,64 @@ class PageManager {
             // No hay páginas definidas en el array self::$paginasDefinidas.
             GloryLogger::warning("PageManager procesarPaginasDefinidas: No hay páginas definidas en self::\$paginasDefinidas.");
             $idPaginaFrontalActual = (int) get_option('page_on_front');
-            // Si la página frontal actual está marcada como gestionada pero no hay definiciones,
-            // se considera un estado inconsistente y se podría desconfigurar.
-            if ($idPaginaFrontalActual > 0 && get_option('show_on_front') === 'page') {
-                if (get_post_meta($idPaginaFrontalActual, self::CLAVE_META_GESTION, true)) {
-                    GloryLogger::error("La página frontal actual (ID: {$idPaginaFrontalActual}) es gestionada pero no hay páginas definidas en el código. Se anulará la página de inicio.");
-                    $idPaginaInicioProcesada = null; // Para que actualizarOpcionesPaginaFrontal la desconfigure.
-                }
+            if ($idPaginaFrontalActual > 0 && get_option('show_on_front') === 'page' && get_post_meta($idPaginaFrontalActual, self::CLAVE_META_GESTION, true)) {
+                GloryLogger::error("La página frontal actual (ID: {$idPaginaFrontalActual}) es gestionada pero no hay páginas definidas en el código. Se anulará la página de inicio.");
+                $idPaginaInicioProcesada = null;
             }
         }
 
         self::actualizarOpcionesPaginaFrontal($idPaginaInicioProcesada);
-        // Guarda los IDs de las páginas procesadas en un transitorio para usarlos en la reconciliación.
-        // Esto evita recalcularlos si la reconciliación se ejecuta en la misma petición. - Jules
         set_transient('pagemanager_ids_procesados', $idsPaginasProcesadas, 15 * MINUTE_IN_SECONDS);
+    }
+
+    /**
+     * Crea una nueva página en la base de datos según la definición proporcionada.
+     *
+     * @param array $defPagina Array con la definición de la página (slug, titulo, plantilla).
+     * @return int|null El ID de la página creada, o null si falla la creación.
+     */
+    private static function _crearPaginaDefinida(array $defPagina): ?int
+    {
+        $datosPagina = [
+            'post_title' => $defPagina['titulo'],
+            'post_content' => "<!-- Página gestionada por Glory PageManager. Slug: {$defPagina['slug']} -->",
+            'post_status' => 'publish',
+            'post_type' => 'page',
+            'post_name' => $defPagina['slug'],
+            'page_template' => $defPagina['plantilla'] ?: '',
+        ];
+        $idInsertado = wp_insert_post($datosPagina, true);
+
+        if (!is_wp_error($idInsertado) && $idInsertado > 0) {
+            update_post_meta($idInsertado, self::CLAVE_META_GESTION, true);
+            return $idInsertado;
+        } else {
+            $mensajeError = is_wp_error($idInsertado) ? $idInsertado->get_error_message() : 'Error desconocido (ID 0)';
+            GloryLogger::error("PageManager: FALLÓ al crear página '{$defPagina['slug']}': " . $mensajeError);
+            return null;
+        }
+    }
+
+    /**
+     * Actualiza una página existente, asegurando que esté marcada como gestionada
+     * y que su plantilla coincida con la definición.
+     *
+     * @param \WP_Post $paginaExistente Objeto de la página existente.
+     * @param array $defPagina Array con la definición de la página.
+     * @return int El ID de la página actualizada.
+     */
+    private static function _actualizarPaginaExistente(\WP_Post $paginaExistente, array $defPagina): int
+    {
+        $idPaginaActual = $paginaExistente->ID;
+        update_post_meta($idPaginaActual, self::CLAVE_META_GESTION, true);
+
+        $plantillaActual = get_post_meta($idPaginaActual, '_wp_page_template', true);
+        $nuevaValorPlantilla = $defPagina['plantilla'] ?: '';
+
+        if ($plantillaActual !== $nuevaValorPlantilla) {
+            update_post_meta($idPaginaActual, '_wp_page_template', $nuevaValorPlantilla);
+        }
+        return $idPaginaActual;
     }
 
     /**
@@ -137,93 +153,95 @@ class PageManager {
      * Utiliza un transitorio para optimizar la obtención de IDs de páginas procesadas recientemente.
      */
     public static function reconciliarPaginasGestionadas(): void {
-        // Intenta obtener los IDs de las páginas que se acaban de procesar/definir desde un transitorio.
-        // Esto es una optimización para evitar consultas a la BD si procesarPaginasDefinidas() ya se ejecutó. - Jules
-        $idsDefinidosActuales = get_transient('pagemanager_ids_procesados');
+        $idsDefinidosActuales = self::_obtenerIdsDefinidosActualesDelTransitorioOComputar();
 
-        if ($idsDefinidosActuales === false) {
-            // El transitorio no existe o ha expirado, se deben reconstruir los IDs de las páginas definidas actualmente. - Jules
-            $idsDefinidosActuales = [];
+        $argsTodasGestionadas = [
+            'post_type'      => 'page',
+            'post_status'    => 'any',
+            'posts_per_page' => -1,
+            'meta_key'       => self::CLAVE_META_GESTION,
+            'meta_value'     => true,
+            'fields'         => 'ids',
+        ];
+        $idsPaginasEnBdGestionadas = get_posts($argsTodasGestionadas);
+
+        if (empty($idsPaginasEnBdGestionadas)) {
+            return;
+        }
+
+        $idsPaginasParaEliminar = array_diff($idsPaginasEnBdGestionadas, $idsDefinidosActuales);
+
+        if (!empty($idsPaginasParaEliminar)) {
+            self::_eliminarPaginasObsoletas($idsPaginasParaEliminar);
+        }
+    }
+
+    /**
+     * Obtiene los IDs de las páginas actualmente definidas, intentando primero desde un transitorio
+     * y, si no está disponible, computándolos desde las definiciones en self::$paginasDefinidas.
+     *
+     * @return array Lista de IDs de páginas que están actualmente definidas y gestionadas.
+     */
+    private static function _obtenerIdsDefinidosActualesDelTransitorioOComputar(): array
+    {
+        $idsDefinidos = get_transient('pagemanager_ids_procesados');
+
+        if ($idsDefinidos === false) {
+            $idsDefinidos = [];
             if (!empty(self::$paginasDefinidas)) {
                 $slugsDefinidos = array_keys(self::$paginasDefinidas);
-                // Obtener todas las páginas marcadas como gestionadas que coinciden con los slugs definidos.
                 $args = [
-                    'post_type' => 'page',
-                    'post_status' => 'any', // Considerar todos los estados
-                    'posts_per_page' => -1, // Sin límite
-                    'meta_key' => self::CLAVE_META_GESTION,
-                    'meta_value' => true,
-                    'fields' => 'ids', // Solo necesitamos los IDs
-                    // 'post_name__in' => $slugsDefinidos, // Comentado como en el original, para obtener todas las gestionadas y luego filtrar.
+                    'post_type'      => 'page',
+                    'post_status'    => 'publish', // Solo nos interesan las publicadas para este cómputo
+                    'posts_per_page' => -1,
+                    'meta_key'       => self::CLAVE_META_GESTION,
+                    'meta_value'     => true,
+                    'fields'         => 'ids',
+                    'post_name__in'  => $slugsDefinidos, // Optimización: solo buscar páginas cuyos slugs están definidos
                 ];
                 $idsReconstruidos = get_posts($args);
-
                 if (!empty($idsReconstruidos)) {
-                    foreach ($idsReconstruidos as $idPagina) {
-                        $slugPagina = get_post_field('post_name', $idPagina);
-                        // Solo se consideran válidas si el slug de la página en BD está en las definiciones actuales.
-                        if (in_array($slugPagina, $slugsDefinidos, true)) {
-                            $idsDefinidosActuales[] = $idPagina;
-                        }
-                    }
+                    // No es necesario filtrar por slug aquí porque post_name__in ya lo hizo.
+                    $idsDefinidos = $idsReconstruidos;
                 }
             } else {
-                // No hay páginas definidas, por lo que no hay IDs esperados.
-                GloryLogger::warning("PageManager reconciliarPaginasGestionadas: No hay páginas definidas, la reconciliación basada en definiciones no produce IDs esperados.");
+                GloryLogger::info("PageManager: No hay páginas definidas en el código para la reconstrucción de IDs definidos.");
             }
-            // No es necesario borrar el transitorio aquí si no se encontró, ya que get_transient devuelve false.
-            // Si se quisiera asegurar que no se use un valor antiguo en una ejecución posterior, se podría borrar.
         } else {
-            // El transitorio existía, se borra para asegurar que en la próxima ejecución se recalcule si es necesario.
-            delete_transient('pagemanager_ids_procesados');
-            if (!is_array($idsDefinidosActuales)) {
-                // Si el transitorio contenía algo inesperado, se inicializa como array vacío.
-                $idsDefinidosActuales = [];
+            delete_transient('pagemanager_ids_procesados'); // Limpiar transitorio después de usarlo.
+            if (!is_array($idsDefinidos)) { // Asegurar que el transitorio era un array.
+                $idsDefinidos = [];
             }
         }
+        return $idsDefinidos;
+    }
 
-        // Obtener todas las páginas marcadas como gestionadas en la base de datos.
-        $argsTodasGestionadas = [
-            'post_type' => 'page',
-            'post_status' => 'any',
-            'posts_per_page' => -1,
-            'meta_key' => self::CLAVE_META_GESTION,
-            'meta_value' => true,
-            'fields' => 'ids',
-        ];
-        $idsPaginasPotencialmenteGestionadas = get_posts($argsTodasGestionadas);
-
-        if (empty($idsPaginasPotencialmenteGestionadas)) {
-            return; // No hay páginas gestionadas en la BD, nada que reconciliar.
-        }
-
-        // Compara todas las páginas gestionadas en la BD con las que están actualmente definidas (o reconstruidas).
-        // Las que están en la BD pero no definidas actualmente, son candidatas a eliminación. - Jules
-        $idsPaginasParaEliminar = array_diff($idsPaginasPotencialmenteGestionadas, $idsDefinidosActuales);
-
-        if (empty($idsPaginasParaEliminar)) {
-            return; // No hay páginas para eliminar.
-        }
-
+    /**
+     * Elimina las páginas gestionadas que ya no están definidas en el código.
+     *
+     * @param array $idsPaginasParaEliminar Array de IDs de páginas a eliminar.
+     */
+    private static function _eliminarPaginasObsoletas(array $idsPaginasParaEliminar): void
+    {
         $forzarEliminacionDirecta = true; // true para enviar a la papelera, false para eliminar permanentemente.
         $idPaginaFrontalActual = (int) get_option('page_on_front');
         $idPaginaEntradasActual = (int) get_option('page_for_posts');
 
         foreach ($idsPaginasParaEliminar as $idPagina) {
-            // Evitar eliminar la página configurada como página de inicio o página de entradas.
             if ($idPagina === $idPaginaFrontalActual && $idPaginaFrontalActual > 0) {
-                GloryLogger::warning("PageManager reconciliarPaginasGestionadas: OMITIENDO eliminación de página ID {$idPagina} porque es la página frontal actual.");
+                GloryLogger::warning("PageManager: OMITIENDO eliminación de página ID {$idPagina} porque es la página frontal actual.");
                 continue;
             }
             if ($idPagina === $idPaginaEntradasActual && $idPaginaEntradasActual > 0) {
-                GloryLogger::warning("PageManager reconciliarPaginasGestionadas: OMITIENDO eliminación de página ID {$idPagina} porque es la página de entradas actual.");
+                GloryLogger::warning("PageManager: OMITIENDO eliminación de página ID {$idPagina} porque es la página de entradas actual.");
                 continue;
             }
 
             $paginaEliminada = wp_delete_post($idPagina, $forzarEliminacionDirecta);
-
             if (!$paginaEliminada) {
-                GloryLogger::error("PageManager reconciliarPaginasGestionadas: FALLÓ al eliminar página gestionada con ID: {$idPagina}. Podría haber sido eliminada ya o ocurrió otro problema.");
+                GloryLogger::error("PageManager: FALLÓ al eliminar página gestionada obsoleta con ID: {$idPagina}.");
+            } else {
+                GloryLogger::info("PageManager: Página gestionada obsoleta con ID: {$idPagina} eliminada (o enviada a la papelera).");
             }
         }
     }
