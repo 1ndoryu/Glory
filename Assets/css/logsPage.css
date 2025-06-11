@@ -211,3 +211,354 @@ body.glory-logs-dark-mode {
     min-height: 400px;
     position: relative;
 }
+
+/* CSS Migrado desde view/Admin/logPage.php */
+.firefox * {
+    scrollbar-width: thin;
+    scrollbar-color: #373737 transparent;
+}
+
+/* El selector '*' universal ya existe arriba con otras propiedades,
+   se pueden fusionar o mantener separado si el CSS migrado es temporal o de otra fuente.
+   Por ahora, lo mantendré separado pero comentaré el '*' duplicado si las propiedades son conflictivas o redundantes.
+*/
+/* * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+} */
+
+img { /* Estilo general para img, puede afectar a todo el admin si no es específico */
+    border-style: none;
+    vertical-align: top;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Estos estilos de body, body p, textarea son muy generales y podrían afectar a todo el panel de administración.
+   Deberían ser específicos para la página de logs si es posible, o confirmar que este es el comportamiento deseado.
+   Por ejemplo, prefijándolos con .glory-logger-viewer o un contenedor específico de la página de logs.
+   Si son estilos base de "V4" que se aplican globalmente, entonces está bien, pero es una consideración.
+*/
+body, /* Considerar prefijar con .glory-logs-page-body o similar si es específico */
+body p,
+textarea {
+    font-size: 13px;
+    /* line-height: 12px; */
+    /* display: block; */ /* 'display: block' en body puede romper el layout del admin */
+    margin-block-start: 0em;
+    margin-block-end: 0em;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+    unicode-bidi: isolate;
+    /* color: #d4d4d4; */ /* El color ya se establece en body.glory-logs-dark-mode */
+    line-height: 1.6;
+    font-family: "Source Sans 3", Arial, Helvetica, sans-serif;
+    letter-spacing: 0px;
+    font-weight: 400px !important; /* Cuidado con !important */
+    text-decoration: none;
+    text-wrap: pretty;
+}
+
+/* Duplicado de las reglas anteriores para body, body p, textarea. Se puede eliminar uno. */
+/* body,
+body p,
+textarea {
+    font-family: "Source Sans 3", Arial, Helvetica, sans-serif !important;
+    letter-spacing: 0px;
+    font-style: normal;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    text-decoration: none;
+    text-wrap: pretty;
+} */
+
+.firefox *::-webkit-scrollbar {
+    width: 4px;
+    background: transparent;
+}
+
+.firefox *::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.firefox .menu-container { /* Estos selectores parecen muy específicos de un tema o layout particular "firefox" */
+    filter: url(#blur-effect) !important;
+    background-color: rgba(9, 9, 9, 0.85);
+}
+
+.firefox .panelperfilsupsec {
+    background: #070707;
+    /* background-color: rgb(7, 7, 7); */ /* Redundante */
+    filter: url(#blur-effect) !important;
+    background-color: rgba(9, 9, 9, 0.85); /* Sobrescribe el anterior */
+}
+
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+    transition: width 0.3s ease, height 0.3s ease;
+}
+
+::-webkit-scrollbar-track {
+    background: none;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #555;
+    border-radius: 10px;
+}
+
+.scroll-visible::-webkit-scrollbar { /* Estos son para una clase específica */
+    width: 4px;
+    height: 4px;
+}
+
+.scroll-visible::-webkit-scrollbar-thumb {
+    background: unset; /* Podría ser 'transparent' o un color específico */
+}
+
+.scroll-visible::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* V4 Styles - Comentario para indicar que estos son parte de un conjunto de estilos "V4" */
+/* Es buena idea prefijar estas variables CSS con algo como --glory-log-v4- si son específicas de esta sección
+   o si podrían colisionar con otras variables :root de WordPress o de otros plugins.
+   Si :root ya está definido arriba con variables específicas de logs, considerar fusionarlas o anidarlas bajo .glory-logger-viewer
+   para evitar conflictos globales.
+*/
+/* :root {
+    --fondo: #070707;
+    --borde: 1px #161616 solid;
+    --radius: 5px;
+    --bordeBoton: 1px #1f1f1f8c solid;
+    --padding: 20px;
+    --ancho: 600px;
+} */
+/* Usando las variables ya definidas o creando nuevas específicas para la página de logs si es necesario */
+.glory-logger-viewer {
+    --v4-fondo: var(--bg-color); /* Ejemplo usando variable existente */
+    --v4-borde: 1px var(--border-color) solid;
+    --v4-radius: 5px;
+    --v4-bordeBoton: 1px rgba(31, 31, 31, 0.55) solid; /* #1f1f1f8c */
+    --v4-padding: 20px;
+    --v4-ancho: 600px; /* Esto podría ser problemático si el contenedor es más ancho */
+}
+
+
+/* Selectores .appAndroid parecen muy específicos de un contexto móvil o app,
+   verificar si aplican a la página de logs de WordPress admin.
+   Si es así, prefijarlos con .glory-logger-viewer .appAndroid o similar.
+*/
+.glory-logger-viewer .appAndroid p {
+    font-size: 14px;
+}
+
+.glory-logger-viewer .appAndroid button {
+    font-size: 14px !important;
+}
+
+.glory-logger-viewer .appAndroid a {
+    font-size: 14px;
+}
+
+.glory-logger-viewer .appAndroid .JHVSFW a {
+    font-size: 15px !important;
+}
+
+.glory-logger-viewer .appAndroid .ZVJVZA {
+    padding-bottom: 0px;
+    line-height: 13px;
+    padding-top: 5px;
+}
+
+.glory-logger-viewer .appAndroid .HQLXWD a {
+    font-size: 12px;
+}
+
+@media (max-width: 640px) {
+    /* Estos estilos de scrollbar para móviles ya están cubiertos por los generales,
+       a menos que se quiera un comportamiento diferente en móviles.
+       Si se quieren ocultar completamente, `width: 0px; height: 0px;` es correcto.
+    */
+    /* ::-webkit-scrollbar {
+        width: 0px;
+        height: 0px;
+    }
+
+    .scroll-visible::-webkit-scrollbar {
+        width: 0px;
+        height: 0px;
+    } */
+}
+
+.glory-logger-viewer .appAndroid .infoIA-btn,
+.glory-logger-viewer .appAndroid span.postTag,
+.glory-logger-viewer .appAndroid .badge,
+.glory-logger-viewer .appAndroid .postTagToggle {
+    font-size: 13px !important;
+}
+
+.glory-logger-viewer ul { /* Aplicar solo a ULs dentro del visor de logs */
+    list-style: none;
+    padding-left: 0; /* Resetear padding por defecto de UL */
+}
+
+/*V4*/
+.glory-logger-viewer .bloque { /* Prefijado para especificidad */
+    display: flex;
+    background: var(--v4-fondo);
+    border-radius: var(--v4-radius);
+    padding: var(--v4-padding);
+    border: var(--v4-borde);
+    width: var(--v4-ancho); /* Cuidado con anchos fijos */
+    max-width: 100%;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.glory-logger-viewer .borde { /* Prefijado */
+    border: var(--v4-borde);
+}
+
+/*V4*/
+.glory-logger-viewer textarea { /* Prefijado y combinado con estilos de textarea generales si es posible */
+    color: var(--text-color); /* Usar variable CSS */
+    border: none;
+    padding: 0px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    background: none;
+    resize: none;
+    width: 100%;
+}
+
+.glory-logger-viewer .seleccionado { /* Prefijado */
+    filter: brightness(2);
+    opacity: 1 !important;
+    border: 1px solid #676767; /* Considerar variable CSS */
+}
+
+/*V4*/
+/* Estilos para 'button' son muy generales. Los estilos de .glory-filters button y .botones-filter button ya existen.
+   Si este es un estilo base para otros botones DENTRO de .glory-logger-viewer, entonces prefijar:
+   .glory-logger-viewer button (pero esto puede sobreescribir los botones ya estilados de forma no deseada).
+   Sería mejor usar clases específicas para estos botones base si son diferentes.
+*/
+/* .glory-logger-viewer button.v4-base-button { ... } */
+
+
+/*V4*/
+.glory-logger-viewer .botonprincipal { /* Prefijado */
+    background: white !important;
+    color: black !important;
+    border: 1px #00000000 solid !important; /* Borde transparente */
+}
+
+/*V4*/
+.glory-logger-viewer .previewAreaArchivos { /* Prefijado */
+    border: var(--v4-borde);
+    border-radius: var(--v4-radius);
+    display: flex;
+    align-content: center;
+    justify-content: center; /* Añadido para centrar contenido si es un placeholder */
+    text-align: center;
+    padding: var(--v4-padding);
+    min-height: 60px;
+    cursor: pointer;
+    width: 100%;
+}
+
+/*V4*/
+.glory-logger-viewer .noborde { /* Prefijado */
+    border: unset;
+}
+
+/*V4*/
+/* 'body' ya está estilado arriba con .glory-logs-dark-mode.
+   Este 'body' es demasiado general y probablemente no deseado.
+   Si es para centrar el .glory-logger-viewer en una página standalone,
+   se necesitaría un wrapper o aplicar al body de ESA página específica.
+*/
+/* body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+} */
+
+/*V4*/
+/* '*' también es muy general. Las propiedades box-sizing, -webkit-font-smoothing, text-rendering
+   a menudo se aplican al '*' o html, body. Aquí, dentro de un CSS específico para logs,
+   podría ser mejor aplicarlo a .glory-logger-viewer y sus hijos: .glory-logger-viewer *
+   Pero cuidado con la herencia y especificidad.
+*/
+.glory-logger-viewer * {
+    /* margin: 0; */ /* Puede ser demasiado agresivo aquí */
+    /* padding: 0; */ /* Puede ser demasiado agresivo aquí */
+    box-sizing: border-box;
+}
+.glory-logger-viewer { /* Aplicar font smoothing al contenedor principal */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+
+/*V4*/
+.glory-logger-viewer form { /* Prefijado */
+    display: flex;
+    flex-direction: column;
+}
+
+.glory-logger-viewer .heart-animation { /* Prefijado */
+    animation: fade 2s ease forwards; /* Asegurar que 'fade' esté definido o eliminar */
+    color: red; /* Considerar variable CSS --error-color o similar */
+    font-size: 30px;
+}
+
+/*V4*/
+.glory-logger-viewer .waveform-container { /* Prefijado */
+    cursor: pointer;
+}
+
+/*V4*/
+.glory-logger-viewer .modal { /* Prefijado */
+    position: fixed; /* Considerar si el modal debe estar contenido o realmente fixed al viewport */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--v4-fondo);
+    border: var(--v4-borde);
+    padding: var(--v4-padding);
+    border-radius: var(--v4-radius);
+    width: 400px;
+    max-width: 90%;
+    display: flex;
+    z-index: 1006; /* Asegurar que esté por encima de otros elementos del admin */
+    font-size: 11px;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 10px;
+}
+
+/*V4*/
+.glory-logger-viewer .custom-checkbox { /* Prefijado */
+    display: flex;
+    cursor: pointer;
+    padding: 8px;
+    user-select: none;
+    color: #6b6b6b; /* Considerar variable CSS */
+    border: var(--v4-borde);
+    border-radius: var(--v4-radius); /* Usa v4-radius para consistencia */
+    width: 100%;
+    justify-content: center;
+}
+
+/* Keyframes para animaciones si son necesarias */
+@keyframes fade {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+  100% { opacity: 0; transform: scale(1.5); }
+}
