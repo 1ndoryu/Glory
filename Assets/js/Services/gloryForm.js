@@ -25,7 +25,7 @@ function gloryForm() {
         }
     });
 
-    document.addEventListener('click', async function (event) {
+    document.addEventListener('click', async function(event) {
         if (!event.target.matches('.dataSubir')) {
             return;
         }
@@ -69,11 +69,30 @@ function gloryForm() {
                     const alerta = input.dataset.alertaObligatorio || `El campo "${input.name}" es obligatorio.`;
                     alert(alerta);
                     validacionExitosa = false;
-                    break; 
+                    break;
                 }
             }
 
-            // 2. Validación de límites
+            // 2. Validación de valor mínimo
+            const minimo = input.dataset.minimo;
+            if (minimo) {
+                const minimoNumerico = parseInt(minimo, 10);
+                if (!isNaN(minimoNumerico)) {
+                    if (input.type === 'file') {
+                        if (input.files.length > 0 && input.files[0].size < minimoNumerico) {
+                            alert(`El archivo "${input.name}" no cumple con el tamaño mínimo de ${Math.round(minimoNumerico / 1024)} KB.`);
+                            validacionExitosa = false;
+                            break;
+                        }
+                    } else if (typeof input.value === 'string' && input.value.trim().length > 0 && input.value.trim().length < minimoNumerico) {
+                        alert(`El campo "${input.name}" debe tener al menos ${minimoNumerico} caracteres.`);
+                        validacionExitosa = false;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Validación de límites (valor máximo)
             const limite = input.dataset.limit;
             if (limite) {
                 const limiteNumerico = parseInt(limite, 10);
@@ -103,11 +122,11 @@ function gloryForm() {
             alert('Error de configuración de seguridad. No se puede enviar el formulario.');
             return;
         }
-        
+
         const datosParaEnviar = new FormData();
         datosParaEnviar.append('subAccion', subAccion);
         datosParaEnviar.append('nonce', window.dataGlobal.nonce);
-        
+
         const metaTarget = contenedor.dataset.metaTarget;
         const objectId = contenedor.dataset.objectId;
 
@@ -128,7 +147,6 @@ function gloryForm() {
                     datosParaEnviar.append(clave, input.files[0]);
                 }
             } else if (input.type === 'checkbox') {
-                // Envía '1' si está marcado, '0' si no lo está.
                 datosParaEnviar.append(clave, input.checked ? '1' : '0');
             } else if (input.type === 'radio') {
                 if (input.checked) {
@@ -138,7 +156,7 @@ function gloryForm() {
                 datosParaEnviar.append(clave, input.value);
             }
         }
-        
+
         console.log('GloryForm.js: Verificando datos a enviar para la acción:', subAccion);
         for (let [clave, valor] of datosParaEnviar.entries()) {
             console.log(`- ${clave}:`, valor);
@@ -146,7 +164,7 @@ function gloryForm() {
 
         try {
             const respuesta = await gloryAjax('gloryFormHandler', datosParaEnviar);
-            
+
             if (respuesta.success && respuesta.data && respuesta.data.alert) {
                 ocultarFondo(); // Asumo que esta función existe en tu scope
                 alert(respuesta.data.alert);
