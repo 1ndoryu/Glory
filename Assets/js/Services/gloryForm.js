@@ -1,3 +1,4 @@
+// @tarea-pendiente Jules: Realizar una revisión más exhaustiva de este archivo JavaScript en una tarea futura para optimización y refactorización avanzada.
 function gloryForm() {
     if (document.body.dataset.gloryFormListenersAttached) {
         return;
@@ -147,10 +148,10 @@ function gloryForm() {
             }
         }
         
-        console.log('GloryForm.js: Verificando datos a enviar para la acción:', subAccion);
-        for (let [clave, valor] of datosParaEnviar.entries()) {
-            console.log(`- ${clave}:`, valor);
-        }
+        // console.log('GloryForm.js: Verificando datos a enviar para la acción:', subAccion);
+        // for (let [clave, valor] of datosParaEnviar.entries()) {
+        //     console.log(`- ${clave}:`, valor);
+        // }
 
         try {
             const respuesta = await gloryAjax('gloryFormHandler', datosParaEnviar);

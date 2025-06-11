@@ -12,6 +12,8 @@ use Glory\Core\GloryLogger;
  *
  * // @tarea Jules: Considerar la posibilidad de que esta clase AssetManager pueda ser inyectada
  * // o extendida para soportar diferentes fuentes de assets (CDN, etc.) en el futuro.
+ * // @tarea-pendiente Jules: Revisar si este cambio tiene implicaciones en otras clases que puedan heredar de AssetManager en el futuro.
+ * // @tarea-pendiente Jules: Evaluar el uso de `GloryLogger` para asegurar que los mensajes de error y advertencia son claros y útiles en toda la clase.
  * @author @wandorius
  */
 abstract class AssetManager
@@ -58,19 +60,19 @@ abstract class AssetManager
     protected static function defineAsset(string $identificador, array $configuracion): void
     {
         if (empty($identificador)) {
-            GloryLogger::error("El identificador del asset no puede estar vacío. Definición omitida.");
+            GloryLogger::error("AssetManager: El identificador del asset no puede estar vacío. Definición omitida.");
             return;
         }
 
         if (isset(self::$assetsDefinidos[$identificador])) {
             // Permitir redefinición silenciosa o loguear una advertencia si se prefiere.
             // Por ahora, la última definición prevalece.
-            // GloryLogger::warning("El asset '{$identificador}' está siendo redefinido.");
+            // GloryLogger::warning("AssetManager: El asset '{$identificador}' está siendo redefinido.");
         }
 
         // Asegurar que la ruta esté presente
         if (empty($configuracion['ruta'])) {
-            GloryLogger::error("La ruta del asset '{$identificador}' no puede estar vacía. Definición omitida.");
+            GloryLogger::error("AssetManager: La ruta del asset '{$identificador}' no puede estar vacía. Definición omitida.");
             return;
         }
 
@@ -104,7 +106,7 @@ abstract class AssetManager
 
         if (!is_dir($rutaCompletaCarpeta)) {
             if (trim($rutaRelativaCarpetaNormalizada, DIRECTORY_SEPARATOR) !== $extension) { // Compara con la extensión por si es la carpeta default
-                GloryLogger::warning("AssetManager: Carpeta no encontrada en {$rutaCompletaCarpeta} al definir assets desde carpeta '{$rutaRelativaCarpeta}' con extensión '.{$extension}'.");
+                GloryLogger::warning("AssetManager: Carpeta no encontrada en '{$rutaCompletaCarpeta}' al definir assets desde '{$rutaRelativaCarpeta}' con extensión '.{$extension}'.");
             }
             return;
         }
@@ -133,7 +135,7 @@ abstract class AssetManager
                 $identificador = trim($identificador, '-');
 
                 if (empty($identificador)) {
-                    GloryLogger::error("AssetManager: El identificador generado está vacío para el archivo '{$nombreArchivoConExtension}' en la carpeta '{$rutaRelativaCarpeta}'. Omitiendo.");
+                    GloryLogger::error("AssetManager: Identificador generado vacío para archivo '{$nombreArchivoConExtension}' en carpeta '{$rutaRelativaCarpeta}'. Se omite.");
                     continue;
                 }
 
@@ -154,7 +156,7 @@ abstract class AssetManager
                 }
             }
         } catch (\Exception $e) {
-            GloryLogger::error("AssetManager: Error al iterar la carpeta {$rutaCompletaCarpeta} para la extensión '.{$extension}': " . $e->getMessage());
+            GloryLogger::error("AssetManager: Error al iterar carpeta '{$rutaCompletaCarpeta}' para extensión '.{$extension}': " . $e->getMessage());
         }
     }
 
@@ -179,7 +181,7 @@ abstract class AssetManager
     /**
      * Método abstracto para que las clases hijas encolen sus assets.
      */
-    protected abstract static function enqueueItems(): void;
+    public abstract static function enqueueItems(): void;
 
     /**
      * Calcula la versión de un asset.
