@@ -5,38 +5,38 @@ namespace Glory\Core;
 /**
  * GloryLogger gestiona el registro de eventos y errores de la aplicación.
  *
- * En lugar de guardar logs en la base de datos, utiliza el sistema de logs nativo de PHP (error_log).
+ * Utiliza el sistema de logs nativo de PHP (error_log) en lugar de sistemas más pesados para el registro inmediato.
  * Los logs se acumulan en un buffer durante la ejecución y se escriben todos juntos al final del script (hook 'shutdown'),
  * optimizando el rendimiento. Permite configurar un nivel mínimo de log para controlar la verbosidad.
  */
 class GloryLogger
 {
     // Niveles de Log
-    const nivelInfo        = 10;
-    const nivelAdvertencia = 20;
-    const nivelError       = 30;
-    const nivelCritico     = 50;
+    const NIVEL_INFO        = 10;
+    const NIVEL_ADVERTENCIA = 20;
+    const NIVEL_ERROR       = 30;
+    const NIVEL_CRITICO     = 50;
 
-    private static $nivelesValidos = [
-        self::nivelInfo,
-        self::nivelAdvertencia,
-        self::nivelError,
-        self::nivelCritico,
+    private static array $nivelesValidos = [
+        self::NIVEL_INFO,
+        self::NIVEL_ADVERTENCIA,
+        self::NIVEL_ERROR,
+        self::NIVEL_CRITICO,
     ];
 
-    private static $nivelMinimoGuardado       = self::nivelError;
-    private static $bufferLogs                = [];
-    private static $hookGuardarLogsRegistrado = false;
+    private static int $nivelMinimoGuardado       = self::NIVEL_ERROR;
+    private static array $bufferLogs                = [];
+    private static bool $hookGuardarLogsRegistrado = false;
 
     /**
      * Inicializa el logger y opcionalmente establece el nivel mínimo de log a registrar.
      *
-     * @param int|null $nivel El nivel mínimo para que los logs se guarden.
+     * @param int|null $nivelMinimoRegistrar El nivel mínimo para que los logs se guarden.
      */
-    public static function init(?int $nivel = null): void
+    public static function init(?int $nivelMinimoRegistrar = null): void
     {
-        if (!is_null($nivel)) {
-            self::setNivelMinimoGuardado($nivel);
+        if (!is_null($nivelMinimoRegistrar)) {
+            self::setNivelMinimoGuardado($nivelMinimoRegistrar);
         }
     }
 
@@ -45,51 +45,59 @@ class GloryLogger
      *
      * Solo los grupos de logs cuya criticidad máxima sea igual o superior a este nivel serán guardados.
      *
-     * @param int $nivel El nivel de log (ej. self::nivelInfo, self::nivelError).
+     * @param int $nivelMinimo El nivel de log (ej. self::NIVEL_INFO, self::NIVEL_ERROR).
      */
-    public static function setNivelMinimoGuardado(int $nivel): void
+    public static function setNivelMinimoGuardado(int $nivelMinimo): void
     {
-        if (in_array($nivel, self::$nivelesValidos, true)) {
-            self::$nivelMinimoGuardado = $nivel;
+        if (in_array($nivelMinimo, self::$nivelesValidos, true)) {
+            self::$nivelMinimoGuardado = $nivelMinimo;
         }
     }
 
     /**
      * Registra un mensaje de nivel informativo.
+     * @param string $mensaje Mensaje del log.
+     * @param array  $contexto Datos adicionales.
      */
     public static function info(string $mensaje, array $contexto = []): void
     {
-        self::registrar(self::nivelInfo, $mensaje, $contexto);
+        self::registrar(self::NIVEL_INFO, $mensaje, $contexto);
     }
 
     /**
      * Registra un mensaje de advertencia.
+     * @param string $mensaje Mensaje del log.
+     * @param array  $contexto Datos adicionales.
      */
     public static function warning(string $mensaje, array $contexto = []): void
     {
-        self::registrar(self::nivelAdvertencia, $mensaje, $contexto);
+        self::registrar(self::NIVEL_ADVERTENCIA, $mensaje, $contexto);
     }
 
     /**
      * Registra un mensaje de error.
+     * @param string $mensaje Mensaje del log.
+     * @param array  $contexto Datos adicionales.
      */
     public static function error(string $mensaje, array $contexto = []): void
     {
-        self::registrar(self::nivelError, $mensaje, $contexto);
+        self::registrar(self::NIVEL_ERROR, $mensaje, $contexto);
     }
 
     /**
      * Registra un mensaje crítico.
+     * @param string $mensaje Mensaje del log.
+     * @param array  $contexto Datos adicionales.
      */
     public static function critical(string $mensaje, array $contexto = []): void
     {
-        self::registrar(self::nivelCritico, $mensaje, $contexto);
+        self::registrar(self::NIVEL_CRITICO, $mensaje, $contexto);
     }
 
     /**
      * Guarda los logs acumulados en el buffer al final de la ejecución.
      *
-     * Este método se engancha al hook 'shutdown' de WordPress.
+     * Este método se engancha al hook 'shutdown' de WordPress para procesar los logs acumulados al final de la petición.
      */
     public static function guardarLogsEnBuffer(): void
     {
@@ -109,9 +117,9 @@ class GloryLogger
     /**
      * Añade un registro al buffer de logs.
      *
-     * @param int    $nivel   Nivel del log.
-     * @param string $mensaje Mensaje del log.
-     * @param array  $contexto Datos adicionales.
+     * @param int    $nivel    Nivel del log (usar constantes NIVEL_*).
+     * @param string $mensaje  Mensaje del log.
+     * @param array  $contexto Datos adicionales para el log.
      */
     private static function registrar(int $nivel, string $mensaje, array $contexto = []): void
     {
@@ -121,7 +129,7 @@ class GloryLogger
         if (!isset(self::$bufferLogs[$nombreLlamador])) {
             self::$bufferLogs[$nombreLlamador] = [
                 'mensajes'     => [],
-                'nivelMaximo'  => self::nivelInfo,
+                'nivelMaximo'  => self::NIVEL_INFO,
                 'hashesUnicos' => [],
             ];
         }
@@ -148,30 +156,35 @@ class GloryLogger
 
     /**
      * Obtiene el nombre de la función o método que invocó al logger.
-     *
-     * @return string
+     * Esta función analiza la traza de depuración para encontrar el origen de la llamada al log.
+     * La lógica actual es adecuada para la mayoría de los casos en WordPress.
+     * Una posible mejora futura podría ser limitar la profundidad de búsqueda en debug_backtrace para optimizar ligeramente. - Jules
+     * @return string Nombre del llamador (Clase::metodo o funcion).
      */
     private static function getNombreLlamador(): string
     {
         $traza = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
+        // Comenzamos en $i = 2 para saltar getNombreLlamador y registrar/info/warning/error/critical.
         for ($i = 2; $i < count($traza); $i++) {
+            // Si la entrada de la traza es una llamada dentro de esta misma clase, la saltamos.
             if (isset($traza[$i]['class']) && $traza[$i]['class'] === self::class) {
                 continue;
             }
+            // Si encontramos una entrada válida, construimos el nombre del llamador.
             if (isset($traza[$i])) {
                 $infoLlamador = $traza[$i];
-                $funcion      = $infoLlamador['function'] ?? '[unknown_function]';
+                $funcion      = $infoLlamador['function'] ?? '[funcion_desconocida]';
                 if (isset($infoLlamador['class'])) {
                     $funcion = $infoLlamador['class'] . '::' . $funcion;
                 }
                 return $funcion;
             }
         }
-        return '[unknown_caller]';
+        return '[llamador_desconocido]'; // Retorno por defecto si no se puede determinar el llamador.
     }
 
     /**
-     * Registra el hook de 'shutdown' una sola vez por petición.
+     * Asegura que el método `guardarLogsEnBuffer` se registre en el hook 'shutdown' solo una vez por ciclo de petición.
      */
     private static function registrarHookGuardarLogs(): void
     {
@@ -193,19 +206,19 @@ class GloryLogger
             return;
         }
 
-        $bloqueMensajes = "--- GloryLogger Start: {$nombreFuncion} ---\n";
+        $bloqueMensajes = "--- GloryLogger Inicio: {$nombreFuncion} ---\n";
 
         foreach ($datosLog['mensajes'] as $registro) {
-            $nivelTexto = 'INFO';
+            $nivelTexto = 'INFO'; // Por defecto para NIVEL_INFO o niveles desconocidos
             switch ($registro['nivel']) {
-                case self::nivelAdvertencia:
-                    $nivelTexto = 'WARNING';
+                case self::NIVEL_ADVERTENCIA:
+                    $nivelTexto = 'ADVERTENCIA';
                     break;
-                case self::nivelError:
+                case self::NIVEL_ERROR:
                     $nivelTexto = 'ERROR';
                     break;
-                case self::nivelCritico:
-                    $nivelTexto = 'CRITICAL';
+                case self::NIVEL_CRITICO:
+                    $nivelTexto = 'CRITICO';
                     break;
             }
 
@@ -220,14 +233,16 @@ class GloryLogger
             );
 
             if (!empty($registro['contexto'])) {
-                $contexto = preg_replace('/\s+/', ' ', print_r($registro['contexto'], true));
-                $lineaLog .= " | Context: " . $contexto;
+                // Se normalizan múltiples espacios/saltos de línea en el contexto para una mejor legibilidad en el log.
+                $contextoSerializado = print_r($registro['contexto'], true);
+                $contextoNormalizado = preg_replace('/\s+/', ' ', $contextoSerializado);
+                $lineaLog .= " | Contexto: " . $contextoNormalizado;
             }
 
             $bloqueMensajes .= $lineaLog . "\n";
         }
 
-        $bloqueMensajes .= "--- GloryLogger End: {$nombreFuncion} ---\n";
+        $bloqueMensajes .= "--- GloryLogger Fin: {$nombreFuncion} ---\n";
 
         error_log($bloqueMensajes);
     }
