@@ -1,4 +1,4 @@
-<?
+<?php
 
 namespace Glory\Component;
 
@@ -19,12 +19,7 @@ class FormBuilder
 
         ob_start();
 ?>
-        <div <? if ($id): ?>id="<? echo esc_attr($id) ?>" <? endif; ?>
-            class="<? echo esc_attr($clases) ?>"
-            action="<? echo esc_attr($action) ?>"
-            method="<? echo esc_attr($method) ?>"
-            <? if (self::$currentMetaTarget): ?>data-meta-target="<? echo esc_attr(self::$currentMetaTarget) ?>" <? endif; ?>
-            <? if (self::$currentObjectId): ?>data-object-id="<? echo esc_attr(self::$currentObjectId) ?>" <? endif; ?>>
+        <div <? if ($id): ?>id="<? echo esc_attr($id) ?>" <? endif; ?> class="<? echo esc_attr($clases) ?>" action="<? echo esc_attr($action) ?>" method="<? echo esc_attr($method) ?>" <? if (self::$currentMetaTarget): ?>data-meta-target="<? echo esc_attr(self::$currentMetaTarget) ?>" <? endif; ?> <? if (self::$currentObjectId): ?>data-object-id="<? echo esc_attr(self::$currentObjectId) ?>" <? endif; ?>>
         <?
         return ob_get_clean();
     }
@@ -49,7 +44,8 @@ class FormBuilder
         switch ($metaTarget) {
             case 'user':
                 $userId = $objectId ?? get_current_user_id();
-                if (!$userId) return '';
+                if (!$userId)
+                    return '';
 
                 if ($nombre === 'user_login') {
                     $usuario = get_userdata($userId);
@@ -59,7 +55,8 @@ class FormBuilder
                 return get_user_meta($userId, $nombre, true) ?? '';
 
             case 'post':
-                if (!$objectId) return '';
+                if (!$objectId)
+                    return '';
                 return get_post_meta($objectId, $nombre, true) ?? '';
 
             default:
@@ -77,20 +74,16 @@ class FormBuilder
         $clasesInput = $opciones['extraClassInput'] ?? '';
         $placeholder = $opciones['placeholder'] ?? '';
         $limite = !empty($opciones['limite']) ? intval($opciones['limite']) : 0;
+        $obligatorio = $opciones['obligatorio'] ?? false;
+        $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
 
         ob_start();
         ?>
             <div class="<? echo esc_attr($clasesContenedor) ?>">
                 <? if ($label): ?>
-                    <label for="<? echo esc_attr($id) ?>"><? echo esc_html($label) ?></label>
+                    <label for="<? echo esc_attr($id) ?>"><? echo esc_html($label) ?><? if ($obligatorio): ?><span class="obligatorio">*</span><? endif; ?></label>
                 <? endif; ?>
-                <input type="text"
-                    id="<? echo esc_attr($id) ?>"
-                    name="<? echo esc_attr($nombre) ?>"
-                    value="<? echo esc_attr($valor) ?>"
-                    class="<? echo esc_attr($clasesInput) ?>"
-                    <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?>
-                    <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> />
+                <input type="text" id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" value="<? echo esc_attr($valor) ?>" class="<? echo esc_attr($clasesInput) ?>" <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?> />
             </div>
         <?
         return ob_get_clean();
@@ -107,19 +100,16 @@ class FormBuilder
         $placeholder = $opciones['placeholder'] ?? '';
         $limite = !empty($opciones['limite']) ? intval($opciones['limite']) : 0;
         $rows = !empty($opciones['rows']) ? intval($opciones['rows']) : 1;
+        $obligatorio = $opciones['obligatorio'] ?? false;
+        $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
 
         ob_start();
         ?>
             <div class="<? echo esc_attr($clasesContenedor) ?>">
                 <? if ($label): ?>
-                    <label for="<? echo esc_attr($id) ?>"><? echo esc_html($label) ?></label>
+                    <label for="<? echo esc_attr($id) ?>"><? echo esc_html($label) ?><? if ($obligatorio): ?><span class="obligatorio">*</span><? endif; ?></label>
                 <? endif; ?>
-                <textarea id="<? echo esc_attr($id) ?>"
-                    name="<? echo esc_attr($nombre) ?>"
-                    class="<? echo esc_attr($clasesInput) ?>"
-                    rows="<? echo $rows ?>"
-                    <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?>
-                    <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?>><? echo esc_textarea($valor) ?></textarea>
+                <textarea id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" class="<? echo esc_attr($clasesInput) ?>" rows="<? echo $rows ?>" <? if ($placeholder): ?>placeholder="<? echo esc_attr($placeholder) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?>><? echo esc_textarea($valor) ?></textarea>
             </div>
         <?
         return ob_get_clean();
@@ -135,6 +125,8 @@ class FormBuilder
         $accept = $opciones['accept'] ?? '';
         $limite = !empty($opciones['limite']) ? intval($opciones['limite']) : 0;
         $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
+        $obligatorio = $opciones['obligatorio'] ?? false;
+        $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
 
         $attachmentId = self::obtenerValorMeta($opciones);
         if (!empty($attachmentId)) {
@@ -148,12 +140,7 @@ class FormBuilder
         ?>
 
             <div class="<? echo esc_attr($clasesContenedor) ?>" <? if ($idPreview): ?>id="<? echo esc_attr($idPreview) ?>" <? endif; ?>><? echo $previewContent ?></div>
-            <input type="file"
-                id="<? echo esc_attr($id) ?>"
-                name="<? echo esc_attr($nombre) ?>"
-                style="display:none;"
-                <? if ($accept): ?>accept="<? echo esc_attr($accept) ?>" <? endif; ?>
-                <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> />
+            <input type="file" id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" style="display:none;" <? if ($accept): ?>accept="<? echo esc_attr($accept) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?> />
 
         <?
         return ob_get_clean();
@@ -169,6 +156,9 @@ class FormBuilder
         $clasesLabel = $opciones['extraClassLabel'] ?? 'customCheckbox';
         $tooltip = $opciones['tooltip'] ?? '';
         $labelContent = $opciones['labelIcono'] ?? esc_html($label);
+        $obligatorio = $opciones['obligatorio'] ?? false;
+        $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
+
 
         $valorGuardado = self::obtenerValorMeta($opciones);
         $checked = !empty($valorGuardado) ? 'checked' : '';
@@ -177,13 +167,9 @@ class FormBuilder
         ?>
             <div class="<? echo esc_attr($clasesContenedor) ?>">
                 <label for="<? echo esc_attr($id) ?>" class="<? echo esc_attr($clasesLabel) ?>" <? if ($tooltip): ?>data-tooltip="<? echo esc_attr($tooltip) ?>" <? endif; ?>>
-                    <input type="checkbox"
-                        id="<? echo esc_attr($id) ?>"
-                        name="<? echo esc_attr($nombre) ?>"
-                        value="<? echo esc_attr($valorInput) ?>"
-                        <? echo $checked ?>>
+                    <input type="checkbox" id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" value="<? echo esc_attr($valorInput) ?>" <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?> <? echo $checked ?>>
                     <span class="checkmark"></span>
-                    <? echo $labelContent ?>
+                    <? echo $labelContent ?><? if ($label && $obligatorio): ?><span class="obligatorio">*</span><? endif; ?>
                 </label>
             </div>
     <?

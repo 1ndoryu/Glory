@@ -48,10 +48,32 @@ function gloryForm() {
         const campos = contenedor.querySelectorAll('input:not([type="button"]):not([type="submit"]), textarea, select');
         let validacionExitosa = true;
 
+        // --- Inicio: Bloque de validación ---
         for (const input of campos) {
             if (!input.name) {
                 continue;
             }
+
+            // 1. Validación de campos obligatorios
+            if (input.required) {
+                let campoVacio = false;
+                if (input.type === 'checkbox') {
+                    if (!input.checked) campoVacio = true;
+                } else if (input.type === 'file') {
+                    if (input.files.length === 0) campoVacio = true;
+                } else if (!input.value.trim()) {
+                    campoVacio = true;
+                }
+
+                if (campoVacio) {
+                    const alerta = input.dataset.alertaObligatorio || `El campo "${input.name}" es obligatorio.`;
+                    alert(alerta);
+                    validacionExitosa = false;
+                    break; 
+                }
+            }
+
+            // 2. Validación de límites
             const limite = input.dataset.limit;
             if (limite) {
                 const limiteNumerico = parseInt(limite, 10);
@@ -70,6 +92,7 @@ function gloryForm() {
                 }
             }
         }
+        // --- Fin: Bloque de validación ---
 
         if (!validacionExitosa) {
             return;
@@ -85,7 +108,6 @@ function gloryForm() {
         datosParaEnviar.append('subAccion', subAccion);
         datosParaEnviar.append('nonce', window.dataGlobal.nonce);
         
-        // Adjuntar datos del contenedor para generalizar el guardado
         const metaTarget = contenedor.dataset.metaTarget;
         const objectId = contenedor.dataset.objectId;
 
@@ -106,7 +128,8 @@ function gloryForm() {
                     datosParaEnviar.append(clave, input.files[0]);
                 }
             } else if (input.type === 'checkbox') {
-                datosParaEnviar.append(clave, input.checked);
+                // Envía '1' si está marcado, '0' si no lo está.
+                datosParaEnviar.append(clave, input.checked ? '1' : '0');
             } else if (input.type === 'radio') {
                 if (input.checked) {
                     datosParaEnviar.append(clave, input.value);
@@ -125,7 +148,7 @@ function gloryForm() {
             const respuesta = await gloryAjax('gloryFormHandler', datosParaEnviar);
             
             if (respuesta.success && respuesta.data && respuesta.data.alert) {
-                ocultarFondo();
+                ocultarFondo(); // Asumo que esta función existe en tu scope
                 alert(respuesta.data.alert);
             } else if (!respuesta.success && respuesta.data && respuesta.data.alert) {
                 alert(respuesta.data.alert);

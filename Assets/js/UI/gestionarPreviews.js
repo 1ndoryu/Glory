@@ -8,12 +8,12 @@
  * deben coexistir el input de archivo y el/los elemento(s) de previsualización.
  *
  * <div class="previewContenedor">
- * * <input type="file" name="mi_archivo" style="display: none;">
+ * <input type="file" name="mi_archivo" style="display: none;">
  *
- * * <div class="previewImagen oculto">
- * * </div>
+ * <div class="previewImagen oculto">
+ * </div>
  *
- * * <button type="button" class="botonPreviewImagen">Seleccionar Imagen</button>
+ * <button type="button" class="botonPreviewImagen" data-extrapreview=".selector">Seleccionar Imagen</button>
  * </div>
  *
  * --- CLASES DE PREVIEW Y BOTONES ---
@@ -27,7 +27,7 @@
  * de preview correspondiente al tipo de archivo se hará visible (quitando `.oculto`)
  * y al soltar, se mostrará la previsualización.
  * 2. Clic: Un clic en un botón (`.botonPreview...`) o en un área de preview ya visible
- * abrirá el selector de archivos.
+ * abrirá el selector de archivos, filtrando por el tipo de archivo (ej. `image/*`).
  *
  * --- ATRIBUTOS DE CONFIGURACIÓN (Opcionales) ---
  * - data-uploadclick="true": En `.previewContenedor`, permite que un clic en cualquier
@@ -35,7 +35,7 @@
  * - data-preview-id="mi-id" y data-preview-for="mi-id": Permiten vincular manualmente
  * un input y su preview si no están en la misma jerarquía `.previewContenedor`.
  * - data-extrapreview=".selector": Muestra un elemento extra (usando un selector CSS)
- * durante la operación de arrastre.
+ * durante la operación de arrastre o al hacer clic en un botón que lo contenga.
  */
 function gestionarPreviews() {
 
@@ -107,36 +107,69 @@ function gestionarPreviews() {
         return (input && preview) ? { input, preview } : null;
     }
 
+    /**
+     * Gestiona el clic para abrir el selector de archivos, aplicando filtros.
+     * @param {Event} evento
+     */
     function alHacerClick(evento) {
         const botonPreview = evento.target.closest('[class*="botonPreview"]');
+        const zonaInteractiva = evento.target.closest('.preview, .previewImagen, .previewAudio, .previewFile');
+        const contenedorPrincipal = evento.target.closest('.previewContenedor');
+
         let inputADisparar = null;
+        let elementoDeReferencia = null; // Botón o área que define el tipo de archivo
 
         if (botonPreview) {
+            elementoDeReferencia = botonPreview;
             const contenedor = botonPreview.closest('.previewContenedor');
             if (contenedor) {
                 inputADisparar = contenedor.querySelector('input[type="file"]');
             }
-        } else {
-            const zonaInteractiva = evento.target.closest('.preview, .previewImagen, .previewAudio, .previewFile, .previewContenedor');
-            if (zonaInteractiva) {
-                if (zonaInteractiva.matches('.previewContenedor') && zonaInteractiva.dataset.uploadclick !== 'true') {
-                    return;
-                }
-                const componentes = obtenerComponentes(zonaInteractiva, null);
-                if (componentes) {
-                    inputADisparar = componentes.input;
-                }
+        } else if (zonaInteractiva) {
+            elementoDeReferencia = zonaInteractiva;
+            const componentes = obtenerComponentes(zonaInteractiva, null);
+            if (componentes) {
+                inputADisparar = componentes.input;
             }
+        } else if (contenedorPrincipal && contenedorPrincipal.dataset.uploadclick === 'true') {
+            elementoDeReferencia = contenedorPrincipal;
+            inputADisparar = contenedorPrincipal.querySelector('input[type="file"]');
+        } else {
+            return; // No hay un objetivo interactivo válido
         }
 
-        if (inputADisparar) {
+        if (inputADisparar && elementoDeReferencia) {
+            let acceptType = '';
+            // Se priorizan los tipos más específicos primero
+            if (elementoDeReferencia.matches('[class*="botonPreviewAudio"]') || elementoDeReferencia.matches('.previewAudio')) {
+                acceptType = 'audio/*';
+            } else if (elementoDeReferencia.matches('[class*="botonPreviewImagen"]') || elementoDeReferencia.matches('.previewImagen') || elementoDeReferencia.matches('.preview')) {
+                acceptType = 'image/*';
+            }
+            
+            // **NUEVO**: Activar extra preview si está definido en el botón o elemento de referencia
+            if (elementoDeReferencia.dataset.extrapreview) {
+                document.querySelectorAll(elementoDeReferencia.dataset.extrapreview).forEach(el => {
+                    el.classList.add('activo');
+                    el.classList.remove('oculto');
+                });
+            }
+
+            inputADisparar.accept = acceptType;
             inputADisparar.click();
         }
     }
 
+    /**
+     * Gestiona la previsualización cuando un archivo es seleccionado.
+     * @param {Event} evento
+     */
     function alCambiarArchivo(evento) {
         if (!evento.target.matches('input[type="file"]')) return;
         const input = evento.target;
+
+        // Limpia el atributo 'accept' después de su uso
+        input.accept = '';
 
         if (!input.files || input.files.length === 0) return;
 
@@ -144,11 +177,20 @@ function gestionarPreviews() {
         const componentes = obtenerComponentes(input, archivo);
 
         if (componentes && componentes.preview) {
-            componentes.preview.classList.remove('oculto');
-            const contenedorPadre = componentes.preview.closest('.previewContenedor');
-            if (contenedorPadre) {
-                contenedorPadre.classList.remove('oculto');
+            const contenedor = componentes.preview.closest('.previewContenedor');
+            if (contenedor) {
+                // Oculta otras posibles previews en el mismo contenedor
+                contenedor.querySelectorAll('.preview, .previewImagen, .previewAudio, .previewFile').forEach(p => {
+                    if (p !== componentes.preview) {
+                        p.classList.add('oculto');
+                    }
+                });
             }
+            
+            // Muestra la preview correcta
+            componentes.preview.classList.remove('oculto');
+            if(contenedor) contenedor.classList.remove('oculto');
+
 
             if (archivo.type.startsWith('image/')) {
                 mostrarImagen(archivo, componentes.preview);
@@ -237,5 +279,6 @@ function gestionarPreviews() {
     document.addEventListener('dragleave', alDejarDeArrastrar);
     document.addEventListener('drop', alSoltarArchivo);
 }
+
 
 document.addEventListener('gloryRecarga', gestionarPreviews);
