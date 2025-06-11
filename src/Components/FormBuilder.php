@@ -4,28 +4,20 @@ namespace Glory\Component;
 
 class FormBuilder
 {
-    private static ?string $currentMetaTarget = null;
-    private static ?int $currentObjectId = null;
-
+    /**
+     * Inicia el contenedor del formulario.
+     * Ya no guarda estado interno. Los atributos data-* deben pasarse en el array de opciones.
+     */
     public static function inicio(array $opciones = []): string
     {
-        self::$currentMetaTarget = $opciones['metaTarget'] ?? null;
-        self::$currentObjectId = !empty($opciones['objectId']) ? intval($opciones['objectId']) : null;
-
         $id = $opciones['id'] ?? '';
         $action = $opciones['action'] ?? 'javascript:void(0);';
         $method = $opciones['method'] ?? 'post';
         $clases = 'gloryForm ' . ($opciones['extraClass'] ?? '');
-        $atributosExtra = $opciones['atributos'] ?? [];
+        $atributos = $opciones['atributos'] ?? [];
         
         $dataAttributes = '';
-        if (self::$currentMetaTarget) {
-            $dataAttributes .= 'data-meta-target="' . esc_attr(self::$currentMetaTarget) . '" ';
-        }
-        if (self::$currentObjectId) {
-            $dataAttributes .= 'data-object-id="' . esc_attr(self::$currentObjectId) . '" ';
-        }
-        foreach ($atributosExtra as $clave => $valor) {
+        foreach ($atributos as $clave => $valor) {
             $dataAttributes .= esc_attr($clave) . '="' . esc_attr($valor) . '" ';
         }
 
@@ -40,52 +32,23 @@ class FormBuilder
         return ob_get_clean();
     }
     
+    /**
+     * Cierra el contenedor del formulario.
+     */
     public static function fin(): string
     {
-        self::$currentMetaTarget = null;
-        self::$currentObjectId = null;
         return "</div>";
     }
 
-    private static function obtenerValorMeta(array $opciones): string
-    {
-        $nombre = $opciones['nombre'] ?? '';
-        $metaTarget = self::$currentMetaTarget;
-        $objectId = self::$currentObjectId;
-
-        if (empty($nombre) || empty($metaTarget)) {
-            return '';
-        }
-
-        switch ($metaTarget) {
-            case 'user':
-                $userId = $objectId ?? get_current_user_id();
-                if (!$userId)
-                    return '';
-
-                if ($nombre === 'user_login') {
-                    $usuario = get_userdata($userId);
-                    return $usuario ? $usuario->user_login : '';
-                }
-
-                return get_user_meta($userId, $nombre, true) ?? '';
-
-            case 'post':
-                if (!$objectId)
-                    return '';
-                return get_post_meta($objectId, $nombre, true) ?? '';
-
-            default:
-                return '';
-        }
-    }
-
+    /**
+     * Genera un campo de texto. El valor debe ser proporcionado.
+     */
     public static function campoTexto(array $opciones): string
     {
         $nombre = $opciones['nombre'] ?? '';
         $id = 'form-' . $nombre;
         $label = $opciones['label'] ?? '';
-        $valor = $opciones['valor'] ?? self::obtenerValorMeta($opciones);
+        $valor = $opciones['valor'] ?? ''; // El valor AHORA debe ser pasado explícitamente.
         $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
         $clasesInput = $opciones['extraClassInput'] ?? '';
         $placeholder = $opciones['placeholder'] ?? '';
@@ -106,12 +69,15 @@ class FormBuilder
         return ob_get_clean();
     }
 
+    /**
+     * Genera un campo de área de texto. El valor debe ser proporcionado.
+     */
     public static function campoTextarea(array $opciones): string
     {
         $nombre = $opciones['nombre'] ?? '';
         $id = 'form-' . $nombre;
         $label = $opciones['label'] ?? '';
-        $valor = $opciones['valor'] ?? self::obtenerValorMeta($opciones);
+        $valor = $opciones['valor'] ?? ''; // El valor AHORA debe ser pasado explícitamente.
         $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
         $clasesInput = $opciones['extraClassInput'] ?? '';
         $placeholder = $opciones['placeholder'] ?? '';
@@ -133,37 +99,36 @@ class FormBuilder
         return ob_get_clean();
     }
 
+    /**
+     * Genera un campo de archivo. El contenido de la vista previa debe ser proporcionado.
+     */
     public static function campoArchivo(array $opciones): string
     {
         $nombre = $opciones['nombre'] ?? '';
         $id = 'form-' . $nombre;
         $idPreview = $opciones['idPreview'] ?? '';
-        $textoPreview = $opciones['textoPreview'] ?? 'Seleccionar archivo';
-        $previewContent = esc_html($textoPreview);
         $accept = $opciones['accept'] ?? '';
         $limite = !empty($opciones['limite']) ? intval($opciones['limite']) : 0;
         $clasesContenedor = 'formCampo ' . ($opciones['classContainer'] ?? '');
         $obligatorio = $opciones['obligatorio'] ?? false;
         $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
         $minimo = !empty($opciones['minimo']) ? intval($opciones['minimo']) : 0;
-        $attachmentId = self::obtenerValorMeta($opciones);
-        if (!empty($attachmentId)) {
-            $imagenGuardada = wp_get_attachment_image($attachmentId, 'thumbnail');
-            if (!empty($imagenGuardada)) {
-                $previewContent = $imagenGuardada;
-            }
-        }
+        
+        // El contenido de la vista previa AHORA debe ser pasado explícitamente.
+        // El código que llama a este método es responsable de generar el HTML seguro.
+        $previewContent = $opciones['previewContent'] ?? esc_html($opciones['textoPreview'] ?? 'Seleccionar archivo');
 
         ob_start();
         ?>
-
             <div class="<? echo esc_attr($clasesContenedor) ?>" <? if ($idPreview): ?>id="<? echo esc_attr($idPreview) ?>" <? endif; ?>><? echo $previewContent ?></div>
             <input type="file" id="<? echo esc_attr($id) ?>" name="<? echo esc_attr($nombre) ?>" style="display:none;" <? if ($accept): ?>accept="<? echo esc_attr($accept) ?>" <? endif; ?> <? if ($limite): ?>data-limit="<? echo $limite ?>" <? endif; ?> <? if ($minimo): ?>data-minimo="<? echo $minimo ?>" <? endif; ?> <? if ($obligatorio): ?>required<? endif; ?> <? if ($obligatorio && $alertaObligatorio): ?>data-alerta-obligatorio="<? echo esc_attr($alertaObligatorio) ?>" <? endif; ?> />
-
         <?
         return ob_get_clean();
     }
 
+    /**
+     * Genera un campo de tipo checkbox. El estado 'checked' debe ser proporcionado.
+     */
     public static function campoCheckbox(array $opciones): string
     {
         $nombre = $opciones['nombre'] ?? '';
@@ -177,9 +142,8 @@ class FormBuilder
         $obligatorio = $opciones['obligatorio'] ?? false;
         $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
 
-
-        $valorGuardado = self::obtenerValorMeta($opciones);
-        $checked = !empty($valorGuardado) ? 'checked' : '';
+        // El estado 'checked' AHORA debe ser pasado explícitamente.
+        $checked = !empty($opciones['checked']) ? 'checked' : '';
 
         ob_start();
         ?>
@@ -194,6 +158,9 @@ class FormBuilder
         return ob_get_clean();
     }
 
+    /**
+     * Genera un botón de envío.
+     */
     public static function botonEnviar(array $opciones): string
     {
         $accion = $opciones['accion'] ?? '';
