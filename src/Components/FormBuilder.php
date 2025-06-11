@@ -16,10 +16,26 @@ class FormBuilder
         $action = $opciones['action'] ?? 'javascript:void(0);';
         $method = $opciones['method'] ?? 'post';
         $clases = 'gloryForm ' . ($opciones['extraClass'] ?? '');
+        $atributosExtra = $opciones['atributos'] ?? [];
+
+        $dataAttributes = '';
+        if (self::$currentMetaTarget) {
+            $dataAttributes .= 'data-meta-target="' . esc_attr(self::$currentMetaTarget) . '" ';
+        }
+        if (self::$currentObjectId) {
+            $dataAttributes .= 'data-object-id="' . esc_attr(self::$currentObjectId) . '" ';
+        }
+        foreach ($atributosExtra as $clave => $valor) {
+            $dataAttributes .= esc_attr($clave) . '="' . esc_attr($valor) . '" ';
+        }
 
         ob_start();
 ?>
-        <div <? if ($id): ?>id="<? echo esc_attr($id) ?>" <? endif; ?> class="<? echo esc_attr($clases) ?>" action="<? echo esc_attr($action) ?>" method="<? echo esc_attr($method) ?>" <? if (self::$currentMetaTarget): ?>data-meta-target="<? echo esc_attr(self::$currentMetaTarget) ?>" <? endif; ?> <? if (self::$currentObjectId): ?>data-object-id="<? echo esc_attr(self::$currentObjectId) ?>" <? endif; ?>>
+        <div <? if ($id): ?>id="<? echo esc_attr($id) ?>" <? endif; ?>
+             class="<? echo esc_attr($clases) ?>"
+             action="<? echo esc_attr($action) ?>"
+             method="<? echo esc_attr($method) ?>"
+             <? echo trim($dataAttributes) ?>>
         <?
         return ob_get_clean();
     }

@@ -9,6 +9,10 @@ use Glory\Core\AssetManager; // Importa la clase base
  * Hereda de AssetManager para funcionalidades comunes de gestión de assets.
  * @author @wandorius
  * @tarea Jules: Corregido error fatal de método abstracto no implementado.
+ * @tarea-completada Jules: Cambiada la visibilidad de enqueueItems a public para corregir error fatal con add_action.
+ * @tarea-pendiente Jules: Revisar los métodos `define` y `defineFolder` para asegurar consistencia y optimización después de los cambios en AssetManager.
+ * @tarea-completada Jules: Corregida advertencia PHP por clave 'enPiePagina' no definida en enqueueItems usando un valor por defecto.
+ * @tarea-completada Jules: Asegurada la inclusión de la clave 'enPiePagina' por defecto en construirConfiguracionAssetDesdeCarpeta.
  */
 class ScriptManager extends AssetManager // Hereda de AssetManager
 {
@@ -45,13 +49,13 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
         // Validación de datos de localización
         if (!is_null($datosLocalizacion)) {
             if (empty($datosLocalizacion['nombreObjeto']) || !is_string($datosLocalizacion['nombreObjeto'])) {
-                GloryLogger::error("ScriptManager: Nombre de objeto ('nombreObjeto') inválido o vacío para los datos de localización del script '{$identificador}'. La localización será omitida.");
+                GloryLogger::error("ScriptManager: 'nombreObjeto' inválido o vacío para localización de script '{$identificador}'. Se omite localización.");
                 $datosLocalizacion = null;
             } elseif (!isset($datosLocalizacion['datos']) || !is_array($datosLocalizacion['datos'])) {
-                GloryLogger::error("ScriptManager: Datos ('datos') inválidos (debe ser un array) para la localización del script '{$identificador}'. La localización será omitida.");
+                GloryLogger::error("ScriptManager: 'datos' inválidos (debe ser array) para localización de script '{$identificador}'. Se omite localización.");
                 $datosLocalizacion = null;
             } elseif (empty($datosLocalizacion['datos'])) {
-                GloryLogger::warning("ScriptManager: El array de datos ('datos') está VACÍO para la localización del script '{$identificador}'.");
+                GloryLogger::warning("ScriptManager: Array 'datos' vacío para localización de script '{$identificador}'.");
             }
         }
 
@@ -67,9 +71,6 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
         ];
 
         // Llama al método de la clase base para almacenar el asset.
-        // Se usa parent::defineAsset si se quiere evitar la redefinición en la clase hija,
-        // o self::defineAsset si se quiere permitir que la clase hija pueda sobreescribir defineAsset.
-        // En este caso, como AssetManager::defineAsset es protected, usamos static::
         static::defineAsset($identificador, $configuracion);
     }
 
@@ -120,7 +121,7 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
             'ruta' => $rutaRelativaWeb,
             'dependencias' => $dependenciasDefault,
             'version' => null, // La versión se calculará en enqueueItems
-            'enPiePagina' => $opcionesDefault, // $opcionesDefault es $enPiePaginaDefault
+            'enPiePagina' => $opcionesDefault ?? true, // $opcionesDefault es $enPiePaginaDefault, por defecto true
             'datosLocalizacion' => null, // No hay datos de localización por defecto para defineFolder
             'modoDesarrollo' => $modoDesarrollo,
             'identificador' => $identificador,
@@ -142,13 +143,13 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
      * Procesa cada script, determina su versión, lo registra y lo pone en cola,
      * además de localizar datos si se especificaron.
      */
-    protected static function enqueueItems(): void
+    public static function enqueueItems(): void
     {
-        if (empty(self::$assetsDefinidos)) { // Cambiado de self::$coleccionScripts a self::$assetsDefinidos
+        if (empty(self::$assetsDefinidos)) {
             return; // No hay scripts definidos para procesar.
         }
 
-        foreach (self::$assetsDefinidos as $identificador => $definicionScript) { // Cambiado de self::$coleccionScripts a self::$assetsDefinidos
+        foreach (self::$assetsDefinidos as $identificador => $definicionScript) {
             // Si el script ya está en cola (ej. por otro plugin/tema o manualmente),
             // solo intenta localizar datos si es necesario y luego continúa.
             if (wp_script_is($identificador, 'enqueued')) {
@@ -169,7 +170,7 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
             $urlArchivo = get_template_directory_uri() . '/' . $rutaRelativa; // URL del archivo.
 
             if (!file_exists($rutaArchivo)) {
-                GloryLogger::error("El archivo de script '{$rutaArchivo}' para el identificador '{$identificador}' no fue encontrado. Se omite su puesta en cola.");
+                GloryLogger::error("ScriptManager: Archivo '{$rutaArchivo}' (handle: '{$identificador}') no encontrado. Se omite.");
                 continue;
             }
 
@@ -178,26 +179,30 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
             $versionScript = $definicionScript['version'];
 
             // Si no hay versión definida y el modo desarrollo está activo, usa el timestamp del archivo.
-            // De lo contrario, usa la versión del tema.
-            if (is_null($versionScript)) {
-                $tiempoModificacion = @filemtime($rutaArchivo); // Supresor de error por si el archivo no existe (aunque ya se verificó).
-                $versionScript = ($esDesarrollo && $tiempoModificacion) ? (string)$tiempoModificacion : self::$versionTema;
-            }
+            // Calcula la versión usando el método heredado de AssetManager.
+            // El método calcularVersionAsset ya maneja la lógica de versión específica, modo desarrollo y versión del tema.
+            $versionScript = static::calcularVersionAsset(
+                $rutaArchivo,
+                $definicionScript['version'], // versión específica del script
+                $definicionScript['modoDesarrollo'] // modo desarrollo específico del script
+            );
+
+            // Asegura que 'enPiePagina' tenga un valor por defecto si no está definido.
+            $enPiePagina = $definicionScript['enPiePagina'] ?? true; // Valor por defecto true
 
             $registradoCorrectamente = wp_register_script(
                 $identificador,
                 $urlArchivo,
                 $definicionScript['dependencias'],
                 $versionScript,
-                $definicionScript['enPiePagina']
+                $enPiePagina // Usa la variable con valor por defecto
             );
 
             if (!$registradoCorrectamente) {
-                GloryLogger::error("FALLO al registrar script '{$identificador}' en URL '{$urlArchivo}'. wp_register_script devolvió false. Omitiendo.");
+                GloryLogger::error("ScriptManager: wp_register_script devolvió false para '{$identificador}' (URL: '{$urlArchivo}'). Se omite.");
                 continue;
             }
 
-            $localizacionExitosa = false;
             if (!empty($definicionScript['datosLocalizacion']) && !empty($definicionScript['datosLocalizacion']['nombreObjeto']) && isset($definicionScript['datosLocalizacion']['datos']) && is_array($definicionScript['datosLocalizacion']['datos'])) {
                 $localizacionExitosa = wp_localize_script(
                     $identificador,
@@ -205,7 +210,7 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
                     $definicionScript['datosLocalizacion']['datos']
                 );
                 if (!$localizacionExitosa) {
-                    GloryLogger::error("wp_localize_script FALLÓ para el identificador '{$identificador}'. Nombre objeto: '{$definicionScript['datosLocalizacion']['nombreObjeto']}'.");
+                    GloryLogger::error("ScriptManager: wp_localize_script falló para '{$identificador}' (Objeto: '{$definicionScript['datosLocalizacion']['nombreObjeto']}').");
                 }
             }
             wp_enqueue_script($identificador);

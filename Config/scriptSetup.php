@@ -14,22 +14,6 @@ use Glory\Core\ScriptManager;
 use Glory\Core\StyleManager;
 use Glory\Core\Setup;
 
-// Nota: La configuración actual de ScriptManager podría no estar optimizada para ejecutarse en el wp-admin.
-// Se requiere revisar la lógica de ScriptManager para asegurar su correcto funcionamiento en el contexto de administración.
-ScriptManager::define(
-    'gloryLogs',                                // Handle único para el script (ej. 'glory-logs')
-    '/Glory/assets/js/GloryLogs.js',            // Ruta relativa al archivo JS desde la raíz del tema o plugin
-    ['jquery'],                                 // Dependencias (ej. ['jquery'])
-    null,                                       // Versión (null para que ScriptManager la calcule automáticamente)
-    true,                                       // Cargar en el footer (true) o en el header (false)
-    [                                           // Datos para wp_localize_script
-        'nombreObjeto' => 'gloryLogsData',       // Nombre del objeto JavaScript global (ej. window.gloryLogsData)
-        'datos'        => [                      // Datos que se pasarán al objeto JavaScript
-            'ajax_url' => admin_url('admin-ajax.php'), // URL para peticiones AJAX
-            'nonce'    => wp_create_nonce('glory_logs_nonce'), // Nonce para verificación de seguridad
-        ],
-    ],
-);
 
 ScriptManager::defineFolder(
     '/Glory/Assets/js', // Ruta de la carpeta de scripts

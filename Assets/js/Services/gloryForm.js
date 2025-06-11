@@ -1,3 +1,4 @@
+// @tarea-pendiente Jules: Realizar una revisión más exhaustiva de este archivo JavaScript en una tarea futura para optimización y refactorización avanzada.
 function gloryForm() {
     if (document.body.dataset.gloryFormListenersAttached) {
         return;
@@ -47,7 +48,7 @@ function gloryForm() {
 
         const campos = contenedor.querySelectorAll('input:not([type="button"]):not([type="submit"]), textarea, select');
         const errores = [];
-        const nombresCamposValidados = new Set(); // Para no repetir validaciones en grupos (ej. radio)
+        const nombresCamposValidados = new Set();
 
         for (const input of campos) {
             if (!input.name || nombresCamposValidados.has(input.name)) {
@@ -57,13 +58,11 @@ function gloryForm() {
             const alertaObligatorio = input.dataset.alertaObligatorio || `El campo "${input.name}" es obligatorio.`;
             const nombreAmigable = input.dataset.nombreAmigable || input.name;
 
-            // 1. Validación de campos obligatorios
             if (input.required) {
                 let campoVacio = false;
                 if (input.type === 'radio') {
                     const grupoRadios = contenedor.querySelectorAll(`input[type="radio"][name="${input.name}"]`);
-                    const algunoSeleccionado = Array.from(grupoRadios).some(radio => radio.checked);
-                    if (!algunoSeleccionado) {
+                    if (!Array.from(grupoRadios).some(radio => radio.checked)) {
                         campoVacio = true;
                     }
                     nombresCamposValidados.add(input.name);
@@ -80,7 +79,6 @@ function gloryForm() {
                 }
             }
             
-            // 2. Validación de valor mínimo
             const minimo = input.dataset.minimo;
             if (minimo) {
                 const minimoNumerico = parseInt(minimo, 10);
@@ -93,7 +91,6 @@ function gloryForm() {
                 }
             }
 
-            // 3. Validación de límites (valor máximo)
             const limite = input.dataset.limit;
             if (limite) {
                 const limiteNumerico = parseInt(limite, 10);
@@ -122,11 +119,12 @@ function gloryForm() {
         datosParaEnviar.append('subAccion', subAccion);
         datosParaEnviar.append('nonce', window.dataGlobal.nonce);
 
-        const metaTarget = contenedor.dataset.metaTarget;
-        const objectId = contenedor.dataset.objectId;
-
-        if (metaTarget) datosParaEnviar.append('metaTarget', metaTarget);
-        if (objectId) datosParaEnviar.append('objectId', objectId);
+        // Recopilar configuración del backend desde los atributos data-* del contenedor
+        const config = contenedor.dataset;
+        if (config.metaTarget) datosParaEnviar.append('metaTarget', config.metaTarget);
+        if (config.objectId) datosParaEnviar.append('objectId', config.objectId);
+        if (config.postType) datosParaEnviar.append('postType', config.postType);
+        if (config.postStatus) datosParaEnviar.append('postStatus', config.postStatus);
 
         for (const input of campos) {
             if (!input.name) continue;
@@ -147,10 +145,10 @@ function gloryForm() {
             }
         }
         
-        console.log('GloryForm.js: Verificando datos a enviar para la acción:', subAccion);
-        for (let [clave, valor] of datosParaEnviar.entries()) {
-            console.log(`- ${clave}:`, valor);
-        }
+        // console.log('GloryForm.js: Verificando datos a enviar para la acción:', subAccion);
+        // for (let [clave, valor] of datosParaEnviar.entries()) {
+        //     console.log(`- ${clave}:`, valor);
+        // }
 
         try {
             const respuesta = await gloryAjax('gloryFormHandler', datosParaEnviar);

@@ -5,11 +5,13 @@ namespace Glory\Core;
 /**
  * GloryLogger gestiona el registro de eventos y errores de la aplicación.
  *
- * Utiliza el sistema de logs nativo de PHP (error_log) en lugar de sistemas más pesados para el registro inmediato.
- * Los logs se acumulan en un buffer durante la ejecución y se escriben todos juntos al final del script (hook 'shutdown'),
- * optimizando el rendimiento. Permite configurar un nivel mínimo de log para controlar la verbosidad.
+ * Utiliza el sistema de logs nativo de PHP (`error_log`) para el registro eficiente de eventos.
+ * Los logs se acumulan en un búfer durante la ejecución del script y se escriben conjuntamente
+ * al final del script (mediante el hook 'shutdown'), optimizando así el rendimiento al minimizar
+ * las operaciones de escritura de archivos.
+ * Permite configurar un nivel mínimo de log para controlar la verbosidad de los registros guardados.
+ *
  * @author @wandorius
- * @tarea Jules: Refactorización de comentarios y Javadoc para mayor claridad y mantenibilidad.
  */
 class GloryLogger
 {
@@ -31,19 +33,19 @@ class GloryLogger
         self::NIVEL_CRITICO,
     ];
 
-    /** @var int Nivel mínimo de log para que un mensaje sea guardado. Por defecto, errores y superiores. */
+    /** @var int Nivel mínimo de log para que un mensaje sea guardado. Por defecto, NIVEL_ERROR y superiores. */
     private static int $nivelMinimoGuardado       = self::NIVEL_ERROR;
     /** @var array Buffer para acumular los logs durante la ejecución de un script. */
     private static array $bufferLogs                = [];
-    /** @var bool Indica si el hook 'shutdown' para guardar logs ya ha sido registrado. */
+    /** @var bool Indica si el hook 'shutdown' para guardar los logs ya ha sido registrado. */
     private static bool $hookGuardarLogsRegistrado = false;
 
     /**
-     * Inicializa el logger y opcionalmente establece el nivel mínimo de log a registrar.
+     * Inicializa el logger y, opcionalmente, establece el nivel mínimo de log a registrar.
      * Si no se especifica un nivel, se mantiene el valor por defecto (NIVEL_ERROR).
      *
-     * @param int|null $nivelMinimoRegistrar El nivel mínimo para que los logs se guarden (e.g., self::NIVEL_INFO).
-     *                                       Debe ser una de las constantes NIVEL_*.
+     * @param int|null $nivelMinimoRegistrar El nivel mínimo para que los logs se guarden (ej. self::NIVEL_INFO).
+     *                                       Debe ser una de las constantes de nivel de log (NIVEL_*).
      */
     public static function init(?int $nivelMinimoRegistrar = null): void
     {
@@ -53,11 +55,13 @@ class GloryLogger
     }
 
     /**
-     * Establece el nivel mínimo de log que se debe guardar.
+     * Establece el nivel mínimo de log para que los mensajes sean guardados.
      *
-     * Solo los grupos de logs cuya criticidad máxima sea igual o superior a este nivel serán guardados.
+     * Solo los grupos de logs cuya criticidad máxima (el nivel del mensaje más severo del grupo)
+     * sea igual o superior a este nivel establecido serán efectivamente escritos en el log.
      *
-     * @param int $nivelMinimo El nivel de log (ej. self::NIVEL_INFO, self::NIVEL_ERROR).
+     * @param int $nivelMinimo El nivel de log deseado (ej. self::NIVEL_INFO, self::NIVEL_ERROR).
+     *                         Debe ser una de las constantes NIVEL_* de esta clase.
      */
     public static function setNivelMinimoGuardado(int $nivelMinimo): void
     {
@@ -135,19 +139,18 @@ class GloryLogger
     }
 
     /**
-     * Registra un mensaje de log en el buffer interno, agrupándolo por el nombre del llamador.
+     * Registra un mensaje de log en el búfer interno, agrupándolo por el nombre del llamador.
      *
      * Determina el origen de la llamada (clase y método, o función) y agrupa los mensajes
      * provenientes del mismo origen. Para cada grupo, mantiene un nivel máximo de severidad
-     * y una lista de mensajes únicos (basados en una huella MD5 del contenido del log).
-     * También se asegura de que el hook para guardar los logs al final de la ejecución
-     * esté registrado.
+     * y una lista de mensajes únicos (basados en una huella MD5 del contenido del log para evitar duplicados exactos).
+     * También se asegura de que el hook para guardar los logs al final de la ejecución esté registrado.
      *
-     * @param int    $nivel    El nivel de severidad del log (e.g., self::NIVEL_INFO, self::NIVEL_ERROR).
+     * @param int    $nivel    El nivel de severidad del log (ej. self::NIVEL_INFO, self::NIVEL_ERROR).
      *                         Debe ser una de las constantes NIVEL_*.
      * @param string $mensaje  El mensaje principal del log.
      * @param array  $contexto Un array asociativo con datos adicionales relevantes para el log.
-     *                         Estos datos se serializarán y se añadirán al mensaje.
+     *                         Estos datos se serializarán como parte del mensaje de log.
      */
     private static function registrar(int $nivel, string $mensaje, array $contexto = []): void
     {
@@ -191,69 +194,88 @@ class GloryLogger
      * Obtiene el nombre de la función o método que invocó una de las funciones públicas del logger (info, error, etc.).
      *
      * Esta función analiza la traza de depuración (`debug_backtrace`) para identificar
-     * el contexto de la llamada original al logger. Se salta los frames internos de GloryLogger
-     * (como `registrar`, `info`, `warning`, `getNombreLlamador` mismo) para encontrar
-     * la primera llamada externa.
+     * el contexto de la llamada original al logger (es decir, la función o método que llamó a `info()`, `error()`, etc.).
+     * Se omiten los frames internos de `GloryLogger` para encontrar la primera llamada externa.
      *
-     * `DEBUG_BACKTRACE_IGNORE_ARGS` se usa para optimizar no incluyendo los argumentos de las funciones en la traza.
-     * El límite de `5` frames es una heurística; asume que la llamada al logger no está anidada demasiado profundamente
-     * dentro de otras funciones de utilidad que a su vez llaman al logger. Este límite previene un análisis
-     * excesivo de la pila de llamadas en casos complejos.
+     * `DEBUG_BACKTRACE_IGNORE_ARGS` se utiliza para optimizar la llamada a `debug_backtrace`
+     * al no incluir los argumentos de las funciones en la traza.
+     * El límite de `5` frames es una heurística conservadora; la estructura de llamadas típica es:
+     * - Frame 0: `getNombreLlamador()` (este método, donde `debug_backtrace()` es llamado)
+     * - Frame 1: `registrar()` (método interno que llama a `getNombreLlamador()`)
+     * - Frame 2: `info()`, `error()`, etc. (método público del logger que llama a `registrar()`)
+     * - Frame 3: El código de la aplicación que llama a `info()`, `error()`, etc. (¡Este es el frame que buscamos!)
      *
-     * @return string Nombre del llamador en formato 'Clase::metodo' o 'funcion', o '[llamador_desconocido]' si no se determina.
+     * @return string Nombre del llamador en formato 'Clase::metodo' o 'funcion',
+     *                o '[llamador_desconocido]' si no se puede determinar.
      */
     private static function getNombreLlamador(): string
     {
-        // Obtiene la traza de llamadas. Limita a 5 frames y omite argumentos para eficiencia.
+        // Obtiene la traza de llamadas. DEBUG_BACKTRACE_IGNORE_ARGS para eficiencia, límite de 5 frames.
         $traza = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 5);
 
-        // Itera sobre la traza.
-        // El índice inicial ($i = 2) se elige para omitir:
-        // Frame 0: La llamada a debug_backtrace() dentro de getNombreLlamador().
-        // Frame 1: La llamada a getNombreLlamador() desde registrar().
-        // Frame 2: La llamada a registrar() desde un método público como info(), warning(), error(), critical().
-        // Por lo tanto, el frame relevante que contiene el llamador original suele estar en $traza[2] o $traza[3]
-        // si la llamada fue info(), o $traza[1] si fue directo a registrar() (lo cual es privado).
-        // La lógica del bucle y el continue ajustan esto para encontrar el primer frame *fuera* de GloryLogger.
-        for ($i = 2; $i < count($traza); $i++) { // Ajuste de $i según la estructura de llamadas interna.
-                                                 // Típicamente, $traza[0] es getNombreLlamador, $traza[1] es registrar, $traza[2] es info/error/etc.
-                                                 // El llamador real es $traza[3] en el caso común.
-                                                 // Sin embargo, si se llamara a registrar() directamente desde otra clase (no debería pasar),
-                                                 // o si la estructura de llamadas cambia, este bucle intenta ser más robusto.
+        // El índice esperado del frame del llamador externo es 3, según la estructura descrita en el Javadoc.
+        $indiceLlamador = 3;
 
-            // Si la entrada actual de la traza corresponde a una llamada *dentro* de esta misma clase (GloryLogger),
-            // se ignora y se continúa con el siguiente frame. Esto es para saltar los métodos internos del logger.
-            if (isset($traza[$i]['class']) && $traza[$i]['class'] === self::class) {
-                continue; // Saltar frames internos de GloryLogger (ej. info, warning, error, critical, registrar).
-            }
+        if (isset($traza[$indiceLlamador])) {
+            $infoFrame = $traza[$indiceLlamador];
+            $funcion   = $infoFrame['function'] ?? '[funcion_desconocida]';
 
-            // Una vez que se encuentra un frame que no es de GloryLogger, se asume que es el llamador.
-            // Se construye el nombre en formato 'Clase::metodo' o 'funcion'.
-            if (isset($traza[$i])) { // Debería estar seteado si $i < count($traza)
-                $infoLlamador = $traza[$i];
-                $funcion      = $infoLlamador['function'] ?? '[funcion_desconocida]'; // Nombre de la función o método.
-                if (isset($infoLlamador['class'])) {
-                    // Si existe 'class', es un método de una clase.
-                    $funcion = $infoLlamador['class'] . '::' . $funcion;
+            if (isset($infoFrame['class'])) {
+                // Si la clase del frame es esta misma clase, algo no está bien o hay más anidamiento.
+                // Intentamos el siguiente frame por si acaso, aunque no debería ser necesario.
+                if ($infoFrame['class'] === self::class && isset($traza[$indiceLlamador + 1])) {
+                    $infoFrameSiguiente = $traza[$indiceLlamador + 1];
+                    // Solo usar el siguiente frame si NO pertenece a GloryLogger.
+                    if (!isset($infoFrameSiguiente['class']) || $infoFrameSiguiente['class'] !== self::class) {
+                        $funcion = $infoFrameSiguiente['function'] ?? '[funcion_desconocida]';
+                        if (isset($infoFrameSiguiente['class'])) {
+                            return $infoFrameSiguiente['class'] . '::' . $funcion;
+                        }
+                        return $funcion;
+                    }
+                } elseif ($infoFrame['class'] !== self::class) {
+                    // El frame actual no es de GloryLogger, es el llamador correcto.
+                    return $infoFrame['class'] . '::' . $funcion;
                 }
-                return $funcion; // Retorna el nombre del llamador encontrado.
+                // Si $infoFrame['class'] es self::class y no hay un siguiente frame útil,
+                // o si el siguiente frame también es self::class, se procederá al fallback.
+            } else {
+                // Es una función global (no un método de clase), por lo que es el llamador.
+                return $funcion;
             }
         }
-        // Si el bucle termina sin encontrar un llamador adecuado (poco probable en uso normal),
-        // se retorna un valor por defecto.
-        return '[llamador_desconocido]';
+
+        // Fallback: si $traza[3] no da el resultado esperado, iterar desde un punto seguro.
+        // Fallback: si $traza[$indiceLlamador] no proporcionó un llamador válido (ej. por anidamiento inesperado),
+        // iterar comenzando desde el frame 1 para encontrar el primer llamador externo a GloryLogger.
+        // Frame 0 es siempre getNombreLlamador.
+        for ($i = 1; $i < count($traza); $i++) {
+            // Si el frame actual pertenece a GloryLogger, continuar al siguiente.
+            if (isset($traza[$i]['class']) && $traza[$i]['class'] === self::class) {
+                continue;
+            }
+            // Se encontró un frame que no es de GloryLogger, o es una función global.
+            if (isset($traza[$i])) {
+                $infoLlamador = $traza[$i];
+                $funcion      = $infoLlamador['function'] ?? '[funcion_desconocida]';
+                if (isset($infoLlamador['class'])) {
+                    return $infoLlamador['class'] . '::' . $funcion;
+                }
+                return $funcion; // Es una función global.
+            }
+        }
+
+        return '[llamador_desconocido]'; // Si no se encuentra un llamador adecuado.
     }
 
     /**
-     * Asegura que el método `guardarLogsEnBuffer` se registre en el hook 'shutdown' de WordPress.
+     * Asegura que el método `guardarLogsEnBuffer` se registre para ejecutarse al final del script.
      *
-     * Este método utiliza una bandera estática (`$hookGuardarLogsRegistrado`) para garantizar
-     * que la acción `add_action('shutdown', ...)` se llame solo una vez por ciclo de petición.
-     * Esto previene múltiples registros del mismo hook, lo cual sería ineficiente.
-     * El hook 'shutdown' se utiliza para procesar y guardar los logs al final de la ejecución
-     * de WordPress, después de que todas las operaciones principales hayan concluido.
-     * La prioridad `100` es relativamente tardía, asegurando que la mayoría de las tareas
-     * de 'shutdown' ya se hayan ejecutado.
+     * En un entorno WordPress, esto se hace mediante el hook `shutdown`.
+     * Utiliza una bandera estática (`$hookGuardarLogsRegistrado`) para garantizar que la acción
+     * se registre solo una vez por ciclo de petición, previniendo ejecuciones múltiples.
+     * La prioridad `100` es relativamente tardía, buscando asegurar que la mayoría de las
+     * tareas de 'shutdown' ya se hayan ejecutado.
      */
     private static function registrarHookGuardarLogs(): void
     {
@@ -273,15 +295,17 @@ class GloryLogger
      * - Marca de tiempo precisa (con microsegundos).
      * - Nivel de log (INFO, ADVERTENCIA, ERROR, CRITICO).
      * - El mensaje del log.
-     * - El contexto (si existe), serializado con `print_r` y con espacios normalizados para legibilidad.
+     * - El contexto (si existe), serializado con `print_r` para mayor legibilidad y con espacios normalizados.
+     *   Para contextos grandes o si la legibilidad directa en el log no es prioritaria, serializar con `json_encode`
+     *   podría ser más performante, aunque resultaría en un formato menos legible para objetos complejos.
      *
      * El bloque completo está delimitado por líneas "--- GloryLogger Inicio: [NombreFuncion] ---" y
      * "--- GloryLogger Fin: [NombreFuncion] ---" para facilitar la lectura y el análisis de los logs.
      *
-     * @param string $nombreFuncion El nombre de la función o método que originó los logs.
-     *                              Se usa en las cabeceras del bloque de log.
-     * @param array  $datosLog      Un array que contiene los mensajes a registrar para esta función.
-     *                              Debe tener una clave 'mensajes' que es un array de registros de log individuales.
+     * @param string $nombreFuncion El nombre de la función o método que originó los logs (determinado por `getNombreLlamador`).
+     *                              Se utiliza en las cabeceras del bloque de log.
+     * @param array  $datosLog      Un array que contiene los mensajes acumulados para esta función/método.
+     *                              Debe tener una clave 'mensajes', que es un array de registros de log individuales.
      *                              Cada registro debe tener 'marcaTiempo', 'nivel', 'mensaje', y opcionalmente 'contexto'.
      */
     private static function crearEntradaLog(string $nombreFuncion, array $datosLog): void
@@ -309,20 +333,26 @@ class GloryLogger
                     break;
             }
 
-            $micro = sprintf("%06d", ($registro['marcaTiempo'] - floor($registro['marcaTiempo'])) * 1000000);
-            $fecha = new \DateTime(date('Y-m-d H:i:s.' . $micro, (int)$registro['marcaTiempo']));
+            // Formatear la marca de tiempo para incluir microsegundos.
+            $microsegundos = sprintf("%06d", ($registro['marcaTiempo'] - floor($registro['marcaTiempo'])) * 1000000);
+            $fechaConMicro = \DateTime::createFromFormat('U.u', sprintf('%.6F', $registro['marcaTiempo']));
+            // Si createFromFormat falla (PHP < 7.0.0 para 'u'), usar una aproximación.
+            if ($fechaConMicro === false) {
+                 $fechaConMicro = new \DateTime(date('Y-m-d H:i:s.' . $microsegundos, (int)$registro['marcaTiempo']));
+            }
+
 
             $lineaLog = sprintf(
                 "[%s] [%s] %s",
-                $fecha->format("Y-m-d H:i:s.u"),
+                $fechaConMicro->format("Y-m-d H:i:s.u"),
                 $nivelTexto,
                 $registro['mensaje']
             );
 
             if (!empty($registro['contexto'])) {
-                // Se normalizan múltiples espacios/saltos de línea en el contexto para una mejor legibilidad en el log.
+                // Serializar contexto. Normalizar espacios múltiples/saltos de línea para mejorar legibilidad.
                 $contextoSerializado = print_r($registro['contexto'], true);
-                $contextoNormalizado = preg_replace('/\s+/', ' ', $contextoSerializado);
+                $contextoNormalizado = preg_replace('/\s+/', ' ', trim($contextoSerializado));
                 $lineaLog .= " | Contexto: " . $contextoNormalizado;
             }
 
