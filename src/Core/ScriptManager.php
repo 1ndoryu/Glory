@@ -11,6 +11,8 @@ use Glory\Core\AssetManager; // Importa la clase base
  * @tarea Jules: Corregido error fatal de método abstracto no implementado.
  * @tarea-completada Jules: Cambiada la visibilidad de enqueueItems a public para corregir error fatal con add_action.
  * @tarea-pendiente Jules: Revisar los métodos `define` y `defineFolder` para asegurar consistencia y optimización después de los cambios en AssetManager.
+ * @tarea-completada Jules: Corregida advertencia PHP por clave 'enPiePagina' no definida en enqueueItems usando un valor por defecto.
+ * @tarea-completada Jules: Asegurada la inclusión de la clave 'enPiePagina' por defecto en construirConfiguracionAssetDesdeCarpeta.
  */
 class ScriptManager extends AssetManager // Hereda de AssetManager
 {
@@ -119,7 +121,7 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
             'ruta' => $rutaRelativaWeb,
             'dependencias' => $dependenciasDefault,
             'version' => null, // La versión se calculará en enqueueItems
-            'enPiePagina' => $opcionesDefault, // $opcionesDefault es $enPiePaginaDefault
+            'enPiePagina' => $opcionesDefault ?? true, // $opcionesDefault es $enPiePaginaDefault, por defecto true
             'datosLocalizacion' => null, // No hay datos de localización por defecto para defineFolder
             'modoDesarrollo' => $modoDesarrollo,
             'identificador' => $identificador,
@@ -183,12 +185,15 @@ class ScriptManager extends AssetManager // Hereda de AssetManager
                 $versionScript = ($esDesarrollo && $tiempoModificacion) ? (string)$tiempoModificacion : self::$versionTema;
             }
 
+            // Asegura que 'enPiePagina' tenga un valor por defecto si no está definido.
+            $enPiePagina = $definicionScript['enPiePagina'] ?? true; // Valor por defecto true
+
             $registradoCorrectamente = wp_register_script(
                 $identificador,
                 $urlArchivo,
                 $definicionScript['dependencias'],
                 $versionScript,
-                $definicionScript['enPiePagina']
+                $enPiePagina // Usa la variable con valor por defecto
             );
 
             if (!$registradoCorrectamente) {
