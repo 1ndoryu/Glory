@@ -1,4 +1,5 @@
 <?
+
 namespace Glory\Core;
 
 use Glory\Core\GloryLogger;
@@ -80,7 +81,7 @@ final class AssetManager
     public static function defineFolder(string $tipo, string $rutaCarpeta, array $configDefault = [], string $prefijoHandle = '', array $exclusiones = []): void
     {
         $extension = ($tipo === self::ASSET_TYPE_SCRIPT) ? 'js' : 'css';
-        
+
         // --- CORRECCIÓN INICIO ---
         // Normaliza la ruta del tema y la carpeta de assets para evitar conflictos de separadores (\ vs /)
         $directorioTema = wp_normalize_path(get_template_directory());
@@ -105,31 +106,39 @@ final class AssetManager
                 $rutaArchivoCompleta = wp_normalize_path($file->getPathname());
                 $rutaParaWeb = str_replace($directorioTema, '', $rutaArchivoCompleta);
                 // --- CORRECCIÓN FIN ---
-                
+
                 $handle = $prefijoHandle . sanitize_title($file->getBasename('.' . $extension));
                 self::define($tipo, $handle, $rutaParaWeb, $configDefault);
             }
         } catch (\Exception $e) {
-             GloryLogger::error("AssetManager: Error al iterar la carpeta '{$rutaCompleta}': " . $e->getMessage());
+            GloryLogger::error("AssetManager: Error al iterar la carpeta '{$rutaCompleta}': " . $e->getMessage());
         }
     }
-    
+
     public static function enqueueAssets(): void
     {
         foreach (self::$assets as $tipo => $assetsPorTipo) {
             foreach ($assetsPorTipo as $handle => $config) {
-                
-                // --- CORRECCIÓN INICIO ---
-                // Normaliza la ruta física completa antes de comprobar si el archivo existe.
+                $yaRegistrado = ($tipo === self::ASSET_TYPE_SCRIPT)
+                    ? wp_script_is($handle, 'registered')
+                    : wp_style_is($handle, 'registered');
+
+                if ($yaRegistrado) {
+                    if ($tipo === self::ASSET_TYPE_SCRIPT) {
+                        wp_enqueue_script($handle);
+                    } else {
+                        wp_enqueue_style($handle);
+                    }
+                    continue;
+                }
+
                 $rutaFisica = get_template_directory() . $config['ruta'];
                 $rutaFisicaNormalizada = wp_normalize_path($rutaFisica);
 
                 if (!file_exists($rutaFisicaNormalizada)) {
-                    // El log ahora mostrará la ruta normalizada, facilitando la depuración.
                     GloryLogger::error("AssetManager: Archivo no encontrado '{$rutaFisicaNormalizada}' para el handle '{$handle}'.");
                     continue;
                 }
-                // --- CORRECCIÓN FIN ---
 
                 $version = self::calcularVersion($rutaFisicaNormalizada, $config['ver'], $config['dev_mode']);
                 $url = get_template_directory_uri() . $config['ruta'];

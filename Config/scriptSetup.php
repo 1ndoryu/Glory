@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Configuración y registro de scripts y estilos para el tema/framework Glory.
  *
@@ -14,34 +15,7 @@ use Glory\Core\AssetManager;
 // Define las carpetas de assets que se cargarán automáticamente.
 // AssetManager procesará todos los archivos .js y .css en estas carpetas,
 // a menos que se especifiquen exclusiones.
-AssetManager::defineFolder(
-    'script',
-    '/Glory/assets/js/',
-    [
-        'deps'      => ['jquery'],
-        'in_footer' => true,
-    ],
-    'glory-',
-    [
-        'adminPanel.js',
-        'gloryLogs.js',
-    ]
-);
 
-AssetManager::defineFolder(
-    'style',
-    '/Glory/assets/css/',
-    [
-        'deps'  => [],
-        'media' => 'all',
-    ],
-    'glory-',
-    []
-);
-
-
-// --- Configuración Específica para el Script de Navegación AJAX ---
-// Se fusiona el contenido de ajaxPageSetup.php aquí para centralizar la configuración.
 AssetManager::define(
     'script',
     'gloryAjaxNav',
@@ -72,3 +46,32 @@ AssetManager::define(
         ]
     ]
 );
+
+AssetManager::defineFolder(
+    'script',
+    '/Glory/assets/js/',
+    [
+        'deps'      => ['jquery'],
+        'in_footer' => true,
+    ],
+    'glory-',
+    [
+        'adminPanel.js',
+        'gloryLogs.js',
+    ]
+);
+
+AssetManager::defineFolder(
+    'style',
+    '/Glory/assets/css/',
+    [
+        'deps'  => [],
+        'media' => 'all',
+    ],
+    'glory-',
+    []
+);
+
+
+// --- Configuración Específica para el Script de Navegación AJAX ---
+// Se fusiona el contenido de ajaxPageSetup.php aquí para centralizar la configuración.

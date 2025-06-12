@@ -1,4 +1,5 @@
 <?
+
 namespace Glory\Core;
 
 use Glory\Handler\FormHandler;
@@ -10,8 +11,8 @@ class Setup
     {
         GloryLogger::init();
         new FormHandler();
-        
-        // Llama al inicializador del nuevo OpcionManager unificado.
         OpcionManager::init();
+        AssetManager::register();
+        PageManager::register();
     }
 }
