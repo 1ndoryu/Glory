@@ -1,25 +1,30 @@
 <?php
 
-namespace Glory\Helper;
+namespace Glory\Utility;
 
 use DateTime;
 use DateTimeZone;
 use DateInterval;
 use Glory\Core\GloryLogger;
-use Glory\Manager\OpcionManager; 
+use Glory\Manager\OpcionManager;
 
+/**
+ * Clase de utilidad para gestionar y normalizar datos de horarios.
+ * Ubicada en Utility para reflejar su propósito como helper con estado.
+ */
 class ScheduleManager
 {
-    public static function getScheduleData(string $key, array $defaultSchedule = [], ?string $panel_title = null, ?string $panel_section = null, ?string $panel_description = null, string $content_type = 'schedule'): array
+    public static function getScheduleData(string $key, array $defaultSchedule = []): array
     {
-        // El único cambio es aquí: De ContentManager a OpcionManager
-        $schedule_data = OpcionManager::get($key, $defaultSchedule, false, $panel_title, $panel_section, null, $panel_description, $content_type);
+        // La llamada a OpcionManager se simplifica para coincidir con su firma real.
+        // Los parámetros extra se eliminaron ya que OpcionManager no los utiliza.
+        $schedule_data = OpcionManager::get($key, $defaultSchedule);
 
-        if (!is_array($schedule_data)) { 
-            GloryLogger::error("SCHEDULE ERROR [$key]: Retrieved data is not an array. Value: " . print_r($schedule_data, true) . ". Falling back to default schedule parameter."); 
-            $schedule_data = $defaultSchedule; 
+        if (!is_array($schedule_data)) {
+            GloryLogger::error("SCHEDULE ERROR [$key]: Retrieved data is not an array. Value: " . print_r($schedule_data, true) . ". Falling back to default schedule parameter.");
+            $schedule_data = $defaultSchedule;
         }
-        
+
         if (empty($schedule_data) && !empty($defaultSchedule)) {
             GloryLogger::info("SCHEDULE INFO [$key]: Retrieved data is empty or invalid, using provided default schedule for normalization: " . print_r($defaultSchedule, true));
             $schedule_data = $defaultSchedule;
@@ -32,7 +37,7 @@ class ScheduleManager
                     GloryLogger::info("SCHEDULE INFO [$key]: Invalid or incomplete entry in schedule data. Entry: " . print_r($entry, true) . ". Skipping.");
                     continue;
                 }
-                
+
                 $n_day = sanitize_text_field($entry['day']);
                 $n_status = sanitize_text_field($entry['status'] ?? 'closed');
                 $n_open = ($n_status === 'open') ? sanitize_text_field($entry['open'] ?? '') : '';
@@ -49,14 +54,18 @@ class ScheduleManager
                         $n_open = trim($parts[0]);
                         $n_close = trim($parts[1]);
                         if (!preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $n_open) || !preg_match('/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/', $n_close)) {
-                            $n_open = ''; $n_close = ''; $n_status = 'closed'; $n_hours = 'Cerrado';
+                            $n_open = '';
+                            $n_close = '';
+                            $n_status = 'closed';
+                            $n_hours = 'Cerrado';
                             GloryLogger::info("SCHEDULE INFO [$key]: Invalid time format in 'hours' field '{$entry['hours']}' for day '{$n_day}'. Setting to closed.");
                         } else {
-                           $n_hours = $n_open . '-' . $n_close;
+                            $n_hours = $n_open . '-' . $n_close;
                         }
                     } else {
-                         $n_status = 'closed'; $n_hours = 'Cerrado';
-                         GloryLogger::info("SCHEDULE INFO [$key]: 'hours' field '{$entry['hours']}' for day '{$n_day}' is not in 'HH:MM-HH:MM' format. Setting to closed.");
+                        $n_status = 'closed';
+                        $n_hours = 'Cerrado';
+                        GloryLogger::info("SCHEDULE INFO [$key]: 'hours' field '{$entry['hours']}' for day '{$n_day}' is not in 'HH:MM-HH:MM' format. Setting to closed.");
                     }
                 }
 
@@ -74,8 +83,7 @@ class ScheduleManager
 
     public static function getCurrentScheduleStatus(string $schedule_key, array $default_schedule, string $timezone_string = 'Europe/Madrid'): array
     {
-        // Internally call self::getScheduleData()
-        $schedule = self::getScheduleData($schedule_key, $default_schedule); 
+        $schedule = self::getScheduleData($schedule_key, $default_schedule);
 
         if (empty($schedule)) {
             return ['status_class' => 'closed', 'message' => 'Horario no disponible.'];
@@ -113,7 +121,7 @@ class ScheduleManager
                 $close_datetime = DateTime::createFromFormat('Y-m-d H:i', $now->format('Y-m-d') . ' ' . $close_time_str, $timezone);
 
                 if (!$open_datetime || !$close_datetime) {
-                    GloryLogger::error("getCurrentStatus [$schedule_key]: Could not parse open/close times for today: '$open_time_str', '$close_time_str'. Date used: ".$now->format('Y-m-d'));
+                    GloryLogger::error("getCurrentStatus [$schedule_key]: Could not parse open/close times for today: '$open_time_str', '$close_time_str'. Date used: " . $now->format('Y-m-d'));
                 } else {
                     if ($close_datetime < $open_datetime) {
                         $close_datetime->add(new DateInterval('P1D'));
@@ -146,7 +154,8 @@ class ScheduleManager
                         if ($open_datetime_today && $now < $open_datetime_today) {
                             $next_opening_day_info = 'hoy a las ' . esc_html($today_schedule_entry['open']);
                         }
-                    } catch (\Exception $e) { /* Error already logged */ }
+                    } catch (\Exception $e) { /* Error already logged */
+                    }
                 }
 
                 if (empty($next_opening_day_info)) {

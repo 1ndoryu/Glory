@@ -1,6 +1,6 @@
 <?
 
-namespace Glory\Component;
+namespace Glory\Components;
 
 class FormBuilder
 {

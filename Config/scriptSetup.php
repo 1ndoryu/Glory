@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  * Configuración y registro de scripts y estilos para el tema/framework Glory.
  *
@@ -10,33 +10,65 @@
 
 use Glory\Core\AssetManager;
 
+// --- Scripts y Estilos Generales ---
 // Define las carpetas de assets que se cargarán automáticamente.
 // AssetManager procesará todos los archivos .js y .css en estas carpetas,
 // a menos que se especifiquen exclusiones.
-
-// Definición de todos los scripts en la carpeta de JavaScript.
 AssetManager::defineFolder(
-    'script',                                  // Tipo de asset
-    '/Glory/assets/js/',                             // Ruta de la carpeta relativa al tema
-    [                                          // Configuración por defecto para estos scripts
+    'script',
+    '/Glory/assets/js/',
+    [
         'deps'      => ['jquery'],
         'in_footer' => true,
     ],
-    'glory-',                                  // Prefijo para los handles
-    [                                          
+    'glory-',
+    [
         'adminPanel.js',
         'gloryLogs.js',
     ]
 );
 
-// Definición de todos los estilos en la carpeta de CSS.
 AssetManager::defineFolder(
-    'style',                                   // Tipo de asset
-    '/Glory/assets/css/',                            // Ruta de la carpeta relativa al tema
-    [                                          // Configuración por defecto para estos estilos
+    'style',
+    '/Glory/assets/css/',
+    [
         'deps'  => [],
         'media' => 'all',
     ],
-    'glory-',                                  // Prefijo para los handles
-    []                                         // Archivos a excluir
+    'glory-',
+    []
+);
+
+
+// --- Configuración Específica para el Script de Navegación AJAX ---
+// Se fusiona el contenido de ajaxPageSetup.php aquí para centralizar la configuración.
+AssetManager::define(
+    'script',
+    'gloryAjaxNav',
+    '/Glory/assets/js/genericAjax/gloryAjaxNav.js',
+    [
+        'deps'      => ['jquery'],
+        'in_footer' => true,
+        'localize'  => [
+            'nombreObjeto' => 'dataGlobal',
+            'datos'        => [
+                'enabled'            => true,
+                'contentSelector'    => '#contentAjax',
+                'mainScrollSelector' => '#contentAjax',
+                'loadingBarSelector' => '#loadingBar',
+                'cacheEnabled'       => true,
+                'ignoreUrlPatterns'  => [
+                    '/wp-admin',
+                    '/wp-login\.php',
+                    '\.(pdf|zip|rar|jpg|jpeg|png|gif|webp|mp3|mp4|xml|txt|docx|xlsx)$',
+                ],
+                'ignoreUrlParams'    => ['s', 'nocache', 'preview'],
+                'noAjaxClass'        => 'noAjax',
+                'idUsuario'          => get_current_user_id(),
+                'nonce'              => wp_create_nonce('globalNonce'),
+                'nombreUsuario'      => is_user_logged_in() ? wp_get_current_user()->display_name : '',
+                'username'           => is_user_logged_in() ? wp_get_current_user()->user_login : '',
+            ],
+        ]
+    ]
 );
