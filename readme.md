@@ -6,7 +6,7 @@
 
 ## 🚀 Funcionalidades Principales
 
-Glory está construido sobre un núcleo de "Managers" que gestionan diferentes aspectos de tu sitio de WordPress.
+Glory está construido sobre un núcleo de "Managers" y "Services" que gestionan diferentes aspectos de tu sitio de WordPress.
 
 ### ⚙️ Gestor de Opciones (`OpcionManager`)
 
@@ -14,10 +14,10 @@ El `OpcionManager` centraliza la definición y el acceso a las opciones del tema
 
 **Características:**
 
-  - **Definición centralizada**: Registra todas las opciones de tu tema en un solo lugar.
-  - **Sincronización automática**: Las opciones se sincronizan al iniciar, asegurando que los valores por defecto del código se establezcan en la base de datos si no existen.
-  - **Acceso tipado**: Proporciona métodos `helper` para obtener valores con el tipo de dato correcto (ej. `texto()`, `richText()`, `imagen()`, `menu()`).
-  - **Panel de Opciones Integrado**: Crea automáticamente un panel en el administrador de WordPress para gestionar las opciones definidas, agrupadas por secciones y subsecciones.
+  * **Definición centralizada**: Registra todas las opciones de tu tema en un solo lugar.
+  * **Sincronización automática**: Las opciones se sincronizan al iniciar, asegurando que los valores por defecto del código se establezcan en la base de datos si no existen.
+  * **Acceso tipado**: Proporciona métodos `helper` para obtener valores con el tipo de dato correcto (ej. `texto()`, `richText()`, `imagen()`, `menu()`).
+  * **Panel de Opciones Integrado**: Crea automáticamente un panel en el administrador de WordPress para gestionar las opciones definidas, agrupadas por secciones y subsecciones.
 
 **Uso Básico:**
 
@@ -46,9 +46,9 @@ Crea Tipos de Contenido Personalizados (CPTs) de forma declarativa y sencilla.
 
 **Características:**
 
-  - **Generación automática de etiquetas**: Solo necesitas proveer el nombre singular y plural.
-  - **Metadatos por defecto**: Define valores meta por defecto que se asignarán automáticamente al crear una nueva entrada de ese tipo.
-  - **Configuración simplificada**: Argumentos comunes como `public` y `supports` se establecen con valores por defecto inteligentes.
+  * **Generación automática de etiquetas**: Solo necesitas proveer el nombre singular y plural.
+  * **Metadatos por defecto**: Define valores meta por defecto que se asignarán automáticamente al crear una nueva entrada de ese tipo.
+  * **Configuración simplificada**: Argumentos comunes como `public` y `supports` se establecen con valores por defecto inteligentes.
 
 **Uso Básico:**
 
@@ -76,10 +76,10 @@ Asegura que las páginas esenciales de tu tema (como 'Contacto', 'Sobre Nosotros
 
 **Características:**
 
-  - **Creación y reconciliación**: Define páginas en tu código y Glory se asegurará de que existan en la base de datos.
-  - **Asignación de plantillas**: Asigna automáticamente la plantilla de página correcta.
-  - **Página de Inicio**: Al definir una página con el slug `home`, se configurará automáticamente como la página de inicio del sitio.
-  - **Limpieza automática**: Las páginas que dejes de definir en el código se enviarán a la papelera.
+  * **Creación y reconciliación**: Define páginas en tu código y Glory se asegurará de que existan en la base de datos.
+  * **Asignación de plantillas**: Asigna automáticamente la plantilla de página correcta.
+  * **Página de Inicio**: Al definir una página con el slug `home`, se configurará automáticamente como la página de inicio del sitio.
+  * **Limpieza automática**: Las páginas que dejes de definir en el código se enviarán a la papelera.
 
 **Uso Básico:**
 
@@ -102,10 +102,10 @@ Unifica la gestión de todos tus scripts (JS) y estilos (CSS).
 
 **Características:**
 
-  - **Carga de carpetas completas**: Define una carpeta y Glory cargará todos los archivos `.js` o `.css` que contenga.
-  - **Localización de datos**: Envía datos desde PHP a tus scripts de JavaScript de forma segura con `wp_localize_script`.
-  - **Manejo de dependencias**: Especifica dependencias como `jquery` fácilmente.
-  - **Versión automática**: En modo desarrollo, la versión del archivo se basa en su fecha de modificación para evitar problemas de caché.
+  * **Carga de carpetas completas**: Define una carpeta y Glory cargará todos los archivos `.js` o `.css` que contenga.
+  * **Localización de datos**: Envía datos desde PHP a tus scripts de JavaScript de forma segura con `wp_localize_script`.
+  * **Manejo de dependencias**: Especifica dependencias como `jquery` fácilmente.
+  * **Versión automática**: En modo desarrollo, la versión del archivo se basa en su fecha de modificación para evitar problemas de caché.
 
 **Uso Básico:**
 
@@ -138,9 +138,9 @@ Integra un sistema de créditos o puntos para los usuarios de tu sitio.
 
 **Características:**
 
-  - **Operaciones sencillas**: `getCreditos()`, `agregar()`, `quitar()`, y `setCreditos()`.
-  - **Recarga periódica**: Configura una recarga automática de créditos (ej. recargar hasta 100 créditos cada día) para todos los usuarios que estén por debajo de esa cantidad.
-  - **Registro de transacciones**: Cada operación se registra con un motivo para auditoría.
+  * **Operaciones sencillas**: `getCreditos()`, `agregar()`, `quitar()`, y `setCreditos()`.
+  * **Recarga periódica**: Configura una recarga automática de créditos (ej. recargar hasta 100 créditos cada día) para todos los usuarios que estén por debajo de esa cantidad.
+  * **Registro de transacciones**: Cada operación se registra con un motivo para auditoría.
 
 **Uso Básico:**
 
@@ -160,15 +160,49 @@ CreditosManager::quitar($usuarioId, 10, 'Compra de artículo virtual');
 
 -----
 
+### 📄 Gestor de Contenido por Defecto (`DefaultContentManager`)
+
+Define y sincroniza contenido por defecto (posts, páginas, etc.) desde el código a la base de datos.
+
+**Características:**
+
+  * **Definición declarativa**: Define el contenido que tu tema necesita para funcionar correctamente, como páginas de ejemplo, entradas predeterminadas o configuraciones iniciales.
+  * **Sincronización inteligente**: Elige entre diferentes modos de actualización (`none`, `force`, `smart`) para controlar cómo se actualiza el contenido si cambia en el código.
+  * **Protección contra ediciones**: Puede detectar si un contenido gestionado ha sido modificado manualmente en el panel de WordPress para evitar sobrescribir los cambios del usuario.
+  * **Limpieza de obsoletos**: Elimina automáticamente el contenido de la base de datos que ya no está definido en el código.
+
+**Uso Básico:**
+
+```php
+use Glory\Manager\DefaultContentManager;
+
+DefaultContentManager::define(
+    'page', // Tipo de post
+    [ // Array de posts a crear
+        [
+            'slugDefault' => 'acerca-de-nosotros',
+            'titulo' => 'Acerca de Nosotros',
+            'contenido' => 'Este es el contenido de la página.'
+        ]
+    ],
+    'smart', // Modo de actualización
+    true // Permitir eliminación de contenido obsoleto
+);
+
+DefaultContentManager::register();
+```
+
+-----
+
 ## ⚡️ Sistema AJAX y Formularios
 
 Glory simplifica radicalmente el manejo de peticiones AJAX y el procesamiento de formularios.
 
 ### `gloryAjax.js` y `FormHandler`
 
-  - **Punto de entrada único**: Utiliza la función `gloryAjax('miAccion', { ...datos })` en tu JavaScript para todas las llamadas AJAX.
-  - **Enrutamiento automático**: En PHP, `FormHandler` recibe la petición, busca una clase `Manejador` correspondiente a `miAccion` (ej. `MiAccionHandler`) y ejecuta su método `procesar()`.
-  - **Soporte para archivos**: `gloryAjax` maneja transparentemente el envío de `FormData`, permitiendo subir archivos sin configuración extra.
+  * **Punto de entrada único**: Utiliza la función `gloryAjax('miAccion', { ...datos })` en tu JavaScript para todas las llamadas AJAX.
+  * **Enrutamiento automático**: En PHP, `FormHandler` recibe la petición, busca una clase `Handler` correspondiente a `miAccion` (ej. `MiAccionHandler`) y ejecuta su método `procesar()`.
+  * **Soporte para archivos**: `gloryAjax` maneja transparentemente el envío de `FormData`, permitiendo subir archivos sin configuración extra.
 
 **Ejemplo de JS:**
 
@@ -178,7 +212,7 @@ const miFormulario = document.getElementById('mi-form');
 const datos = new FormData(miFormulario);
 
 // La acción 'guardarMeta' buscará y ejecutará GuardarMetaHandler.php
-const respuesta = await gloryAjax('guardarMeta', datos);
+const respuesta = await gloryAjax('gloryFormHandler', datos);
 
 if (respuesta.success) {
     alert(respuesta.data.alert);
@@ -217,26 +251,14 @@ echo FormBuilder::fin();
 
 -----
 
-## 🖼️ Componentes de Interfaz de Usuario (UI)
-
-Glory viene con scripts de JavaScript listos para usar que añaden interactividad a tu tema. Estos se activan automáticamente en cada carga de página (incluidas las cargas por AJAX).
-
-  - **`gestionarPreviews.js`**: Crea zonas de previsualización para `input[type="file"]`. Soporta drag & drop, muestra previsualizaciones de imágenes y placeholders para otros tipos de archivo.
-  - **`alertas.js`**: Reemplaza las funciones `alert()` y `confirm()` del navegador por notificaciones y modales de confirmación más elegantes y no bloqueantes.
-  - **`gloryModal.js` y `crearfondo.js`**: Sistema completo para crear y gestionar modales. Usa `data-modal="mi-modal-id"` en un botón para abrir el modal con el ID `mi-modal-id`.
-  - **`submenus.js`**: Crea menús contextuales o desplegables que se posicionan de forma inteligente y pueden ser activados por clic, clic derecho o pulsación larga en dispositivos táctiles.
-  - **`pestanas.js`**: Genera automáticamente una interfaz de pestañas a partir de una estructura HTML simple.
-
------
-
 ## 🔍 Búsqueda y Navegación
 
-### `BusquedaService` y `gloryBusqueda.js`
+### `BusquedaService` y `BusquedaRenderer`
 
 Implementa una búsqueda predictiva y en vivo.
 
-  - **Backend**: `BusquedaService` permite buscar en múltiples tipos de contenido a la vez (posts, páginas, usuarios, CPTs) y balancear los resultados.
-  - **Frontend**: `gloryBusqueda.js` se asocia a cualquier input con la clase `.busqueda` y, a medida que el usuario escribe, envía una petición AJAX, recibe el HTML de los resultados y los muestra en un contenedor designado.
+  * **Backend**: `BusquedaService` permite buscar en múltiples tipos de contenido a la vez (posts, páginas, usuarios, CPTs) y balancear los resultados. `BusquedaRenderer` se encarga de transformar los datos en HTML.
+  * **Frontend**: `gloryBusqueda.js` se asocia a cualquier input con la clase `.busqueda` y, a medida que el usuario escribe, envía una petición AJAX, recibe el HTML de los resultados y los muestra en un contenedor designado.
 
 **Ejemplo de HTML para el input de búsqueda:**
 
@@ -245,32 +267,40 @@ Implementa una búsqueda predictiva y en vivo.
        class="busqueda"
        data-tipos="post,page,perfiles"
        data-cantidad="3"
-       data-target="#resultados-busqueda">
+       data-target="#resultados-busqueda"
+       data-renderer="default">
 <div id="resultados-busqueda"></div>
 ```
-
-### `gloryAjaxNav.js`
-
-Transforma la navegación de tu sitio en una experiencia de aplicación de una sola página (SPA).
-
-  - **Carga sin recarga**: Navega entre páginas sin recargar el navegador. El contenido de un selector (ej. `#content`) se reemplaza dinámicamente.
-  - **Caché y pre-carga**: Almacena en caché las páginas visitadas para una navegación casi instantánea.
-  - **Indicadores de carga**: Muestra una barra de progreso durante la carga.
-  - **Compatibilidad**: Respeta los enlaces con `target="_blank"`, enlaces a archivos y se puede deshabilitar añadiendo la clase `.noAjax`.
 
 -----
 
 ## 🛠️ Servicios Adicionales
 
-  - **`ManejadorGit`**: Un potente servicio para interactuar con repositorios Git desde PHP. Permite clonar, hacer pull, push, commit y gestionar ramas, ideal para sistemas de autodespliegue o gestión de contenido versionado.
-  - **`ServidorChat`**: Un servidor de WebSockets basado en Ratchet para implementar funcionalidades de chat en tiempo real. Se ejecuta como un proceso independiente en la línea de comandos.
+### `ManejadorGit`
+
+Un potente servicio para interactuar con repositorios Git desde PHP. Permite clonar, hacer pull, push, commit y gestionar ramas, ideal para sistemas de autodespliegue o gestión de contenido versionado.
+
+**Características:**
+
+  * **Clonación y Actualización**: Clona un repositorio si no existe localmente o lo actualiza si ya existe.
+  * **Gestión de Ramas**: Puede crear, cambiar y sincronizar ramas.
+  * **Commits y Push**: Permite añadir todos los cambios, realizar un commit y hacer push a un remoto.
+  * **Manejo de Errores**: Lanza excepciones personalizadas (`ExcepcionComandoFallido`) para un control de errores robusto.
+
+### `ServidorChat`
+
+Un servidor de WebSockets basado en Ratchet para implementar funcionalidades de chat en tiempo real. Se ejecuta como un proceso independiente en la línea de comandos.
+
+**Características:**
+
+  * **Gestión de Conexiones**: Maneja la apertura, cierre y errores de las conexiones de clientes.
+  * **Mapeo Usuario-Conexión**: Asocia un ID de usuario a una conexión WebSocket para poder enviar mensajes directos.
+  * **Comunicación Interna**: Incluye un servidor HTTP interno en un puerto diferente (ej. 8081) para que tu backend de WordPress pueda enviarle mensajes y que él los reenvíe a los clientes correctos vía WebSocket.
 
 -----
 
 ## 📋 Archivos de Interés
 
-  - **`load.php`**: El punto de entrada principal del framework.
-  - **`Config/scriptSetup.php`**: Archivo central para definir y registrar todos los assets (JS/CSS) usando `AssetManager`.
-  - **`todo.md` y `Status.md`**: Archivos de seguimiento del desarrollo y refactorización del proyecto.
-
-Este README provee una visión general. Para un entendimiento más profundo, se recomienda revisar el código fuente de cada componente, que está ampliamente documentado. ¡Feliz desarrollo con Glory\!
+  * **`load.php`**: El punto de entrada principal del framework.
+  * **`Config/scriptSetup.php`**: Archivo central para definir y registrar todos los assets (JS/CSS) usando `AssetManager`.
+  * **`src/Core/Setup.php`**: Clase que inicializa los componentes principales del framework como `FormHandler`, `OpcionManager`, `AssetManager` y `PageManager`.
