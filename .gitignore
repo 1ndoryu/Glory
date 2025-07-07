@@ -24,6 +24,8 @@ tmp/
 *.tmp
 *.txt
 
+.history/
+
 # Dependencias de Rust
 /target/
 
