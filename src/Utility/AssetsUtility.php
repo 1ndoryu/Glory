@@ -43,4 +43,13 @@ class AssetsUtility
             $atributosString
         );
     }
+
+    public static function imagenUrl(string $nombre, string $extension = 'jpg'): void
+    {
+        // Construye la URL de la imagen de forma segura.
+        $urlImagen = get_template_directory_uri() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
+
+        // Imprime solamente la URL escapada.
+        echo esc_url($urlImagen);
+    }
 }
