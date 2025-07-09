@@ -3,27 +3,23 @@
 namespace Glory\Core;
 
 /**
- * GloryLogger gestiona el registro de eventos y errores de la aplicación.
- *
- * Utiliza el sistema de logs nativo de PHP (error_log) en lugar de sistemas más pesados para el registro inmediato.
- * Los logs se acumulan en un buffer durante la ejecución y se escriben todos juntos al final del script (hook 'shutdown'),
- * optimizando el rendimiento. Permite configurar un nivel mínimo de log para controlar la verbosidad.
+ * Gestiona el registro de eventos y errores de la aplicación.
+ * Utiliza `error_log` y un buffer para optimizar el rendimiento.
  * @author @wandorius
- * @tarea Jules: Refactorización de comentarios y Javadoc para mayor claridad y mantenibilidad.
  */
 class GloryLogger
 {
     // Niveles de Log
-    /** @var int Nivel de log para información general. */
+    /** @var int Nivel de información general. */
     const NIVEL_INFO        = 10;
-    /** @var int Nivel de log para advertencias o problemas no críticos. */
+    /** @var int Nivel de advertencia para problemas no críticos. */
     const NIVEL_ADVERTENCIA = 20;
-    /** @var int Nivel de log para errores que pueden afectar la funcionalidad. */
+    /** @var int Nivel de error que puede afectar la funcionalidad. */
     const NIVEL_ERROR       = 30;
-    /** @var int Nivel de log para errores críticos que requieren atención inmediata. */
+    /** @var int Nivel crítico para errores que requieren atención inmediata. */
     const NIVEL_CRITICO     = 50;
 
-    /** @var array Lista de niveles de log válidos. */
+    /** @var array Niveles de log válidos. */
     private static array $nivelesValidos = [
         self::NIVEL_INFO,
         self::NIVEL_ADVERTENCIA,
@@ -31,19 +27,17 @@ class GloryLogger
         self::NIVEL_CRITICO,
     ];
 
-    /** @var int Nivel mínimo de log para que un mensaje sea guardado. Por defecto, errores y superiores. */
+    /** @var int Nivel mínimo para guardar un mensaje. Por defecto: errores y superiores. */
     private static int $nivelMinimoGuardado       = self::NIVEL_ERROR;
-    /** @var array Buffer para acumular los logs durante la ejecución de un script. */
+    /** @var array Buffer para logs acumulados. */
     private static array $bufferLogs                = [];
-    /** @var bool Indica si el hook 'shutdown' para guardar logs ya ha sido registrado. */
+    /** @var bool Indica si el hook de guardado ya fue registrado. */
     private static bool $hookGuardarLogsRegistrado = false;
 
     /**
-     * Inicializa el logger y opcionalmente establece el nivel mínimo de log a registrar.
-     * Si no se especifica un nivel, se mantiene el valor por defecto (NIVEL_ERROR).
+     * Inicializa el logger y opcionalmente establece el nivel mínimo a registrar.
      *
-     * @param int|null $nivelMinimoRegistrar El nivel mínimo para que los logs se guarden (e.g., self::NIVEL_INFO).
-     *                                       Debe ser una de las constantes NIVEL_*.
+     * @param int|null $nivelMinimoRegistrar Nivel mínimo para guardar logs (ej. self::NIVEL_INFO).
      */
     public static function init(?int $nivelMinimoRegistrar = null): void
     {
@@ -53,11 +47,9 @@ class GloryLogger
     }
 
     /**
-     * Establece el nivel mínimo de log que se debe guardar.
+     * Establece el nivel mínimo de log a guardar.
      *
-     * Solo los grupos de logs cuya criticidad máxima sea igual o superior a este nivel serán guardados.
-     *
-     * @param int $nivelMinimo El nivel de log (ej. self::NIVEL_INFO, self::NIVEL_ERROR).
+     * @param int $nivelMinimo El nivel de log (ej. self::NIVEL_INFO).
      */
     public static function setNivelMinimoGuardado(int $nivelMinimo): void
     {
@@ -67,7 +59,7 @@ class GloryLogger
     }
 
     /**
-     * Registra un mensaje de nivel informativo.
+     * Registra un mensaje informativo.
      * @param string $mensaje Mensaje del log.
      * @param array  $contexto Datos adicionales.
      */
@@ -107,12 +99,8 @@ class GloryLogger
     }
 
     /**
-     * Guarda los logs acumulados en el buffer en el sistema de logs de PHP (error_log).
-     *
-     * Este método está diseñado para ser llamado automáticamente al final de la ejecución del script,
-     * típicamente a través del hook 'shutdown' de WordPress.
-     * Procesa todos los logs agrupados en el buffer, filtrándolos por el `$nivelMinimoGuardado`
-     * antes de escribirlos. Después de escribir, limpia el buffer y resetea el flag del hook.
+     * Guarda los logs acumulados en el buffer en el sistema de logs de PHP (`error_log`).
+     * Se llama automáticamente al final de la ejecución del script (hook 'shutdown').
      */
     public static function guardarLogsEnBuffer(): void
     {
@@ -136,18 +124,11 @@ class GloryLogger
 
     /**
      * Registra un mensaje de log en el buffer interno, agrupándolo por el nombre del llamador.
+     * Asegura que el hook para guardar logs al final de la ejecución esté registrado.
      *
-     * Determina el origen de la llamada (clase y método, o función) y agrupa los mensajes
-     * provenientes del mismo origen. Para cada grupo, mantiene un nivel máximo de severidad
-     * y una lista de mensajes únicos (basados en una huella MD5 del contenido del log).
-     * También se asegura de que el hook para guardar los logs al final de la ejecución
-     * esté registrado.
-     *
-     * @param int    $nivel    El nivel de severidad del log (e.g., self::NIVEL_INFO, self::NIVEL_ERROR).
-     *                         Debe ser una de las constantes NIVEL_*.
-     * @param string $mensaje  El mensaje principal del log.
-     * @param array  $contexto Un array asociativo con datos adicionales relevantes para el log.
-     *                         Estos datos se serializarán y se añadirán al mensaje.
+     * @param int    $nivel    Nivel de severidad del log (ej. self::NIVEL_INFO).
+     * @param string $mensaje  Mensaje principal del log.
+     * @param array  $contexto Datos adicionales relevantes, se serializarán y añadirán al mensaje.
      */
     private static function registrar(int $nivel, string $mensaje, array $contexto = []): void
     {
@@ -188,19 +169,10 @@ class GloryLogger
     }
 
     /**
-     * Obtiene el nombre de la función o método que invocó una de las funciones públicas del logger (info, error, etc.).
+     * Obtiene el nombre de la función o método que invocó al logger.
+     * Analiza la traza de depuración para identificar el llamador original, saltando frames internos.
      *
-     * Esta función analiza la traza de depuración (`debug_backtrace`) para identificar
-     * el contexto de la llamada original al logger. Se salta los frames internos de GloryLogger
-     * (como `registrar`, `info`, `warning`, `getNombreLlamador` mismo) para encontrar
-     * la primera llamada externa.
-     *
-     * `DEBUG_BACKTRACE_IGNORE_ARGS` se usa para optimizar no incluyendo los argumentos de las funciones en la traza.
-     * El límite de `5` frames es una heurística; asume que la llamada al logger no está anidada demasiado profundamente
-     * dentro de otras funciones de utilidad que a su vez llaman al logger. Este límite previene un análisis
-     * excesivo de la pila de llamadas en casos complejos.
-     *
-     * @return string Nombre del llamador en formato 'Clase::metodo' o 'funcion', o '[llamador_desconocido]' si no se determina.
+     * @return string Nombre del llamador en formato 'Clase::metodo' o 'funcion', o '[llamador_desconocido]'.
      */
     private static function getNombreLlamador(): string
     {
@@ -245,15 +217,8 @@ class GloryLogger
     }
 
     /**
-     * Asegura que el método `guardarLogsEnBuffer` se registre en el hook 'shutdown' de WordPress.
-     *
-     * Este método utiliza una bandera estática (`$hookGuardarLogsRegistrado`) para garantizar
-     * que la acción `add_action('shutdown', ...)` se llame solo una vez por ciclo de petición.
-     * Esto previene múltiples registros del mismo hook, lo cual sería ineficiente.
-     * El hook 'shutdown' se utiliza para procesar y guardar los logs al final de la ejecución
-     * de WordPress, después de que todas las operaciones principales hayan concluido.
-     * La prioridad `100` es relativamente tardía, asegurando que la mayoría de las tareas
-     * de 'shutdown' ya se hayan ejecutado.
+     * Asegura que `guardarLogsEnBuffer` se registre en el hook 'shutdown' de WordPress.
+     * Previene registros múltiples por petición.
      */
     private static function registrarHookGuardarLogs(): void
     {
@@ -266,23 +231,11 @@ class GloryLogger
     }
 
     /**
-     * Formatea y escribe un grupo de logs (asociados a una función/método específico) en el sistema de logs de PHP.
+     * Formatea y escribe un grupo de logs en el sistema de logs de PHP (`error_log`).
+     * Los mensajes se agrupan por la función/método que los originó y se formatean para legibilidad.
      *
-     * Esta función toma los mensajes acumulados para un llamador particular y los formatea en un bloque de texto
-     * que luego se envía a `error_log()`. Cada mensaje individual dentro del bloque incluye:
-     * - Marca de tiempo precisa (con microsegundos).
-     * - Nivel de log (INFO, ADVERTENCIA, ERROR, CRITICO).
-     * - El mensaje del log.
-     * - El contexto (si existe), serializado con `print_r` y con espacios normalizados para legibilidad.
-     *
-     * El bloque completo está delimitado por líneas "--- GloryLogger Inicio: [NombreFuncion] ---" y
-     * "--- GloryLogger Fin: [NombreFuncion] ---" para facilitar la lectura y el análisis de los logs.
-     *
-     * @param string $nombreFuncion El nombre de la función o método que originó los logs.
-     *                              Se usa en las cabeceras del bloque de log.
-     * @param array  $datosLog      Un array que contiene los mensajes a registrar para esta función.
-     *                              Debe tener una clave 'mensajes' que es un array de registros de log individuales.
-     *                              Cada registro debe tener 'marcaTiempo', 'nivel', 'mensaje', y opcionalmente 'contexto'.
+     * @param string $nombreFuncion Nombre de la función/método que originó los logs.
+     * @param array  $datosLog      Array con los mensajes a registrar.
      */
     private static function crearEntradaLog(string $nombreFuncion, array $datosLog): void
     {
