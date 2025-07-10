@@ -4,6 +4,7 @@ namespace Glory\Services;
 use Glory\Core\DefaultContentRegistry;
 use Glory\Repository\DefaultContentRepository;
 use Glory\Core\GloryLogger;
+use Glory\Utility\AssetsUtility;
 use WP_Post;
 use WP_Error;
 
@@ -152,6 +153,17 @@ class DefaultContentSynchronizer
         foreach ($metaDefinida as $clave => $valor) {
             if (get_post_meta($postDb->ID, $clave, true) != $valor) return true;
         }
+
+        // --- INICIO NUEVA FUNCIONALIDAD: Comprobar imagen destacada ---
+        if (isset($definicionCodigo['imagenDestacadaAsset'])) {
+            $idAdjuntoDefinicion = AssetsUtility::get_attachment_id_from_asset($definicionCodigo['imagenDestacadaAsset']);
+            $idAdjuntoActual = get_post_thumbnail_id($postDb->ID);
+            if ($idAdjuntoDefinicion != $idAdjuntoActual) {
+                return true;
+            }
+        }
+        // --- FIN NUEVA FUNCIONALIDAD ---
+
         return false;
     }
 
@@ -177,6 +189,16 @@ class DefaultContentSynchronizer
             GloryLogger::error("DefaultContentSynchronizer: FALLÓ al insertar post para '{$tipoPost}' (slug: {$slugDefault}).", ['error' => $idPost->get_error_message()]);
             return null;
         }
+
+        // --- INICIO NUEVA FUNCIONALIDAD: Asignar imagen destacada ---
+        if (isset($datosPost['imagenDestacadaAsset']) && !empty($datosPost['imagenDestacadaAsset'])) {
+            $idAdjunto = AssetsUtility::get_attachment_id_from_asset($datosPost['imagenDestacadaAsset']);
+            if ($idAdjunto) {
+                set_post_thumbnail($idPost, $idAdjunto);
+            }
+        }
+        // --- FIN NUEVA FUNCIONALIDAD ---
+
         return $idPost;
     }
 
@@ -198,6 +220,15 @@ class DefaultContentSynchronizer
             GloryLogger::error("DefaultContentSynchronizer: FALLÓ al actualizar post ID {$idPost}.", ['error' => $resultado->get_error_message()]);
             return;
         }
+        
+        // --- INICIO NUEVA FUNCIONALIDAD: Asignar imagen destacada ---
+        if (isset($datosPost['imagenDestacadaAsset']) && !empty($datosPost['imagenDestacadaAsset'])) {
+            $idAdjunto = AssetsUtility::get_attachment_id_from_asset($datosPost['imagenDestacadaAsset']);
+            if ($idAdjunto) {
+                set_post_thumbnail($idPost, $idAdjunto);
+            }
+        }
+        // --- FIN NUEVA FUNCIONALIDAD ---
 
         $nuevaMeta = $datosPost['metaEntrada'] ?? [];
         foreach ($nuevaMeta as $claveMeta => $valorMeta) {
