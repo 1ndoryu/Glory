@@ -1,4 +1,4 @@
-<?
+<?php
 
 namespace Glory\Core;
 
@@ -7,9 +7,8 @@ use Glory\Core\GloryLogger;
 /**
  * Gestor Unificado de Assets (Scripts y Estilos) para WordPress.
  *
- * Esta clase reemplaza la jerarquía anterior de AssetManager, ScriptManager y StyleManager.
- * Gestiona la definición, registro, localización y puesta en cola de todos los assets
- * (CSS y JS) desde un único punto, eliminando la duplicación de código y simplificando la API.
+ * Esta clase gestiona la definición, registro y puesta en cola de todos los assets,
+ * controlando si se cargan en el 'frontend', 'admin', o en 'both'.
  *
  * @author @wandorius (Refactorizado por Gemini)
  */
@@ -27,19 +26,19 @@ final class AssetManager
     private static bool $hooksRegistrados = false;
 
     /**
-     * Define un nuevo asset (script o estilo) para ser gestionado por el framework.
+     * Define un nuevo asset (script o estilo) para ser gestionado.
      *
      * @param string $tipo 'script' o 'style'.
      * @param string $handle El identificador (handle) único para el asset.
-     * @param string $ruta La ruta relativa al archivo desde la raíz del tema (ej. '/Assets/js/mi-script.js').
-     * @param array  $config Configuración adicional para el asset:
+     * @param string $ruta La ruta relativa al archivo desde la raíz del tema.
+     * @param array  $config Configuración adicional:
      * - 'deps' (array): Dependencias.
-     * - 'ver' (string|null): Versión específica. Si es null, se autocalcula.
-     * - 'in_footer' (bool): (Solo para scripts) Cargar en el footer.
-     * - 'media' (string): (Solo para estilos) El media target.
-     * - 'localize' (array|null): (Solo para scripts) Datos para wp_localize_script.
-     * Debe ser un array con 'nombreObjeto' y 'datos'.
+     * - 'ver' (string|null): Versión. Si es null, se autocalcula.
+     * - 'in_footer' (bool): (Scripts) Cargar en el footer.
+     * - 'media' (string): (Estilos) Media target.
+     * - 'localize' (array|null): (Scripts) Datos para wp_localize_script.
      * - 'dev_mode' (bool|null): Forzar modo desarrollo para este asset.
+     * - 'area' (string): Dónde cargar el asset. Opciones: 'frontend' (default), 'admin', 'both'.
      */
     public static function define(string $tipo, string $handle, string $ruta, array $config = []): void
     {
@@ -66,31 +65,28 @@ final class AssetManager
             'media'     => $config['media'] ?? 'all',
             'localize'  => $config['localize'] ?? null,
             'dev_mode'  => $config['dev_mode'] ?? null,
+            'area'      => $config['area'] ?? 'frontend', // <-- Default a 'frontend'
         ];
     }
 
     /**
-     * Define automáticamente todos los assets de una extensión específica dentro de una carpeta.
+     * Define automáticamente todos los assets de una extensión dentro de una carpeta.
      *
      * @param string $tipo 'script' o 'style'.
      * @param string $rutaCarpeta Ruta de la carpeta relativa a la raíz del tema.
-     * @param array  $configDefault Configuración por defecto para los assets de la carpeta.
-     * @param string $prefijoHandle Prefijo para los handles generados.
+     * @param array  $configDefault Configuración por defecto, incluyendo 'area'.
+     * @param string $prefijoHandle Prefijo para los handles.
      * @param array  $exclusiones Nombres de archivo a excluir.
      */
     public static function defineFolder(string $tipo, string $rutaCarpeta, array $configDefault = [], string $prefijoHandle = '', array $exclusiones = []): void
     {
         $extension = ($tipo === self::ASSET_TYPE_SCRIPT) ? 'js' : 'css';
-
-        // --- CORRECCIÓN INICIO ---
-        // Normaliza la ruta del tema y la carpeta de assets para evitar conflictos de separadores (\ vs /)
         $directorioTema = wp_normalize_path(get_template_directory());
         $rutaCarpetaNormalizada = wp_normalize_path($rutaCarpeta);
         $rutaCompleta = rtrim($directorioTema, '/') . '/' . ltrim($rutaCarpetaNormalizada, '/');
-        // --- CORRECCIÓN FIN ---
 
         if (!is_dir($rutaCompleta)) {
-            GloryLogger::warning("AssetManager: La carpeta de assets '{$rutaCarpeta}' no fue encontrada en la ruta resuelta '{$rutaCompleta}'.");
+            GloryLogger::warning("AssetManager: La carpeta de assets '{$rutaCarpeta}' no fue encontrada en '{$rutaCompleta}'.");
             return;
         }
 
@@ -101,12 +97,7 @@ final class AssetManager
                     continue;
                 }
 
-                // --- CORRECCIÓN INICIO ---
-                // Genera la ruta relativa para la URL reemplazando la ruta del directorio del tema.
-                $rutaArchivoCompleta = wp_normalize_path($file->getPathname());
-                $rutaParaWeb = str_replace($directorioTema, '', $rutaArchivoCompleta);
-                // --- CORRECCIÓN FIN ---
-
+                $rutaParaWeb = str_replace($directorioTema, '', wp_normalize_path($file->getPathname()));
                 $handle = $prefijoHandle . sanitize_title($file->getBasename('.' . $extension));
                 self::define($tipo, $handle, $rutaParaWeb, $configDefault);
             }
@@ -115,10 +106,48 @@ final class AssetManager
         }
     }
 
-    public static function enqueueAssets(): void
+    /**
+     * Registra los hooks de WordPress para encolar los assets en las áreas correctas.
+     */
+    public static function register(): void
+    {
+        if (!self::$hooksRegistrados) {
+            add_action('wp_enqueue_scripts', [self::class, 'enqueueFrontendAssets'], 20);
+            add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminAssets'], 20);
+            self::$hooksRegistrados = true;
+        }
+    }
+
+    /**
+     * Callback para encolar los assets del frontend.
+     */
+    public static function enqueueFrontendAssets(): void
+    {
+        self::enqueueForArea('frontend');
+    }
+
+    /**
+     * Callback para encolar los assets del admin.
+     */
+    public static function enqueueAdminAssets(): void
+    {
+        self::enqueueForArea('admin');
+    }
+
+    /**
+     * Lógica principal para encolar assets según el área especificada.
+     *
+     * @param string $currentArea El área actual ('frontend' o 'admin').
+     */
+    private static function enqueueForArea(string $currentArea): void
     {
         foreach (self::$assets as $tipo => $assetsPorTipo) {
             foreach ($assetsPorTipo as $handle => $config) {
+                // Comprueba si el asset debe cargarse en el área actual
+                if ($config['area'] !== 'both' && $config['area'] !== $currentArea) {
+                    continue;
+                }
+
                 $yaRegistrado = ($tipo === self::ASSET_TYPE_SCRIPT)
                     ? wp_script_is($handle, 'registered')
                     : wp_style_is($handle, 'registered');
@@ -133,14 +162,12 @@ final class AssetManager
                 }
 
                 $rutaFisica = get_template_directory() . $config['ruta'];
-                $rutaFisicaNormalizada = wp_normalize_path($rutaFisica);
-
-                if (!file_exists($rutaFisicaNormalizada)) {
-                    GloryLogger::error("AssetManager: Archivo no encontrado '{$rutaFisicaNormalizada}' para el handle '{$handle}'.");
+                if (!file_exists(wp_normalize_path($rutaFisica))) {
+                    GloryLogger::error("AssetManager: Archivo no encontrado '{$config['ruta']}' para el handle '{$handle}'.");
                     continue;
                 }
 
-                $version = self::calcularVersion($rutaFisicaNormalizada, $config['ver'], $config['dev_mode']);
+                $version = self::calcularVersion($rutaFisica, $config['ver'], $config['dev_mode']);
                 $url = get_template_directory_uri() . $config['ruta'];
 
                 if ($tipo === self::ASSET_TYPE_SCRIPT) {
@@ -156,17 +183,6 @@ final class AssetManager
         }
     }
 
-    /**
-     * Registra los hooks de WordPress para encolar los assets.
-     */
-    public static function register(): void
-    {
-        if (!self::$hooksRegistrados) {
-            add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets'], 20);
-            add_action('admin_enqueue_scripts', [self::class, 'enqueueAssets'], 20);
-            self::$hooksRegistrados = true;
-        }
-    }
 
     public static function setGlobalDevMode(bool $activado): void
     {
@@ -183,14 +199,11 @@ final class AssetManager
         if ($versionEspecifica !== null) {
             return $versionEspecifica;
         }
-
         $esDesarrollo = $modoDevEspecifico ?? self::$modoDesarrolloGlobal;
-
         if ($esDesarrollo) {
             $tiempoModificacion = @filemtime($rutaArchivo);
             return $tiempoModificacion ? (string)$tiempoModificacion : self::$versionTema;
         }
-
         return self::$versionTema;
     }
 }
