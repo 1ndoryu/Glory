@@ -9,7 +9,7 @@ use WP_Query;
  * Permite renderizar colecciones de posts con una plantilla personalizada
  * y opciones para paginación, clases CSS y número de resultados.
  */
-class ContentPrinter
+class ContentRender
 {
     /**
      * Imprime una lista de posts basada en los parámetros especificados.
@@ -22,6 +22,7 @@ class ContentPrinter
      * - 'paginacion' (bool): Si se debe mostrar la paginación. Por defecto false.
      * - 'plantillaCallback' (callable): Una función que define el HTML para cada post.
      * - 'argumentosConsulta' (array): Argumentos adicionales para WP_Query.
+     * - 'orden' (string): Orden de los resultados. Acepta 'fecha' (por defecto) o 'random'.
      */
     public static function print(string $postType, array $opciones = []): void
     {
@@ -33,15 +34,21 @@ class ContentPrinter
             'paginacion'             => false,
             'plantillaCallback'      => [self::class, 'defaultTemplate'],
             'argumentosConsulta'     => [],
+            'orden'                 => 'fecha',
         ];
         $config = wp_parse_args($opciones, $defaults);
 
         // 2. Preparar la consulta a la base de datos
         $paged = (get_query_var('paged')) ? get_query_var('paged') : 1;
+
+        // Determinar el ordenamiento solicitado
+        $orderby = ($config['orden'] === 'random') ? 'rand' : 'date';
+
         $args = array_merge([
             'post_type'      => $postType,
             'posts_per_page' => $config['publicacionesPorPagina'],
             'paged'          => $paged,
+            'orderby'        => $orderby,
         ], $config['argumentosConsulta']);
 
         $query = new WP_Query($args);
@@ -51,18 +58,22 @@ class ContentPrinter
             return;
         }
 
-        // 3. Renderizar la lista
-        echo '<div class="' . esc_attr($config['claseContenedor']) . '">';
+        // 3. Preparar clases dinámicas que incluyan el post type
+        $contenedorClass = trim($config['claseContenedor'] . ' ' . sanitize_html_class($postType));
+        $itemClass       = trim($config['claseItem'] . ' ' . sanitize_html_class($postType) . '-item');
+
+        // 4. Renderizar la lista
+        echo '<div class="' . esc_attr($contenedorClass) . '">';
 
         while ($query->have_posts()) {
             $query->the_post();
             // Llama a la función de plantilla proporcionada
-            call_user_func($config['plantillaCallback'], get_post(), $config['claseItem']);
+            call_user_func($config['plantillaCallback'], get_post(), $itemClass);
         }
 
         echo '</div>';
 
-        // 4. Renderizar la paginación si está habilitada
+        // 5. Renderizar la paginación si está habilitada
         if ($config['paginacion']) {
             self::renderPagination($query);
         }
