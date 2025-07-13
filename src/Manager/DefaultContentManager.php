@@ -50,8 +50,15 @@ class DefaultContentManager
             self::$sincronizadorInstancia = new DefaultContentSynchronizer();
         }
 
-        // Ejecuta la lógica de sincronización principal.
-        self::$sincronizadorInstancia->sincronizar();
+        // Evitar la sincronización en el front-end para no afectar el rendimiento.
+        if (is_admin()) {
+            // No sincronizar cuando se navega por el listado de páginas (edit.php sin post_type o con post_type=page).
+            global $pagenow;
+            if ($pagenow !== 'edit.php' || (isset($_GET['post_type']) && $_GET['post_type'] !== 'page')) {
+                // Ejecuta la lógica de sincronización principal solo en otras pantallas del admin (o vía CLI).
+                self::$sincronizadorInstancia->sincronizar();
+            }
+        }
 
         // Después de la sincronización, registra los hooks 'save_post_{tipo}' para detectar
         // ediciones manuales, pero solo para los tipos de post que gestionamos.

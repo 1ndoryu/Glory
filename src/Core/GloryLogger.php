@@ -28,7 +28,7 @@ class GloryLogger
     ];
 
     /** @var int Nivel mínimo para guardar un mensaje. Por defecto: errores y superiores. */
-    private static int $nivelMinimoGuardado       = self::NIVEL_ERROR;
+    private static int $nivelMinimoGuardado       = self::NIVEL_INFO;
     /** @var array Buffer para logs acumulados. */
     private static array $bufferLogs                = [];
     /** @var bool Indica si el hook de guardado ya fue registrado. */

@@ -18,6 +18,7 @@ class DefaultContentSynchronizer
 {
     private const META_CLAVE_SLUG_DEFAULT = '_glory_default_content_slug';
     private const META_CLAVE_EDITADO_MANUALMENTE = '_glory_default_content_edited';
+    private const META_CLAVE_GALERIA_IDS = '_glory_default_galeria_ids';
 
     private DefaultContentRepository $repositorio;
     private bool $procesando = false;
@@ -36,25 +37,40 @@ class DefaultContentSynchronizer
         if ($this->procesando) return;
         $this->procesando = true;
 
+        $tInicioGlobal = microtime(true);
+        
         $definicionesPorTipo = DefaultContentRegistry::getDefiniciones();
+        GloryLogger::info("DCS: Inicio sincronización; tipos: " . implode(',', array_keys($definicionesPorTipo)));
+
         if (empty($definicionesPorTipo)) {
             $this->procesando = false;
+            GloryLogger::info("DCS: Sincronización abortada, no hay definiciones.");
             return;
         }
 
         foreach ($definicionesPorTipo as $tipoPost => $config) {
+            $tInicioTipo = microtime(true);
+            GloryLogger::info("DCS: Procesando tipo '{$tipoPost}' con " . count($config['definicionesPost']) . " definiciones.");
+            
             if (!post_type_exists($tipoPost)) {
                 GloryLogger::error("DefaultContentSynchronizer: No se puede procesar la definición porque el tipo de post '{$tipoPost}' no existe.");
                 continue;
             }
 
             if (!$this->validarDefinicionesParaTipo($tipoPost, $config['definicionesPost'])) {
+                GloryLogger::warning("DCS: Definiciones inválidas para '{$tipoPost}', se omite.");
                 continue;
             }
 
             $this->sincronizarPostsParaTipo($tipoPost, $config);
             $this->eliminarPostsObsoletosParaTipo($tipoPost, $config);
+            
+            $duracionTipo = round(microtime(true) - $tInicioTipo, 3);
+            GloryLogger::info("DCS: Finalizado tipo '{$tipoPost}' en {$duracionTipo}s");
         }
+        
+        $duracionTotal = round(microtime(true) - $tInicioGlobal, 3);
+        GloryLogger::info("DCS: Sincronización completada en {$duracionTotal}s");
         
         $this->procesando = false;
     }
@@ -164,6 +180,17 @@ class DefaultContentSynchronizer
         }
         // --- FIN NUEVA FUNCIONALIDAD ---
 
+        // --- INICIO NUEVA FUNCIONALIDAD: comprobar galería ---
+        $idsGaleriaDefinicion = $this->resolverIdsGaleria($definicionCodigo);
+        if (!empty($idsGaleriaDefinicion)) {
+            $idsGaleriaActual = get_post_meta($postDb->ID, self::META_CLAVE_GALERIA_IDS, true);
+            $idsGaleriaActual = is_array($idsGaleriaActual) ? array_map('intval', $idsGaleriaActual) : [];
+            if ($idsGaleriaActual !== $idsGaleriaDefinicion) {
+                return true;
+            }
+        }
+        // --- FIN NUEVA FUNCIONALIDAD ---
+
         return false;
     }
 
@@ -195,6 +222,21 @@ class DefaultContentSynchronizer
             $idAdjunto = AssetsUtility::get_attachment_id_from_asset($datosPost['imagenDestacadaAsset']);
             if ($idAdjunto) {
                 set_post_thumbnail($idPost, $idAdjunto);
+            }
+        }
+        // --- FIN NUEVA FUNCIONALIDAD ---
+
+        // --- INICIO NUEVA FUNCIONALIDAD: asignar galería ---
+        $idsGaleria = $this->resolverIdsGaleria($datosPost);
+        if (!empty($idsGaleria)) {
+            update_post_meta($idPost, self::META_CLAVE_GALERIA_IDS, $idsGaleria);
+
+            // Asegura que los adjuntos queden asociados al post como post_parent
+            foreach ($idsGaleria as $idAdjuntoGaleria) {
+                wp_update_post([
+                    'ID' => $idAdjuntoGaleria,
+                    'post_parent' => $idPost,
+                ]);
             }
         }
         // --- FIN NUEVA FUNCIONALIDAD ---
@@ -245,5 +287,53 @@ class DefaultContentSynchronizer
             }
             delete_post_meta($idPost, self::META_CLAVE_EDITADO_MANUALMENTE);
         }
+
+        // --- INICIO NUEVA FUNCIONALIDAD: actualizar galería ---
+        $idsGaleria = $this->resolverIdsGaleria($datosPost);
+        update_post_meta($idPost, self::META_CLAVE_GALERIA_IDS, $idsGaleria);
+
+        // Asociar adjuntos al post
+        foreach ($idsGaleria as $idAdjuntoGaleria) {
+            wp_update_post([
+                'ID' => $idAdjuntoGaleria,
+                'post_parent' => $idPost,
+            ]);
+        }
+        // --- FIN NUEVA FUNCIONALIDAD ---
+    }
+
+    /**
+     * Dada la definición de un post, obtiene los IDs de adjunto que formarán la galería.
+     * Si la clave 'galeriaAssets' está definida, se usa tal cual. De lo contrario, se intenta
+     * deducirlas tomando el nombre base de la imagen destacada y buscando "1.jpg", "2.jpg" y "3.jpg".
+     *
+     * @param array $definicion
+     * @return int[] Array de IDs de adjuntos (puede estar vacío).
+     */
+    private function resolverIdsGaleria(array $definicion): array
+    {
+        $archivosGaleria = [];
+
+        if (!empty($definicion['galeriaAssets']) && is_array($definicion['galeriaAssets'])) {
+            $archivosGaleria = $definicion['galeriaAssets'];
+        } elseif (!empty($definicion['imagenDestacadaAsset'])) {
+            // Intentar deducir nombres basados en la imagen destacada (ej: japon.jpg -> japon1.jpg, japon2.jpg, japon3.jpg)
+            $nombreBase = preg_replace('/\.[^.]+$/', '', $definicion['imagenDestacadaAsset']);
+            // Añade variantes con mayúsculas tal cual y en minúsculas
+            for ($i = 1; $i <= 3; $i++) {
+                $archivosGaleria[] = $nombreBase . $i . '.jpg';
+                $archivosGaleria[] = strtolower($nombreBase) . $i . '.jpg';
+            }
+        }
+
+        $ids = [];
+        foreach ($archivosGaleria as $archivo) {
+            $idAdjunto = \Glory\Utility\AssetsUtility::get_attachment_id_from_asset($archivo);
+            if ($idAdjunto) {
+                $ids[] = (int) $idAdjunto;
+            }
+        }
+
+        return $ids;
     }
 }

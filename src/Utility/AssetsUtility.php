@@ -64,12 +64,37 @@ class AssetsUtility
      */
     public static function get_attachment_id_from_asset(string $nombreArchivo): ?int
     {
+        static $cache = [];
+        if (isset($cache[$nombreArchivo])) {
+            return $cache[$nombreArchivo];
+        }
+
         $rutaAssetRelativa = '/assets/images/' . $nombreArchivo;
         $rutaAssetCompleta = get_template_directory() . $rutaAssetRelativa;
 
         if (!file_exists($rutaAssetCompleta)) {
             GloryLogger::error("AssetsUtility: El archivo asset '{$nombreArchivo}' no se encontró en '{$rutaAssetCompleta}'.");
             return null;
+        }
+
+        // Si estamos en el front-end y el adjunto no existe todavía, NO intentes importarlo para evitar bloqueos.
+        if (!is_admin()) {
+            $args = [
+                'post_type'      => 'attachment',
+                'post_status'    => 'inherit',
+                'meta_query'     => [
+                    [
+                        'key'   => '_glory_asset_source',
+                        'value' => $rutaAssetRelativa,
+                    ],
+                ],
+                'posts_per_page' => 1,
+                'fields'        => 'ids',
+                'no_found_rows' => true,
+            ];
+            $q = new \WP_Query($args);
+            $cache[$nombreArchivo] = $q->have_posts() ? (int) $q->posts[0] : null;
+            return $cache[$nombreArchivo];
         }
 
         // Buscar si ya existe un adjunto que provenga de este asset
