@@ -1,6 +1,8 @@
 <?php
 namespace Glory\Components;
 
+use Glory\Core\GloryLogger;
+
 use WP_Term_Query;
 use WP_Term;
 
@@ -47,19 +49,19 @@ class TermRender
             $args['orderby'] = 'rand';
         }
 
-        \Glory\Core\GloryLogger::info('TermRender: ejecutando consulta', ['args' => $args]);
+        #GloryLogger::info('TermRender: ejecutando consulta', ['args' => $args]);
 
         $consulta = new WP_Term_Query($args);
 
         $terms = method_exists($consulta, 'get_terms') ? $consulta->get_terms() : ($consulta->terms ?? []);
 
         if (is_wp_error($terms)) {
-            \Glory\Core\GloryLogger::error('TermRender: WP_Term_Query devolvió error', ['error' => $terms->get_error_message()]);
+            #GloryLogger::error('TermRender: WP_Term_Query devolvió error', ['error' => $terms->get_error_message()]);
             echo '<p>Error al obtener términos.</p>';
             return;
         }
 
-        \Glory\Core\GloryLogger::info('TermRender: número de términos encontrados', ['count' => is_countable($terms) ? count($terms) : 'no-countable']);
+        #GloryLogger::info('TermRender: número de términos encontrados', ['count' => is_countable($terms) ? count($terms) : 'no-countable']);
 
         if (empty($terms)) {
             echo '<p>No se encontraron términos.</p>';
