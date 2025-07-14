@@ -40,11 +40,11 @@ class DefaultContentSynchronizer
         $tInicioGlobal = microtime(true);
         
         $definicionesPorTipo = DefaultContentRegistry::getDefiniciones();
-        GloryLogger::info("DCS: Inicio sincronización; tipos: " . implode(',', array_keys($definicionesPorTipo)));
+        #GloryLogger::info("DCS: Inicio sincronización; tipos: " . implode(',', array_keys($definicionesPorTipo)));
 
         if (empty($definicionesPorTipo)) {
             $this->procesando = false;
-            GloryLogger::info("DCS: Sincronización abortada, no hay definiciones.");
+            #GloryLogger::info("DCS: Sincronización abortada, no hay definiciones.");
             return;
         }
 
@@ -53,7 +53,7 @@ class DefaultContentSynchronizer
             GloryLogger::info("DCS: Procesando tipo '{$tipoPost}' con " . count($config['definicionesPost']) . " definiciones.");
             
             if (!post_type_exists($tipoPost)) {
-                GloryLogger::error("DefaultContentSynchronizer: No se puede procesar la definición porque el tipo de post '{$tipoPost}' no existe.");
+                #GloryLogger::error("DefaultContentSynchronizer: No se puede procesar la definición porque el tipo de post '{$tipoPost}' no existe.");
                 continue;
             }
 
@@ -66,7 +66,7 @@ class DefaultContentSynchronizer
             $this->eliminarPostsObsoletosParaTipo($tipoPost, $config);
             
             $duracionTipo = round(microtime(true) - $tInicioTipo, 3);
-            GloryLogger::info("DCS: Finalizado tipo '{$tipoPost}' en {$duracionTipo}s");
+            #GloryLogger::info("DCS: Finalizado tipo '{$tipoPost}' en {$duracionTipo}s");
         }
         
         $duracionTotal = round(microtime(true) - $tInicioGlobal, 3);
@@ -170,7 +170,7 @@ class DefaultContentSynchronizer
             if (get_post_meta($postDb->ID, $clave, true) != $valor) return true;
         }
 
-        // --- INICIO NUEVA FUNCIONALIDAD: Comprobar imagen destacada ---
+        // --- Comprobación de imagen destacada (ya existente en tu código) ---
         if (isset($definicionCodigo['imagenDestacadaAsset'])) {
             $idAdjuntoDefinicion = AssetsUtility::get_attachment_id_from_asset($definicionCodigo['imagenDestacadaAsset']);
             $idAdjuntoActual = get_post_thumbnail_id($postDb->ID);
@@ -178,9 +178,8 @@ class DefaultContentSynchronizer
                 return true;
             }
         }
-        // --- FIN NUEVA FUNCIONALIDAD ---
-
-        // --- INICIO NUEVA FUNCIONALIDAD: comprobar galería ---
+        
+        // --- Comprobación de galería (ya existente en tu código) ---
         $idsGaleriaDefinicion = $this->resolverIdsGaleria($definicionCodigo);
         if (!empty($idsGaleriaDefinicion)) {
             $idsGaleriaActual = get_post_meta($postDb->ID, self::META_CLAVE_GALERIA_IDS, true);
@@ -189,7 +188,31 @@ class DefaultContentSynchronizer
                 return true;
             }
         }
-        // --- FIN NUEVA FUNCIONALIDAD ---
+
+        // ==================================================================
+        // INICIO DEL CÓDIGO A AÑADIR
+        // ==================================================================
+        // Comprueba si las categorías asignadas en la BD coinciden con las del código.
+        $categoriasRaw = $definicionCodigo['metaEntrada']['categoria'] ?? null;
+        if (!empty($categoriasRaw) && is_string($categoriasRaw)) {
+            // Nombres de las categorías esperadas según el código.
+            $categoriasEsperadas = array_filter(array_map('trim', explode(',', $categoriasRaw)));
+            sort($categoriasEsperadas); // Ordenar para una comparación consistente.
+
+            // Nombres de las categorías actualmente asignadas al post en la BD.
+            $terminosActuales = wp_get_post_terms($postDb->ID, 'category', ['fields' => 'names']);
+            if (!is_wp_error($terminosActuales)) {
+                sort($terminosActuales); // Ordenar para comparar.
+
+                if ($categoriasEsperadas !== $terminosActuales) {
+                    // Si las listas de categorías no coinciden, hay una diferencia.
+                    return true;
+                }
+            }
+        }
+        // ==================================================================
+        // FIN DEL CÓDIGO A AÑADIR
+        // ==================================================================
 
         return false;
     }
@@ -239,6 +262,10 @@ class DefaultContentSynchronizer
                 ]);
             }
         }
+        // --- FIN NUEVA FUNCIONALIDAD ---
+
+        // --- NUEVA FUNCIONALIDAD: Asignar categorías estándar de WP ---
+        $this->asignarCategoriasWp($idPost, $datosPost);
         // --- FIN NUEVA FUNCIONALIDAD ---
 
         return $idPost;
@@ -300,6 +327,10 @@ class DefaultContentSynchronizer
             ]);
         }
         // --- FIN NUEVA FUNCIONALIDAD ---
+
+        // --- NUEVA FUNCIONALIDAD: Asignar categorías estándar de WP ---
+        $this->asignarCategoriasWp($idPost, $datosPost);
+        // --- FIN NUEVA FUNCIONALIDAD ---
     }
 
     /**
@@ -335,5 +366,23 @@ class DefaultContentSynchronizer
         }
 
         return $ids;
+    }
+
+    private function asignarCategoriasWp(int $idPost, array $datosPost): void
+    {
+        $categoriasRaw = $datosPost['metaEntrada']['categoria'] ?? null;
+        if (empty($categoriasRaw) || !is_string($categoriasRaw)) {
+            return;
+        }
+
+        // Convertir la cadena separada por comas en array
+        $categorias = array_filter(array_map('trim', explode(',', $categoriasRaw)));
+
+        if (empty($categorias)) {
+            return;
+        }
+
+        // Asignar las categorías al post. WP creará los términos si no existen.
+        wp_set_object_terms($idPost, $categorias, 'category', false);
     }
 }
