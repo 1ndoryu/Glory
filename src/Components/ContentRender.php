@@ -1,4 +1,5 @@
 <?php
+
 namespace Glory\Components;
 
 use WP_Query;
@@ -23,6 +24,9 @@ class ContentRender
      * - 'plantillaCallback' (callable): Una función que define el HTML para cada post.
      * - 'argumentosConsulta' (array): Argumentos adicionales para WP_Query.
      * - 'orden' (string): Orden de los resultados. Acepta 'fecha' (por defecto) o 'random'.
+     * - 'metaKey' (string|null): Clave meta para ordenar (string|null).
+     * - 'grupoEncabezado' (bool): Mostrar encabezado cuando cambia el valor de la meta.
+     * - 'grupoOrdenCantidad' (bool): Ordenar grupos por número de posts desc.
      */
     public static function print(string $postType, array $opciones = []): void
     {
@@ -34,22 +38,36 @@ class ContentRender
             'paginacion'             => false,
             'plantillaCallback'      => [self::class, 'defaultTemplate'],
             'argumentosConsulta'     => [],
-            'orden'                 => 'fecha',
+            'orden'                  => 'fecha',
+            'metaKey'                => null,
+            'grupoEncabezado'        => false,
+            'grupoOrdenCantidad'     => false,
         ];
         $config = wp_parse_args($opciones, $defaults);
 
         // 2. Preparar la consulta a la base de datos
         $paged = (get_query_var('paged')) ? get_query_var('paged') : 1;
 
-        // Determinar el ordenamiento solicitado
-        $orderby = ($config['orden'] === 'random') ? 'rand' : 'date';
-
-        $args = array_merge([
+        // Construir argumentos de consulta dinámicamente
+        $args = [
             'post_type'      => $postType,
             'posts_per_page' => $config['publicacionesPorPagina'],
             'paged'          => $paged,
-            'orderby'        => $orderby,
-        ], $config['argumentosConsulta']);
+        ];
+
+        // 2.a Ordenar por meta si se especifica
+        if (!empty($config['metaKey'])) {
+            $args['meta_key'] = $config['metaKey'];
+            $args['orderby']  = 'meta_value';
+            $args['order']    = (strtoupper($config['orden']) === 'DESC') ? 'DESC' : 'ASC';
+        } else {
+            // Mantener el sistema anterior: fecha o random
+            $orderby          = ($config['orden'] === 'random') ? 'rand' : 'date';
+            $args['orderby']  = $orderby;
+        }
+
+        // Combinar con argumentos extra del usuario
+        $args = array_merge($args, $config['argumentosConsulta']);
 
         $query = new WP_Query($args);
 
@@ -62,16 +80,84 @@ class ContentRender
         $contenedorClass = trim($config['claseContenedor'] . ' ' . sanitize_html_class($postType));
         $itemClass       = trim($config['claseItem'] . ' ' . sanitize_html_class($postType) . '-item');
 
-        // 4. Renderizar la lista
+        // 4. Renderizar la lista con soporte de encabezados por grupo
         echo '<div class="' . esc_attr($contenedorClass) . '">';
 
-        while ($query->have_posts()) {
-            $query->the_post();
-            // Llama a la función de plantilla proporcionada
-            call_user_func($config['plantillaCallback'], get_post(), $itemClass);
+        // Si no se requiere orden por cantidad, usamos flujo directo (más eficiente)
+
+        if (empty($config['metaKey']) || !$config['grupoEncabezado'] || !$config['grupoOrdenCantidad']) {
+
+            $currentMetaValue = null;
+            $groupOpen        = false;
+
+            while ($query->have_posts()) {
+                $query->the_post();
+
+                // Agrupación y encabezados dinámicos por meta
+                if (!empty($config['metaKey']) && $config['grupoEncabezado']) {
+                    $metaValue = get_post_meta(get_the_ID(), $config['metaKey'], true);
+
+                    // Cuando cambia el valor de la meta, cerramos el contenedor anterior (si existe) y abrimos uno nuevo
+                    if ($metaValue !== $currentMetaValue) {
+                        if ($groupOpen) {
+                            echo '</div>'; // cerrar contenedor anterior
+                        }
+
+                        $currentMetaValue = $metaValue;
+
+                        // Cabecera del grupo fuera del contenedor de posts
+                        echo '<h3 class="grupoHead">' . esc_html($metaValue) . '</h3>';
+                        // Abrir nuevo contenedor de posts del grupo
+                        echo '<div class="gloryGrupo ' . esc_attr(sanitize_title($metaValue)) . '">';
+
+                        $groupOpen = true;
+                    }
+                }
+
+                // Llama a la función de plantilla proporcionada
+                call_user_func($config['plantillaCallback'], get_post(), $itemClass);
+            }
+
+            // Cerrar último contenedor de grupo si se abrió alguno
+            if ($groupOpen) {
+                echo '</div>'; // cierre grupo
+            }
+        } else {
+            /*
+             * Modo de agrupación con orden por número de posts (desc).
+             * Agrupa todos los posts primero y luego los imprime según tamaño.
+             */
+
+            $groups = [];
+            foreach ($query->posts as $postObj) {
+                $metaValue = get_post_meta($postObj->ID, $config['metaKey'], true);
+                if (!isset($groups[$metaValue])) {
+                    $groups[$metaValue] = [];
+                }
+                $groups[$metaValue][] = $postObj;
+            }
+
+            // Ordenar grupos por cantidad descendente
+            uasort($groups, function ($a, $b) {
+                return count($b) <=> count($a);
+            });
+
+            // Imprimir grupos
+            foreach ($groups as $metaValue => $posts) {
+                echo '<h3 class="grupoHead">' . esc_html($metaValue) . '</h3>';
+                echo '<div class="gloryGrupo ' . esc_attr(sanitize_title($metaValue)) . '">';
+
+                foreach ($posts as $postObj) {
+                    setup_postdata($postObj);
+                    call_user_func($config['plantillaCallback'], $postObj, $itemClass);
+                }
+
+                echo '</div>'; // cierre grupo
+            }
+            wp_reset_postdata();
         }
 
-        echo '</div>';
+        echo '</div>'; // cierre contenedor principal
 
         // 5. Renderizar la paginación si está habilitada
         if ($config['paginacion']) {
@@ -89,14 +175,14 @@ class ContentRender
      */
     public static function defaultTemplate(\WP_Post $post, string $itemClass): void
     {
-        ?>
+?>
         <div id="post-<?php echo $post->ID; ?>" class="<?php echo esc_attr($itemClass); ?>">
             <h2><a href="<?php echo esc_url(get_permalink($post)); ?>"><?php echo esc_html(get_the_title($post)); ?></a></h2>
             <div class="entry-content">
                 <?php the_excerpt(); ?>
             </div>
         </div>
-        <?php
+<?php
     }
 
     /**
@@ -115,7 +201,7 @@ class ContentRender
         ]);
 
         if ($pagination_html) {
-            echo '<div class="glory-pagination">' . $pagination_html . '</div>';
+            echo '<div class="gloryPaginacion">' . $pagination_html . '</div>';
         }
     }
 }
