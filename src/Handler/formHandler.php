@@ -1,4 +1,5 @@
-<?
+<?php
+// Glory/src/Handler/formHandler.php
 
 namespace Glory\Handler;
 
@@ -6,13 +7,33 @@ use Glory\Core\GloryLogger;
 
 class FormHandler
 {
-    private const PREFIJO_CLASE = 'Glory\\Handler\\Form\\';
+    private const PREFIJO_CLASE_DEFAULT = 'Glory\\Handler\\Form\\';
     private const SUFIJO_CLASE = 'Handler';
+
+    /**
+     * @var array Almacena los namespaces donde buscar manejadores.
+     * Se da prioridad a los namespaces de la aplicación (añadidos primero).
+     */
+    private static array $handlerNamespaces = [
+        self::PREFIJO_CLASE_DEFAULT
+    ];
 
     public function __construct()
     {
         add_action('wp_ajax_gloryFormHandler', [$this, 'manejarPeticion']);
         add_action('wp_ajax_nopriv_gloryFormHandler', [$this, 'manejarPeticion']);
+    }
+    
+    /**
+     * Permite a la aplicación registrar namespaces adicionales para los manejadores de formularios.
+     *
+     * @param string $namespace El namespace base para los manejadores (ej. 'App\\Handlers\\Form\\').
+     */
+    public static function registerHandlerNamespace(string $namespace): void
+    {
+        // Añade el nuevo namespace al principio del array para darle prioridad.
+        array_unshift(self::$handlerNamespaces, $namespace);
+        self::$handlerNamespaces = array_unique(self::$handlerNamespaces);
     }
 
     public function manejarPeticion()
@@ -21,22 +42,26 @@ class FormHandler
         GloryLogger::info('Iniciando manejo de petición de formulario.', ['subAccion' => $subAccion]);
 
         try {
-            /*
-            desactivado temporalmente
-            if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'glory_nonce')) {
-                throw new \Exception('Falló la verificación de seguridad (nonce).');
-            }
-            */
-
             if (empty($subAccion)) {
                 throw new \Exception('No se ha especificado una subAcción para el formulario.');
             }
-
+            
             $subAccionSanitizada = sanitize_text_field($subAccion);
-            $nombreClaseHandler = self::PREFIJO_CLASE . ucfirst($subAccionSanitizada) . self::SUFIJO_CLASE;
+            $nombreClaseHandler = null;
+            $handlerEncontrado = false;
 
-            if (!class_exists($nombreClaseHandler)) {
-                throw new \Exception("El manejador para la acción '{$subAccionSanitizada}' no existe.");
+            // Iterar sobre los namespaces registrados para encontrar el manejador
+            foreach (self::$handlerNamespaces as $namespace) {
+                $nombreClasePotencial = $namespace . ucfirst($subAccionSanitizada) . self::SUFIJO_CLASE;
+                if (class_exists($nombreClasePotencial)) {
+                    $nombreClaseHandler = $nombreClasePotencial;
+                    $handlerEncontrado = true;
+                    break;
+                }
+            }
+
+            if (!$handlerEncontrado) {
+                throw new \Exception("El manejador para la acción '{$subAccionSanitizada}' no existe en ninguna de las rutas registradas.");
             }
 
             $handler = new $nombreClaseHandler();
@@ -46,9 +71,7 @@ class FormHandler
             }
 
             $respuesta = $handler->procesar($_POST, $_FILES);
-
-            GloryLogger::info('Petición de formulario procesada exitosamente.', ['subAccion' => $subAccionSanitizada]);
-
+            GloryLogger::info('Petición de formulario procesada exitosamente.', ['subAccion' => $subAccionSanitizada, 'handler' => $nombreClaseHandler]);
             wp_send_json_success($respuesta);
         } catch (\Exception $e) {
             GloryLogger::error(
