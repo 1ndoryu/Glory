@@ -9,7 +9,8 @@
         mainScrollSelector: '#main', // Element to scroll to top (fallback to window)
         loadingBarSelector: '#loadingBar', // Loading indicator element (optional)
         cacheEnabled: true, // Enable/disable caching mechanism
-        ignoreUrlPatterns: [ // Array of regex patterns to skip AJAX for
+        ignoreUrlPatterns: [
+            // Array of regex patterns to skip AJAX for
             '/wp-admin',
             '/wp-login.php',
             '\\.(pdf|zip|rar|jpg|jpeg|png|gif|webp|mp3|mp4|xml|txt|docx|xlsx)$' // Common file extensions
@@ -19,7 +20,7 @@
     };
 
     // Merge defaults with user-provided config (if available)
-    const config = { ...defaults, ...(window.dataGlobal || {}) };
+    const config = {...defaults, ...(window.dataGlobal || {})};
 
     // Exit immediately if disabled via config
     if (!config.enabled) {
@@ -39,7 +40,7 @@
         const event = new CustomEvent('gloryRecarga', {
             bubbles: true,
             cancelable: true,
-            detail: { contentElement: contentElement }
+            detail: {contentElement: contentElement}
         });
         document.dispatchEvent(event);
         // console.log('Event gloryRecarga dispatched.');
@@ -57,10 +58,7 @@
         const urlObject = new URL(url, currentOrigin); // Handles relative URLs correctly
 
         // 1. Basic checks: non-http(s), different origin, target=_blank, download attr
-        if (!urlObject.protocol.startsWith('http') ||
-            urlObject.origin !== currentOrigin ||
-            linkElement.getAttribute('target') === '_blank' ||
-            linkElement.hasAttribute('download')) {
+        if (!urlObject.protocol.startsWith('http') || urlObject.origin !== currentOrigin || linkElement.getAttribute('target') === '_blank' || linkElement.hasAttribute('download')) {
             return true;
         }
 
@@ -82,7 +80,6 @@
         return false; // Use AJAX
     }
 
-
     /**
      * Decides if content for a URL should be cached based on config.
      * @param {string} url - URL to check.
@@ -100,6 +97,18 @@
             // console.error("Error parsing URL for caching decision:", url, e);
             return false; // Don't cache if URL is invalid
         }
+    }
+
+    // Nueva función: asegura que la página o contenedor principal vuelva al principio
+    function resetScrollPosition() {
+        const mainScrollElement = config.mainScrollSelector ? document.querySelector(config.mainScrollSelector) : null;
+        if (mainScrollElement) {
+            mainScrollElement.scrollTop = 0;
+        }
+        // Respaldo para otros escenarios / navegadores
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        document.documentElement.scrollTop = 0; // Safari/IE
+        document.body.scrollTop = 0;
     }
 
     /**
@@ -127,14 +136,10 @@
             // console.log(`Loading from cache: ${url}`);
             contentElement.innerHTML = pageCache[url];
             if (pushState) {
-                history.pushState({ url: url }, '', url);
+                history.pushState({url: url}, '', url);
             }
-            // Scroll container
-            if (mainScrollElement) {
-                requestAnimationFrame(() => { mainScrollElement.scrollTop = 0; });
-            } else {
-                window.scrollTo({ top: 0, behavior: 'auto' });
-            }
+            // Restablecer posición de scroll
+            resetScrollPosition();
             triggerPageReady(); // Re-init scripts for cached content
             return;
         }
@@ -144,7 +149,8 @@
             loadingBar.style.transition = 'width 0.3s ease, opacity 0.3s ease'; // Ensure transition is set
             loadingBar.style.width = '0%'; // Reset width before showing
             loadingBar.style.opacity = '1';
-            requestAnimationFrame(() => { // Allow repaint before starting animation
+            requestAnimationFrame(() => {
+                // Allow repaint before starting animation
                 loadingBar.style.width = '70%';
             });
         }
@@ -154,8 +160,8 @@
         fetch(url)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                const contentType = response.headers.get("content-type");
-                if (!contentType || !contentType.includes("text/html")) {
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('text/html')) {
                     throw new TypeError(`Expected HTML but received ${contentType}. Aborting AJAX.`);
                 }
                 return response.text();
@@ -184,15 +190,11 @@
 
                 // Update History
                 if (pushState) {
-                    history.pushState({ url: url }, '', url);
+                    history.pushState({url: url}, '', url);
                 }
 
-                // Scroll container (if found)
-                if (mainScrollElement) {
-                    requestAnimationFrame(() => { mainScrollElement.scrollTop = 0; });
-                } else {
-                    window.scrollTo({ top: 0, behavior: 'auto' }); // Fallback to window scroll
-                }
+                // Restablecer posición de scroll tras insertar el nuevo contenido
+                resetScrollPosition();
 
                 // Hide loading indicators
                 contentElement.style.opacity = '1';
@@ -201,19 +203,23 @@
                     setTimeout(() => {
                         loadingBar.style.opacity = '0';
                         // Reset width after fade out for next use
-                        setTimeout(() => { if (loadingBar) loadingBar.style.width = '0%'; }, 300); // Wait for opacity transition
+                        setTimeout(() => {
+                            if (loadingBar) loadingBar.style.width = '0%';
+                        }, 300); // Wait for opacity transition
                     }, 150); // Delay before fade out
                 }
 
                 // Trigger re-initialization for dynamically loaded content
                 triggerPageReady();
-
             })
             .catch(error => {
                 console.error('AJAX Load Error:', error);
-                if (loadingBar) { // Hide loading bar on error
+                if (loadingBar) {
+                    // Hide loading bar on error
                     loadingBar.style.opacity = '0';
-                    setTimeout(() => { if (loadingBar) loadingBar.style.width = '0%'; }, 300);
+                    setTimeout(() => {
+                        if (loadingBar) loadingBar.style.width = '0%';
+                    }, 300);
                 }
                 contentElement.style.opacity = '1'; // Restore content visibility
                 window.location.href = url; // Fallback to normal navigation on any error
@@ -227,7 +233,7 @@
     function handleClick(e) {
         // Ignore clicks if modifier keys are pressed (for opening in new tab/window)
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
-             return;
+            return;
         }
 
         // Find the closest ancestor anchor tag
@@ -262,7 +268,7 @@
     function handlePopState(e) {
         // Check if the state object has our expected URL (it should if pushed by us)
         // Or just use location.href as the target
-        const targetUrl = (e.state && e.state.url) ? e.state.url : location.href;
+        const targetUrl = e.state && e.state.url ? e.state.url : location.href;
 
         // Create a dummy link to check if this URL should be handled by AJAX
         // This prevents issues if the user navigates back to a non-AJAX page
@@ -291,8 +297,8 @@
     document.addEventListener('DOMContentLoaded', () => {
         const contentElement = document.querySelector(config.contentSelector);
         if (!contentElement) {
-             console.warn(`AJAX Nav disabled: Content element "${config.contentSelector}" not found.`);
-             return; // Don't initialize if the main container isn't there
+            console.warn(`AJAX Nav disabled: Content element "${config.contentSelector}" not found.`);
+            return; // Don't initialize if the main container isn't there
         }
 
         // Cache initial page state and content if caching is enabled
@@ -301,7 +307,7 @@
             if (shouldCache(initialUrl) && contentElement.innerHTML) {
                 pageCache[initialUrl] = contentElement.innerHTML;
                 // Use replaceState for the initial load so it doesn't create a redundant history entry
-                history.replaceState({ url: initialUrl }, '', initialUrl);
+                history.replaceState({url: initialUrl}, '', initialUrl);
             }
         }
 
@@ -315,5 +321,4 @@
 
         console.log('Glory AJAX Navigation Initialized with config:', config);
     });
-
 })();
