@@ -73,7 +73,7 @@ class AssetsUtility
         $rutaAssetCompleta = get_template_directory() . $rutaAssetRelativa;
 
         if (!file_exists($rutaAssetCompleta)) {
-            GloryLogger::error("AssetsUtility: El archivo asset '{$nombreArchivo}' no se encontró en '{$rutaAssetCompleta}'.");
+            #GloryLogger::error("AssetsUtility: El archivo asset '{$nombreArchivo}' no se encontró en '{$rutaAssetCompleta}'.");
             return null;
         }
 
