@@ -26,7 +26,7 @@ class ExcepcionComandoFallido extends \Exception
      * @param string $salidaError La salida de error literal del comando.
      * @param \Throwable|null $previo La excepción previa, si existe.
      */
-    public function __construct(string $mensaje = '', int $codigoSalida = 0, string $salidaError = '', \Throwable $previo = null)
+    public function __construct(string $mensaje = '', int $codigoSalida = 0, string $salidaError = '', ?\Throwable $previo = null)
     {
         parent::__construct($mensaje, $codigoSalida, $previo); // El código de la excepción se pasa como segundo argumento a \Exception
         $this->salidaError  = $salidaError;
