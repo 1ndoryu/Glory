@@ -1,4 +1,4 @@
-<?
+<?php
 
 namespace Glory\Services;
 
@@ -41,20 +41,14 @@ class DefaultContentSynchronizer
         $tInicioGlobal = microtime(true);
 
         $definicionesPorTipo = DefaultContentRegistry::getDefiniciones();
-        #GloryLogger::info("DCS: Inicio sincronización; tipos: " . implode(',', array_keys($definicionesPorTipo)));
 
         if (empty($definicionesPorTipo)) {
             $this->procesando = false;
-            #GloryLogger::info("DCS: Sincronización abortada, no hay definiciones.");
             return;
         }
 
         foreach ($definicionesPorTipo as $tipoPost => $config) {
-            $tInicioTipo = microtime(true);
-            GloryLogger::info("DCS: Procesando tipo '{$tipoPost}' con " . count($config['definicionesPost']) . " definiciones.");
-
             if (!post_type_exists($tipoPost)) {
-                #GloryLogger::error("DefaultContentSynchronizer: No se puede procesar la definición porque el tipo de post '{$tipoPost}' no existe.");
                 continue;
             }
 
@@ -65,13 +59,7 @@ class DefaultContentSynchronizer
 
             $this->sincronizarPostsParaTipo($tipoPost, $config);
             $this->eliminarPostsObsoletosParaTipo($tipoPost, $config);
-
-            $duracionTipo = round(microtime(true) - $tInicioTipo, 3);
-            #GloryLogger::info("DCS: Finalizado tipo '{$tipoPost}' en {$duracionTipo}s");
         }
-
-        $duracionTotal = round(microtime(true) - $tInicioGlobal, 3);
-        GloryLogger::info("DCS: Sincronización completada en {$duracionTotal}s");
 
         $this->procesando = false;
     }
@@ -165,12 +153,12 @@ class DefaultContentSynchronizer
         if ($postDb->post_excerpt !== ($definicionCodigo['extracto'] ?? '')) return true;
         if (isset($definicionCodigo['fecha']) && $postDb->post_date !== $definicionCodigo['fecha']) return true;
         if (isset($definicionCodigo['fechaGmt']) && $postDb->post_date_gmt !== $definicionCodigo['fechaGmt']) return true;
-    
+
         $metaDefinida = $definicionCodigo['metaEntrada'] ?? [];
         foreach ($metaDefinida as $clave => $valor) {
             if (get_post_meta($postDb->ID, $clave, true) != $valor) return true;
         }
-    
+
         if (isset($definicionCodigo['imagenDestacadaAsset'])) {
             $idAdjuntoDefinicion = AssetsUtility::get_attachment_id_from_asset($definicionCodigo['imagenDestacadaAsset']);
             $idAdjuntoActual = get_post_thumbnail_id($postDb->ID);
@@ -178,7 +166,7 @@ class DefaultContentSynchronizer
                 return true;
             }
         }
-    
+
         $idsGaleriaDefinicion = $this->resolverIdsGaleria($definicionCodigo);
         if (!empty($idsGaleriaDefinicion)) {
             $idsGaleriaActual = get_post_meta($postDb->ID, self::META_CLAVE_GALERIA_IDS, true);
@@ -187,42 +175,49 @@ class DefaultContentSynchronizer
                 return true;
             }
         }
-    
+
         $categoriasRaw = $definicionCodigo['metaEntrada']['categoria'] ?? null;
         if (!empty($categoriasRaw) && is_string($categoriasRaw)) {
             $categoriasEsperadas = array_filter(array_map('trim', explode(',', $categoriasRaw)));
             sort($categoriasEsperadas);
-    
+
             $terminosActuales = wp_get_post_terms($postDb->ID, 'category', ['fields' => 'names']);
             if (!is_wp_error($terminosActuales)) {
                 sort($terminosActuales);
-    
+
                 if ($categoriasEsperadas !== $terminosActuales) {
                     return true;
                 }
             }
-    
-            // <<< INICIO DE LA MODIFICACIÓN >>>
-            // Ahora, incluso si los nombres de las categorías coinciden, verificamos si tienen su imagen.
+
+            // Comprobaciones adicionales para propiedades de las categorías
             $mapeoImagenes = $GLOBALS['glory_imagen_por_categoria'] ?? [];
+            $mapeoDescripciones = $GLOBALS['glory_descripcion_por_categoria'] ?? [];
+
             foreach ($categoriasEsperadas as $nombreCategoria) {
-                // Verificar si esta categoría debería tener una imagen mapeada
-                if (isset($mapeoImagenes[$nombreCategoria])) {
-                    $term = get_term_by('name', $nombreCategoria, 'category');
-                    if ($term instanceof \WP_Term) {
-                        // Verificar si el metadato de la imagen está vacío
+                $term = get_term_by('name', $nombreCategoria, 'category');
+                if ($term instanceof \WP_Term) {
+                    // Verificar si a la categoría le falta la imagen
+                    if (isset($mapeoImagenes[$nombreCategoria])) {
                         $idImagenActual = get_term_meta($term->term_id, 'glory_category_image_id', true);
                         if (empty($idImagenActual)) {
-                            // ¡La imagen falta! Forzamos la actualización.
-                            GloryLogger::info("DCS Diff: La categoría '{$nombreCategoria}' para el post #{$postDb->ID} no tiene imagen. Forzando actualización.");
-                            return true;
+                            return true; // Forzar actualización si falta la imagen
                         }
                     }
+
+                    // <<< INICIO DE LA MODIFICACIÓN >>>
+                    // Verificar si a la categoría le falta la descripción
+                    if (isset($mapeoDescripciones[$nombreCategoria])) {
+                        $descripcionEsperada = trim($mapeoDescripciones[$nombreCategoria]);
+                        if (empty($term->description) || trim($term->description) !== $descripcionEsperada) {
+                            return true; // Forzar actualización si la descripción es incorrecta
+                        }
+                    }
+                    // <<< FIN DE LA MODIFICACIÓN >>>
                 }
             }
-            // <<< FIN DE LA MODIFICACIÓN >>>
         }
-    
+
         return false;
     }
 
@@ -230,12 +225,12 @@ class DefaultContentSynchronizer
     {
         $slugDefault = trim($datosPost['slugDefault']);
         $datosInsercion = [
-            'post_type'    => $tipoPost,
-            'post_title'   => $datosPost['titulo'],
+            'post_type'  => $tipoPost,
+            'post_title' => $datosPost['titulo'],
             'post_content' => $datosPost['contenido'] ?? '',
-            'post_status'  => $datosPost['estado'] ?? 'publish',
+            'post_status' => $datosPost['estado'] ?? 'publish',
             'post_excerpt' => $datosPost['extracto'] ?? '',
-            'meta_input'   => $datosPost['metaEntrada'] ?? [],
+            'meta_input' => $datosPost['metaEntrada'] ?? [],
         ];
         if (isset($datosPost['fecha'])) $datosInsercion['post_date'] = $datosPost['fecha'];
         if (isset($datosPost['fechaGmt'])) $datosInsercion['post_date_gmt'] = $datosPost['fechaGmt'];
@@ -249,21 +244,16 @@ class DefaultContentSynchronizer
             return null;
         }
 
-        // --- INICIO NUEVA FUNCIONALIDAD: Asignar imagen destacada ---
         if (isset($datosPost['imagenDestacadaAsset']) && !empty($datosPost['imagenDestacadaAsset'])) {
             $idAdjunto = AssetsUtility::get_attachment_id_from_asset($datosPost['imagenDestacadaAsset']);
             if ($idAdjunto) {
                 set_post_thumbnail($idPost, $idAdjunto);
             }
         }
-        // --- FIN NUEVA FUNCIONALIDAD ---
 
-        // --- INICIO NUEVA FUNCIONALIDAD: asignar galería ---
         $idsGaleria = $this->resolverIdsGaleria($datosPost);
         if (!empty($idsGaleria)) {
             update_post_meta($idPost, self::META_CLAVE_GALERIA_IDS, $idsGaleria);
-
-            // Asegura que los adjuntos queden asociados al post como post_parent
             foreach ($idsGaleria as $idAdjuntoGaleria) {
                 wp_update_post([
                     'ID' => $idAdjuntoGaleria,
@@ -271,11 +261,8 @@ class DefaultContentSynchronizer
                 ]);
             }
         }
-        // --- FIN NUEVA FUNCIONALIDAD ---
 
-        // --- NUEVA FUNCIONALIDAD: Asignar categorías estándar de WP ---
         $this->asignarCategoriasWp($idPost, $datosPost);
-        // --- FIN NUEVA FUNCIONALIDAD ---
 
         return $idPost;
     }
@@ -283,10 +270,10 @@ class DefaultContentSynchronizer
     private function actualizarPost(int $idPost, array $datosPost, bool $esForzado): void
     {
         $datosActualizacion = [
-            'ID'           => $idPost,
-            'post_title'   => $datosPost['titulo'],
+            'ID'     => $idPost,
+            'post_title' => $datosPost['titulo'],
             'post_content' => $datosPost['contenido'] ?? '',
-            'post_status'  => $datosPost['estado'] ?? 'publish',
+            'post_status' => $datosPost['estado'] ?? 'publish',
             'post_excerpt' => $datosPost['extracto'] ?? '',
         ];
         if (isset($datosPost['fecha'])) $datosActualizacion['post_date'] = $datosPost['fecha'];
@@ -299,14 +286,12 @@ class DefaultContentSynchronizer
             return;
         }
 
-        // --- INICIO NUEVA FUNCIONALIDAD: Asignar imagen destacada ---
         if (isset($datosPost['imagenDestacadaAsset']) && !empty($datosPost['imagenDestacadaAsset'])) {
             $idAdjunto = AssetsUtility::get_attachment_id_from_asset($datosPost['imagenDestacadaAsset']);
             if ($idAdjunto) {
                 set_post_thumbnail($idPost, $idAdjunto);
             }
         }
-        // --- FIN NUEVA FUNCIONALIDAD ---
 
         $nuevaMeta = $datosPost['metaEntrada'] ?? [];
         foreach ($nuevaMeta as $claveMeta => $valorMeta) {
@@ -324,32 +309,19 @@ class DefaultContentSynchronizer
             delete_post_meta($idPost, self::META_CLAVE_EDITADO_MANUALMENTE);
         }
 
-        // --- INICIO NUEVA FUNCIONALIDAD: actualizar galería ---
         $idsGaleria = $this->resolverIdsGaleria($datosPost);
         update_post_meta($idPost, self::META_CLAVE_GALERIA_IDS, $idsGaleria);
 
-        // Asociar adjuntos al post
         foreach ($idsGaleria as $idAdjuntoGaleria) {
             wp_update_post([
                 'ID' => $idAdjuntoGaleria,
                 'post_parent' => $idPost,
             ]);
         }
-        // --- FIN NUEVA FUNCIONALIDAD ---
 
-        // --- NUEVA FUNCIONALIDAD: Asignar categorías estándar de WP ---
         $this->asignarCategoriasWp($idPost, $datosPost);
-        // --- FIN NUEVA FUNCIONALIDAD ---
     }
 
-    /**
-     * Dada la definición de un post, obtiene los IDs de adjunto que formarán la galería.
-     * Si la clave 'galeriaAssets' está definida, se usa tal cual. De lo contrario, se intenta
-     * deducirlas tomando el nombre base de la imagen destacada y buscando "1.jpg", "2.jpg" y "3.jpg".
-     *
-     * @param array $definicion
-     * @return int[] Array de IDs de adjuntos (puede estar vacío).
-     */
     private function resolverIdsGaleria(array $definicion): array
     {
         $archivosGaleria = [];
@@ -357,9 +329,7 @@ class DefaultContentSynchronizer
         if (!empty($definicion['galeriaAssets']) && is_array($definicion['galeriaAssets'])) {
             $archivosGaleria = $definicion['galeriaAssets'];
         } elseif (!empty($definicion['imagenDestacadaAsset'])) {
-            // Intentar deducir nombres basados en la imagen destacada (ej: japon.jpg -> japon1.jpg, japon2.jpg, japon3.jpg)
             $nombreBase = preg_replace('/\.[^.]+$/', '', $definicion['imagenDestacadaAsset']);
-            // Añade variantes con mayúsculas tal cual y en minúsculas
             for ($i = 1; $i <= 3; $i++) {
                 $archivosGaleria[] = $nombreBase . $i . '.jpg';
                 $archivosGaleria[] = strtolower($nombreBase) . $i . '.jpg';
@@ -374,14 +344,13 @@ class DefaultContentSynchronizer
             }
         }
 
-        return $ids;
+        return array_unique($ids);
     }
 
     private function asignarCategoriasWp(int $idPost, array $datosPost): void
     {
         $categoriasRaw = $datosPost['metaEntrada']['categoria'] ?? null;
         if (empty($categoriasRaw) || !is_string($categoriasRaw)) {
-            // Borra las categorías si el campo está vacío en la definición
             wp_set_object_terms($idPost, null, 'category');
             return;
         }
@@ -392,28 +361,33 @@ class DefaultContentSynchronizer
             return;
         }
 
-        // Asignar las categorías al post. WP las crea si no existen.
         wp_set_object_terms($idPost, $nombresCategorias, 'category', false);
 
-        // Ahora, iteramos sobre cada categoría para asignarle su imagen por defecto como metadato.
         $mapeoImagenes = $GLOBALS['glory_imagen_por_categoria'] ?? [];
+        $mapeoDescripciones = $GLOBALS['glory_descripcion_por_categoria'] ?? [];
 
         foreach ($nombresCategorias as $nombreCategoria) {
             $term = get_term_by('name', $nombreCategoria, 'category');
 
-            // Si el término existe y tiene una imagen definida en nuestro mapa
             if ($term instanceof \WP_Term && isset($mapeoImagenes[$nombreCategoria])) {
                 $nombreArchivoImagen = $mapeoImagenes[$nombreCategoria];
-                
-                // Comprobamos si ya tiene una imagen para no repetir el proceso
                 $idImagenActual = get_term_meta($term->term_id, 'glory_category_image_id', true);
 
                 if (!$idImagenActual) {
                     $idAdjunto = AssetsUtility::get_attachment_id_from_asset($nombreArchivoImagen);
                     if ($idAdjunto) {
-                        // Guardamos el ID del adjunto como metadato del término
                         update_term_meta($term->term_id, 'glory_category_image_id', $idAdjunto);
                     }
+                }
+            }
+
+            if ($term instanceof \WP_Term && isset($mapeoDescripciones[$nombreCategoria])) {
+                $descripcionEsperada = trim($mapeoDescripciones[$nombreCategoria]);
+
+                if (empty($term->description) || trim($term->description) !== $descripcionEsperada) {
+                    wp_update_term($term->term_id, 'category', [
+                        'description' => $descripcionEsperada,
+                    ]);
                 }
             }
         }
