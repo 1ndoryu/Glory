@@ -24,12 +24,42 @@ class AssetsUtility
      */
     public static function imagen(string $nombre, string $extension = 'jpg', array $atributos = []): void
     {
-        // Construye la URL de la imagen de forma segura.
-        $urlImagen = get_template_directory_uri() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
+        // Construye la ruta y la URL base de la imagen de forma segura
+        $rutaLocal  = get_template_directory() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
+        $urlBase    = get_template_directory_uri() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
+
+        // Obtiene dimensiones reales si el archivo existe
+        $ancho = $alto = null;
+        if (file_exists($rutaLocal)) {
+            $dimensiones = getimagesize($rutaLocal);
+            if ($dimensiones !== false) {
+                [$ancho, $alto] = $dimensiones;
+            }
+        }
+
+        // Optimiza la URL a través de Jetpack Photon o del fallback definido en functions.php
+        if (function_exists('jetpack_photon_url')) {
+            $argsPhoton = [
+                'quality' => 60,
+                'strip'   => 'all',
+            ];
+            if ($ancho && $alto) {
+                $argsPhoton['resize'] = $ancho . ',' . $alto;
+            }
+            $urlOptimizada = jetpack_photon_url($urlBase, $argsPhoton);
+        } else {
+            $urlOptimizada = $urlBase;
+        }
 
         // Establece un texto alternativo (alt) por defecto si no se proporciona uno.
         if (!isset($atributos['alt'])) {
             $atributos['alt'] = ucwords(str_replace(['-', '_'], ' ', $nombre));
+        }
+
+        // Añade width/height si no vienen dados y los conocemos
+        if ($ancho && $alto) {
+            if (!isset($atributos['width']))  { $atributos['width']  = $ancho; }
+            if (!isset($atributos['height'])) { $atributos['height'] = $alto;  }
         }
 
         // Convierte el array de atributos en una cadena de texto para el HTML.
@@ -38,21 +68,37 @@ class AssetsUtility
             $atributosString .= sprintf(' %s="%s"', esc_attr($clave), esc_attr($valor));
         }
 
-        // Imprime la etiqueta <img> completa, escapando la URL y los atributos para mayor seguridad.
-        printf(
-            '<img src="%s"%s>',
-            esc_url($urlImagen),
-            $atributosString
-        );
+        // Imprime la etiqueta <img> completa.
+        printf('<img src="%s"%s>', esc_url($urlOptimizada), $atributosString);
     }
 
     public static function imagenUrl(string $nombre, string $extension = 'jpg'): void
     {
-        // Construye la URL de la imagen de forma segura.
-        $urlImagen = get_template_directory_uri() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
+        $rutaLocal  = get_template_directory() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
+        $urlBase    = get_template_directory_uri() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
 
-        // Imprime solamente la URL escapada.
-        echo esc_url($urlImagen);
+        $ancho = $alto = null;
+        if (file_exists($rutaLocal)) {
+            $dimensiones = getimagesize($rutaLocal);
+            if ($dimensiones !== false) {
+                [$ancho, $alto] = $dimensiones;
+            }
+        }
+
+        if (function_exists('jetpack_photon_url')) {
+            $argsPhoton = [
+                'quality' => 60,
+                'strip'   => 'all',
+            ];
+            if ($ancho && $alto) {
+                $argsPhoton['resize'] = $ancho . ',' . $alto;
+            }
+            $urlFinal = jetpack_photon_url($urlBase, $argsPhoton);
+        } else {
+            $urlFinal = $urlBase;
+        }
+
+        echo esc_url($urlFinal);
     }
 
     /**
