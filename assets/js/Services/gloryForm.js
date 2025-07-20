@@ -158,6 +158,15 @@ function gloryForm() {
                     ocultarFondo();
                 }
                 alert(respuesta.data.alert);
+
+                // Limpiar campos del formulario tras envío exitoso
+                let formElement = contenedor;
+                if (formElement && typeof formElement.reset !== 'function') {
+                    formElement = contenedor.querySelector('form');
+                }
+                if (formElement && typeof formElement.reset === 'function') {
+                    formElement.reset();
+                }
             } else if (!respuesta.success && respuesta.data && respuesta.data.alert) {
                 alert(respuesta.data.alert);
             }
