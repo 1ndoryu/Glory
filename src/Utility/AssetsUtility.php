@@ -37,8 +37,9 @@ class AssetsUtility
             }
         }
 
-        // Optimiza la URL a través de Jetpack Photon o del fallback definido en functions.php
-        if (function_exists('jetpack_photon_url')) {
+        // Optimiza la URL a través de Jetpack Photon o del fallback definido en functions.php,
+        // excepto cuando estamos en entorno local (define('LOCAL', true)).
+        if (!(defined('LOCAL') && LOCAL) && function_exists('jetpack_photon_url')) {
             $argsPhoton = [
                 'quality' => 60,
                 'strip'   => 'all',
@@ -85,7 +86,9 @@ class AssetsUtility
             }
         }
 
-        if (function_exists('jetpack_photon_url')) {
+        // Optimiza la URL a través de Jetpack Photon o del fallback definido en functions.php,
+        // excepto cuando estamos en entorno local (define('LOCAL', true)).
+        if (!(defined('LOCAL') && LOCAL) && function_exists('jetpack_photon_url')) {
             $argsPhoton = [
                 'quality' => 60,
                 'strip'   => 'all',
