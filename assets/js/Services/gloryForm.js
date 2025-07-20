@@ -159,14 +159,27 @@ function gloryForm() {
                 }
                 alert(respuesta.data.alert);
 
-                // Limpiar campos del formulario tras envío exitoso
-                let formElement = contenedor;
-                if (formElement && typeof formElement.reset !== 'function') {
-                    formElement = contenedor.querySelector('form');
-                }
-                if (formElement && typeof formElement.reset === 'function') {
-                    formElement.reset();
-                }
+                // Limpiar campos del formulario tras envío exitoso (contenedor no es <form>)
+                const camposParaLimpiar = contenedor.querySelectorAll('input, textarea, select');
+                camposParaLimpiar.forEach(campo => {
+                    const tag = campo.tagName.toLowerCase();
+                    if (tag === 'input') {
+                        if (['text', 'number', 'date', 'email', 'tel', 'range'].includes(campo.type)) {
+                            campo.value = '';
+                        } else if (['checkbox', 'radio'].includes(campo.type)) {
+                            campo.checked = false;
+                        }
+                    } else if (tag === 'textarea') {
+                        campo.value = '';
+                    } else if (tag === 'select') {
+                        campo.selectedIndex = 0;
+                    }
+                });
+
+                // Disparar evento 'change' en todos los <select> para actualizar posibles lógicas externas
+                contenedor.querySelectorAll('select').forEach(sel => {
+                    sel.dispatchEvent(new Event('change'));
+                });
             } else if (!respuesta.success && respuesta.data && respuesta.data.alert) {
                 alert(respuesta.data.alert);
             }
