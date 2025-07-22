@@ -4,6 +4,7 @@ namespace Glory\Core;
 
 use Glory\Handler\FormHandler;
 use Glory\Manager\OpcionManager;
+use Glory\Admin\SyncController;
 
 class Setup
 {
@@ -14,5 +15,6 @@ class Setup
         OpcionManager::init();
         AssetManager::register();
         PageManager::register();
+        (new SyncController())->register();
     }
 }

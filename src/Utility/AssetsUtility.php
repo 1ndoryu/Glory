@@ -107,61 +107,58 @@ class AssetsUtility
     /**
      * Obtiene el ID de un adjunto a partir de un nombre de archivo en /assets/images/.
      * Si el adjunto no existe en la Biblioteca de Medios, lo importa desde la carpeta de assets.
+     * Utiliza un transient para cachear el resultado y mejorar el rendimiento.
      *
      * @param string $nombreArchivo El nombre del archivo de imagen (ej. 'mi-imagen.jpg').
      * @return int|null El ID del adjunto o null si hay un error.
      */
     public static function get_attachment_id_from_asset(string $nombreArchivo): ?int
     {
-        static $cache = [];
-        if (isset($cache[$nombreArchivo])) {
-            return $cache[$nombreArchivo];
+        // --- (INICIO DE LA MEJORA DE RENDIMIENTO) ---
+        $cacheKey = 'glory_asset_id_' . md5($nombreArchivo);
+        $cachedId = get_transient($cacheKey);
+
+        if ($cachedId !== false) {
+            // Se encontró un ID en la caché, lo devolvemos directamente.
+            // Si el valor cacheado era null, devolverá null.
+            return $cachedId === 'null' ? null : (int) $cachedId;
         }
+        // --- (FIN DE LA MEJORA DE RENDIMIENTO) ---
 
         $rutaAssetRelativa = '/assets/images/' . $nombreArchivo;
         $rutaAssetCompleta = get_template_directory() . $rutaAssetRelativa;
 
         if (!file_exists($rutaAssetCompleta)) {
-            #GloryLogger::error("AssetsUtility: El archivo asset '{$nombreArchivo}' no se encontró en '{$rutaAssetCompleta}'.");
+            // Guardamos en caché que este archivo no existe para no volver a buscarlo.
+            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
             return null;
-        }
-
-        // Si estamos en el front-end y el adjunto no existe todavía, NO intentes importarlo para evitar bloqueos.
-        if (!is_admin()) {
-            $args = [
-                'post_type'      => 'attachment',
-                'post_status'    => 'inherit',
-                'meta_query'     => [
-                    [
-                        'key'   => '_glory_asset_source',
-                        'value' => $rutaAssetRelativa,
-                    ],
-                ],
-                'posts_per_page' => 1,
-                'fields'        => 'ids',
-                'no_found_rows' => true,
-            ];
-            $q = new \WP_Query($args);
-            $cache[$nombreArchivo] = $q->have_posts() ? (int) $q->posts[0] : null;
-            return $cache[$nombreArchivo];
         }
 
         // Buscar si ya existe un adjunto que provenga de este asset
         $args = [
-            'post_type' => 'attachment',
-            'post_status' => 'inherit',
-            'meta_query' => [
-                [
-                    'key' => '_glory_asset_source',
-                    'value' => $rutaAssetRelativa
-                ]
-            ],
+            'post_type'      => 'attachment',
+            'post_status'    => 'inherit',
             'posts_per_page' => 1,
-            'fields' => 'ids'
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+            'meta_query'     => [
+                [
+                    'key'   => '_glory_asset_source',
+                    'value' => $rutaAssetRelativa,
+                ],
+            ],
         ];
         $query = new \WP_Query($args);
+
         if ($query->have_posts()) {
-            return $query->posts[0];
+            $id = (int) $query->posts[0];
+            set_transient($cacheKey, $id, HOUR_IN_SECONDS); // Guardar el ID encontrado en la caché.
+            return $id;
+        }
+        
+        // Si no existe, y no estamos en el admin, no lo importamos para evitar congelaciones.
+        if (!is_admin()) {
+            return null;
         }
 
         // Si no existe, se "sube" el archivo a la biblioteca de medios
@@ -169,7 +166,6 @@ class AssetsUtility
         require_once(ABSPATH . 'wp-admin/includes/image.php');
         require_once(ABSPATH . 'wp-admin/includes/media.php');
 
-        // wp_upload_bits está obsoleto, es mejor usar wp_upload_bits con wp_handle_sideload
         $archivoTemporal = wp_tempnam($nombreArchivo);
         copy($rutaAssetCompleta, $archivoTemporal);
 
@@ -180,14 +176,12 @@ class AssetsUtility
             'size' => filesize($rutaAssetCompleta)
         ];
 
-        $sobrescribir = ['test_form' => false];
-        $subida = wp_handle_sideload($datosArchivo, $sobrescribir);
+        $subida = wp_handle_sideload($datosArchivo, ['test_form' => false]);
 
         if (isset($subida['error'])) {
             GloryLogger::error("AssetsUtility: Error al subir el asset '{$nombreArchivo}'.", ['error' => $subida['error']]);
-            if (file_exists($archivoTemporal)) {
-                unlink($archivoTemporal);
-            }
+            if (file_exists($archivoTemporal)) unlink($archivoTemporal);
+            set_transient($cacheKey, 'null', HOUR_IN_SECONDS); // Cachear el resultado nulo.
             return null;
         }
 
@@ -201,17 +195,17 @@ class AssetsUtility
 
         if (is_wp_error($idAdjunto)) {
             GloryLogger::error("AssetsUtility: Error al insertar el adjunto '{$nombreArchivo}'.", ['error' => $idAdjunto->get_error_message()]);
+            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
             return null;
         }
 
-        // Generar metadatos para el adjunto (esencial para que se muestre correctamente)
         $metadatosAdjunto = wp_generate_attachment_metadata($idAdjunto, $subida['file']);
         wp_update_attachment_metadata($idAdjunto, $metadatosAdjunto);
-
-        // Guardar la referencia a su origen para futuras búsquedas
         update_post_meta($idAdjunto, '_glory_asset_source', $rutaAssetRelativa);
 
         GloryLogger::info("AssetsUtility: El asset '{$nombreArchivo}' ha sido importado a la Biblioteca de Medios.", ['attachment_id' => $idAdjunto]);
+        
+        set_transient($cacheKey, $idAdjunto, HOUR_IN_SECONDS); // Guardar en caché el nuevo ID.
 
         return $idAdjunto;
     }

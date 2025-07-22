@@ -42,6 +42,8 @@ class DefaultContentSynchronizer
 
         $definicionesPorTipo = DefaultContentRegistry::getDefiniciones();
 
+        $this->sincronizarCategoriasDirectamente();
+        
         if (empty($definicionesPorTipo)) {
             $this->procesando = false;
             return;
@@ -59,6 +61,43 @@ class DefaultContentSynchronizer
 
             $this->sincronizarPostsParaTipo($tipoPost, $config);
             $this->eliminarPostsObsoletosParaTipo($tipoPost, $config);
+        }
+
+        $this->procesando = false;
+    }
+
+    /**
+     * Restablece todo el contenido gestionado a su estado por defecto.
+     * Itera sobre todas las definiciones, encuentra los posts correspondientes
+     * y los actualiza forzadamente a la versión del código.
+     */
+    public function restablecer(): void
+    {
+        if ($this->procesando) return;
+        $this->procesando = true;
+
+        $definicionesPorTipo = DefaultContentRegistry::getDefiniciones();
+
+        if (empty($definicionesPorTipo)) {
+            $this->procesando = false;
+            return;
+        }
+
+        foreach ($definicionesPorTipo as $tipoPost => $config) {
+            if (!post_type_exists($tipoPost)) {
+                continue;
+            }
+
+            foreach ($config['definicionesPost'] as $datosPostDefinicion) {
+                $slugDefault = trim($datosPostDefinicion['slugDefault']);
+                $postExistente = $this->repositorio->findPorSlug($tipoPost, $slugDefault);
+
+                if ($postExistente) {
+                    // Forzar la actualización independientemente de si fue editado manualmente.
+                    $this->actualizarPost($postExistente->ID, $datosPostDefinicion, true);
+                    GloryLogger::info("DCS: Post '{$slugDefault}' (ID: {$postExistente->ID}) restablecido a default.");
+                }
+            }
         }
 
         $this->procesando = false;
@@ -197,23 +236,24 @@ class DefaultContentSynchronizer
             foreach ($categoriasEsperadas as $nombreCategoria) {
                 $term = get_term_by('name', $nombreCategoria, 'category');
                 if ($term instanceof \WP_Term) {
-                    // Verificar si a la categoría le falta la imagen
+                    // Verificar si la imagen de la categoría ha cambiado
                     if (isset($mapeoImagenes[$nombreCategoria])) {
+                        $nombreArchivoDefinido = $mapeoImagenes[$nombreCategoria];
+                        $idImagenEsperado = AssetsUtility::get_attachment_id_from_asset($nombreArchivoDefinido);
                         $idImagenActual = get_term_meta($term->term_id, 'glory_category_image_id', true);
-                        if (empty($idImagenActual)) {
-                            return true; // Forzar actualización si falta la imagen
+
+                        if ((int) $idImagenActual != (int) $idImagenEsperado) {
+                            return true;
                         }
                     }
 
-                    // <<< INICIO DE LA MODIFICACIÓN >>>
                     // Verificar si a la categoría le falta la descripción
                     if (isset($mapeoDescripciones[$nombreCategoria])) {
                         $descripcionEsperada = trim($mapeoDescripciones[$nombreCategoria]);
                         if (empty($term->description) || trim($term->description) !== $descripcionEsperada) {
-                            return true; // Forzar actualización si la descripción es incorrecta
+                            return true;
                         }
                     }
-                    // <<< FIN DE LA MODIFICACIÓN >>>
                 }
             }
         }
@@ -270,7 +310,7 @@ class DefaultContentSynchronizer
     private function actualizarPost(int $idPost, array $datosPost, bool $esForzado): void
     {
         $datosActualizacion = [
-            'ID'     => $idPost,
+            'ID'    => $idPost,
             'post_title' => $datosPost['titulo'],
             'post_content' => $datosPost['contenido'] ?? '',
             'post_status' => $datosPost['estado'] ?? 'publish',
@@ -371,13 +411,9 @@ class DefaultContentSynchronizer
 
             if ($term instanceof \WP_Term && isset($mapeoImagenes[$nombreCategoria])) {
                 $nombreArchivoImagen = $mapeoImagenes[$nombreCategoria];
-                $idImagenActual = get_term_meta($term->term_id, 'glory_category_image_id', true);
-
-                if (!$idImagenActual) {
-                    $idAdjunto = AssetsUtility::get_attachment_id_from_asset($nombreArchivoImagen);
-                    if ($idAdjunto) {
-                        update_term_meta($term->term_id, 'glory_category_image_id', $idAdjunto);
-                    }
+                $idAdjunto = AssetsUtility::get_attachment_id_from_asset($nombreArchivoImagen);
+                if ($idAdjunto) {
+                    update_term_meta($term->term_id, 'glory_category_image_id', $idAdjunto);
                 }
             }
 
@@ -388,6 +424,52 @@ class DefaultContentSynchronizer
                     wp_update_term($term->term_id, 'category', [
                         'description' => $descripcionEsperada,
                     ]);
+                }
+            }
+        }
+    }
+
+    private function sincronizarCategoriasDirectamente(): void
+    {
+        GloryLogger::info('DCS: Iniciando sincronización directa de categorías.');
+
+        $categoriasDefinicion = $GLOBALS['glory_categorias_definidas'] ?? [];
+        if (empty($categoriasDefinicion)) {
+            GloryLogger::info('DCS: No hay definiciones de categorías para sincronizar.');
+            return;
+        }
+
+        foreach ($categoriasDefinicion as $def) {
+            $nombreCategoria = $def['nombre'] ?? null;
+            if (!$nombreCategoria) continue;
+
+            $descripcionDefinida = $def['descripcion'] ?? '';
+            $imagenAssetDefinida = $def['imagenAsset'] ?? null;
+
+            $term = get_term_by('name', $nombreCategoria, 'category');
+            if (!$term) {
+                $term_result = wp_insert_term($nombreCategoria, 'category', ['description' => $descripcionDefinida]);
+                if (is_wp_error($term_result)) {
+                    GloryLogger::error("DCS: Error al crear la categoría '{$nombreCategoria}'.", ['error' => $term_result->get_error_message()]);
+                    continue;
+                }
+                $term = get_term($term_result['term_id']);
+            }
+
+            // Sincronizar descripción si es diferente
+            if ($term && $term->description !== $descripcionDefinida) {
+                wp_update_term($term->term_id, 'category', ['description' => $descripcionDefinida]);
+                GloryLogger::info("DCS: Descripción actualizada para la categoría '{$nombreCategoria}'.");
+            }
+
+            // Sincronizar imagen si es diferente
+            if ($term && $imagenAssetDefinida) {
+                $idImagenEsperado = AssetsUtility::get_attachment_id_from_asset($imagenAssetDefinida);
+                $idImagenActual = get_term_meta($term->term_id, 'glory_category_image_id', true);
+
+                if ($idImagenEsperado && (int)$idImagenActual != (int)$idImagenEsperado) {
+                    update_term_meta($term->term_id, 'glory_category_image_id', $idImagenEsperado);
+                    GloryLogger::info("DCS: Imagen actualizada para la categoría '{$nombreCategoria}'.");
                 }
             }
         }

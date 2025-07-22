@@ -6,3 +6,4 @@
 
 - [ ] Funcion centralizada para imagenes optimizadas
 - [ ] Boton en el inicio para borrar cache, forzar sincronizado, y restablecer defaults
+- [ ] Sistema de optimizacion de css y js, mimificacion automatica de todos los assets. 

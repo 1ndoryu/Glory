@@ -56,7 +56,7 @@ class DefaultContentManager
             global $pagenow;
             if ($pagenow !== 'edit.php' || (isset($_GET['post_type']) && $_GET['post_type'] !== 'page')) {
                 // Ejecuta la lógica de sincronización principal solo en otras pantallas del admin (o vía CLI).
-                self::$sincronizadorInstancia->sincronizar();
+                //self::$sincronizadorInstancia->sincronizar();
             }
         }
 
