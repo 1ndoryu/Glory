@@ -52,3 +52,4 @@ Cargo.lock
 *.rmeta
 *.o
 *.d
+status.md

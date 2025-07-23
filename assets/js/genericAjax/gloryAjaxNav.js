@@ -319,6 +319,6 @@
         // Use requestAnimationFrame to ensure layout is stable before firing
         requestAnimationFrame(triggerPageReady);
 
-        console.log('Glory AJAX Navigation Initialized with config:', config);
+        //console.log('Glory AJAX Navigation Initialized with config:', config);
     });
 })();

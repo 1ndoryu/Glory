@@ -134,3 +134,11 @@ if (!function_exists('jetpack_photon_url')) {
         return function_exists('esc_url') ? esc_url($final_url) : $final_url;
     }
 }
+
+function themeSetup()
+{
+    add_theme_support('title-tag');
+    add_theme_support('post-thumbnails');
+}
+add_action('after_setup_theme', 'themeSetup');
+add_filter('show_admin_bar', '__return_false');
