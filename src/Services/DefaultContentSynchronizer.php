@@ -21,6 +21,8 @@ class DefaultContentSynchronizer
     private const META_CLAVE_SLUG_DEFAULT = '_glory_default_content_slug';
     private const META_CLAVE_EDITADO_MANUALMENTE = '_glory_default_content_edited';
     private const META_CLAVE_GALERIA_IDS = '_glory_default_galeria_ids';
+    private const META_CLAVE_CATEGORIA_GESTIONADA = '_glory_managed_category';
+
 
     private DefaultContentRepository $repositorio;
     private bool $procesando = false;
@@ -314,12 +316,12 @@ class DefaultContentSynchronizer
         // --- INICIO DE LA SOLUCIÓN ---
         // Se consolida la actualización de post y meta en una sola llamada.
         $datosActualizacion = [
-            'ID'     => $idPost,
-            'post_title'  => $datosPost['titulo'],
+            'ID'  => $idPost,
+            'post_title' => $datosPost['titulo'],
             'post_content' => $datosPost['contenido'] ?? '',
             'post_status' => $datosPost['estado'] ?? 'publish',
             'post_excerpt' => $datosPost['extracto'] ?? '',
-            'meta_input'  => $datosPost['metaEntrada'] ?? [], // Se añade meta_input
+            'meta_input' => $datosPost['metaEntrada'] ?? [], // Se añade meta_input
         ];
         if (isset($datosPost['fecha'])) $datosActualizacion['post_date'] = $datosPost['fecha'];
         if (isset($datosPost['fechaGmt'])) $datosActualizacion['post_date_gmt'] = $datosPost['fechaGmt'];
@@ -445,30 +447,66 @@ class DefaultContentSynchronizer
             return;
         }
 
+        // --- INICIO DE LA SOLUCIÓN ---
+
+        // 1. Obtener todos los nombres de las categorías definidas en el código.
+        $nombresDefinidos = array_column($categoriasDefinicion, 'nombre');
+        if (empty($nombresDefinidos)) {
+            GloryLogger::warning('DCS: La definición de categorías existe pero no contiene nombres.');
+            return;
+        }
+
+        // 2. Obtener todas las categorías de la base de datos que están marcadas como gestionadas.
+        $terminosGestionadosEnBd = get_terms([
+            'taxonomy' => 'category',
+            'hide_empty' => false,
+            'meta_key' => self::META_CLAVE_CATEGORIA_GESTIONADA,
+            'meta_value' => '1',
+        ]);
+
+        // 3. Identificar y eliminar las categorías obsoletas (gestionadas pero ya no definidas).
+        if (!is_wp_error($terminosGestionadosEnBd)) {
+            foreach ($terminosGestionadosEnBd as $term) {
+                if (!in_array($term->name, $nombresDefinidos, true)) {
+                    GloryLogger::info("DCS: Eliminando categoría obsoleta '{$term->name}' (ID: {$term->term_id}).");
+                    wp_delete_term($term->term_id, 'category');
+                }
+            }
+        }
+
+        // 4. Iterar sobre las definiciones para crear o actualizar las categorías.
         foreach ($categoriasDefinicion as $def) {
             $nombreCategoria = $def['nombre'] ?? null;
             if (!$nombreCategoria) continue;
 
             $descripcionDefinida = $def['descripcion'] ?? '';
             $imagenAssetDefinida = $def['imagenAsset'] ?? null;
-
             $term = get_term_by('name', $nombreCategoria, 'category');
+
             if (!$term) {
+                // La categoría no existe, la creamos.
                 $term_result = wp_insert_term($nombreCategoria, 'category', ['description' => $descripcionDefinida]);
                 if (is_wp_error($term_result)) {
                     GloryLogger::error("DCS: Error al crear la categoría '{$nombreCategoria}'.", ['error' => $term_result->get_error_message()]);
                     continue;
                 }
-                $term = get_term($term_result['term_id']);
+                $term_id = $term_result['term_id'];
+                $term = get_term($term_id);
+                GloryLogger::info("DCS: Categoría '{$nombreCategoria}' creada.");
             }
 
-            // Sincronizar descripción si es diferente
+            // Asegurarnos de que la categoría esté marcada como gestionada.
+            if ($term) {
+                update_term_meta($term->term_id, self::META_CLAVE_CATEGORIA_GESTIONADA, '1');
+            }
+
+            // Sincronizar descripción si es diferente.
             if ($term && $term->description !== $descripcionDefinida) {
                 wp_update_term($term->term_id, 'category', ['description' => $descripcionDefinida]);
                 GloryLogger::info("DCS: Descripción actualizada para la categoría '{$nombreCategoria}'.");
             }
 
-            // Sincronizar imagen si es diferente
+            // Sincronizar imagen si es diferente.
             if ($term && $imagenAssetDefinida) {
                 $idImagenEsperado = AssetsUtility::get_attachment_id_from_asset($imagenAssetDefinida);
                 $idImagenActual = get_term_meta($term->term_id, 'glory_category_image_id', true);
@@ -479,5 +517,6 @@ class DefaultContentSynchronizer
                 }
             }
         }
+        // --- FIN DE LA SOLUCIÓN ---
     }
 }
