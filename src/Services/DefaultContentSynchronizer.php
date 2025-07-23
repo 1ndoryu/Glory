@@ -1,4 +1,5 @@
 <?php
+// Glory/src/Services/DefaultContentSynchronizer.php
 
 namespace Glory\Services;
 
@@ -38,13 +39,14 @@ class DefaultContentSynchronizer
         if ($this->procesando) return;
         $this->procesando = true;
 
-        $tInicioGlobal = microtime(true);
+        GloryLogger::info('DCS: Iniciando sincronización de contenido por defecto.');
 
         $definicionesPorTipo = DefaultContentRegistry::getDefiniciones();
 
         $this->sincronizarCategoriasDirectamente();
-        
+
         if (empty($definicionesPorTipo)) {
+            GloryLogger::info('DCS: No hay definiciones de contenido (posts) para sincronizar.');
             $this->procesando = false;
             return;
         }
@@ -265,7 +267,7 @@ class DefaultContentSynchronizer
     {
         $slugDefault = trim($datosPost['slugDefault']);
         $datosInsercion = [
-            'post_type'  => $tipoPost,
+            'post_type' => $tipoPost,
             'post_title' => $datosPost['titulo'],
             'post_content' => $datosPost['contenido'] ?? '',
             'post_status' => $datosPost['estado'] ?? 'publish',
@@ -309,17 +311,24 @@ class DefaultContentSynchronizer
 
     private function actualizarPost(int $idPost, array $datosPost, bool $esForzado): void
     {
+        // --- INICIO DE LA SOLUCIÓN ---
+        // Se consolida la actualización de post y meta en una sola llamada.
         $datosActualizacion = [
-            'ID'    => $idPost,
-            'post_title' => $datosPost['titulo'],
+            'ID'     => $idPost,
+            'post_title'  => $datosPost['titulo'],
             'post_content' => $datosPost['contenido'] ?? '',
             'post_status' => $datosPost['estado'] ?? 'publish',
             'post_excerpt' => $datosPost['extracto'] ?? '',
+            'meta_input'  => $datosPost['metaEntrada'] ?? [], // Se añade meta_input
         ];
         if (isset($datosPost['fecha'])) $datosActualizacion['post_date'] = $datosPost['fecha'];
         if (isset($datosPost['fechaGmt'])) $datosActualizacion['post_date_gmt'] = $datosPost['fechaGmt'];
 
+        // Asegurarse de que el slug de control no se borre.
+        $datosActualizacion['meta_input'][self::META_CLAVE_SLUG_DEFAULT] = $datosPost['slugDefault'];
+
         $resultado = wp_update_post($datosActualizacion, true);
+        // --- FIN DE LA SOLUCIÓN ---
 
         if (is_wp_error($resultado)) {
             GloryLogger::error("DefaultContentSynchronizer: FALLÓ al actualizar post ID {$idPost}.", ['error' => $resultado->get_error_message()]);
@@ -333,16 +342,13 @@ class DefaultContentSynchronizer
             }
         }
 
-        $nuevaMeta = $datosPost['metaEntrada'] ?? [];
-        foreach ($nuevaMeta as $claveMeta => $valorMeta) {
-            update_post_meta($idPost, $claveMeta, $valorMeta);
-        }
-
         if ($esForzado) {
+            // Limpiar metadatos antiguos si es una actualización forzada
+            $metaDefinida = $datosPost['metaEntrada'] ?? [];
             $metaExistente = get_post_meta($idPost);
             foreach (array_keys($metaExistente) as $claveExistente) {
                 if (str_starts_with($claveExistente, '_')) continue;
-                if (!array_key_exists($claveExistente, $nuevaMeta)) {
+                if (!array_key_exists($claveExistente, $metaDefinida)) {
                     delete_post_meta($idPost, $claveExistente);
                 }
             }

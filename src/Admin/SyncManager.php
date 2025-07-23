@@ -1,4 +1,5 @@
 <?php
+// Glory/src/Admin/SyncManager.php
 
 namespace Glory\Admin;
 
@@ -10,7 +11,11 @@ class SyncManager
     public function registerHooks(): void
     {
         add_action('admin_bar_menu', [$this, 'addSyncButtons'], 999);
-        add_action('init', [$this, 'handleSyncActions']);
+        // --- INICIO DE LA SOLUCIÓN ---
+        // Se cambia la prioridad del hook de 10 (por defecto) a 20.
+        // Esto asegura que se ejecute DESPUÉS de que se registren los tipos de post (que se enganchan en init:10).
+        add_action('init', [$this, 'handleSyncActions'], 20);
+        // --- FIN DE LA SOLUCIÓN ---
         add_action('admin_notices', [$this, 'showSyncNotice']);
     }
 
@@ -21,27 +26,27 @@ class SyncManager
         }
 
         $wp_admin_bar->add_node([
-            'id'    => 'glory_sync_group',
+            'id'  => 'glory_sync_group',
             'title' => 'Glory Sync',
-            'href'  => '#',
+            'href' => '#',
         ]);
 
         $wp_admin_bar->add_node([
-            'id'     => 'glory_force_sync',
+            'id'  => 'glory_force_sync',
             'parent' => 'glory_sync_group',
-            'title'  => 'Sincronizar',
-            'href'   => add_query_arg('glory_action', 'sync'),
-            'meta'   => [
+            'title' => 'Sincronizar',
+            'href' => add_query_arg('glory_action', 'sync'),
+            'meta' => [
                 'title' => 'Sincroniza el contenido desde el código, actualizando cambios necesarios sin sobreescribir ediciones manuales.'
             ]
         ]);
 
         $wp_admin_bar->add_node([
-            'id'     => 'glory_reset_default',
+            'id'  => 'glory_reset_default',
             'parent' => 'glory_sync_group',
-            'title'  => 'Restablecer a Default',
-            'href'   => add_query_arg('glory_action', 'reset'),
-            'meta'   => [
+            'title' => 'Restablecer a Default',
+            'href' => add_query_arg('glory_action', 'reset'),
+            'meta' => [
                 'title' => 'Restablece el contenido modificado manualmente a su estado original definido en el código.'
             ]
         ]);
