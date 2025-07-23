@@ -508,12 +508,14 @@ class DefaultContentSynchronizer
 
             // Sincronizar imagen si es diferente.
             if ($term && $imagenAssetDefinida) {
-                $idImagenEsperado = AssetsUtility::get_attachment_id_from_asset($imagenAssetDefinida);
                 $idImagenActual = get_term_meta($term->term_id, 'glory_category_image_id', true);
-
-                if ($idImagenEsperado && (int)$idImagenActual != (int)$idImagenEsperado) {
-                    update_term_meta($term->term_id, 'glory_category_image_id', $idImagenEsperado);
-                    GloryLogger::info("DCS: Imagen actualizada para la categoría '{$nombreCategoria}'.");
+                
+                if (empty($idImagenActual)) {
+                    $idImagenEsperado = AssetsUtility::get_attachment_id_from_asset($imagenAssetDefinida);
+                    if ($idImagenEsperado) {
+                        update_term_meta($term->term_id, 'glory_category_image_id', $idImagenEsperado);
+                        GloryLogger::info("DCS: Estableciendo imagen por defecto para la categoría '{$nombreCategoria}'.");
+                    }
                 }
             }
         }
