@@ -12,7 +12,7 @@ class Setup
 {
     public function __construct()
     {   
-        LicenseManager::init();
+        #LicenseManager::init();
         GloryLogger::init();
         new FormHandler();
         OpcionManager::init();

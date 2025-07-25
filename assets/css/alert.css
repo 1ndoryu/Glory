@@ -12,7 +12,7 @@
 }
 
 /* Estilos de la notificación individual (sin posicionamiento) */
-.custom-notification {
+.notificacionPersonalizada {
     padding: 15px;
     border-radius: 5px;
     background: var(--fondo);
@@ -48,7 +48,7 @@
 }
 
 /* Animación para la salida de la notificación */
-.custom-notification.notification-fade-out {
+.notificacionPersonalizada.notification-fade-out {
     animation: notification-fade-out 0.3s ease-in forwards;
 }
 

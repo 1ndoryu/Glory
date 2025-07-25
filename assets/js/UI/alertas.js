@@ -22,7 +22,7 @@ window.inicializarAlerta = function () {
     function showCustomNotification(message, type) {
         return new Promise((resolve) => {
             const notificationDiv = document.createElement('div');
-            notificationDiv.className = `custom-notification${type === 'confirm' ? ' alertop' : ''}`;
+            notificationDiv.className = `notificacionPersonalizada${type === 'confirm' ? ' alertop' : ''}`;
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'notification-content';
