@@ -6,144 +6,209 @@ use Glory\Core\GloryLogger;
 
 /**
  * Clase de utilidad para funciones relacionadas con los assets del tema.
- * Permite imprimir elementos como imágenes de forma rápida y segura.
+ * Permite registrar rutas de assets con alias y gestionar imágenes de forma centralizada.
  */
 class AssetsUtility
 {
-    /**
-     * Imprime una etiqueta <img> para una imagen ubicada en la carpeta de assets.
-     *
-     * Construye la URL completa a la imagen y la imprime en una etiqueta <img>.
-     * Permite añadir atributos HTML adicionales de forma dinámica.
-     *
-     * @param string $nombre    El nombre del archivo de la imagen (sin extensión). Ejemplo: 'inicio'.
-     * @param string $extension La extensión del archivo de la imagen. Por defecto es 'jpg'.
-     * @param array  $atributos Un array asociativo de atributos HTML adicionales para la etiqueta <img>.
-     * Ej: ['class' => 'mi-clase', 'alt' => 'Texto alternativo'].
-     * Si no se provee un 'alt', se generará uno a partir del nombre de la imagen.
-     */
-    public static function imagen(string $nombre, string $extension = 'jpg', array $atributos = []): void
-    {
-        // Construye la ruta y la URL base de la imagen de forma segura
-        $rutaLocal  = get_template_directory() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
-        $urlBase    = get_template_directory_uri() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
+    /** @var array Almacena las rutas de los directorios de assets registrados. */
+    private static array $assetPaths = [];
+    /** @var bool Flag para asegurar que la inicialización solo ocurra una vez. */
+    private static bool $isInitialized = false;
 
-        // Obtiene dimensiones reales si el archivo existe
+    /**
+     * Inicializa el gestor de rutas, registrando los alias por defecto ('glory' y 'tema').
+     */
+    public static function init(): void
+    {
+        if (self::$isInitialized) {
+            return;
+        }
+        // Ruta para assets del framework Glory
+        self::registerAssetPath('glory', 'Glory/assets/images');
+        // Ruta para assets del tema activo
+        self::registerAssetPath('tema', 'App/assets/images');
+        self::$isInitialized = true;
+    }
+
+    /**
+     * Registra un nuevo directorio de assets con un alias.
+     *
+     * @param string $alias El alias para referirse a la ruta (ej. 'glory', 'tema').
+     * @param string $path La ruta relativa al directorio de assets desde la raíz del tema.
+     */
+    public static function registerAssetPath(string $alias, string $path): void
+    {
+        self::$assetPaths[sanitize_key($alias)] = trim($path, '/\\');
+    }
+
+    /**
+     * Parsea una referencia de asset (ej. 'alias::archivo.jpg') en sus componentes.
+     * Si no se provee un alias, se utiliza 'glory' por defecto.
+     *
+     * @param string $reference La referencia del asset.
+     * @return array Un array con el alias y el nombre del archivo.
+     */
+    public static function parseAssetReference(string $reference): array
+    {
+        if (strpos($reference, '::') !== false) {
+            return explode('::', $reference, 2);
+        }
+        return ['glory', $reference];
+    }
+
+    /**
+     * Resuelve la ruta relativa completa de un asset a partir de su alias y nombre.
+     *
+     * @param string $alias El alias del directorio.
+     * @param string $nombreArchivo El nombre del archivo.
+     * @return string|null La ruta relativa o null si el alias no existe.
+     */
+    private static function resolveAssetPath(string $alias, string $nombreArchivo): ?string
+    {
+        if (!isset(self::$assetPaths[$alias])) {
+            GloryLogger::warning("AssetsUtility: El alias de ruta '{$alias}' no está registrado.");
+            return null;
+        }
+        return self::$assetPaths[$alias] . '/' . ltrim($nombreArchivo, '/\\');
+    }
+
+    /**
+     * Obtiene el nombre de una imagen por defecto de forma aleatoria desde un directorio de assets especificado por su alias.
+     * Busca archivos que coincidan con el patrón 'default*'.
+     *
+     * @param string $alias El alias del directorio de assets a utilizar (ej. 'glory', 'tema'). Por defecto 'glory'.
+     * @return string|null El nombre del archivo o null si no se encuentra ninguno.
+     */
+    public static function getRandomDefaultImageName(string $alias = 'glory'): ?string
+    {
+        if (!self::$isInitialized) {
+            self::init();
+        }
+
+        if (!isset(self::$assetPaths[$alias])) {
+            GloryLogger::error("AssetsUtility: La ruta con alias '{$alias}' para imágenes aleatorias no está registrada.");
+            return null;
+        }
+
+        $directorioImagenes = get_template_directory() . '/' . self::$assetPaths[$alias] . '/';
+        $patronBusqueda = $directorioImagenes . 'default*.{jpg,jpeg,png,gif,webp}';
+        $archivos = glob($patronBusqueda, GLOB_BRACE);
+
+        if (empty($archivos)) {
+            GloryLogger::warning("AssetsUtility: No se encontraron imágenes por defecto con el patrón '{$patronBusqueda}'.");
+            return null;
+        }
+
+        return basename($archivos[array_rand($archivos)]);
+    }
+
+    /**
+     * Imprime una etiqueta <img> para una imagen de los assets, usando el sistema de alias.
+     *
+     * @param string $assetReference La referencia al asset (ej. 'tema::logo.svg' o 'icono.png').
+     * @param array $atributos Un array asociativo de atributos HTML adicionales para la etiqueta <img>.
+     */
+    public static function imagen(string $assetReference, array $atributos = []): void
+    {
+        if (!self::$isInitialized) self::init();
+
+        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
+        $rutaRelativa = self::resolveAssetPath($alias, $nombreArchivo);
+
+        if (!$rutaRelativa) return;
+
+        $rutaLocal = get_template_directory() . '/' . $rutaRelativa;
+        $urlBase = get_template_directory_uri() . '/' . $rutaRelativa;
+
         $ancho = $alto = null;
         if (file_exists($rutaLocal)) {
-            $dimensiones = getimagesize($rutaLocal);
+            $dimensiones = @getimagesize($rutaLocal);
             if ($dimensiones !== false) {
                 [$ancho, $alto] = $dimensiones;
             }
         }
 
-        // Optimiza la URL a través de Jetpack Photon o del fallback definido en functions.php,
-        // excepto cuando estamos en entorno local (define('LOCAL', true)).
-        if (!(defined('LOCAL') && LOCAL) && function_exists('jetpack_photon_url')) {
-            $argsPhoton = [
-                'quality' => 60,
-                'strip'   => 'all',
-            ];
-            if ($ancho && $alto) {
-                $argsPhoton['resize'] = $ancho . ',' . $alto;
-            }
-            $urlOptimizada = jetpack_photon_url($urlBase, $argsPhoton);
-        } else {
-            $urlOptimizada = $urlBase;
-        }
+        $urlFinal = function_exists('jetpack_photon_url') ? jetpack_photon_url($urlBase) : $urlBase;
 
-        // Establece un texto alternativo (alt) por defecto si no se proporciona uno.
         if (!isset($atributos['alt'])) {
-            $atributos['alt'] = ucwords(str_replace(['-', '_'], ' ', $nombre));
+            $atributos['alt'] = ucwords(str_replace(['-', '_'], ' ', pathinfo($nombreArchivo, PATHINFO_FILENAME)));
         }
 
-        // Añade width/height si no vienen dados y los conocemos
         if ($ancho && $alto) {
-            if (!isset($atributos['width']))  { $atributos['width']  = $ancho; }
-            if (!isset($atributos['height'])) { $atributos['height'] = $alto;  }
+            if (!isset($atributos['width'])) $atributos['width'] = $ancho;
+            if (!isset($atributos['height'])) $atributos['height'] = $alto;
         }
 
-        // Convierte el array de atributos en una cadena de texto para el HTML.
         $atributosString = '';
         foreach ($atributos as $clave => $valor) {
             $atributosString .= sprintf(' %s="%s"', esc_attr($clave), esc_attr($valor));
         }
 
-        // Imprime la etiqueta <img> completa.
-        printf('<img src="%s"%s>', esc_url($urlOptimizada), $atributosString);
+        printf('<img src="%s"%s>', esc_url($urlFinal), $atributosString);
     }
 
-    public static function imagenUrl(string $nombre, string $extension = 'jpg'): void
+    /**
+     * Imprime la URL de una imagen de los assets, usando el sistema de alias.
+     *
+     * @param string $assetReference La referencia al asset (ej. 'glory::fondo.jpg').
+     */
+    public static function imagenUrl(string $assetReference): void
     {
-        $rutaLocal  = get_template_directory() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
-        $urlBase    = get_template_directory_uri() . '/assets/images/' . sanitize_file_name($nombre) . '.' . sanitize_key($extension);
+        if (!self::$isInitialized) self::init();
 
-        $ancho = $alto = null;
-        if (file_exists($rutaLocal)) {
-            $dimensiones = getimagesize($rutaLocal);
-            if ($dimensiones !== false) {
-                [$ancho, $alto] = $dimensiones;
-            }
-        }
+        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
+        $rutaRelativa = self::resolveAssetPath($alias, $nombreArchivo);
 
-        // Optimiza la URL a través de Jetpack Photon o del fallback definido en functions.php,
-        // excepto cuando estamos en entorno local (define('LOCAL', true)).
-        if (!(defined('LOCAL') && LOCAL) && function_exists('jetpack_photon_url')) {
-            $argsPhoton = [
-                'quality' => 60,
-                'strip'   => 'all',
-            ];
-            if ($ancho && $alto) {
-                $argsPhoton['resize'] = $ancho . ',' . $alto;
-            }
-            $urlFinal = jetpack_photon_url($urlBase, $argsPhoton);
-        } else {
-            $urlFinal = $urlBase;
-        }
+        if (!$rutaRelativa) return;
+
+        $urlBase = get_template_directory_uri() . '/' . $rutaRelativa;
+        $urlFinal = function_exists('jetpack_photon_url') ? jetpack_photon_url($urlBase) : $urlBase;
 
         echo esc_url($urlFinal);
     }
 
     /**
-     * Obtiene el ID de un adjunto a partir de un nombre de archivo en /assets/images/.
-     * Si el adjunto no existe en la Biblioteca de Medios, lo importa desde la carpeta de assets.
-     * Utiliza un transient para cachear el resultado y mejorar el rendimiento.
+     * Obtiene el ID de un adjunto a partir de una referencia de asset.
+     * Si no existe en la Biblioteca de Medios, lo importa.
      *
-     * @param string $nombreArchivo El nombre del archivo de imagen (ej. 'mi-imagen.jpg').
+     * @param string $assetReference La referencia del asset (ej. 'tema::mi-imagen.jpg' o 'default.jpg').
      * @return int|null El ID del adjunto o null si hay un error.
      */
-    public static function get_attachment_id_from_asset(string $nombreArchivo): ?int
+    public static function get_attachment_id_from_asset(string $assetReference): ?int
     {
-        // --- (INICIO DE LA MEJORA DE RENDIMIENTO) ---
-        $cacheKey = 'glory_asset_id_' . md5($nombreArchivo);
+        if (!self::$isInitialized) self::init();
+
+        $cacheKey = 'glory_asset_id_' . md5($assetReference);
         $cachedId = get_transient($cacheKey);
 
         if ($cachedId !== false) {
-            // Se encontró un ID en la caché, lo devolvemos directamente.
-            // Si el valor cacheado era null, devolverá null.
-            return $cachedId === 'null' ? null : (int) $cachedId;
+            return $cachedId === 'null' ? null : (int)$cachedId;
         }
-        // --- (FIN DE LA MEJORA DE RENDIMIENTO) ---
 
-        $rutaAssetRelativa = '/assets/images/' . $nombreArchivo;
-        $rutaAssetCompleta = get_template_directory() . $rutaAssetRelativa;
+        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
+        $rutaAssetRelativa = self::resolveAssetPath($alias, $nombreArchivo);
 
-        if (!file_exists($rutaAssetCompleta)) {
-            // Guardamos en caché que este archivo no existe para no volver a buscarlo.
+        if (!$rutaAssetRelativa) {
             set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
             return null;
         }
 
-        // Buscar si ya existe un adjunto que provenga de este asset
+        $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
+
+        if (!file_exists($rutaAssetCompleta)) {
+            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
+            return null;
+        }
+
         $args = [
-            'post_type'      => 'attachment',
-            'post_status'    => 'inherit',
+            'post_type' => 'attachment',
+            'post_status' => 'inherit',
             'posts_per_page' => 1,
-            'fields'         => 'ids',
-            'no_found_rows'  => true,
-            'meta_query'     => [
+            'fields' => 'ids',
+            'no_found_rows' => true,
+            'meta_query' => [
                 [
-                    'key'   => '_glory_asset_source',
+                    'key' => '_glory_asset_source',
                     'value' => $rutaAssetRelativa,
                 ],
             ],
@@ -151,17 +216,15 @@ class AssetsUtility
         $query = new \WP_Query($args);
 
         if ($query->have_posts()) {
-            $id = (int) $query->posts[0];
-            set_transient($cacheKey, $id, HOUR_IN_SECONDS); // Guardar el ID encontrado en la caché.
+            $id = (int)$query->posts[0];
+            set_transient($cacheKey, $id, HOUR_IN_SECONDS);
             return $id;
         }
-        
-        // Si no existe, y no estamos en el admin, no lo importamos para evitar congelaciones.
+
         if (!is_admin()) {
             return null;
         }
 
-        // Si no existe, se "sube" el archivo a la biblioteca de medios
         require_once(ABSPATH . 'wp-admin/includes/file.php');
         require_once(ABSPATH . 'wp-admin/includes/image.php');
         require_once(ABSPATH . 'wp-admin/includes/media.php');
@@ -180,8 +243,8 @@ class AssetsUtility
 
         if (isset($subida['error'])) {
             GloryLogger::error("AssetsUtility: Error al subir el asset '{$nombreArchivo}'.", ['error' => $subida['error']]);
-            if (file_exists($archivoTemporal)) unlink($archivoTemporal);
-            set_transient($cacheKey, 'null', HOUR_IN_SECONDS); // Cachear el resultado nulo.
+            if (file_exists($archivoTemporal)) @unlink($archivoTemporal);
+            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
             return null;
         }
 
@@ -204,8 +267,7 @@ class AssetsUtility
         update_post_meta($idAdjunto, '_glory_asset_source', $rutaAssetRelativa);
 
         GloryLogger::info("AssetsUtility: El asset '{$nombreArchivo}' ha sido importado a la Biblioteca de Medios.", ['attachment_id' => $idAdjunto]);
-        
-        set_transient($cacheKey, $idAdjunto, HOUR_IN_SECONDS); // Guardar en caché el nuevo ID.
+        set_transient($cacheKey, $idAdjunto, HOUR_IN_SECONDS);
 
         return $idAdjunto;
     }
