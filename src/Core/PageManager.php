@@ -53,8 +53,8 @@ class PageManager {
      * Se engancha a 'init' para ambas acciones, con diferentes prioridades.
      */
     public static function register(): void {
-        add_action('init', [self::class, 'procesarPaginasDefinidas'], 10);
-        add_action('init', [self::class, 'reconciliarPaginasGestionadas'], 100);
+        #add_action('init', [self::class, 'procesarPaginasDefinidas'], 10);
+        #add_action('init', [self::class, 'reconciliarPaginasGestionadas'], 100);
     }
 
     /**
@@ -65,6 +65,11 @@ class PageManager {
     public static function procesarPaginasDefinidas(): void {
         $idPaginaInicioProcesada = null;
         $idsPaginasProcesadas = [];
+
+        if (empty(self::$paginasDefinidas)) {
+            GloryLogger::info('PageManager: No hay páginas definidas para procesar.');
+            return; // Optimización: No hacer nada si no hay páginas definidas.
+        }
 
         if (!empty(self::$paginasDefinidas)) {
             foreach (self::$paginasDefinidas as $slug => $defPagina) {

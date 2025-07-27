@@ -53,3 +53,4 @@ Cargo.lock
 *.o
 *.d
 status.md
+copiar.py

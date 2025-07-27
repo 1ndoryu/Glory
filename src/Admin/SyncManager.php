@@ -5,17 +5,15 @@ namespace Glory\Admin;
 
 use Glory\Core\GloryLogger;
 use Glory\Services\DefaultContentSynchronizer;
+use Glory\Manager\OpcionManager;
+use Glory\Core\PageManager;
 
 class SyncManager
 {
     public function registerHooks(): void
     {
         add_action('admin_bar_menu', [$this, 'addSyncButtons'], 999);
-        // --- INICIO DE LA SOLUCIÓN ---
-        // Se cambia la prioridad del hook de 10 (por defecto) a 20.
-        // Esto asegura que se ejecute DESPUÉS de que se registren los tipos de post (que se enganchan en init:10).
         add_action('init', [$this, 'handleSyncActions'], 20);
-        // --- FIN DE LA SOLUCIÓN ---
         add_action('admin_notices', [$this, 'showSyncNotice']);
     }
 
@@ -26,29 +24,30 @@ class SyncManager
         }
 
         $wp_admin_bar->add_node([
-            'id'  => 'glory_sync_group',
+            'id'    => 'glory_sync_group',
             'title' => 'Glory Sync',
-            'href' => '#',
+            'href'  => '#',
         ]);
 
         $wp_admin_bar->add_node([
-            'id'  => 'glory_force_sync',
+            'id'     => 'glory_force_sync',
             'parent' => 'glory_sync_group',
-            'title' => 'Sincronizar',
-            'href' => add_query_arg('glory_action', 'sync'),
-            'meta' => [
-                'title' => 'Sincroniza el contenido desde el código, actualizando cambios necesarios sin sobreescribir ediciones manuales.'
-            ]
+            'title'  => 'Sincronizar Todo', // Título actualizado para mayor claridad
+            'href'   => add_query_arg('glory_action', 'sync'),
+            'meta'   => [
+                // Descripción actualizada
+                'title' => 'Sincroniza Opciones, Páginas y Contenido por Defecto desde el código a la base de datos.',
+            ],
         ]);
 
         $wp_admin_bar->add_node([
-            'id'  => 'glory_reset_default',
+            'id'     => 'glory_reset_default',
             'parent' => 'glory_sync_group',
-            'title' => 'Restablecer a Default',
-            'href' => add_query_arg('glory_action', 'reset'),
-            'meta' => [
-                'title' => 'Restablece el contenido modificado manualmente a su estado original definido en el código.'
-            ]
+            'title'  => 'Restablecer a Default',
+            'href'   => add_query_arg('glory_action', 'reset'),
+            'meta'   => [
+                'title' => 'Restablece el contenido modificado manualmente a su estado original definido en el código.',
+            ],
         ]);
     }
 
@@ -59,15 +58,26 @@ class SyncManager
         }
 
         $action = sanitize_key($_GET['glory_action']);
-        $sync = new DefaultContentSynchronizer();
         $redirect_url = remove_query_arg('glory_action');
 
         if ($action === 'sync') {
             GloryLogger::info('Sincronización manual forzada por el usuario desde la barra de admin.');
+            
+            // 1. Sincronizar Opciones
+            OpcionManager::sincronizarTodasLasOpciones();
+
+            // 2. Sincronizar Páginas
+            PageManager::procesarPaginasDefinidas();
+            PageManager::reconciliarPaginasGestionadas();
+
+            // 3. Sincronizar Contenido por Defecto (lógica existente)
+            $sync = new DefaultContentSynchronizer();
             $sync->sincronizar();
+            
             $redirect_url = add_query_arg('glory_sync_notice', 'sync_success', $redirect_url);
         } elseif ($action === 'reset') {
             GloryLogger::info('Restablecimiento a default forzado por el usuario desde la barra de admin.');
+            $sync = new DefaultContentSynchronizer();
             $sync->restablecer();
             $redirect_url = add_query_arg('glory_sync_notice', 'reset_success', $redirect_url);
         }

@@ -82,7 +82,7 @@ class OpcionManager
      */
     public static function init(): void
     {
-        add_action('init', [self::class, 'sincronizarTodasLasOpciones'], 5);
+        #add_action('init', [self::class, 'sincronizarTodasLasOpciones'], 5);
     }
 
     /**
