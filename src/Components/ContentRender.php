@@ -27,6 +27,7 @@ class ContentRender
      * - 'metaKey' (string|null): Clave meta para ordenar (string|null).
      * - 'grupoEncabezado' (bool): Mostrar encabezado cuando cambia el valor de la meta.
      * - 'grupoOrdenCantidad' (bool): Ordenar grupos por número de posts desc.
+     * - 'minPaginas' (int): Forzar un número mínimo de páginas para la paginación.
      */
     public static function print(string $postType, array $opciones = []): void
     {
@@ -42,6 +43,7 @@ class ContentRender
             'metaKey'                => null,
             'grupoEncabezado'        => false,
             'grupoOrdenCantidad'     => false,
+            'minPaginas'             => 1,
         ];
         $config = wp_parse_args($opciones, $defaults);
 
@@ -75,6 +77,25 @@ class ContentRender
             echo "<p>No se encontraron contenidos para '{$postType}'.</p>";
             return;
         }
+        // Depuración: Forzar un número mínimo de páginas duplicando los resultados.
+        if ($config['minPaginas'] > 1) {
+            $paginasDeseadas = (int) $config['minPaginas'];
+            if ($query->max_num_pages < $paginasDeseadas) {
+                // Ajustar propiedades internas de la consulta
+                $query->max_num_pages = $paginasDeseadas;
+                $query->found_posts   = $paginasDeseadas * $config['publicacionesPorPagina'];
+
+                // Duplicar posts para rellenar la página actual
+                $originalPosts = $query->posts;
+                if (!empty($originalPosts)) {
+                    while (count($query->posts) < $config['publicacionesPorPagina']) {
+                        $query->posts = array_merge($query->posts, $originalPosts);
+                    }
+                    $query->posts = array_slice($query->posts, 0, $config['publicacionesPorPagina']);
+                    $query->rewind_posts();
+                }
+            }
+        }
 
         // 3. Preparar clases dinámicas que incluyan el post type
         $contenedorClass = trim($config['claseContenedor'] . ' ' . sanitize_html_class($postType));
@@ -84,6 +105,9 @@ class ContentRender
         echo '<div class="' . esc_attr($contenedorClass) . '">';
 
         // Si no se requiere orden por cantidad, usamos flujo directo (más eficiente)
+
+        // Contador de posición global para los elementos renderizados
+        $indiceGlobal = 0;
 
         if (empty($config['metaKey']) || !$config['grupoEncabezado'] || !$config['grupoOrdenCantidad']) {
 
@@ -114,8 +138,17 @@ class ContentRender
                     }
                 }
 
-                // Llama a la función de plantilla proporcionada
-                call_user_func($config['plantillaCallback'], get_post(), $itemClass);
+                // Incrementamos el índice y preparamos clases adicionales por ítem
+                $indiceGlobal++;
+
+                $clasesExtras  = ' post-id-' . get_the_ID();
+                $clasesExtras .= ' posicion-' . $indiceGlobal;
+                $clasesExtras .= ($indiceGlobal % 2 === 0) ? ' par' : ' impar';
+
+                $currentItemClass = trim($itemClass . $clasesExtras);
+
+                // Llama a la función de plantilla proporcionada con las clases extendidas
+                call_user_func($config['plantillaCallback'], get_post(), $currentItemClass);
             }
 
             // Cerrar último contenedor de grupo si se abrió alguno
@@ -149,7 +182,17 @@ class ContentRender
 
                 foreach ($posts as $postObj) {
                     setup_postdata($postObj);
-                    call_user_func($config['plantillaCallback'], $postObj, $itemClass);
+
+                    // Incrementamos el índice global
+                    $indiceGlobal++;
+
+                    $clasesExtras  = ' post-id-' . $postObj->ID;
+                    $clasesExtras .= ' posicion-' . $indiceGlobal;
+                    $clasesExtras .= ($indiceGlobal % 2 === 0) ? ' par' : ' impar';
+
+                    $currentItemClass = trim($itemClass . $clasesExtras);
+
+                    call_user_func($config['plantillaCallback'], $postObj, $currentItemClass);
                 }
 
                 echo '</div>'; // cierre grupo
