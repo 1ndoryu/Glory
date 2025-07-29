@@ -8,6 +8,7 @@ use Glory\Admin\SyncController;
 use Glory\Admin\TaxonomyMetaManager;
 use Glory\Core\LicenseManager;
 use Glory\Utility\AssetsUtility;
+use Glory\Handler\PaginationAjaxHandler; // Añadido
 
 class Setup
 {
@@ -16,6 +17,7 @@ class Setup
         #LicenseManager::init();
         GloryLogger::init();
         new FormHandler();
+        new PaginationAjaxHandler(); // Añadido
         OpcionManager::init();
         AssetsUtility::init();
         AssetManager::register();

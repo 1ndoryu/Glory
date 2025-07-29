@@ -27,8 +27,8 @@ AssetManager::define(
             'nombreObjeto' => 'dataGlobal',
             'datos'        => [
                 'enabled'            => true,
-                'contentSelector'    => '#contentAjax',
-                'mainScrollSelector' => '#contentAjax',
+                'contentSelector'    => '#main',
+                'mainScrollSelector' => '#main',
                 'loadingBarSelector' => '#loadingBar',
                 'cacheEnabled'       => true,
                 'ignoreUrlPatterns'  => [
@@ -44,6 +44,16 @@ AssetManager::define(
                 'username'           => is_user_logged_in() ? wp_get_current_user()->user_login : '',
             ],
         ]
+    ]
+);
+
+AssetManager::define(
+    'script',
+    'gloryPagination',
+    '/Glory/assets/js/UI/gloryPagination.js',
+    [
+        'deps'      => [],
+        'in_footer' => true
     ]
 );
 
