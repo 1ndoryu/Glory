@@ -1,5 +1,4 @@
 <?php
-// Glory/src/Admin/SyncManager.php
 
 namespace Glory\Admin;
 
@@ -26,16 +25,15 @@ class SyncManager
         $wp_admin_bar->add_node([
             'id'    => 'glory_sync_group',
             'title' => 'Glory Sync',
-            'href'  => '#',
+            'href'  => '#'
         ]);
 
         $wp_admin_bar->add_node([
             'id'     => 'glory_force_sync',
             'parent' => 'glory_sync_group',
-            'title'  => 'Sincronizar Todo', // Título actualizado para mayor claridad
+            'title'  => 'Sincronizar Todo',
             'href'   => add_query_arg('glory_action', 'sync'),
             'meta'   => [
-                // Descripción actualizada
                 'title' => 'Sincroniza Opciones, Páginas y Contenido por Defecto desde el código a la base de datos.',
             ],
         ]);
@@ -47,6 +45,17 @@ class SyncManager
             'href'   => add_query_arg('glory_action', 'reset'),
             'meta'   => [
                 'title' => 'Restablece el contenido modificado manualmente a su estado original definido en el código.',
+            ],
+        ]);
+
+        // <-- BOTÓN NUEVO AÑADIDO AQUÍ -->
+        $wp_admin_bar->add_node([
+            'id'     => 'glory_clear_cache',
+            'parent' => 'glory_sync_group',
+            'title'  => 'Borrar Caché de Glory',
+            'href'   => add_query_arg('glory_action', 'clear_cache'),
+            'meta'   => [
+                'title' => 'Elimina toda la caché de contenido (transients) generada por Glory.',
             ],
         ]);
     }
@@ -62,24 +71,31 @@ class SyncManager
 
         if ($action === 'sync') {
             GloryLogger::info('Sincronización manual forzada por el usuario desde la barra de admin.');
-            
-            // 1. Sincronizar Opciones
             OpcionManager::sincronizarTodasLasOpciones();
-
-            // 2. Sincronizar Páginas
             PageManager::procesarPaginasDefinidas();
             PageManager::reconciliarPaginasGestionadas();
-
-            // 3. Sincronizar Contenido por Defecto (lógica existente)
             $sync = new DefaultContentSynchronizer();
             $sync->sincronizar();
-            
             $redirect_url = add_query_arg('glory_sync_notice', 'sync_success', $redirect_url);
+
         } elseif ($action === 'reset') {
             GloryLogger::info('Restablecimiento a default forzado por el usuario desde la barra de admin.');
             $sync = new DefaultContentSynchronizer();
             $sync->restablecer();
             $redirect_url = add_query_arg('glory_sync_notice', 'reset_success', $redirect_url);
+        
+        // <-- LÓGICA NUEVA AÑADIDA AQUÍ -->
+        } elseif ($action === 'clear_cache') {
+            global $wpdb;
+            $prefix = '_transient_glory_content_';
+            $wpdb->query(
+                $wpdb->prepare(
+                    "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+                    $wpdb->esc_like($prefix) . '%'
+                )
+            );
+            GloryLogger::info('Caché de Glory borrada manualmente por el usuario.');
+            $redirect_url = add_query_arg('glory_sync_notice', 'cache_cleared', $redirect_url);
         }
 
         wp_safe_redirect($redirect_url);
@@ -96,6 +112,9 @@ class SyncManager
                 $message = '<strong>Sincronización de Glory completada con éxito.</strong>';
             } elseif ($notice_type === 'reset_success') {
                 $message = '<strong>Contenido de Glory restablecido a default con éxito.</strong>';
+            // <-- MENSAJE NUEVO AÑADIDO AQUÍ -->
+            } elseif ($notice_type === 'cache_cleared') {
+                $message = '<strong>Caché de Glory borrada con éxito.</strong>';
             }
 
             if ($message) {
