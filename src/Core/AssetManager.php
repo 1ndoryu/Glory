@@ -24,22 +24,9 @@ final class AssetManager
     private static bool $modoDesarrolloGlobal = false;
     private static string $versionTema = '1.0.0';
     private static bool $hooksRegistrados = false;
+    private static array $deferredScripts = [];
 
-    /**
-     * Define un nuevo asset (script o estilo) para ser gestionado.
-     *
-     * @param string $tipo 'script' o 'style'.
-     * @param string $handle El identificador (handle) único para el asset.
-     * @param string $ruta La ruta relativa al archivo desde la raíz del tema.
-     * @param array  $config Configuración adicional:
-     * - 'deps' (array): Dependencias.
-     * - 'ver' (string|null): Versión. Si es null, se autocalcula.
-     * - 'in_footer' (bool): (Scripts) Cargar en el footer.
-     * - 'media' (string): (Estilos) Media target.
-     * - 'localize' (array|null): (Scripts) Datos para wp_localize_script.
-     * - 'dev_mode' (bool|null): Forzar modo desarrollo para este asset.
-     * - 'area' (string): Dónde cargar el asset. Opciones: 'frontend' (default), 'admin', 'both'.
-     */
+
     public static function define(string $tipo, string $handle, string $ruta, array $config = []): void
     {
         if ($tipo !== self::ASSET_TYPE_SCRIPT && $tipo !== self::ASSET_TYPE_STYLE) {
@@ -57,6 +44,12 @@ final class AssetManager
             unset($config['localize']);
         }
 
+        // Si no se define 'defer', por defecto lo establecemos en true.
+        $config['defer'] = $config['defer'] ?? true;
+        if ($tipo === self::ASSET_TYPE_SCRIPT && $config['defer']) {
+            self::$deferredScripts[] = $handle;
+        }
+
         self::$assets[$tipo][$handle] = [
             'ruta'      => $ruta,
             'deps'      => $config['deps'] ?? [],
@@ -65,19 +58,12 @@ final class AssetManager
             'media'     => $config['media'] ?? 'all',
             'localize'  => $config['localize'] ?? null,
             'dev_mode'  => $config['dev_mode'] ?? null,
-            'area'      => $config['area'] ?? 'frontend', // <-- Default a 'frontend'
+            'area'      => $config['area'] ?? 'frontend',
+            'defer'     => $config['defer'],
         ];
     }
 
-    /**
-     * Define automáticamente todos los assets de una extensión dentro de una carpeta.
-     *
-     * @param string $tipo 'script' o 'style'.
-     * @param string $rutaCarpeta Ruta de la carpeta relativa a la raíz del tema.
-     * @param array  $configDefault Configuración por defecto, incluyendo 'area'.
-     * @param string $prefijoHandle Prefijo para los handles.
-     * @param array  $exclusiones Nombres de archivo a excluir.
-     */
+
     public static function defineFolder(string $tipo, string $rutaCarpeta, array $configDefault = [], string $prefijoHandle = '', array $exclusiones = []): void
     {
         $extension = ($tipo === self::ASSET_TYPE_SCRIPT) ? 'js' : 'css';
@@ -106,44 +92,34 @@ final class AssetManager
         }
     }
 
-    /**
-     * Registra los hooks de WordPress para encolar los assets en las áreas correctas.
-     */
+
     public static function register(): void
     {
         if (!self::$hooksRegistrados) {
             add_action('wp_enqueue_scripts', [self::class, 'enqueueFrontendAssets'], 20);
             add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminAssets'], 20);
+            add_filter('script_loader_tag', [self::class, 'addDeferAttribute'], 10, 2);
             self::$hooksRegistrados = true;
         }
     }
 
-    /**
-     * Callback para encolar los assets del frontend.
-     */
+
     public static function enqueueFrontendAssets(): void
     {
         self::enqueueForArea('frontend');
     }
 
-    /**
-     * Callback para encolar los assets del admin.
-     */
+
     public static function enqueueAdminAssets(): void
     {
         self::enqueueForArea('admin');
     }
 
-    /**
-     * Lógica principal para encolar assets según el área especificada.
-     *
-     * @param string $currentArea El área actual ('frontend' o 'admin').
-     */
+
     private static function enqueueForArea(string $currentArea): void
     {
         foreach (self::$assets as $tipo => $assetsPorTipo) {
             foreach ($assetsPorTipo as $handle => $config) {
-                // Comprueba si el asset debe cargarse en el área actual
                 if ($config['area'] !== 'both' && $config['area'] !== $currentArea) {
                     continue;
                 }
@@ -161,14 +137,26 @@ final class AssetManager
                     continue;
                 }
 
-                $rutaFisica = get_template_directory() . $config['ruta'];
+                $rutaAsset = $config['ruta'];
+                if (!self::$modoDesarrolloGlobal) {
+                    $extension = pathinfo($rutaAsset, PATHINFO_EXTENSION);
+                    if ($extension === 'js' || $extension === 'css') {
+                        $minRuta = preg_replace("/\.$extension$/", ".min.$extension", $rutaAsset);
+                        $minRutaFisica = get_template_directory() . $minRuta;
+                        if (file_exists(wp_normalize_path($minRutaFisica))) {
+                            $rutaAsset = $minRuta;
+                        }
+                    }
+                }
+
+                $rutaFisica = get_template_directory() . $rutaAsset;
                 if (!file_exists(wp_normalize_path($rutaFisica))) {
-                    GloryLogger::error("AssetManager: Archivo no encontrado '{$config['ruta']}' para el handle '{$handle}'.");
+                    GloryLogger::error("AssetManager: Archivo no encontrado '{$rutaAsset}' para el handle '{$handle}'.");
                     continue;
                 }
 
                 $version = self::calcularVersion($rutaFisica, $config['ver'], $config['dev_mode']);
-                $url = get_template_directory_uri() . $config['ruta'];
+                $url = get_template_directory_uri() . $rutaAsset;
 
                 if ($tipo === self::ASSET_TYPE_SCRIPT) {
                     wp_register_script($handle, $url, $config['deps'], $version, $config['in_footer']);
@@ -176,11 +164,23 @@ final class AssetManager
                         wp_localize_script($handle, $config['localize']['nombreObjeto'], $config['localize']['datos']);
                     }
                     wp_enqueue_script($handle);
-                } else { // 'style'
-                    wp_enqueue_style($handle, $url, $config['deps'], $version, $config['media']);
+                } else {
+                    wp_register_style($handle, $url, $config['deps'], $version, $config['media']);
+                    wp_enqueue_style($handle);
                 }
             }
         }
+    }
+
+
+    public static function addDeferAttribute(string $tag, string $handle): string
+    {
+        if (in_array($handle, self::$deferredScripts, true)) {
+            if (strpos($tag, ' defer') === false) {
+                return str_replace(' src=', ' defer src=', $tag);
+            }
+        }
+        return $tag;
     }
 
 
