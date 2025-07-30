@@ -3,6 +3,10 @@ const ajaxUrl = (typeof ajax_params !== 'undefined' && ajax_params.ajax_url)
     : '/wp-admin/admin-ajax.php';
 
 async function gloryAjax(action = '', data = {}) {
+    if (window.location.href.includes('fb-edit=1')) {
+        console.warn('gloryAjax: modo fb-edit detectado, petición cancelada.');
+        return { success: false, message: 'Solicitud cancelada en modo edición FB.' };
+    }
     let body;
     const headers = {};
     const esFormData = data instanceof FormData;

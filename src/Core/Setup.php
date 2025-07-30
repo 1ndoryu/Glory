@@ -8,20 +8,21 @@ use Glory\Admin\SyncController;
 use Glory\Admin\TaxonomyMetaManager;
 use Glory\Core\LicenseManager;
 use Glory\Utility\AssetsUtility;
-use Glory\Handler\PaginationAjaxHandler; // Añadido
+use Glory\Handler\PaginationAjaxHandler;
+use Glory\Core\MenuManager;
 
 class Setup
 {
     public function __construct()
     {
-        #LicenseManager::init();
         GloryLogger::init();
         new FormHandler();
-        new PaginationAjaxHandler(); // Añadido
+        new PaginationAjaxHandler();
         OpcionManager::init();
         AssetsUtility::init();
         AssetManager::register();
         PageManager::register();
+        MenuManager::register(); // <-- LÍNEA AÑADIDA
         (new SyncController())->register();
         (new TaxonomyMetaManager())->register();
     }

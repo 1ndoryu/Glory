@@ -22,6 +22,46 @@
     // Merge defaults with user-provided config (if available)
     const config = {...defaults, ...(window.dataGlobal || {})};
 
+    /**
+     * Determina si estamos en el contexto del editor en vivo de Fusion Builder.
+     * 1. Revisa si la URL contiene el parámetro fb-edit.
+     * 2. Revisa si existe en el DOM un elemento con la clase
+     *    .fusion-builder-live-toolbar (inserta por el editor visual).
+     * @returns {boolean}
+     */
+    function isFusionBuilderActive() {
+        // 1. El propio documento contiene ?fb-edit.
+        try {
+            if (window.location.search.includes('fb-edit')) {
+                return true;
+            }
+        } catch (e) {}
+
+        // 2. Si estamos dentro de un iframe (preview del builder), comprobamos el padre/top.
+        try {
+            if (window.self !== window.top) {
+                if (window.top.location.search && window.top.location.search.includes('fb-edit')) {
+                    return true;
+                }
+                // Verificamos la presencia del toolbar en el DOM del padre.
+                if (window.parent && window.parent.document && window.parent.document.querySelector('.fusion-builder-live-toolbar')) {
+                    return true;
+                }
+            }
+        } catch (e) {
+            // Puede fallar por políticas de mismo origen; ignoramos.
+        }
+
+        // 3. Comprobación local del toolbar (caso no-iframe).
+        return !!document.querySelector('.fusion-builder-live-toolbar');
+    }
+
+    // Si detectamos que el editor de Fusion Builder está activo, abortamos inmediatamente.
+    if (isFusionBuilderActive()) {
+        console.log('Glory AJAX Nav desactivado por Fusion Builder (detección temprana)');
+        return;
+    }
+
     // Exit immediately if disabled via config
     if (!config.enabled) {
         // console.log('Glory AJAX Nav is disabled via configuration.');
@@ -53,6 +93,18 @@
      * @returns {boolean} - True to skip AJAX, false to use AJAX.
      */
     function skipAjax(url, linkElement) {
+        // Si estamos en modo Fusion Builder o el enlace apunta a ese modo, saltar AJAX completamente
+        if (isFusionBuilderActive()) {
+            return true;
+        }
+        try {
+            const testUrl = new URL(url, window.location.origin);
+            if (testUrl.searchParams.has('fb-edit')) {
+                return true;
+            }
+        } catch (e) {
+            // ignore parsing errors
+        }
         if (!url) return true;
         const currentOrigin = window.location.origin;
         const urlObject = new URL(url, currentOrigin); // Handles relative URLs correctly
@@ -244,6 +296,28 @@
             return;
         }
 
+        // --- Manejo de anclas internas (hash links) con scroll suave ---
+        // Detecta enlaces cuyo href contiene únicamente un hash o bien un hash en la misma ruta actual.
+        // En esos casos se evita la navegación (y el sistema AJAX) y simplemente se hace scroll
+        // hacia el elemento destino si existe.
+        if (linkElement.hash && (linkElement.getAttribute('href').startsWith('#') || linkElement.pathname === window.location.pathname)) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            const targetId = linkElement.hash.substring(1);
+            if (targetId) {
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({ behavior: 'smooth' });
+                    // Actualizamos la URL con el hash sin crear una nueva entrada de historial.
+                    history.replaceState(history.state, '', linkElement.hash);
+                } else {
+                    console.warn(`Destino de ancla no encontrado: #${targetId}`);
+                }
+            }
+            return; // Terminar aquí, no se procesa AJAX.
+        }
+
         // Use skipAjax for detailed checks (URL pattern, class, origin etc.)
         if (skipAjax(linkElement.href, linkElement)) {
             // console.log(`AJAX skipped for: ${linkElement.href}`);
@@ -295,6 +369,15 @@
     window.gloryAjaxNavInitialized = true;
 
     document.addEventListener('DOMContentLoaded', () => {
+        // Comprobación extra por si el parámetro ?fb-edit se añade *después* de que este
+        // script se haya ejecutado inicialmente (por ejemplo, cuando Fusion Builder
+        // actualiza la URL con history.replaceState()). Si detectamos "fb-edit" en
+        // este punto, abortamos completamente la inicialización.
+        if (isFusionBuilderActive()) {
+            console.log('Glory AJAX Nav detenido en DOMContentLoaded por Fusion Builder');
+            return;
+        }
+
         const contentElement = document.querySelector(config.contentSelector);
         if (!contentElement) {
             console.warn(`AJAX Nav disabled: Content element "${config.contentSelector}" not found.`);
@@ -319,6 +402,6 @@
         // Use requestAnimationFrame to ensure layout is stable before firing
         requestAnimationFrame(triggerPageReady);
 
-        //console.log('Glory AJAX Navigation Initialized with config:', config);
+        console.log('Glory AJAX Navigation Initialized with config:', config);
     });
 })();
