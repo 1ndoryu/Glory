@@ -4,14 +4,7 @@ namespace Glory\Core;
 
 use Glory\Core\GloryLogger;
 
-/**
- * Gestor Unificado de Assets (Scripts y Estilos) para WordPress.
- *
- * Esta clase gestiona la definición, registro y puesta en cola de todos los assets,
- * controlando si se cargan en el 'frontend', 'admin', o en 'both'.
- *
- * @author @wandorius (Refactorizado por Gemini)
- */
+
 final class AssetManager
 {
     private const ASSET_TYPE_SCRIPT = 'script';
@@ -25,6 +18,9 @@ final class AssetManager
     private static string $versionTema = '1.0.0';
     private static bool $hooksRegistrados = false;
     private static array $deferredScripts = [];
+    
+    // Optimización: Directorio para la caché de assets.
+    private static string $cacheDir = GLORY_FRAMEWORK_PATH . '/cache';
 
 
     public static function define(string $tipo, string $handle, string $ruta, array $config = []): void
@@ -44,7 +40,6 @@ final class AssetManager
             unset($config['localize']);
         }
 
-        // Si no se define 'defer', por defecto lo establecemos en true.
         $config['defer'] = $config['defer'] ?? true;
         if ($tipo === self::ASSET_TYPE_SCRIPT && $config['defer']) {
             self::$deferredScripts[] = $handle;
@@ -62,20 +57,44 @@ final class AssetManager
             'defer'     => $config['defer'],
         ];
     }
+    
+    // Optimización: Nuevo método para obtener la ruta del archivo de caché.
+    private static function getCacheFilePath(string $cacheKey): string
+    {
+        if (!is_dir(self::$cacheDir)) {
+            mkdir(self::$cacheDir, 0755, true);
+        }
+        return self::$cacheDir . '/glory_assets_' . md5($cacheKey) . '.php';
+    }
 
 
     public static function defineFolder(string $tipo, string $rutaCarpeta, array $configDefault = [], string $prefijoHandle = '', array $exclusiones = []): void
     {
+        self::$modoDesarrolloGlobal = (defined('WP_DEBUG') && WP_DEBUG);
+        $cacheKey = $tipo . $rutaCarpeta . $prefijoHandle . serialize($exclusiones) . serialize(array_keys($configDefault));
+        $cacheFile = self::getCacheFilePath($cacheKey);
+
+        // Optimización: Si no estamos en modo desarrollo y la caché existe, la usamos.
+        if (!self::$modoDesarrolloGlobal && file_exists($cacheFile)) {
+            $cachedAssets = include $cacheFile;
+            if (is_array($cachedAssets)) {
+                foreach ($cachedAssets as $handle => $config) {
+                    self::define($tipo, $handle, $config['ruta'], array_merge($configDefault, $config));
+                }
+                return;
+            }
+        }
+
         $extension = ($tipo === self::ASSET_TYPE_SCRIPT) ? 'js' : 'css';
         $directorioTema = wp_normalize_path(get_template_directory());
-        $rutaCarpetaNormalizada = wp_normalize_path($rutaCarpeta);
-        $rutaCompleta = rtrim($directorioTema, '/') . '/' . ltrim($rutaCarpetaNormalizada, '/');
+        $rutaCompleta = rtrim($directorioTema, '/') . '/' . ltrim($rutaCarpeta, '/');
 
         if (!is_dir($rutaCompleta)) {
             GloryLogger::warning("AssetManager: La carpeta de assets '{$rutaCarpeta}' no fue encontrada en '{$rutaCompleta}'.");
             return;
         }
 
+        $discoveredAssets = [];
         try {
             $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($rutaCompleta, \FilesystemIterator::SKIP_DOTS));
             foreach ($iterator as $file) {
@@ -85,8 +104,18 @@ final class AssetManager
 
                 $rutaParaWeb = str_replace($directorioTema, '', wp_normalize_path($file->getPathname()));
                 $handle = $prefijoHandle . sanitize_title($file->getBasename('.' . $extension));
+                
                 self::define($tipo, $handle, $rutaParaWeb, $configDefault);
+                // Guardamos la definición para la caché
+                $discoveredAssets[$handle] = ['ruta' => $rutaParaWeb];
             }
+            
+            // Optimización: Guardamos los assets encontrados en la caché si no estamos en modo desarrollo.
+            if (!self::$modoDesarrolloGlobal) {
+                $cacheContent = '<?php return ' . var_export($discoveredAssets, true) . ';';
+                file_put_contents($cacheFile, $cacheContent, LOCK_EX);
+            }
+
         } catch (\Exception $e) {
             GloryLogger::error("AssetManager: Error al iterar la carpeta '{$rutaCompleta}': " . $e->getMessage());
         }
