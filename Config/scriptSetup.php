@@ -30,9 +30,9 @@ AssetManager::define(
             'nombreObjeto' => 'dataGlobal',
             'datos'        => [
                 'enabled'            => true,
-                'contentSelector'    => '#main-content-glory',
-                'mainScrollSelector' => '#main-content-glory',
-                'loadingBarSelector' => '#glory-loading-bar',
+                'contentSelector'    => '#main',
+                'mainScrollSelector' => '#main',
+                'loadingBarSelector' => '#loadingBar',
                 'cacheEnabled'       => true,
                 'ignoreUrlPatterns'  => [
                     '/wp-admin',
