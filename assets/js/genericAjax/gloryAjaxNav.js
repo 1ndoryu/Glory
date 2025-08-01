@@ -23,41 +23,13 @@
     const config = {...defaults, ...(window.dataGlobal || {})};
 
     /**
-     * Determina si estamos en el contexto del editor en vivo de Fusion Builder.
-     * 1. Revisa si la URL contiene el parámetro fb-edit.
-     * 2. Revisa si existe en el DOM un elemento con la clase
-     *    .fusion-builder-live-toolbar (inserta por el editor visual).
-     * @returns {boolean}
+     * isFusionBuilderActive ahora se define globalmente en utils/fusionBuilderDetect.js
+     * y está disponible como window.isFusionBuilderActive()
      */
-    function isFusionBuilderActive() {
-        // 1. El propio documento contiene ?fb-edit.
-        try {
-            if (window.location.search.includes('fb-edit')) {
-                return true;
-            }
-        } catch (e) {}
-
-        // 2. Si estamos dentro de un iframe (preview del builder), comprobamos el padre/top.
-        try {
-            if (window.self !== window.top) {
-                if (window.top.location.search && window.top.location.search.includes('fb-edit')) {
-                    return true;
-                }
-                // Verificamos la presencia del toolbar en el DOM del padre.
-                if (window.parent && window.parent.document && window.parent.document.querySelector('.fusion-builder-live-toolbar')) {
-                    return true;
-                }
-            }
-        } catch (e) {
-            // Puede fallar por políticas de mismo origen; ignoramos.
-        }
-
-        // 3. Comprobación local del toolbar (caso no-iframe).
-        return !!document.querySelector('.fusion-builder-live-toolbar');
-    }
+    // (Función local eliminada: usar window.isFusionBuilderActive())
 
     // Si detectamos que el editor de Fusion Builder está activo, abortamos inmediatamente.
-    if (isFusionBuilderActive()) {
+    if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
         console.log('Glory AJAX Nav desactivado por Fusion Builder (detección temprana)');
         return;
     }
@@ -94,7 +66,7 @@
      */
     function skipAjax(url, linkElement) {
         // Si estamos en modo Fusion Builder o el enlace apunta a ese modo, saltar AJAX completamente
-        if (isFusionBuilderActive()) {
+        if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
             return true;
         }
         try {
@@ -373,7 +345,7 @@
         // script se haya ejecutado inicialmente (por ejemplo, cuando Fusion Builder
         // actualiza la URL con history.replaceState()). Si detectamos "fb-edit" en
         // este punto, abortamos completamente la inicialización.
-        if (isFusionBuilderActive()) {
+        if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
             console.log('Glory AJAX Nav detenido en DOMContentLoaded por Fusion Builder');
             return;
         }
