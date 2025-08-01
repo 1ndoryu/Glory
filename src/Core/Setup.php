@@ -2,6 +2,8 @@
 
 namespace Glory\Core;
 
+// 1. AÑADE ESTA LÍNEA AL PRINCIPIO CON LOS DEMÁS 'use'
+use Glory\Admin\OpcionPanelController; 
 use Glory\Handler\FormHandler;
 use Glory\Manager\OpcionManager;
 use Glory\Admin\SyncController;
@@ -22,8 +24,11 @@ class Setup
         AssetsUtility::init();
         AssetManager::register();
         PageManager::register();
-        MenuManager::register(); // <-- LÍNEA AÑADIDA
+        MenuManager::register();
         (new SyncController())->register();
         (new TaxonomyMetaManager())->register();
+
+        // 2. AÑADE ESTA LÍNEA AL FINAL DEL CONSTRUCTOR
+        (new OpcionPanelController())->registerHooks();
     }
 }

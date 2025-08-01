@@ -56,13 +56,13 @@ class FormBuilder
 
         ob_start();
         ?>
-        <div class="<?php echo esc_attr($clasesContenedor) ?>">
-            <?php if ($label) : ?>
-                <label for="<?php echo esc_attr($id) ?>"><?php echo esc_html($label) ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
-            <?php endif; ?>
-            <input type="text" id="<?php echo esc_attr($id) ?>" name="<?php echo esc_attr($nombre) ?>" value="<?php echo esc_attr($valor) ?>" class="<?php echo esc_attr($clasesInput) ?>" <?php if ($placeholder) : ?>placeholder="<?php echo esc_attr($placeholder) ?>" <?php endif; ?> <?php if ($limite) : ?>data-limit="<?php echo $limite ?>" <?php endif; ?> <?php if ($minimo) : ?>data-minimo="<?php echo $minimo ?>" <?php endif; ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio) ?>" <?php endif; ?> />
-        </div>
-    <?php
+            <div class="<?php echo esc_attr($clasesContenedor) ?>">
+                <?php if ($label) : ?>
+                    <label for="<?php echo esc_attr($id) ?>"><?php echo esc_html($label) ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
+                <?php endif; ?>
+                <input type="text" id="<?php echo esc_attr($id) ?>" name="<?php echo esc_attr($nombre) ?>" value="<?php echo esc_attr($valor) ?>" class="<?php echo esc_attr($clasesInput) ?>" <?php if ($placeholder) : ?>placeholder="<?php echo esc_attr($placeholder) ?>" <?php endif; ?> <?php if ($limite) : ?>data-limit="<?php echo $limite ?>" <?php endif; ?> <?php if ($minimo) : ?>data-minimo="<?php echo $minimo ?>" <?php endif; ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio) ?>" <?php endif; ?> />
+            </div>
+        <?php
         return ob_get_clean();
     }
 
@@ -85,14 +85,14 @@ class FormBuilder
         $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
 
         ob_start();
-    ?>
-        <div class="<?php echo esc_attr($clasesContenedor) ?>">
-            <?php if ($label) : ?>
-                <label for="<?php echo esc_attr($id) ?>"><?php echo esc_html($label) ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
-            <?php endif; ?>
-            <textarea id="<?php echo esc_attr($id) ?>" name="<?php echo esc_attr($nombre) ?>" class="<?php echo esc_attr($clasesInput) ?>" rows="<?php echo $rows ?>" <?php if ($placeholder) : ?>placeholder="<?php echo esc_attr($placeholder) ?>" <?php endif; ?> <?php if ($limite) : ?>data-limit="<?php echo $limite ?>" <?php endif; ?> <?php if ($minimo) : ?>data-minimo="<?php echo $minimo ?>" <?php endif; ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio) ?>" <?php endif; ?>><?php echo esc_textarea($valor) ?></textarea>
-        </div>
-    <?php
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor) ?>">
+                <?php if ($label) : ?>
+                    <label for="<?php echo esc_attr($id) ?>"><?php echo esc_html($label) ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
+                <?php endif; ?>
+                <textarea id="<?php echo esc_attr($id) ?>" name="<?php echo esc_attr($nombre) ?>" class="<?php echo esc_attr($clasesInput) ?>" rows="<?php echo $rows ?>" <?php if ($placeholder) : ?>placeholder="<?php echo esc_attr($placeholder) ?>" <?php endif; ?> <?php if ($limite) : ?>data-limit="<?php echo $limite ?>" <?php endif; ?> <?php if ($minimo) : ?>data-minimo="<?php echo $minimo ?>" <?php endif; ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio) ?>" <?php endif; ?>><?php echo esc_textarea($valor) ?></textarea>
+            </div>
+        <?php
         return ob_get_clean();
     }
 
@@ -116,10 +116,10 @@ class FormBuilder
         $previewContent = $opciones['previewContent'] ?? esc_html($opciones['textoPreview'] ?? 'Seleccionar archivo');
 
         ob_start();
-    ?>
-        <div class="<?php echo esc_attr($clasesContenedor) ?>" <?php if ($idPreview) : ?>id="<?php echo esc_attr($idPreview) ?>" <?php endif; ?>><?php echo $previewContent ?></div>
-        <input type="file" id="<?php echo esc_attr($id) ?>" name="<?php echo esc_attr($nombre) ?>" style="display:none;" <?php if ($accept) : ?>accept="<?php echo esc_attr($accept) ?>" <?php endif; ?> <?php if ($limite) : ?>data-limit="<?php echo $limite ?>" <?php endif; ?> <?php if ($minimo) : ?>data-minimo="<?php echo $minimo ?>" <?php endif; ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio) ?>" <?php endif; ?> />
-    <?php
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor) ?>" <?php if ($idPreview) : ?>id="<?php echo esc_attr($idPreview) ?>" <?php endif; ?>><?php echo $previewContent ?></div>
+            <input type="file" id="<?php echo esc_attr($id) ?>" name="<?php echo esc_attr($nombre) ?>" style="display:none;" <?php if ($accept) : ?>accept="<?php echo esc_attr($accept) ?>" <?php endif; ?> <?php if ($limite) : ?>data-limit="<?php echo $limite ?>" <?php endif; ?> <?php if ($minimo) : ?>data-minimo="<?php echo $minimo ?>" <?php endif; ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio) ?>" <?php endif; ?> />
+        <?php
         return ob_get_clean();
     }
 
@@ -143,15 +143,15 @@ class FormBuilder
         $checked = !empty($opciones['checked']) ? 'checked' : '';
 
         ob_start();
-    ?>
-        <div class="<?php echo esc_attr($clasesContenedor) ?>">
-            <label for="<?php echo esc_attr($id) ?>" class="<?php echo esc_attr($clasesLabel) ?>" <?php if ($tooltip) : ?>data-tooltip="<?php echo esc_attr($tooltip) ?>" <?php endif; ?>>
-                <input type="checkbox" id="<?php echo esc_attr($id) ?>" name="<?php echo esc_attr($nombre) ?>" value="<?php echo esc_attr($valorInput) ?>" <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio) ?>" <?php endif; ?> <?php echo $checked ?>>
-                <span class="checkmark"></span>
-                <?php echo $labelContent ?><?php if ($label && $obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?>
-            </label>
-        </div>
-    <?php
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor) ?>">
+                <label for="<?php echo esc_attr($id) ?>" class="<?php echo esc_attr($clasesLabel) ?>" <?php if ($tooltip) : ?>data-tooltip="<?php echo esc_attr($tooltip) ?>" <?php endif; ?>>
+                    <input type="checkbox" id="<?php echo esc_attr($id) ?>" name="<?php echo esc_attr($nombre) ?>" value="<?php echo esc_attr($valorInput) ?>" <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio) ?>" <?php endif; ?> <?php echo $checked ?>>
+                    <span class="checkmark"></span>
+                    <?php echo $labelContent ?><?php if ($label && $obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?>
+                </label>
+            </div>
+        <?php
         return ob_get_clean();
     }
 
@@ -171,23 +171,23 @@ class FormBuilder
         $alertaObligatorio = $opciones_select['alertaObligatorio'] ?? '';
 
         ob_start();
-    ?>
-        <div class="<?php echo esc_attr($clasesContenedor); ?>">
-            <?php if ($label) : ?>
-                <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
-            <?php endif; ?>
-            <select id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" class="<?php echo esc_attr($clasesInput); ?>" <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?>>
-                <?php foreach ($opciones as $valor => $texto) : ?>
-                    <option value="<?php echo esc_attr($valor); ?>" <?php selected($valor, $valorSeleccionado); ?>>
-                        <?php echo esc_html($texto); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </div>
-    <?php
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor); ?>">
+                <?php if ($label) : ?>
+                    <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
+                <?php endif; ?>
+                <select id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" class="<?php echo esc_attr($clasesInput); ?>" <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?>>
+                    <?php foreach ($opciones as $valor => $texto) : ?>
+                        <option value="<?php echo esc_attr($valor); ?>" <?php selected($valor, $valorSeleccionado); ?>>
+                            <?php echo esc_html($texto); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        <?php
         return ob_get_clean();
     }
-    
+
     /**
      * Genera un grupo de campos de tipo radio.
      */
@@ -202,24 +202,24 @@ class FormBuilder
         $alertaObligatorio = $opciones_radio['alertaObligatorio'] ?? '';
 
         ob_start();
-    ?>
-        <div class="<?php echo esc_attr($clasesContenedor); ?>">
-            <?php if ($label) : ?>
-                <label><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
-            <?php endif; ?>
-            <div class="radio-group">
-                <?php foreach ($opciones as $valor => $texto) : ?>
-                    <label for="form-<?php echo esc_attr($nombre . '-' . str_replace(' ', '_', $valor)); ?>">
-                        <input type="radio" id="form-<?php echo esc_attr($nombre . '-' . str_replace(' ', '_', $valor)); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" <?php checked($valor, $valorSeleccionado); ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?>>
-                        <?php echo esc_html($texto); ?>
-                    </label>
-                <?php endforeach; ?>
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor); ?>">
+                <?php if ($label) : ?>
+                    <label><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
+                <?php endif; ?>
+                <div class="radio-group">
+                    <?php foreach ($opciones as $valor => $texto) : ?>
+                        <label for="form-<?php echo esc_attr($nombre . '-' . str_replace(' ', '_', $valor)); ?>">
+                            <input type="radio" id="form-<?php echo esc_attr($nombre . '-' . str_replace(' ', '_', $valor)); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" <?php checked($valor, $valorSeleccionado); ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?>>
+                            <?php echo esc_html($texto); ?>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
             </div>
-        </div>
-    <?php
+        <?php
         return ob_get_clean();
     }
-    
+
     /**
      * Genera un grupo de campos de tipo checkbox.
      */
@@ -232,24 +232,24 @@ class FormBuilder
         $clasesContenedor = 'formCampo ' . ($opciones_grupo['classContainer'] ?? '');
 
         ob_start();
-    ?>
-        <div class="<?php echo esc_attr($clasesContenedor); ?>">
-            <?php if ($label) : ?>
-                <label><?php echo esc_html($label); ?></label>
-            <?php endif; ?>
-            <div class="checkbox-group">
-                <?php foreach ($opciones as $valor => $texto) : ?>
-                    <label for="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', $valor)); ?>">
-                        <input type="checkbox" id="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', $valor)); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" <?php checked(in_array($valor, $valoresSeleccionados)); ?>>
-                        <?php echo esc_html($texto); ?>
-                    </label>
-                <?php endforeach; ?>
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor); ?>">
+                <?php if ($label) : ?>
+                    <label><?php echo esc_html($label); ?></label>
+                <?php endif; ?>
+                <div class="checkbox-group">
+                    <?php foreach ($opciones as $valor => $texto) : ?>
+                        <label for="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', $valor)); ?>">
+                            <input type="checkbox" id="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', $valor)); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" <?php checked(in_array($valor, $valoresSeleccionados)); ?>>
+                            <?php echo esc_html($texto); ?>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
             </div>
-        </div>
-    <?php
+        <?php
         return ob_get_clean();
     }
-    
+
     /**
      * Genera un campo de tipo número.
      */
@@ -269,17 +269,17 @@ class FormBuilder
         $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
 
         ob_start();
-    ?>
-        <div class="<?php echo esc_attr($clasesContenedor); ?>">
-            <?php if ($label) : ?>
-                <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
-            <?php endif; ?>
-            <input type="number" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" class="<?php echo esc_attr($clasesInput); ?>" <?php if ($placeholder) : ?>placeholder="<?php echo esc_attr($placeholder); ?>" <?php endif; ?> <?php echo $min; ?> <?php echo $max; ?> <?php echo $step; ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?> />
-        </div>
-    <?php
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor); ?>">
+                <?php if ($label) : ?>
+                    <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
+                <?php endif; ?>
+                <input type="number" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" class="<?php echo esc_attr($clasesInput); ?>" <?php if ($placeholder) : ?>placeholder="<?php echo esc_attr($placeholder); ?>" <?php endif; ?> <?php echo $min; ?> <?php echo $max; ?> <?php echo $step; ?> <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?> />
+            </div>
+        <?php
         return ob_get_clean();
     }
-    
+
     /**
      * Genera un campo de tipo fecha.
      */
@@ -295,17 +295,17 @@ class FormBuilder
         $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
 
         ob_start();
-    ?>
-        <div class="<?php echo esc_attr($clasesContenedor); ?>">
-            <?php if ($label) : ?>
-                <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
-            <?php endif; ?>
-            <input type="date" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" class="<?php echo esc_attr($clasesInput); ?>" <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?> />
-        </div>
-    <?php
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor); ?>">
+                <?php if ($label) : ?>
+                    <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
+                <?php endif; ?>
+                <input type="date" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" class="<?php echo esc_attr($clasesInput); ?>" <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?> />
+            </div>
+        <?php
         return ob_get_clean();
     }
-    
+
     /**
      * Genera un campo de tipo rango (slider).
      */
@@ -322,17 +322,17 @@ class FormBuilder
         $step = $opciones['step'] ?? '1';
 
         ob_start();
-    ?>
-        <div class="<?php echo esc_attr($clasesContenedor); ?>">
-            <?php if ($label) : ?>
-                <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?> <span id="rango-valor-<?php echo esc_attr($id); ?>"><?php echo ($valor == $max) ? '30+' : esc_html($valor); ?></span> noches</label>
-            <?php endif; ?>
-            <input type="range" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" class="<?php echo esc_attr($clasesInput); ?>" min="<?php echo esc_attr($min); ?>" max="<?php echo esc_attr($max); ?>" step="<?php echo esc_attr($step); ?>" oninput="document.getElementById('rango-valor-<?php echo esc_attr($id); ?>').textContent = (this.value == <?php echo esc_attr($max); ?>) ? '30+' : this.value;">
-        </div>
-    <?php
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor); ?>">
+                <?php if ($label) : ?>
+                    <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?> <span id="rango-valor-<?php echo esc_attr($id); ?>"><?php echo ($valor == $max) ? '30+' : esc_html($valor); ?></span> noches</label>
+                <?php endif; ?>
+                <input type="range" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" class="<?php echo esc_attr($clasesInput); ?>" min="<?php echo esc_attr($min); ?>" max="<?php echo esc_attr($max); ?>" step="<?php echo esc_attr($step); ?>" oninput="document.getElementById('rango-valor-<?php echo esc_attr($id); ?>').textContent = (this.value == <?php echo esc_attr($max); ?>) ? '30+' : this.value;">
+            </div>
+        <?php
         return ob_get_clean();
     }
-    
+
     /**
      * Genera un botón de envío.
      */
@@ -343,5 +343,66 @@ class FormBuilder
         $clases = 'dataSubir ' . ($opciones['extraClass'] ?? '');
 
         return "<button class=\"{$clases}\" data-accion=\"{$accion}\">" . esc_html($texto) . "</button>";
+    }
+
+    public static function campoImagen(array $opciones): string
+    {
+        $nombre = $opciones['nombre'] ?? '';
+        $label = $opciones['label'] ?? '';
+        $valor = $opciones['valor'] ?? ''; // Debería ser un ID de adjunto
+        $descripcion = $opciones['descripcion'] ?? '';
+        $previewUrl = '';
+        $placeholder = 'Haz clic para subir una imagen';
+
+        if (!empty($valor) && is_numeric($valor)) {
+            $previewUrl = wp_get_attachment_image_url((int)$valor, 'thumbnail');
+        }
+
+        ob_start();
+        ?>
+            <div class="glory-image-uploader">
+                <?php if ($label) : ?>
+                    <label><?php echo esc_html($label) ?></label>
+                <?php endif; ?>
+                <div class="image-preview" data-placeholder="<?php echo esc_attr($placeholder); ?>">
+                    <?php if ($previewUrl): ?>
+                        <img src="<?php echo esc_url($previewUrl); ?>" alt="Previsualización">
+                    <?php else: ?>
+                        <span class="image-preview-placeholder"><?php echo esc_html($placeholder); ?></span>
+                    <?php endif; ?>
+                </div>
+                <input type="hidden" class="glory-image-id" name="<?php echo esc_attr($nombre) ?>" value="<?php echo esc_attr($valor) ?>" />
+                <div class="actions">
+                    <button type="button" class="button glory-upload-image-button">Seleccionar Imagen</button>
+                    <button type="button" class="button glory-remove-image-button" style="<?php echo empty($valor) ? 'display:none;' : ''; ?>">Eliminar</button>
+                </div>
+                <?php if ($descripcion) : ?>
+                    <p class="description"><?php echo esc_html($descripcion) ?></p>
+                <?php endif; ?>
+            </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    public static function campoColor(array $opciones): string
+    {
+        $nombre = $opciones['nombre'] ?? '';
+        $label = $opciones['label'] ?? '';
+        $valor = $opciones['valor'] ?? '#000000';
+        $descripcion = $opciones['descripcion'] ?? '';
+
+        ob_start();
+        ?>
+            <div>
+                <?php if ($label) : ?>
+                    <label for="form-<?php echo esc_attr($nombre); ?>"><?php echo esc_html($label); ?></label>
+                <?php endif; ?>
+                <input type="text" class="glory-color-picker" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" data-default-color="<?php echo esc_attr($valor); ?>" />
+                <?php if ($descripcion) : ?>
+                    <p class="description"><?php echo esc_html($descripcion); ?></p>
+                <?php endif; ?>
+            </div>
+    <?php
+        return ob_get_clean();
     }
 }

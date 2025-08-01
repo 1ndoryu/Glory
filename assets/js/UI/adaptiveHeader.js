@@ -70,8 +70,6 @@ function gloryAdaptiveHeader() {
         if (validSamples > 0) {
             averageLuminance = totalLuminance / validSamples;
         } else {
-            // Si no se encuentran elementos válidos para muestrear (p. ej. móvil sin enlaces visibles),
-            // tomamos una muestra de respaldo centrada justo debajo del header.
             const headerRect = header.getBoundingClientRect();
             const sampleX = headerRect.left + headerRect.width / 2;
             const sampleY = headerRect.bottom;
@@ -79,35 +77,44 @@ function gloryAdaptiveHeader() {
             averageLuminance = getLuminance(fallbackColor.r, fallbackColor.g, fallbackColor.b);
         }
 
-        // -- Manejo de logo: imagen o SVG --
-        //   Si el logo es negro por defecto, aplicamos un filtro para volverlo blanco
-        //   cuando el fondo es oscuro (texto blanco) y lo quitamos cuando el fondo es claro.
         const logoImg = header.querySelector('.siteMenuLogo img');
         const logoSvg = header.querySelector('.siteMenuLogo svg');
+        // --- INICIO: CÓDIGO MODIFICADO Y MEJORADO ---
+        const logoLink = header.querySelector('.siteMenuLogo a');
+        const isImageLink = logoLink ? !!logoLink.querySelector('img, svg') : false;
+        const logoTextElement = (logoLink && !isImageLink) ? logoLink : null;
+        // --- FIN: CÓDIGO MODIFICADO Y MEJORADO ---
 
         if (averageLuminance < LUMINANCE_THRESHOLD) {
             if (!header.classList.contains(classToToggle)) {
                 header.classList.add(classToToggle);
             }
-            // Aplicamos filtros al logo
             if (logoImg) {
                 logoImg.style.filter = 'brightness(0) invert(1)';
             }
             if (logoSvg) {
-                // Invertimos el color del SVG entero; esto funciona para la mayoría de SVGs negros.
                 logoSvg.style.filter = 'invert(1)';
             }
+            // --- INICIO: CÓDIGO AÑADIDO ---
+            if (logoTextElement) {
+                logoTextElement.style.color = '#FFFFFF';
+            }
+            // --- FIN: CÓDIGO AÑADIDO ---
         } else {
             if (header.classList.contains(classToToggle)) {
                 header.classList.remove(classToToggle);
             }
-            // Quitamos los filtros del logo
             if (logoImg) {
                 logoImg.style.filter = '';
             }
             if (logoSvg) {
                 logoSvg.style.filter = '';
             }
+            // --- INICIO: CÓDIGO AÑADIDO ---
+            if (logoTextElement) {
+                logoTextElement.style.color = '';
+            }
+            // --- FIN: CÓDIGO AÑADIDO ---
         }
     }
 
@@ -137,7 +144,6 @@ function gloryMenu() {
     const background = document.querySelector('.background');
     const navMenu = document.querySelector('.siteMenuNav');
 
-    // Si estamos en escritorio (>= 834px) salimos para no modificar la navegación.
     if (!header || !burger || !background || !navMenu) {
         console.error('Faltan elementos del menú para inicializar.');
         return;
@@ -148,7 +154,6 @@ function gloryMenu() {
 
     let isMenuOpen = false;
 
-    // Preparamos los elementos para la animación (ocultos por defecto)
     gsap.set(navMenu, {yPercent: -100, autoAlpha: 0});
 
     const openMenu = () => {
@@ -174,7 +179,7 @@ function gloryMenu() {
                     ease: 'power3.out'
                 },
                 '-=0.6'
-            ) // Inicia al mismo tiempo que el menú entra
+            )
             .to(
                 navItems,
                 {
@@ -182,7 +187,7 @@ function gloryMenu() {
                     y: 0,
                     duration: 0.6,
                     ease: 'power3.out',
-                    stagger: 0.05 // La magia del escalonado
+                    stagger: 0.05
                 },
                 '-=0.5'
             );
@@ -194,14 +199,12 @@ function gloryMenu() {
 
         const tl = gsap.timeline({
             onComplete: () => {
-                // Limpiamos las clases solo cuando la animación termina
                 header.classList.remove('open');
                 document.body.classList.remove('menu-open');
             }
         });
 
         tl.to([navTitle, ...navItems].reverse(), {
-            // Animamos en orden inverso
             autoAlpha: 0,
             y: 20,
             duration: 0.4,
@@ -225,7 +228,6 @@ function gloryMenu() {
 
     background.addEventListener('click', closeMenu);
 
-    // Cerrar con la tecla 'Escape'
     window.addEventListener('keyup', e => {
         if (e.key === 'Escape') {
             closeMenu();
