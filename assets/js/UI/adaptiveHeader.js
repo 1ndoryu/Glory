@@ -149,6 +149,14 @@ function gloryMenu() {
         return;
     }
 
+    // Previene múltiples inicializaciones
+    if (header && header.dataset.menuInitialized) {
+        return;
+    }
+    if (header) {
+        header.dataset.menuInitialized = 'true';
+    }
+
     const navTitle = navMenu.querySelector('.nav-title');
     const navItems = navMenu.querySelectorAll('ul > li');
 
@@ -234,6 +242,17 @@ function gloryMenu() {
         }
     });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    gloryMenu();
+    gloryAdaptiveHeader();
+});
+
+// Fallback por si los recursos se cargan después del DOMContentLoaded (por ejemplo, en algunos constructores de páginas)
+window.addEventListener('load', () => {
+    gloryMenu();
+    gloryAdaptiveHeader();
+});
 
 document.addEventListener('gloryRecarga', gloryMenu);
 document.addEventListener('gloryRecarga', gloryAdaptiveHeader);

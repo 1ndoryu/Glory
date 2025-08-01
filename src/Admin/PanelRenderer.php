@@ -106,17 +106,19 @@ class PanelRenderer
     {
         $tipo = $config['tipo'] ?? 'text';
 
-        // --- INICIO: CÓDIGO MODIFICADO ---
         $wrapperClasses = 'form-field-wrapper';
         $wrapperAttributes = '';
 
+        // Lógica condicional para campos de logo
         if ($key === 'glory_logo_text') {
             $wrapperClasses .= ' glory-conditional-field';
             $wrapperAttributes = ' data-condition-field="glory_logo_mode" data-condition-value="text"';
+        } elseif ($key === 'glory_logo_image') {
+            $wrapperClasses .= ' glory-conditional-field';
+            $wrapperAttributes = ' data-condition-field="glory_logo_mode" data-condition-value="image"';
         }
 
         echo '<div class="' . esc_attr($wrapperClasses) . '"' . $wrapperAttributes . '>';
-        // --- FIN: CÓDIGO MODIFICADO ---
 
         $opcionesCampo = [
             'nombre'      => $key,
@@ -134,7 +136,7 @@ class PanelRenderer
                 echo '<label>' . esc_html($config['etiqueta']) . '</label>';
                 wp_editor($config['valorActual'], 'glory-opcion-' . esc_attr($key), ['textarea_name' => $key, 'media_buttons' => false, 'textarea_rows' => 7]);
                 if (!empty($config['descripcion'])) {
-                    printf('<p class="description">%s</p>', esc_html($config['descripcion']));
+                    printf('<p class="description">%s</p>', wp_kses_post($config['descripcion']));
                 }
                 break;
             case 'checkbox':

@@ -1,20 +1,23 @@
 <?php
 
-/**
- * Configuración y registro de scripts y estilos para el tema/framework Glory.
- *
- * Este archivo utiliza el AssetManager unificado para definir y registrar
- * todos los assets (JS y CSS) de forma centralizada.
- *
- * @package Glory\Config
- */
-
 use Glory\Core\AssetManager;
+use Glory\Core\Compatibility;
 
-// --- Scripts y Estilos Generales ---
-// Define las carpetas de assets que se cargarán automáticamente.
-// AssetManager procesará todos los archivos .js y .css en estas carpetas,
-// a menos que se especifiquen exclusiones.
+// Carga condicional de scripts de Avada/Fusion Builder
+if (Compatibility::is_avada_active()) {
+    AssetManager::define(
+        'script',
+        'fusionBuilderDetect',
+        '/Glory/assets/js/utils/fusionBuilderDetect.js',
+        ['deps' => [], 'in_footer' => false]
+    );
+    AssetManager::define(
+        'script',
+        'disableMenuClicksInFusionBuilder',
+        '/Glory/assets/js/utils/disableMenuClicksInFusionBuilder.js',
+        ['deps' => ['fusionBuilderDetect'], 'in_footer' => true]
+    );
+}
 
 AssetManager::define(
     'script',
@@ -27,9 +30,9 @@ AssetManager::define(
             'nombreObjeto' => 'dataGlobal',
             'datos'        => [
                 'enabled'            => true,
-                'contentSelector'    => '#main',
-                'mainScrollSelector' => '#main',
-                'loadingBarSelector' => '#loadingBar',
+                'contentSelector'    => '#main-content-glory',
+                'mainScrollSelector' => '#main-content-glory',
+                'loadingBarSelector' => '#glory-loading-bar',
                 'cacheEnabled'       => true,
                 'ignoreUrlPatterns'  => [
                     '/wp-admin',
@@ -68,6 +71,9 @@ AssetManager::defineFolder(
     [
         'adminPanel.js',
         'gloryLogs.js',
+        // Excluir para evitar carga duplicada
+        'disableMenuClicksInFusionBuilder.js',
+        'fusionBuilderDetect.js'
     ]
 );
 
@@ -81,7 +87,3 @@ AssetManager::defineFolder(
     'glory-',
     []
 );
-
-
-// --- Configuración Específica para el Script de Navegación AJAX ---
-// Se fusiona el contenido de ajaxPageSetup.php aquí para centralizar la configuración.

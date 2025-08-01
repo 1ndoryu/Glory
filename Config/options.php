@@ -1,34 +1,52 @@
 <?php
 
 use Glory\Manager\OpcionManager;
+use Glory\Core\Compatibility;
 
+if (Compatibility::is_avada_active()) {
+    // Opciones cuando Avada está activo
+    OpcionManager::register('glory_logo_mode', [
+        'valorDefault'    => 'default',
+        'tipo'            => 'select',
+        'etiqueta'        => 'Header Logo Mode',
+        'descripcion'     => 'Select how the site logo should be displayed. In "Default" mode, the logo is managed via <strong>Avada > Options > Logo</strong>.',
+        'opciones'        => [
+            'default' => 'Default (Managed by Avada)',
+            'text'    => 'Custom Text',
+            'none'    => 'No Logo',
+        ],
+        'seccion'         => 'header',
+        'etiquetaSeccion' => 'Header Settings',
+        'subSeccion'      => 'logo_configuration',
+    ]);
+} else {
+    // Opciones cuando Avada NO está activo
+    OpcionManager::register('glory_logo_mode', [
+        'valorDefault'    => 'image',
+        'tipo'            => 'select',
+        'etiqueta'        => 'Header Logo Mode',
+        'descripcion'     => 'Select how the site logo should be displayed.',
+        'opciones'        => [
+            'image' => 'Image Logo',
+            'text'  => 'Custom Text',
+            'none'  => 'No Logo',
+        ],
+        'seccion'         => 'header',
+        'etiquetaSeccion' => 'Header Settings',
+        'subSeccion'      => 'logo_configuration',
+    ]);
 
+    OpcionManager::register('glory_logo_image', [
+        'valorDefault' => '',
+        'tipo'         => 'imagen',
+        'etiqueta'     => 'Logo Image',
+        'descripcion'  => 'Upload or select the logo image to be used when "Image Logo" mode is selected.',
+        'seccion'      => 'header',
+        'subSeccion'   => 'logo_configuration',
+    ]);
+}
 
-OpcionManager::register('glory_ejemplos_activo', [
-    'valorDefault' => false,
-    'tipo'         => 'checkbox',
-    'etiqueta'     => 'Activar Opciones de Ejemplo',
-    'descripcion'  => 'Marca esta casilla para mostrar una pestaña con ejemplos de todos los tipos de campos disponibles en el panel.',
-    'seccion'      => 'general',
-    'subSeccion'   => 'configuracion_avanzada',
-]);
-
-// --- INICIO: CÓDIGO AÑADIDO ---
-OpcionManager::register('glory_logo_mode', [
-    'valorDefault' => 'default',
-    'tipo'           => 'select',
-    'etiqueta'       => 'Header Logo Mode',
-    'descripcion'    => 'Select how the site logo should be displayed. In "Default" mode, the logo is managed via <strong>Avada > Options > Logo</strong> or the WordPress Customizer.',
-    'opciones'       => [
-        'default' => 'Default (Managed by Theme/Avada)',
-        'text'    => 'Custom Text',
-        'none'    => 'No Logo',
-    ],
-    'seccion'        => 'header',
-    'etiquetaSeccion' => 'Header Settings',
-    'subSeccion'     => 'logo_configuration',
-]);
-
+// Opción común para el logo de texto, se mostrará condicionalmente
 OpcionManager::register('glory_logo_text', [
     'valorDefault' => get_bloginfo('name', 'display'),
     'tipo'         => 'text',
@@ -37,110 +55,3 @@ OpcionManager::register('glory_logo_text', [
     'seccion'      => 'header',
     'subSeccion'   => 'logo_configuration',
 ]);
-// --- FIN: CÓDIGO AÑADIDO ---
-
-
-if (OpcionManager::get('glory_ejemplos_activo')) {
-
-    $seccionEjemplos = 'ejemplos';
-    $etiquetaSeccion = 'Ejemplos de Campos';
-
-    OpcionManager::register('ejemplo_texto', [
-        'valorDefault' => 'Este es un texto simple.',
-        'tipo'         => 'text',
-        'etiqueta'     => 'Campo de Texto',
-        'descripcion'  => 'Para textos cortos como títulos o nombres.',
-        'seccion'      => $seccionEjemplos,
-        'etiquetaSeccion' => $etiquetaSeccion,
-        'subSeccion'   => 'campos_de_texto',
-    ]);
-
-    OpcionManager::register('ejemplo_textarea', [
-        'valorDefault' => 'Este es un área de texto para párrafos más largos.',
-        'tipo'         => 'textarea',
-        'etiqueta'     => 'Área de Texto',
-        'descripcion'  => 'Ideal para descripciones o bloques de texto sin formato.',
-        'seccion'      => $seccionEjemplos,
-        'etiquetaSeccion' => $etiquetaSeccion,
-        'subSeccion'   => 'campos_de_texto',
-    ]);
-
-    OpcionManager::register('ejemplo_rich_text', [
-        'valorDefault' => '<p>Este es <strong>texto enriquecido</strong> usando el editor de WordPress.</p>',
-        'tipo'         => 'richText',
-        'etiqueta'     => 'Editor de Texto Enriquecido',
-        'descripcion'  => 'Permite formato como negritas, itálicas y listas.',
-        'seccion'      => $seccionEjemplos,
-        'etiquetaSeccion' => $etiquetaSeccion,
-        'subSeccion'   => 'campos_de_texto',
-    ]);
-
-    OpcionManager::register('ejemplo_checkbox', [
-        'valorDefault' => true,
-        'tipo'         => 'checkbox',
-        'etiqueta'     => 'Activar Característica Ejemplo',
-        'descripcion'  => 'Una simple casilla para activar o desactivar algo.',
-        'seccion'      => $seccionEjemplos,
-        'etiquetaSeccion' => $etiquetaSeccion,
-        'subSeccion'   => 'campos_de_seleccion',
-    ]);
-
-    OpcionManager::register('ejemplo_select', [
-        'valorDefault' => 'opcion2',
-        'tipo'         => 'select',
-        'etiqueta'     => 'Selector Desplegable',
-        'descripcion'  => 'Para elegir una opción de una lista predefinida.',
-        'opciones'     => [
-            'opcion1' => 'Primera Opción',
-            'opcion2' => 'Segunda Opción',
-            'opcion3' => 'Tercera Opción',
-        ],
-        'seccion'      => $seccionEjemplos,
-        'etiquetaSeccion' => $etiquetaSeccion,
-        'subSeccion'   => 'campos_de_seleccion',
-    ]);
-
-    OpcionManager::register('ejemplo_radio', [
-        'valorDefault' => 'radio_b',
-        'tipo'         => 'radio',
-        'etiqueta'     => 'Botones de Radio',
-        'descripcion'  => 'Para elegir una única opción de un grupo visible.',
-        'opciones'     => [
-            'radio_a' => 'Alternativa A',
-            'radio_b' => 'Alternativa B',
-        ],
-        'seccion'      => $seccionEjemplos,
-        'etiquetaSeccion' => $etiquetaSeccion,
-        'subSeccion'   => 'campos_de_seleccion',
-    ]);
-
-    OpcionManager::register('ejemplo_imagen', [
-        'valorDefault' => '',
-        'tipo'         => 'imagen',
-        'etiqueta'     => 'Selector de Imagen',
-        'descripcion'  => 'Abre la biblioteca de medios de WordPress para seleccionar una imagen.',
-        'seccion'      => $seccionEjemplos,
-        'etiquetaSeccion' => $etiquetaSeccion,
-        'subSeccion'   => 'campos_avanzados',
-    ]);
-
-    OpcionManager::register('ejemplo_color', [
-        'valorDefault' => '#21759b',
-        'tipo'         => 'color',
-        'etiqueta'     => 'Selector de Color',
-        'descripcion'  => 'Un selector de color interactivo.',
-        'seccion'      => $seccionEjemplos,
-        'etiquetaSeccion' => $etiquetaSeccion,
-        'subSeccion'   => 'campos_avanzados',
-    ]);
-
-    OpcionManager::register('ejemplo_numero', [
-        'valorDefault' => 10,
-        'tipo'         => 'numero',
-        'etiqueta'     => 'Campo Numérico',
-        'descripcion'  => 'Para ingresar valores numéricos.',
-        'seccion'      => $seccionEjemplos,
-        'etiquetaSeccion' => $etiquetaSeccion,
-        'subSeccion'   => 'campos_avanzados',
-    ]);
-}

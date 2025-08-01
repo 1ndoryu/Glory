@@ -2,8 +2,7 @@
 
 namespace Glory\Core;
 
-// 1. AÑADE ESTA LÍNEA AL PRINCIPIO CON LOS DEMÁS 'use'
-use Glory\Admin\OpcionPanelController; 
+use Glory\Admin\OpcionPanelController;
 use Glory\Handler\FormHandler;
 use Glory\Manager\OpcionManager;
 use Glory\Admin\SyncController;
@@ -12,6 +11,7 @@ use Glory\Core\LicenseManager;
 use Glory\Utility\AssetsUtility;
 use Glory\Handler\PaginationAjaxHandler;
 use Glory\Core\MenuManager;
+use Glory\Components\LogoRenderer;
 
 class Setup
 {
@@ -27,8 +27,8 @@ class Setup
         MenuManager::register();
         (new SyncController())->register();
         (new TaxonomyMetaManager())->register();
+        LogoRenderer::register_shortcode();
 
-        // 2. AÑADE ESTA LÍNEA AL FINAL DEL CONSTRUCTOR
         (new OpcionPanelController())->registerHooks();
     }
 }
