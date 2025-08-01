@@ -8,6 +8,13 @@ if (typeof window.gloryPaginationInitialized === 'undefined') {
     window.gloryPaginationInitialized = true;
 }
 
+// Agregamos el listener de clic de inmediato para la carga inicial,
+// asegurándonos de que solo se registre una vez.
+if (!window.gloryPaginationClickAttached) {
+    document.body.addEventListener('click', handlePaginationClick);
+    window.gloryPaginationClickAttached = true;
+}
+
 async function handlePaginationClick(e) {
     const paginationLink = e.target.closest('.glory-pagination-container .page-numbers[data-page]');
 
@@ -49,7 +56,7 @@ async function handlePaginationClick(e) {
         posts_per_page: data.postsPerPage,
         template_callback: data.templateCallback,
         container_class: data.containerClass,
-        item_class: data.itemClass,
+        item_class: data.itemClass
     };
 
     try {
@@ -73,12 +80,11 @@ async function handlePaginationClick(e) {
             // Actualizamos la URL del navegador para reflejar el cambio de página.
             const newUrl = new URL(window.location);
             newUrl.searchParams.set('paged', page);
-            window.history.pushState({ path: newUrl.href }, '', newUrl.href);
+            window.history.pushState({path: newUrl.href}, '', newUrl.href);
 
             // Disparamos el evento 'gloryRecarga' para reinicializar otros scripts en el nuevo contenido.
-            const event = new CustomEvent('gloryRecarga', { bubbles: true, cancelable: true });
+            const event = new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true});
             container.dispatchEvent(event);
-
         } else {
             console.error('Error en la paginación AJAX:', result.message || 'Error desconocido');
         }
@@ -91,7 +97,7 @@ async function handlePaginationClick(e) {
 
         // Hacemos scroll suave a la parte superior del contenido.
         if (contentTarget) {
-            contentTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            contentTarget.scrollIntoView({behavior: 'smooth', block: 'start'});
         }
     }
 }

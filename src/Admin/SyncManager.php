@@ -9,6 +9,22 @@ use Glory\Core\PageManager;
 
 class SyncManager
 {
+    /** Controla la visibilidad del grupo "Glory Sync" en la barra de administración. */
+    private static bool $showAdminBar = true;
+
+    /** Controla la visibilidad del botón "Restablecer a Default". */
+    private static bool $showResetButton = true;
+
+    public static function setAdminBarVisible(bool $visible): void
+    {
+        self::$showAdminBar = $visible;
+    }
+
+    public static function setResetButtonVisible(bool $visible): void
+    {
+        self::$showResetButton = $visible;
+    }
+
     public function registerHooks(): void
     {
         add_action('admin_bar_menu', [$this, 'addSyncButtons'], 999);
@@ -18,7 +34,7 @@ class SyncManager
 
     public function addSyncButtons(\WP_Admin_Bar $wp_admin_bar): void
     {
-        if (!current_user_can('manage_options')) {
+        if (!current_user_can('manage_options') || !self::$showAdminBar) {
             return;
         }
 
@@ -38,15 +54,17 @@ class SyncManager
             ],
         ]);
 
-        $wp_admin_bar->add_node([
-            'id'     => 'glory_reset_default',
-            'parent' => 'glory_sync_group',
-            'title'  => 'Restablecer a Default',
-            'href'   => add_query_arg('glory_action', 'reset'),
-            'meta'   => [
-                'title' => 'Restablece el contenido modificado manualmente a su estado original definido en el código.',
-            ],
-        ]);
+        if (self::$showResetButton) {
+            $wp_admin_bar->add_node([
+                'id'     => 'glory_reset_default',
+                'parent' => 'glory_sync_group',
+                'title'  => 'Restablecer a Default',
+                'href'   => add_query_arg('glory_action', 'reset'),
+                'meta'   => [
+                    'title' => 'Restablece el contenido modificado manualmente a su estado original definido en el código.',
+                ],
+            ]);
+        }
 
         // <-- BOTÓN NUEVO AÑADIDO AQUÍ -->
         $wp_admin_bar->add_node([

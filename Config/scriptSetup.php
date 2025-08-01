@@ -71,7 +71,7 @@ AssetManager::defineFolder(
     [
         'adminPanel.js',
         'gloryLogs.js',
-        // Excluir para evitar carga duplicada
+        'options-panel.js',
         'disableMenuClicksInFusionBuilder.js',
         'fusionBuilderDetect.js'
     ]

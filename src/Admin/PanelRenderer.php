@@ -163,6 +163,12 @@ class PanelRenderer
                 echo FormBuilder::campoTexto($opcionesCampo);
                 break;
         }
+
+        // Fallback para mostrar descripción si el campo no la renderiza internamente
+        if (!empty($config['descripcion']) && !in_array($tipo, ['richText', 'imagen', 'color'])) {
+            printf('<p class="description">%s</p>', wp_kses_post($config['descripcion']));
+        }
+
         echo '</div>';
     }
 }
