@@ -3,7 +3,7 @@
 use Glory\Manager\OpcionManager;
 use Glory\Core\Compatibility;
 
-if (Compatibility::is_avada_active()) {
+if (Compatibility::avadaActivo()) {
     OpcionManager::register('glory_logo_mode', [
         'valorDefault'    => 'default',
         'tipo'            => 'select',

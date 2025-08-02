@@ -12,7 +12,7 @@ class Compatibility
      *
      * @return bool Verdadero si la constante AVADA_VERSION está definida, falso en caso contrario.
      */
-    public static function is_avada_active(): bool
+    public static function avadaActivo(): bool
     {
         return defined('AVADA_VERSION');
     }

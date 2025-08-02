@@ -24,7 +24,7 @@ class LogoRenderer
 
     public static function get_html(array $args = []): string
     {
-        $default_mode = Compatibility::is_avada_active() ? 'default' : 'image';
+        $default_mode = Compatibility::avadaActivo() ? 'default' : 'image';
         $logo_mode = OpcionManager::get('glory_logo_mode', $default_mode);
         $width  = $args['width'] ?? '';
         $filter_input = $args['filter'] ?? '';
@@ -75,14 +75,14 @@ class LogoRenderer
             $output = '<a href="' . $home_url . '" rel="home" class="glory-logo-text"' . $text_style_attr . '>' . esc_html($logo_text) . '</a>';
         } else {
             $logo_html = '';
-            if (Compatibility::is_avada_active() && $logo_mode === 'default') {
+            if (Compatibility::avadaActivo() && $logo_mode === 'default') {
                 if (function_exists('fusion_get_theme_option')) {
                     $logo_url = fusion_get_theme_option('sticky_header_logo', 'url') ?: fusion_get_theme_option('logo', 'url');
                     if ($logo_url) {
                         $logo_html = '<a href="' . $home_url . '" rel="home"><img src="' . esc_url($logo_url) . '" alt="' . $blog_name . '" ' . $style . '></a>';
                     }
                 }
-            } elseif (!Compatibility::is_avada_active() && $logo_mode === 'image') {
+            } elseif (!Compatibility::avadaActivo() && $logo_mode === 'image') {
                 $image_id = OpcionManager::get('glory_logo_image');
                 if ($image_id && $image_url = wp_get_attachment_image_url($image_id, 'full')) {
                     $logo_html = '<a href="' . $home_url . '" rel="home"><img src="' . esc_url($image_url) . '" alt="' . $blog_name . '" ' . $style . '></a>';
@@ -97,7 +97,7 @@ class LogoRenderer
                     }
                 } else {
                     // Fallback al logo por defecto de Glory
-                    $default_logo_url = AssetsUtility::getImagenUrl('glory::elements/whiteExampleLogo.png');
+                    $default_logo_url = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
                     if ($default_logo_url) {
                          $logo_html = '<a href="' . $home_url . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . $blog_name . '" ' . $style . '></a>';
                     } else {

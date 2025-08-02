@@ -112,13 +112,7 @@ class AssetsUtility
         printf('<img src="%s"%s>', esc_url($urlFinal), $atributosString);
     }
 
-
-    public static function imagenUrl(string $assetReference): void
-    {
-        echo self::getImagenUrl($assetReference);
-    }
-
-    public static function getImagenUrl(string $assetReference): ?string
+    public static function imagenUrl(string $assetReference): ?string
     {
         if (!self::$isInitialized) self::init();
 

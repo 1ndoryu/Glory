@@ -4,7 +4,7 @@ use Glory\Core\AssetManager;
 use Glory\Core\Compatibility;
 
 // Carga condicional de scripts de Avada/Fusion Builder
-if (Compatibility::is_avada_active()) {
+if (Compatibility::avadaActivo()) {
     AssetManager::define(
         'script',
         'fusionBuilderDetect',

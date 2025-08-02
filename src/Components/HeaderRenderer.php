@@ -10,7 +10,7 @@ class HeaderRenderer
 {
     public static function render(array $opciones = []): void
     {
-        $default_mode = Compatibility::is_avada_active() ? 'default' : 'image';
+        $default_mode = Compatibility::avadaActivo() ? 'default' : 'image';
         $logoModo = OpcionManager::get('glory_logo_mode', $default_mode);
 
         $claseExtraHeader = '';
@@ -35,7 +35,7 @@ class HeaderRenderer
                             <a href="<?php echo esc_url(home_url('/')); ?>" rel="home"><?php echo esc_html($textoLogo); ?></a>
                         <?php
                         } else {
-                            if (Compatibility::is_avada_active() && $logoModo === 'default') {
+                            if (Compatibility::avadaActivo() && $logoModo === 'default') {
                                 if (function_exists('the_custom_logo') && has_custom_logo()) {
                                     the_custom_logo();
                                 } elseif (function_exists('fusion_get_theme_option')) {
@@ -50,13 +50,13 @@ class HeaderRenderer
                                 } else {
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home">' . get_bloginfo('name') . '</a>';
                                 }
-                            } elseif (!Compatibility::is_avada_active() && $logoModo === 'image') {
+                            } elseif (!Compatibility::avadaActivo() && $logoModo === 'image') {
                                 $image_id = OpcionManager::get('glory_logo_image');
                                 if ($image_id && $image_url = wp_get_attachment_image_url($image_id, 'full')) {
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($image_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
                                 } else {
                                     // Usar logo por defecto de Glory
-                                    $default_logo_url = AssetsUtility::getImagenUrl('glory::elements/whiteExampleLogo.png');
+                                    $default_logo_url = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
                                 }
                             } else {
@@ -64,7 +64,7 @@ class HeaderRenderer
                                     the_custom_logo();
                                 } else {
                                     // Usar logo por defecto de Glory
-                                    $default_logo_url = AssetsUtility::getImagenUrl('glory::elements/whiteExampleLogo.png');
+                                    $default_logo_url = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
                                 }
                             }
