@@ -2,16 +2,18 @@
 
 namespace Glory\Components;
 
-use Glory\Manager\OpcionManager;
 use Glory\Core\Compatibility;
 use Glory\Utility\AssetsUtility;
 
 class HeaderRenderer
 {
-    public static function render(array $opciones = []): void
+    public static function render(array $config = []): void
     {
-        $default_mode = Compatibility::avadaActivo() ? 'default' : 'image';
-        $logoModo = OpcionManager::get('glory_logo_mode', $default_mode);
+        // Values from config array
+        $logoModo = $config['modoLogo'] ?? (Compatibility::avadaActivo() ? 'default' : 'image');
+        $textoLogo = $config['textoLogo'] ?? get_bloginfo('name', 'display');
+        $logoImageId = $config['logoImageId'] ?? null;
+        $idMenu = $config['idMenu'] ?? 'main-menu';
 
         $claseExtraHeader = '';
         if ($logoModo === 'text') {
@@ -20,8 +22,7 @@ class HeaderRenderer
             $claseExtraHeader = ' header-no-logo';
         }
 
-        $claseHeader = 'siteMenuW ' . ($opciones['claseHeader'] ?? '') . $claseExtraHeader;
-        $idMenu = $opciones['idMenu'] ?? 'main-menu';
+        $claseHeader = 'siteMenuW ' . ($config['claseHeader'] ?? '') . $claseExtraHeader;
 ?>
         <header class="<?php echo esc_attr(trim($claseHeader)); ?>" role="banner">
             <div class="siteMenuContainer">
@@ -30,7 +31,6 @@ class HeaderRenderer
                     <div class="siteMenuLogo">
                         <?php
                         if ($logoModo === 'text') {
-                            $textoLogo = OpcionManager::get('glory_logo_text', get_bloginfo('name', 'display'));
                         ?>
                             <a href="<?php echo esc_url(home_url('/')); ?>" rel="home"><?php echo esc_html($textoLogo); ?></a>
                         <?php
@@ -51,11 +51,9 @@ class HeaderRenderer
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home">' . get_bloginfo('name') . '</a>';
                                 }
                             } elseif (!Compatibility::avadaActivo() && $logoModo === 'image') {
-                                $image_id = OpcionManager::get('glory_logo_image');
-                                if ($image_id && $image_url = wp_get_attachment_image_url($image_id, 'full')) {
+                                if ($logoImageId && $image_url = wp_get_attachment_image_url($logoImageId, 'full')) {
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($image_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
                                 } else {
-                                    // Usar logo por defecto de Glory
                                     $default_logo_url = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
                                 }
@@ -63,7 +61,6 @@ class HeaderRenderer
                                 if (function_exists('the_custom_logo') && has_custom_logo()) {
                                     the_custom_logo();
                                 } else {
-                                    // Usar logo por defecto de Glory
                                     $default_logo_url = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
                                 }
