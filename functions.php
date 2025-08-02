@@ -73,6 +73,11 @@ if (!function_exists('jetpack_photon_url')) {
      */
     function jetpack_photon_url(string $url, array $args = []): string
     {
+
+        if (defined('LOCAL') && LOCAL) {
+            return $url;
+        }
+        
         if ($url === '' || $url === null) {
             return '';
         }

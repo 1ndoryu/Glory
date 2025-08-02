@@ -1,4 +1,6 @@
 <?php
+/*
+use Glory\Manager\OpcionManager;
 
 OpcionManager::register('glory_ejemplos_activo', [
     'valorDefault' => false,
@@ -114,3 +116,5 @@ if (OpcionManager::get('glory_ejemplos_activo')) {
         'subSeccion'   => 'campos_avanzados',
     ]);
 }
+
+*/

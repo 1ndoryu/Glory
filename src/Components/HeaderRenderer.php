@@ -4,16 +4,15 @@ namespace Glory\Components;
 
 use Glory\Manager\OpcionManager;
 use Glory\Core\Compatibility;
+use Glory\Utility\AssetsUtility;
 
 class HeaderRenderer
 {
     public static function render(array $opciones = []): void
     {
-        // Determina el modo por defecto dependiendo de si Avada está activo
         $default_mode = Compatibility::is_avada_active() ? 'default' : 'image';
         $logoModo = OpcionManager::get('glory_logo_mode', $default_mode);
-        
-        // Lógica de clases restaurada
+
         $claseExtraHeader = '';
         if ($logoModo === 'text') {
             $claseExtraHeader = ' header-logo-text-mode';
@@ -26,19 +25,17 @@ class HeaderRenderer
 ?>
         <header class="<?php echo esc_attr(trim($claseHeader)); ?>" role="banner">
             <div class="siteMenuContainer">
-                
+
                 <?php if ($logoModo !== 'none') : ?>
                     <div class="siteMenuLogo">
                         <?php
                         if ($logoModo === 'text') {
                             $textoLogo = OpcionManager::get('glory_logo_text', get_bloginfo('name', 'display'));
-                            ?>
+                        ?>
                             <a href="<?php echo esc_url(home_url('/')); ?>" rel="home"><?php echo esc_html($textoLogo); ?></a>
-                            <?php
+                        <?php
                         } else {
-                            // Lógica condicional para Avada vs. No-Avada
                             if (Compatibility::is_avada_active() && $logoModo === 'default') {
-                                // LÓGICA ORIGINAL Y FUNCIONAL PARA AVADA (RESTAURADA)
                                 if (function_exists('the_custom_logo') && has_custom_logo()) {
                                     the_custom_logo();
                                 } elseif (function_exists('fusion_get_theme_option')) {
@@ -54,20 +51,21 @@ class HeaderRenderer
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home">' . get_bloginfo('name') . '</a>';
                                 }
                             } elseif (!Compatibility::is_avada_active() && $logoModo === 'image') {
-                                // NUEVA LÓGICA PARA CUANDO AVADA NO ESTÁ ACTIVO
                                 $image_id = OpcionManager::get('glory_logo_image');
                                 if ($image_id && $image_url = wp_get_attachment_image_url($image_id, 'full')) {
                                     echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($image_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
                                 } else {
-                                    // Fallback si no hay imagen seleccionada
-                                    echo '<a href="' . esc_url(home_url('/')) . '" rel="home">' . get_bloginfo('name') . '</a>';
+                                    // Usar logo por defecto de Glory
+                                    $default_logo_url = AssetsUtility::getImagenUrl('glory::elements/whiteExampleLogo.png');
+                                    echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
                                 }
                             } else {
-                                // Fallback general (logo de WordPress)
                                 if (function_exists('the_custom_logo') && has_custom_logo()) {
                                     the_custom_logo();
                                 } else {
-                                    echo '<a href="' . esc_url(home_url('/')) . '" rel="home">' . get_bloginfo('name') . '</a>';
+                                    // Usar logo por defecto de Glory
+                                    $default_logo_url = AssetsUtility::getImagenUrl('glory::elements/whiteExampleLogo.png');
+                                    echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
                                 }
                             }
                         }

@@ -18,8 +18,7 @@ final class AssetManager
     private static string $versionTema = '1.0.0';
     private static bool $hooksRegistrados = false;
     private static array $deferredScripts = [];
-    
-    // Optimización: Directorio para la caché de assets.
+
     private static string $cacheDir = GLORY_FRAMEWORK_PATH . '/cache';
 
 
@@ -57,8 +56,7 @@ final class AssetManager
             'defer'     => $config['defer'],
         ];
     }
-    
-    // Optimización: Nuevo método para obtener la ruta del archivo de caché.
+
     private static function getCacheFilePath(string $cacheKey): string
     {
         if (!is_dir(self::$cacheDir)) {
@@ -74,7 +72,6 @@ final class AssetManager
         $cacheKey = $tipo . $rutaCarpeta . $prefijoHandle . serialize($exclusiones) . serialize(array_keys($configDefault));
         $cacheFile = self::getCacheFilePath($cacheKey);
 
-        // Optimización: Si no estamos en modo desarrollo y la caché existe, la usamos.
         if (!self::$modoDesarrolloGlobal && file_exists($cacheFile)) {
             $cachedAssets = include $cacheFile;
             if (is_array($cachedAssets)) {
@@ -104,13 +101,11 @@ final class AssetManager
 
                 $rutaParaWeb = str_replace($directorioTema, '', wp_normalize_path($file->getPathname()));
                 $handle = $prefijoHandle . sanitize_title($file->getBasename('.' . $extension));
-                
+
                 self::define($tipo, $handle, $rutaParaWeb, $configDefault);
-                // Guardamos la definición para la caché
                 $discoveredAssets[$handle] = ['ruta' => $rutaParaWeb];
             }
-            
-            // Optimización: Guardamos los assets encontrados en la caché si no estamos en modo desarrollo.
+
             if (!self::$modoDesarrolloGlobal) {
                 $cacheContent = '<?php return ' . var_export($discoveredAssets, true) . ';';
                 file_put_contents($cacheFile, $cacheContent, LOCK_EX);
@@ -216,6 +211,11 @@ final class AssetManager
     public static function setGlobalDevMode(bool $activado): void
     {
         self::$modoDesarrolloGlobal = $activado;
+    }
+    
+    public static function isGlobalDevMode(): bool
+    {
+        return self::$modoDesarrolloGlobal;
     }
 
     public static function setThemeVersion(string $version): void

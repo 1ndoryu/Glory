@@ -6,13 +6,14 @@ use Glory\Core\GloryLogger;
 use Glory\Services\DefaultContentSynchronizer;
 use Glory\Manager\OpcionManager;
 use Glory\Core\PageManager;
+use Glory\Core\AssetManager;
 
 class SyncManager
 {
-    /** Controla la visibilidad del grupo "Glory Sync" en la barra de administración. */
+
     private static bool $showAdminBar = true;
 
-    /** Controla la visibilidad del botón "Restablecer a Default". */
+
     private static bool $showResetButton = true;
 
     public static function setAdminBarVisible(bool $visible): void
@@ -30,6 +31,19 @@ class SyncManager
         add_action('admin_bar_menu', [$this, 'addSyncButtons'], 999);
         add_action('init', [$this, 'handleSyncActions'], 20);
         add_action('admin_notices', [$this, 'showSyncNotice']);
+        // Nuevo hook para la sincronización automática
+        add_action('init', [$this, 'performAutomaticSyncIfDevMode'], 15);
+    }
+
+    /**
+     * Realiza una sincronización completa si el modo de desarrollo global está activado.
+     */
+    public function performAutomaticSyncIfDevMode(): void
+    {
+        if (AssetManager::isGlobalDevMode()) {
+            GloryLogger::info('Modo DEV activado: Ejecutando sincronización automática.');
+            $this->runFullSync();
+        }
     }
 
     public function addSyncButtons(\WP_Admin_Bar $wp_admin_bar): void
@@ -66,7 +80,6 @@ class SyncManager
             ]);
         }
 
-        // <-- BOTÓN NUEVO AÑADIDO AQUÍ -->
         $wp_admin_bar->add_node([
             'id'     => 'glory_clear_cache',
             'parent' => 'glory_sync_group',
@@ -89,11 +102,7 @@ class SyncManager
 
         if ($action === 'sync') {
             GloryLogger::info('Sincronización manual forzada por el usuario desde la barra de admin.');
-            OpcionManager::sincronizarTodasLasOpciones();
-            PageManager::procesarPaginasDefinidas();
-            PageManager::reconciliarPaginasGestionadas();
-            $sync = new DefaultContentSynchronizer();
-            $sync->sincronizar();
+            $this->runFullSync();
             $redirect_url = add_query_arg('glory_sync_notice', 'sync_success', $redirect_url);
 
         } elseif ($action === 'reset') {
@@ -101,8 +110,7 @@ class SyncManager
             $sync = new DefaultContentSynchronizer();
             $sync->restablecer();
             $redirect_url = add_query_arg('glory_sync_notice', 'reset_success', $redirect_url);
-        
-        // <-- LÓGICA NUEVA AÑADIDA AQUÍ -->
+
         } elseif ($action === 'clear_cache') {
             global $wpdb;
             $prefix = '_transient_glory_content_';
@@ -119,6 +127,14 @@ class SyncManager
         wp_safe_redirect($redirect_url);
         exit;
     }
+    
+    private function runFullSync(): void {
+        OpcionManager::sincronizarTodasLasOpciones();
+        PageManager::procesarPaginasDefinidas();
+        PageManager::reconciliarPaginasGestionadas();
+        $sync = new DefaultContentSynchronizer();
+        $sync->sincronizar();
+    }
 
     public function showSyncNotice(): void
     {
@@ -130,7 +146,6 @@ class SyncManager
                 $message = '<strong>Sincronización de Glory completada con éxito.</strong>';
             } elseif ($notice_type === 'reset_success') {
                 $message = '<strong>Contenido de Glory restablecido a default con éxito.</strong>';
-            // <-- MENSAJE NUEVO AÑADIDO AQUÍ -->
             } elseif ($notice_type === 'cache_cleared') {
                 $message = '<strong>Caché de Glory borrada con éxito.</strong>';
             }

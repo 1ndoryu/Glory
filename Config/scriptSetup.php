@@ -50,16 +50,6 @@ AssetManager::define(
     ]
 );
 
-AssetManager::define(
-    'script',
-    'gloryPagination',
-    '/Glory/assets/js/UI/gloryPagination.js',
-    [
-        'deps'      => [],
-        'in_footer' => true
-    ]
-);
-
 AssetManager::defineFolder(
     'script',
     '/Glory/assets/js/',

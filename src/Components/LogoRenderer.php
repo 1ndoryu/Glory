@@ -4,6 +4,7 @@ namespace Glory\Components;
 
 use Glory\Manager\OpcionManager;
 use Glory\Core\Compatibility;
+use Glory\Utility\AssetsUtility;
 
 class LogoRenderer
 {
@@ -28,23 +29,19 @@ class LogoRenderer
         $width  = $args['width'] ?? '';
         $filter_input = $args['filter'] ?? '';
 
-        // Mapear valores amigables a filtros CSS.
         $filter_css = '';
         $filter_alias = strtolower(trim($filter_input));
         switch ($filter_alias) {
             case 'white':
-                // Convierte a blanco: quita saturación y cambia a blanco.
                 $filter_css = 'brightness(0) invert(1)';
                 break;
             case 'black':
-                // Convierte a negro: quita saturación y oscurece.
                 $filter_css = 'brightness(0)';
                 break;
             case '':
                 $filter_css = '';
                 break;
             default:
-                // Se asume que el usuario pasó un filtro CSS válido.
                 $filter_css = $filter_input;
         }
 
@@ -59,7 +56,6 @@ class LogoRenderer
                 $style_content .= 'width: ' . esc_attr($width) . '; height: auto;';
             }
             if ($filter_css !== '') {
-                // Se añade un espacio inicial para asegurar la separación correcta si ya existen estilos.
                 $style_content .= ' filter: ' . esc_attr($filter_css) . ';';
             }
             $style = 'style="' . trim($style_content) . '"';
@@ -72,9 +68,9 @@ class LogoRenderer
             $logo_text = OpcionManager::get('glory_logo_text', $blog_name);
             $text_style_attr = '';
             if ($filter_alias === 'white') {
-                $text_style_attr = ' style="color:#fff;"';
+                $text_style_attr = ' style="color: #ffffff;"';
             } elseif ($filter_alias === 'black') {
-                $text_style_attr = ' style="color:#000;"';
+                $text_style_attr = ' style="color: #000000;"';
             }
             $output = '<a href="' . $home_url . '" rel="home" class="glory-logo-text"' . $text_style_attr . '>' . esc_html($logo_text) . '</a>';
         } else {
@@ -100,7 +96,13 @@ class LogoRenderer
                         $logo_html = str_replace('<img ', '<img ' . $style . ' ', $logo_html);
                     }
                 } else {
-                    $logo_html = '<a href="' . $home_url . '" rel="home" class="glory-logo-text">' . esc_html($blog_name) . '</a>';
+                    // Fallback al logo por defecto de Glory
+                    $default_logo_url = AssetsUtility::getImagenUrl('glory::elements/whiteExampleLogo.png');
+                    if ($default_logo_url) {
+                         $logo_html = '<a href="' . $home_url . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . $blog_name . '" ' . $style . '></a>';
+                    } else {
+                        $logo_html = '<a href="' . $home_url . '" rel="home" class="glory-logo-text">' . esc_html($blog_name) . '</a>';
+                    }
                 }
             }
             $output = $logo_html;

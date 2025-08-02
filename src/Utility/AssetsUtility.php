@@ -4,50 +4,32 @@ namespace Glory\Utility;
 
 use Glory\Core\GloryLogger;
 
-/**
- * Clase de utilidad para funciones relacionadas con los assets del tema.
- * Permite registrar rutas de assets con alias y gestionar imágenes de forma centralizada.
- */
+
 class AssetsUtility
 {
-    /** @var array Almacena las rutas de los directorios de assets registrados. */
+
     private static array $assetPaths = [];
-    /** @var bool Flag para asegurar que la inicialización solo ocurra una vez. */
+
     private static bool $isInitialized = false;
 
-    /**
-     * Inicializa el gestor de rutas, registrando los alias por defecto ('glory' y 'tema').
-     */
+
     public static function init(): void
     {
         if (self::$isInitialized) {
             return;
         }
-        // Ruta para assets del framework Glory
         self::registerAssetPath('glory', 'Glory/assets/images');
-        // Ruta para assets del tema activo
         self::registerAssetPath('tema', 'App/assets/images');
         self::$isInitialized = true;
     }
 
-    /**
-     * Registra un nuevo directorio de assets con un alias.
-     *
-     * @param string $alias El alias para referirse a la ruta (ej. 'glory', 'tema').
-     * @param string $path La ruta relativa al directorio de assets desde la raíz del tema.
-     */
+
     public static function registerAssetPath(string $alias, string $path): void
     {
         self::$assetPaths[sanitize_key($alias)] = trim($path, '/\\');
     }
 
-    /**
-     * Parsea una referencia de asset (ej. 'alias::archivo.jpg') en sus componentes.
-     * Si no se provee un alias, se utiliza 'glory' por defecto.
-     *
-     * @param string $reference La referencia del asset.
-     * @return array Un array con el alias y el nombre del archivo.
-     */
+
     public static function parseAssetReference(string $reference): array
     {
         if (strpos($reference, '::') !== false) {
@@ -56,13 +38,7 @@ class AssetsUtility
         return ['glory', $reference];
     }
 
-    /**
-     * Resuelve la ruta relativa completa de un asset a partir de su alias y nombre.
-     *
-     * @param string $alias El alias del directorio.
-     * @param string $nombreArchivo El nombre del archivo.
-     * @return string|null La ruta relativa o null si el alias no existe.
-     */
+
     private static function resolveAssetPath(string $alias, string $nombreArchivo): ?string
     {
         if (!isset(self::$assetPaths[$alias])) {
@@ -72,13 +48,7 @@ class AssetsUtility
         return self::$assetPaths[$alias] . '/' . ltrim($nombreArchivo, '/\\');
     }
 
-    /**
-     * Obtiene el nombre de una imagen por defecto de forma aleatoria desde un directorio de assets especificado por su alias.
-     * Busca archivos que coincidan con el patrón 'default*'.
-     *
-     * @param string $alias El alias del directorio de assets a utilizar (ej. 'glory', 'tema'). Por defecto 'glory'.
-     * @return string|null El nombre del archivo o null si no se encuentra ninguno.
-     */
+
     public static function getRandomDefaultImageName(string $alias = 'glory'): ?string
     {
         if (!self::$isInitialized) {
@@ -102,12 +72,7 @@ class AssetsUtility
         return basename($archivos[array_rand($archivos)]);
     }
 
-    /**
-     * Imprime una etiqueta <img> para una imagen de los assets, usando el sistema de alias.
-     *
-     * @param string $assetReference La referencia al asset (ej. 'tema::logo.svg' o 'icono.png').
-     * @param array $atributos Un array asociativo de atributos HTML adicionales para la etiqueta <img>.
-     */
+
     public static function imagen(string $assetReference, array $atributos = []): void
     {
         if (!self::$isInitialized) self::init();
@@ -147,33 +112,36 @@ class AssetsUtility
         printf('<img src="%s"%s>', esc_url($urlFinal), $atributosString);
     }
 
-    /**
-     * Imprime la URL de una imagen de los assets, usando el sistema de alias.
-     *
-     * @param string $assetReference La referencia al asset (ej. 'glory::fondo.jpg').
-     */
+
     public static function imagenUrl(string $assetReference): void
+    {
+        echo self::getImagenUrl($assetReference);
+    }
+
+    public static function getImagenUrl(string $assetReference): ?string
     {
         if (!self::$isInitialized) self::init();
 
         list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
         $rutaRelativa = self::resolveAssetPath($alias, $nombreArchivo);
 
-        if (!$rutaRelativa) return;
+        if (!$rutaRelativa) {
+            return null;
+        }
+        
+        $rutaLocal = get_template_directory() . '/' . $rutaRelativa;
+        if (!file_exists($rutaLocal)) {
+            GloryLogger::warning("AssetsUtility: El archivo de asset '{$rutaRelativa}' no fue encontrado.");
+            return null;
+        }
 
         $urlBase = get_template_directory_uri() . '/' . $rutaRelativa;
         $urlFinal = function_exists('jetpack_photon_url') ? jetpack_photon_url($urlBase) : $urlBase;
 
-        echo esc_url($urlFinal);
+        return esc_url($urlFinal);
     }
 
-    /**
-     * Obtiene el ID de un adjunto a partir de una referencia de asset.
-     * Si no existe en la Biblioteca de Medios, lo importa.
-     *
-     * @param string $assetReference La referencia del asset (ej. 'tema::mi-imagen.jpg' o 'default.jpg').
-     * @return int|null El ID del adjunto o null si hay un error.
-     */
+
     public static function get_attachment_id_from_asset(string $assetReference): ?int
     {
         if (!self::$isInitialized) self::init();
