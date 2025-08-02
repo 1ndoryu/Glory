@@ -55,9 +55,9 @@ OpcionManager::register('glory_logo_text', [
 
 // --- INICIO: NUEVAS OPCIONES DE INTEGRACIÓN ---
 
-$seccionIntegraciones = 'integraciones';
+$seccionIntegraciones = 'integrations';
 $etiquetaSeccionIntegraciones = 'Integrations & Tracking';
-$subSeccionCodigos = 'codigos_de_seguimiento';
+$subSeccionCodigos = 'tracking_codes';
 
 OpcionManager::register('glory_gsc_verification_code', [
     'valorDefault'    => '',
@@ -86,7 +86,7 @@ OpcionManager::register('glory_custom_header_scripts', [
     'descripcion'     => 'Paste here any additional script or meta tag that you need to add in the site <head> (e.g., Facebook Pixel, other verification codes).',
     'seccion'         => $seccionIntegraciones,
     'etiquetaSeccion' => $etiquetaSeccionIntegraciones,
-    'subSeccion'      => 'scripts_manuales',
+    'subSeccion'      => 'manual_scripts',
 ]);
 
 // --- FIN: NUEVAS OPCIONES DE INTEGRACIÓN ---
