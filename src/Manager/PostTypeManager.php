@@ -1,5 +1,5 @@
 <?php
-namespace Glory\Core;
+namespace Glory\Manager;
 
 use Glory\Core\GloryLogger;
 

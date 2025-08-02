@@ -1,6 +1,6 @@
 <?php
 
-namespace Glory\Core;
+namespace Glory\Integration;
 
 /**
  * Gestiona las comprobaciones de compatibilidad con otros temas o plugins.

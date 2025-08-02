@@ -2,7 +2,7 @@
 
 namespace Glory\Components;
 
-use Glory\Core\Compatibility;
+use Glory\Integration\Compatibility;
 use Glory\Utility\AssetsUtility;
 
 class HeaderRenderer

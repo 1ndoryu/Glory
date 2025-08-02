@@ -1,6 +1,6 @@
 <?php
 
-namespace Glory\Core;
+namespace Glory\Manager;
 
 class MenuManager
 {

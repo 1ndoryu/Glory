@@ -1,6 +1,6 @@
 <?php
 
-namespace Glory\Core;
+namespace Glory\Integration;
 
 use Glory\Manager\OpcionManager;
 

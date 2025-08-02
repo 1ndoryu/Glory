@@ -5,8 +5,8 @@ namespace Glory\Admin;
 use Glory\Core\GloryLogger;
 use Glory\Services\DefaultContentSynchronizer;
 use Glory\Manager\OpcionManager;
-use Glory\Core\PageManager;
-use Glory\Core\AssetManager;
+use Glory\Manager\PageManager;
+use Glory\Manager\AssetManager;
 
 class SyncManager
 {

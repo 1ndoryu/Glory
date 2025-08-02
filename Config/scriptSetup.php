@@ -1,7 +1,7 @@
 <?php
 
-use Glory\Core\AssetManager;
-use Glory\Core\Compatibility;
+use Glory\Manager\AssetManager;
+use Glory\Integration\Compatibility;
 
 // Carga condicional de scripts de Avada/Fusion Builder
 if (Compatibility::avadaActivo()) {
