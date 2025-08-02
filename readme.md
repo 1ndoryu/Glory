@@ -1,89 +1,257 @@
-# Glory Framework ✨
+# Glory Framework
 
-¡Bienvenido a Glory! Un framework de desarrollo para WordPress diseñado para acelerar y estandarizar la creación de temas y funcionalidades complejas. Glory proporciona un conjunto de herramientas y componentes robustos que abstraen las complejidades de WordPress, permitiéndote escribir código más limpio, modular y mantenible.
+¡Bienvenido a Glory\! Un framework de desarrollo para WordPress diseñado para acelerar y estandarizar la creación de temas y funcionalidades complejas. Glory proporciona un conjunto de herramientas y componentes robustos que abstraen las complejidades de WordPress, permitiéndote escribir código más limpio, modular y mantenible.
 
----
+## 🚀 Instalación
 
-## 🚀 Funcionalidades Principales
+Instalar y empezar a usar Glory es muy sencillo. Sigue estos pasos:
+
+1.  **Arranca WordPress**: Te recomendamos usar una herramienta de desarrollo local como [LocalWP](https://localwp.com/).
+2.  **Clona el Tema Base**: Navega al directorio `wp-content/themes` de tu instalación de WordPress y clona el tema `glorytemplate`.
+    ```bash
+    git clone https://github.com/1ndoryu/glorytemplate.git
+    ```
+3.  **Instala las Dependencias**: Entra en la carpeta del tema e instala las dependencias de Composer.
+    ```bash
+    cd glorytemplate
+    composer install
+    ```
+4.  **Clona el Framework Glory**: Dentro de la carpeta `glorytemplate`, clona el repositorio de Glory.
+    ```bash
+    git clone https://github.com/1ndoryu/Glory.git
+    ```
+5.  **Activa el Tema**: Ve al panel de administración de WordPress (`Apariencia -> Temas`) y activa el tema **Template Glory**.
+
+¡Listo\! El framework Glory ya está instalado y funcionando.
+
+## ✨ Características Principales
 
 Glory se organiza en un núcleo de Managers, Componentes y Servicios que gestionan diferentes aspectos de tu sitio WordPress, tanto en el backend como en el frontend.
 
-### ⚙️ Gestores del Núcleo (Backend)
+-----
+
+### 🏛️ Managers (Núcleo)
 
 Estos managers automatizan tareas comunes de configuración y gestión de datos.
 
-* **Gestor de Opciones (`OpcionManager`)**: Centraliza la definición y acceso a las opciones del tema. Utiliza un **Registro** (`OpcionRegistry`) para definir las opciones en el código y un **Repositorio** (`OpcionRepository`) para interactuar con la base de datos. Crea automáticamente un panel de administración (`OpcionPanelController`, `PanelRenderer`) para gestionar las opciones definidas y asegura la sincronización inteligente entre el código y la base de datos.
+#### AssetManager
 
-* **Gestor de Tipos de Contenido (`PostTypeManager`)**: Simplifica la creación de Tipos de Contenido Personalizados (CPTs) de forma declarativa. Genera automáticamente las etiquetas de la interfaz de WordPress y permite definir metadatos por defecto para las nuevas entradas de ese tipo.
+Unifica la gestión de scripts (JS) y estilos (CSS). Permite definir assets individualmente o cargar carpetas completas, manejar dependencias, localizar datos de PHP a JavaScript y gestionar el versionado de archivos para evitar problemas de caché.
 
-* **Gestor de Páginas (`PageManager`)**: Asegura que las páginas esenciales de tu tema (como 'Contacto', 'Inicio') existan siempre. Crea las páginas si no existen, les asigna la plantilla correcta y puede configurar la página de inicio del sitio automáticamente.
+**Ejemplo: Registrar un script con datos localizados en `Glory/Config/scriptSetup.php`**
 
-* **Gestor de Assets (`AssetManager`)**: Unifica la gestión de scripts (JS) y estilos (CSS). Permite definir assets individualmente o cargar carpetas completas (`defineFolder`), manejar dependencias, localizar datos de PHP a JavaScript (`wp_localize_script`) y gestionar el versionado de archivos para evitar problemas de caché.
+```php
+AssetManager::define(
+    'script',
+    'mi-script-personalizado',
+    '/assets/js/mi-script.js',
+    [
+        'deps'      => ['jquery'],
+        'in_footer' => true,
+        'localize'  => [
+            'nombreObjeto' => 'misDatos',
+            'datos'        => [
+                'idUsuario' => get_current_user_id(),
+                'nonce'     => wp_create_nonce('mi_nonce_seguridad'),
+            ],
+        ]
+    ]
+);
+```
 
-* **Gestor de Contenido por Defecto (`DefaultContentManager`)**: Define y sincroniza contenido (posts, páginas, categorías) desde el código a la base de datos a través de `DefaultContentSynchronizer`. Es ideal para asegurar que tu tema tenga el contenido inicial necesario. Soporta modos de actualización inteligentes para no sobrescribir cambios manuales.
+#### OpcionManager
 
-### ⚡️ Sistema AJAX y Formularios
+Centraliza la definición y el acceso a las opciones del tema. Crea automáticamente un panel de administración para gestionar las opciones definidas y asegura la sincronización inteligente entre el código y la base de datos.
+
+**Ejemplo: Registrar una opción en `Glory/Config/options.php`**
+
+```php
+use Glory\Manager\OpcionManager;
+
+OpcionManager::register('color_primario_tema', [
+    'valorDefault'  => '#0073aa',
+    'tipo'          => 'color',
+    'etiqueta'      => 'Color Primario',
+    'descripcion'   => 'Elige el color principal para los elementos del tema.',
+    'seccion'       => 'diseno',
+    'etiquetaSeccion' => 'Diseño General',
+]);
+```
+
+**Uso en el tema:**
+
+```php
+$color_primario = OpcionManager::get('color_primario_tema');
+// Resultado: '#0073aa' o el valor guardado en el panel.
+```
+
+#### PostTypeManager
+
+Simplifica la creación de Tipos de Contenido Personalizados (CPTs) de forma declarativa.
+
+**Ejemplo: Crear un CPT "Libro" en `App/Config/postType.php`**
+
+```php
+use Glory\Core\PostTypeManager;
+
+PostTypeManager::define(
+    'libro',
+    ['public' => true, 'has_archive' => true, 'supports' => ['title', 'editor', 'thumbnail']],
+    'Libro',
+    'Libros'
+);
+```
+
+#### PageManager
+
+Asegura que las páginas esenciales de tu tema (como 'Contacto', 'Inicio') existan siempre, asignándoles la plantilla correcta.
+
+**Ejemplo: Definir páginas en `App/Config/config.php`**
+
+```php
+use Glory\Core\PageManager;
+
+PageManager::define('home'); // Título: Home, Plantilla: TemplateHome.php
+PageManager::define('contacto', 'Página de Contacto', 'template-contacto.php');
+```
+
+#### DefaultContentManager
+
+Define y sincroniza contenido (posts, páginas, categorías) desde el código a la base de datos. Es ideal para asegurar que tu tema tenga el contenido inicial necesario.
+
+**Ejemplo: (Uso avanzado)**
+
+```php
+use Glory\Manager\DefaultContentManager;
+
+DefaultContentManager::define('evento', [
+    [
+        'slugDefault' => 'evento-anual-2025',
+        'titulo'      => 'Evento Anual 2025',
+        'contenido'   => 'Contenido del evento...',
+        'metaEntrada' => ['fecha_evento' => '2025-10-20']
+    ]
+]);
+```
+
+-----
+
+### ajax ⚡ Peticiones AJAX y Formularios
 
 Glory simplifica radicalmente el manejo de peticiones AJAX y el procesamiento de formularios.
 
-* **AJAX Genérico (`gloryAjax.js`)**: Es la función base para todas las peticiones AJAX del framework. Permite enviar tanto objetos de datos como `FormData`, soportando la subida de archivos de forma nativa.
+#### gloryAjax.js
 
-* **Manejador de Formularios (`FormHandler` y `gloryForm.js`)**: Proporciona un sistema unificado para manejar envíos de formularios sin recargar la página. `gloryForm.js` se encarga de la validación en el frontend y del envío AJAX, mientras que `FormHandler` en el backend enruta la petición a la clase `Handler` correspondiente (ej. `CrearPublicacionHandler`, `GuardarMetaHandler`) según el parámetro `data-accion`, soportando subida de archivos de forma transparente.
+Función base para todas las peticiones AJAX del framework. Permite enviar tanto objetos de datos como `FormData`, soportando la subida de archivos de forma nativa.
 
-* **Constructor de Formularios (`FormBuilder`)**: Un componente PHP para construir formularios complejos sin escribir HTML repetitivo. Es *stateless* (no guarda estado) y genera campos (`campoTexto`, `campoTextarea`, `campoArchivo`, etc.) basados en los arrays de opciones que le proporcionas.
+**Ejemplo: (JavaScript)**
 
-### 🔍 Búsqueda y Navegación AJAX
+```javascript
+async function miFuncion() {
+    const respuesta = await gloryAjax('mi_accion_ajax', { id: 123, dato: 'valor' });
+    if (respuesta.success) {
+        console.log(respuesta.data);
+    }
+}
+```
 
-* **Servicio de Búsqueda (`BusquedaService` y `gloryBusqueda.js`)**: Implementa una búsqueda predictiva y en vivo. El backend (`BusquedaService`) realiza las consultas en múltiples tipos de contenido (posts, usuarios, CPTs) y el frontend (`gloryBusqueda.js`) gestiona las peticiones AJAX a medida que el usuario escribe, mostrando los resultados renderizados por `BusquedaRenderer`.
+#### FormBuilder y FormHandler
 
-* **Navegación por AJAX (`gloryAjaxNav.js`)**: Convierte tu sitio en una aplicación de página única (SPA) sin recargar la página. Intercepta los clics en los enlaces, carga el contenido de la nueva página vía AJAX, lo reemplaza en el contenedor principal y actualiza la URL en el navegador.
+`FormBuilder` (PHP) construye formularios complejos sin HTML repetitivo. `gloryForm.js` (JS) gestiona la validación y el envío. `FormHandler` (PHP) enruta la petición a la clase `Handler` correspondiente para su procesamiento.
 
-### 🎨 Componentes de Interfaz de Usuario (UI)
+**Ejemplo: Crear un formulario**
+
+```php
+use Glory\Components\FormBuilder;
+
+echo FormBuilder::inicio(['atributos' => ['data-meta-target' => 'user']]);
+
+echo FormBuilder::campoTexto([
+    'nombre' => 'nombre_usuario',
+    'label'  => 'Nombre de Usuario',
+    'valor'  => UserUtility::meta('nombre_usuario')
+]);
+
+echo FormBuilder::botonEnviar([
+    'accion' => 'guardarMeta', // Esto buscará la clase GuardarMetaHandler
+    'texto'  => 'Guardar Cambios'
+]);
+
+echo FormBuilder::fin();
+```
+
+-----
+
+### 🛠️ Servicios
+
+#### BusquedaService y gloryBusqueda.js
+
+Implementa una búsqueda predictiva y en vivo en múltiples tipos de contenido.
+
+**Ejemplo: (HTML)**
+
+```html
+<input type="text" class="busqueda"
+       data-tipos="post,libro"
+       data-cantidad="3"
+       data-target="#resultados-busqueda"
+       data-renderer="Glory\Components\BusquedaRenderer">
+
+<div id="resultados-busqueda"></div>
+```
+
+#### gloryAjaxNav.js
+
+Convierte tu sitio en una aplicación de página única (SPA) cargando el contenido sin recargar la página. Se activa por defecto, no requiere configuración inicial.
+
+-----
+
+### 🎨 Componentes de Interfaz (UI)
 
 Glory incluye un conjunto de scripts listos para usar que mejoran la experiencia de usuario.
 
-* **Sistema de Modales y Fondo (`gloryModal.js` y `crearfondo.js`)**: Un sistema robusto para crear, abrir y cerrar ventanas modales. Gestiona un fondo global (`crearfondo.js`) que se puede activar desde cualquier parte del código para enfocar la atención en el modal activo.
+  * **Sistema de Modales (`gloryModal.js`)**: Crea, abre y cierra ventanas modales.
+    **Ejemplo:**
+    ```html
+    <button class="openModal" data-modal="miModal">Abrir Modal</button>
+    <div id="miModal" class="modal" style="display:none;">Contenido del modal...</div>
+    ```
+  * **Alertas Personalizadas (`alertas.js`)**: Reemplaza `alert()` y `confirm()` del navegador por notificaciones no bloqueantes.
+  * **Previsualización de Archivos (`gestionarPreviews.js`)**: Gestiona la previsualización de archivos para inputs `type="file"`, con soporte para arrastrar y soltar.
+  * **Pestañas y Submenús (`pestanas.js`, `submenus.js`)**: Scripts para crear sistemas de pestañas y menús contextuales.
 
-* **Alertas Personalizadas (`alertas.js`)**: Reemplaza las funciones nativas `alert()` y `confirm()` del navegador por notificaciones personalizadas y no bloqueantes, mejor integradas con el diseño del sitio.
+-----
 
-* **Previsualización de Archivos (`gestionarPreviews.js`)**: Gestiona la previsualización de archivos para los inputs de tipo `file`. Soporta selección por clic y arrastrar y soltar (drag & drop), mostrando una vista previa de imágenes, audio u otros archivos.
+### 🔧 Herramientas de Desarrollo
 
-* **Pestañas y Submenús (`pestanas.js` y `submenus.js`)**: Scripts para crear sistemas de pestañas (tabs) para organizar contenido y para generar menús contextuales o submenús que se activan con clic, clic derecho o pulsación larga en dispositivos táctiles.
+  * **SyncManager**: Añade botones a la barra de administración de WordPress para forzar la sincronización (`Sincronizar Todo`) o para restablecer el contenido a sus valores por defecto (`Restablecer a Default`).
+  * **TaxonomyMetaManager**: Permite añadir campos personalizados a las taxonomías, como una imagen destacada para cada categoría.
+  * **GloryLogger**: Un sistema de logging centralizado para registrar eventos y errores de forma organizada.
+    **Ejemplo:**
+    ```php
+    use Glory\Core\GloryLogger;
+    GloryLogger::info('Proceso completado.', ['id_usuario' => 25]);
+    ```
 
-### 🛠️ Servicios Avanzados
+-----
 
-* **Manejador de Git (`ManejadorGit`)**: Un potente servicio para interactuar con repositorios Git directamente desde PHP. Permite clonar, hacer pull, push, y gestionar ramas. Es ideal para sistemas de autodespliegue o gestión de contenido versionado, e incluye una excepción personalizada (`ExcepcionComandoFallido`) para un mejor manejo de errores.
+### 📄 Renderizadores y Utilidades
 
-* **Servidor de Chat (`ServidorChat`)**: Un servidor de WebSockets basado en Ratchet para implementar funcionalidades de chat en tiempo real. Se ejecuta como un proceso independiente y permite la comunicación bidireccional entre el servidor y los clientes conectados.
+  * **ContentRender**: Imprime listas de posts, usando plantillas personalizadas y con opciones de paginación.
+    **Ejemplo:**
+    ```php
+    use Glory\Components\ContentRender;
+    // Imprime una lista de 'libros' con paginación AJAX
+    ContentRender::print('libro', ['publicacionesPorPagina' => 5, 'paginacion' => true]);
+    ```
+  * **optimizarImagen()**: Función global que utiliza el CDN de Jetpack (Photon) para comprimir y servir imágenes de forma optimizada.
+  * **Clases de Utilidad**: Conjunto de clases con métodos estáticos para tareas comunes: `AssetsUtility`, `EmailUtility`, `PostUtility`, `UserUtility`, `ScheduleManager`, `PostActionManager`.
 
-### 📋 Herramientas de Desarrollo y Administración
+-----
 
-* **Sistema de Sincronización (`SyncManager`)**: Añade botones a la barra de administración de WordPress para forzar la sincronización del contenido por defecto (`sincronizar`) o para restablecerlo a sus valores originales definidos en el código (`restablecer`), facilitando el desarrollo y la depuración.
+### 📁 Archivos Clave
 
-* **Metadatos para Taxonomías (`TaxonomyMetaManager`)**: Permite añadir campos personalizados a las taxonomías, como una imagen destacada para cada categoría, directamente desde el editor de términos de WordPress.
-
-* **Registro de Eventos (`GloryLogger`)**: Un sistema de logging centralizado para registrar eventos, advertencias y errores de la aplicación de forma organizada y eficiente, utilizando el sistema de logs de PHP (`error_log`).
-
-* **Gestor de Licencias (`LicenseManager`)**: Sistema integrado que verifica una clave de licencia (`GLORY_LICENSE_KEY`) contra un servidor remoto para validar el uso del framework. Incluye un período de gracia en caso de fallos de comunicación para no interrumpir el funcionamiento del sitio.
-
-### 🧩 Utilidades y Helpers
-
-* **Renderizadores de Contenido (`ContentRender`, `TermRender`, `PerfilRenderer`)**: Componentes para imprimir listas de posts, términos de taxonomías o la imagen de perfil de un usuario, usando plantillas personalizadas y diversas opciones de configuración (paginación, orden, etc.).
-
-* **Clases de Utilidad**: Conjunto de clases con métodos estáticos para tareas comunes:
-    * **`AssetsUtility`**: Para obtener URLs de imágenes en `assets/` y gestionarlas en la biblioteca de medios.
-    * **`EmailUtility`**: Para enviar correos de forma sencilla a los administradores.
-    * **`PostUtility`** y **`UserUtility`**: Para obtener metadatos de posts o usuarios de forma abreviada.
-    * **`ScheduleManager`**: Para gestionar y verificar horarios de apertura y cierre.
-    * **`PostActionManager`**: Para crear, actualizar o eliminar posts de forma segura.
-
-* **Optimización de Imágenes (`functions.php`)**: Incluye la función `optimizarImagen()` que utiliza el CDN de Jetpack (Photon) o un fallback para comprimir y servir imágenes de forma optimizada, mejorando el rendimiento del sitio.
-
----
-
-## 📄 Archivos de Interés
-
-* **`load.php`**: El punto de entrada principal del framework que carga la configuración y el núcleo.
-* **`Config/scriptSetup.php`**: Archivo central para definir y registrar todos los assets (JS/CSS) usando `AssetManager`.
-* **`src/Core/Setup.php`**: La clase que inicializa todos los componentes principales del framework.
-* **`src/Handler/Form/`**: Directorio donde deben residir las clases que procesan la lógica de cada formulario.
+  * `Glory/load.php`: El punto de entrada principal del framework que carga la configuración y el núcleo.
+  * `Glory/Config/scriptSetup.php`: Archivo central para definir y registrar todos los assets (JS/CSS) usando `AssetManager`.
+  * `Glory/src/Core/Setup.php`: La clase que inicializa todos los componentes principales del framework.
+  * `Glory/src/Handler/Form/`: Directorio donde residen las clases que procesan la lógica de cada formulario (ej. `GuardarMetaHandler.php`).
