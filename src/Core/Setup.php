@@ -12,6 +12,7 @@ use Glory\Utility\AssetsUtility;
 use Glory\Handler\PaginationAjaxHandler;
 use Glory\Core\MenuManager;
 use Glory\Components\LogoRenderer;
+use Glory\Core\IntegrationsManager;
 
 class Setup
 {
@@ -28,6 +29,7 @@ class Setup
         (new SyncController())->register();
         (new TaxonomyMetaManager())->register();
         LogoRenderer::register_shortcode();
+        (new IntegrationsManager())->register(); 
 
         (new OpcionPanelController())->registerHooks();
     }
