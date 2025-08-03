@@ -1,5 +1,4 @@
 <?php
-// Glory/src/Services/DefaultContentSynchronizer.php
 
 namespace Glory\Services;
 
@@ -10,10 +9,7 @@ use Glory\Services\Sync\PostSyncHandler;
 use Glory\Services\Sync\TermSyncHandler;
 use WP_Post;
 
-/**
- * Orquesta la sincronización del contenido por defecto.
- * Delega la lógica de negocio a manejadores especializados.
- */
+
 class DefaultContentSynchronizer
 {
     private const META_CLAVE_EDITADO_MANUALMENTE = '_glory_default_content_edited';
@@ -30,27 +26,26 @@ class DefaultContentSynchronizer
         $this->termHandler = new TermSyncHandler();
     }
 
-    /**
-     * Procesa todas las definiciones y las sincroniza con la BD.
-     */
+
     public function sincronizar(): void
     {
         if ($this->isProcessing) return;
         $this->isProcessing = true;
-        GloryLogger::info('DCS: Iniciando sincronización de contenido por defecto.');
+        // GloryLogger::info('DCS: Iniciando sincronización de contenido por defecto.');
 
-        // 1. Sincronizar términos primero.
         $this->termHandler->sync();
 
-        // 2. Sincronizar posts.
         $definitionsByType = DefaultContentRegistry::getDefiniciones();
         if (empty($definitionsByType)) {
-            GloryLogger::info('DCS: No hay definiciones de posts para sincronizar.');
+            // GloryLogger::info('DCS: No hay definiciones de posts para sincronizar.');
             $this->isProcessing = false;
             return;
         }
 
         foreach ($definitionsByType as $postType => $config) {
+            // LÍNEA DE DEPURACIÓN AÑADIDA
+            // GloryLogger::info("DCS: Procesando tipo '{$postType}'. ¿Existe? " . (post_type_exists($postType) ? 'Sí' : 'No'));
+
             if (!post_type_exists($postType)) continue;
 
             $this->sincronizarPostsParaTipo($postType, $config);
@@ -60,9 +55,7 @@ class DefaultContentSynchronizer
         $this->isProcessing = false;
     }
 
-    /**
-     * Restablece todo el contenido gestionado a su estado por defecto.
-     */
+
     public function restablecer(): void
     {
         if ($this->isProcessing) return;
@@ -83,9 +76,7 @@ class DefaultContentSynchronizer
         $this->isProcessing = false;
     }
 
-    /**
-     * Detecta si un post gestionado es editado manualmente y lo marca.
-     */
+
     public function detectarEdicionManual(int $postId, WP_Post $post, bool $isUpdate): void
     {
         if ($this->isProcessing || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || wp_is_post_revision($postId) || !$isUpdate) {
@@ -101,9 +92,7 @@ class DefaultContentSynchronizer
         }
     }
 
-    /**
-     * Sincroniza los posts para un tipo de post específico.
-     */
+
     private function sincronizarPostsParaTipo(string $postType, array $config): void
     {
         foreach ($config['definicionesPost'] as $definition) {
@@ -118,9 +107,7 @@ class DefaultContentSynchronizer
         }
     }
 
-    /**
-     * Decide si un post existente debe ser actualizado o ignorado.
-     */
+
     private function gestionarPostExistente(WP_Post $post, array $definition, string $updateMode): void
     {
         if ($updateMode === 'none') return;
@@ -136,9 +123,7 @@ class DefaultContentSynchronizer
         }
     }
 
-    /**
-     * Elimina posts que ya no están definidos en el código.
-     */
+
     private function eliminarPostsObsoletosParaTipo(string $postType, array $config): void
     {
         if (empty($config['permitirEliminacion'])) return;

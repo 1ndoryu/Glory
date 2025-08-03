@@ -41,7 +41,7 @@ class SyncManager
     public function performAutomaticSyncIfDevMode(): void
     {
         if (AssetManager::isGlobalDevMode()) {
-            GloryLogger::info('Modo DEV activado: Ejecutando sincronización automática.');
+            // GloryLogger::info('Modo DEV activado: Ejecutando sincronización automática.');
             $this->runFullSync();
         }
     }

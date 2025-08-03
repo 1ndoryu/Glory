@@ -3,6 +3,7 @@
 namespace Glory\Utility;
 
 use Glory\Core\GloryLogger;
+use Glory\Manager\AssetManager;
 
 
 class AssetsUtility
@@ -19,6 +20,7 @@ class AssetsUtility
             return;
         }
         self::registerAssetPath('glory', 'Glory/assets/images');
+        self::registerAssetPath('elements', 'Glory/assets/images/elements');
         self::registerAssetPath('tema', 'App/assets/images');
         self::$isInitialized = true;
     }
@@ -183,7 +185,8 @@ class AssetsUtility
             return $id;
         }
 
-        if (!is_admin()) {
+        // Permitir importación en frontend si estamos en modo desarrollo
+        if (!is_admin() && !AssetManager::isGlobalDevMode()) {
             return null;
         }
 

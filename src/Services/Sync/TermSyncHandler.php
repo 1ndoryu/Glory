@@ -20,7 +20,7 @@ class TermSyncHandler
     {
         $categoriasDef = $GLOBALS['glory_categorias_definidas'] ?? [];
         if (empty($categoriasDef)) {
-            GloryLogger::info('TermSyncHandler: No hay definiciones de categorías para sincronizar.');
+            // GloryLogger::info('TermSyncHandler: No hay definiciones de categorías para sincronizar.');
             return;
         }
 
@@ -48,7 +48,7 @@ class TermSyncHandler
         foreach ($managedTerms as $term) {
             if (!in_array($term->name, $definedNames, true)) {
                 wp_delete_term($term->term_id, 'category');
-                GloryLogger::info("TermSyncHandler: Categoría obsoleta '{$term->name}' eliminada.");
+                // GloryLogger::info("TermSyncHandler: Categoría obsoleta '{$term->name}' eliminada.");
             }
         }
     }
