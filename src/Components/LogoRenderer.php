@@ -3,7 +3,7 @@
 namespace Glory\Components;
 
 use Glory\Manager\OpcionManager;
-use Glory\Core\Compatibility;
+use Glory\Integration\Compatibility;
 use Glory\Utility\AssetsUtility;
 
 class LogoRenderer
