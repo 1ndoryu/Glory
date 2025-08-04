@@ -164,23 +164,39 @@ class AssetsUtility
             return null;
         }
 
+        // Búsqueda ampliada: primero por nuestro meta, y como respaldo por nombre de archivo en _wp_attached_file
+        $nombreArchivoBase = basename($rutaAssetRelativa);
+
         $args = [
-            'post_type' => 'attachment',
-            'post_status' => 'inherit',
+            'post_type'      => 'attachment',
+            'post_status'    => 'inherit',
             'posts_per_page' => 1,
-            'fields' => 'ids',
-            'no_found_rows' => true,
-            'meta_query' => [
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+            'meta_query'     => [
+                'relation' => 'OR',
                 [
-                    'key' => '_glory_asset_source',
-                    'value' => $rutaAssetRelativa,
+                    'key'     => '_glory_asset_source',
+                    'value'   => $rutaAssetRelativa,
+                    'compare' => '='
+                ],
+                [
+                    'key'     => '_wp_attached_file',
+                    'value'   => $nombreArchivoBase,
+                    'compare' => 'LIKE'
                 ],
             ],
         ];
         $query = new \WP_Query($args);
 
         if ($query->have_posts()) {
-            $id = (int)$query->posts[0];
+            $id = (int) $query->posts[0];
+
+            // Asegurar que quede marcado con nuestro meta para evitar futuras búsquedas duplicadas
+            if (!metadata_exists('post', $id, '_glory_asset_source')) {
+                update_post_meta($id, '_glory_asset_source', $rutaAssetRelativa);
+            }
+
             set_transient($cacheKey, $id, HOUR_IN_SECONDS);
             return $id;
         }
