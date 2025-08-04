@@ -86,6 +86,14 @@ class PostSyncHandler
             if (get_post_meta($postDb->ID, $key, true) != $value) return true;
         }
 
+        // Verifica si la imagen destacada está asignada.
+        if (!empty($definition['imagenDestacadaAsset'])) {
+            $currentThumbId = get_post_thumbnail_id($postDb->ID);
+            if (empty($currentThumbId)) {
+                return true; // No hay imagen asignada pero la definición sí la exige.
+            }
+        }
+
         // Compara relaciones (simplificado, puedes expandir esto si es necesario)
         // Esta lógica podría volverse compleja, por ahora se mantiene simple.
         // Una comparación exhaustiva de relaciones podría requerir más consultas.
