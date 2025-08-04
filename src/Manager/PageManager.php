@@ -216,11 +216,67 @@ class PageManager
 
     private static function _eliminarPaginasObsoletas(array $idsPaginasParaEliminar): void
     {
-        // ... (el resto del código de la clase permanece igual) ...
+        $forzarEliminacionDirecta = true; // true para enviar a la papelera, false para eliminar permanentemente.
+        $idPaginaFrontalActual = (int) get_option('page_on_front');
+        $idPaginaEntradasActual = (int) get_option('page_for_posts');
+
+        foreach ($idsPaginasParaEliminar as $idPagina) {
+            if ($idPagina === $idPaginaFrontalActual && $idPaginaFrontalActual > 0) {
+                GloryLogger::warning("PageManager: OMITIENDO eliminación de página ID {$idPagina} porque es la página frontal actual.");
+                continue;
+            }
+            if ($idPagina === $idPaginaEntradasActual && $idPaginaEntradasActual > 0) {
+                GloryLogger::warning("PageManager: OMITIENDO eliminación de página ID {$idPagina} porque es la página de entradas actual.");
+                continue;
+            }
+
+            $paginaEliminada = wp_delete_post($idPagina, $forzarEliminacionDirecta);
+            if (!$paginaEliminada) {
+                GloryLogger::error("PageManager: FALLÓ al eliminar página gestionada obsoleta con ID: {$idPagina}.");
+            } else {
+                GloryLogger::info("PageManager: Página gestionada obsoleta con ID: {$idPagina} eliminada (o enviada a la papelera).");
+            }
+        }
     }
 
-    private static function actualizarOpcionesPaginaFrontal(?int $idPaginaInicio): void
-    {
-        // ... (el resto del código de la clase permanece igual) ...
+    private static function actualizarOpcionesPaginaFrontal(?int $idPaginaInicio): void {
+        $opcionMostrarEnFrontActual = get_option('show_on_front');
+        $opcionPaginaEnFrontActual = (int) get_option('page_on_front');
+        $opcionPaginaParaEntradasActual = (int) get_option('page_for_posts');
+
+        if ($idPaginaInicio && $idPaginaInicio > 0) {
+            $objetoPaginaInicio = get_post($idPaginaInicio);
+            // Verifica que el ID proporcionado sea una página válida y publicada.
+            if (!$objetoPaginaInicio || $objetoPaginaInicio->post_type !== 'page' || $objetoPaginaInicio->post_status !== 'publish') {
+                GloryLogger::error("PageManager actualizarOpcionesPaginaFrontal: ID de página de inicio {$idPaginaInicio} es inválido, no es una página o no está publicada. No se puede establecer como página frontal.");
+                // Si la página frontal actual es la que ahora es inválida, revierte a mostrar 'posts'.
+                if ($opcionMostrarEnFrontActual === 'page' && $opcionPaginaEnFrontActual === $idPaginaInicio) {
+                    GloryLogger::warning("PageManager actualizarOpcionesPaginaFrontal: Revirtiendo a 'entradas' porque el ID de la página frontal actual {$idPaginaInicio} es inválido.");
+                    update_option('show_on_front', 'posts');
+                    update_option('page_on_front', 0);
+                }
+                return;
+            }
+
+            // Configura WordPress para mostrar una página estática en el frontal.
+            if ($opcionMostrarEnFrontActual !== 'page') {
+                update_option('show_on_front', 'page');
+            }
+            // Establece la página de inicio.
+            if ($opcionPaginaEnFrontActual !== $idPaginaInicio) {
+                update_option('page_on_front', $idPaginaInicio);
+                // Si la página de inicio era también la página de entradas, desasigna la página de entradas.
+                if ($opcionPaginaParaEntradasActual === $idPaginaInicio) {
+                    update_option('page_for_posts', 0);
+                }
+            }
+        } else {
+            // Si no se proporciona un ID de página de inicio (o es 0/null),
+            // y WordPress está configurado para mostrar una página estática, revierte a mostrar 'posts'.
+            if ($opcionMostrarEnFrontActual === 'page') {
+                update_option('show_on_front', 'posts');
+                update_option('page_on_front', 0);
+            }
+        }
     }
 }
