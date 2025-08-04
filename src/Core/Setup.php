@@ -17,6 +17,7 @@ use Glory\Admin\SyncController;
 use Glory\Admin\TaxonomyMetaManager;
 use Glory\Utility\AssetsUtility;
 use Glory\Handler\PaginationAjaxHandler;
+use Glory\Handler\BusquedaAjaxHandler;
 use Glory\Components\LogoRenderer;
 
 class Setup
@@ -26,6 +27,7 @@ class Setup
         GloryLogger::init();
         new FormHandler();
         new PaginationAjaxHandler();
+        new BusquedaAjaxHandler();
 
         OpcionManager::init();
         AssetsUtility::init();
