@@ -2,6 +2,7 @@
 
 namespace Glory\Core;
 
+use Glory\Manager\AdminPageManager;
 use Glory\Manager\AssetManager;
 use Glory\Manager\MenuManager;
 use Glory\Manager\OpcionManager;
@@ -34,6 +35,7 @@ class Setup
 
         AssetManager::register();
         PageManager::register();
+        AdminPageManager::register();
         MenuManager::register();
         PostTypeManager::register();
 

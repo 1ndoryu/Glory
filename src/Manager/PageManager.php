@@ -3,6 +3,7 @@
 namespace Glory\Manager;
 
 use Glory\Core\GloryLogger;
+use Glory\Utility\UserUtility;
 
 class PageManager
 {
@@ -17,7 +18,7 @@ class PageManager
      * @param string|null $handler El título, nombre de la función de renderizado, o nombre del archivo de plantilla.
      * @param string|null $plantilla Opcional. El nombre del archivo de plantilla si se provee un título en $handler.
      */
-    public static function define(string $slug, ?string $handler = null, ?string $plantilla = null): void
+    public static function define(string $slug, ?string $handler = null, ?string $plantilla = null, array $roles = []): void
     {
         if (empty($slug) || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
             GloryLogger::error("PageManager: Slug inválido '{$slug}'.");
@@ -30,15 +31,12 @@ class PageManager
 
         if ($handler) {
             if (str_ends_with($handler, '.php')) {
-                // Asumimos define('slug', 'template-file.php')
                 $nombrePlantilla = $handler;
             } elseif ($plantilla) {
-                // Asumimos define('slug', 'Título Página', 'template-file.php')
                 $titulo = $handler;
                 $nombrePlantilla = $plantilla;
             } else {
-                // Nueva lógica: define('slug', 'nombreFuncionRender')
-                $titulo = ucwords(str_replace(['-', '_'], ' ', $slug)); // Mantenemos un título por defecto
+                $titulo = ucwords(str_replace(['-', '_'], ' ', $slug));
                 $nombrePlantilla = 'TemplateGlory.php';
                 $nombreFuncion = $handler;
             }
@@ -49,6 +47,7 @@ class PageManager
             'plantilla' => $nombrePlantilla,
             'funcion'   => $nombreFuncion,
             'slug'      => $slug,
+            'roles'     => $roles,
         ];
     }
 
@@ -67,6 +66,17 @@ class PageManager
 
         if (isset(self::$paginasDefinidas[$slug])) {
             $defPagina = self::$paginasDefinidas[$slug];
+            $rolesRequeridos = $defPagina['roles'] ?? [];
+
+            if (!empty($rolesRequeridos)) {
+                if (!is_user_logged_in()) {
+                    $login_url = wp_login_url(get_permalink());
+                    wp_redirect($login_url);
+                    exit;
+                } elseif (!UserUtility::tieneRoles($rolesRequeridos)) {
+                    wp_die('No tienes permiso para ver esta página.', 'Acceso Denegado', ['response' => 403]);
+                }
+            }
 
             if (!empty($defPagina['funcion'])) {
                 self::$funcionParaRenderizar = $defPagina['funcion'];
@@ -87,7 +97,6 @@ class PageManager
 
     public static function procesarPaginasDefinidas(): void
     {
-        // ... (el resto del código de la clase permanece igual) ...
         $idPaginaInicioProcesada = null;
         $idsPaginasProcesadas = [];
 
@@ -126,7 +135,7 @@ class PageManager
             'post_status'  => 'publish',
             'post_type'    => 'page',
             'post_name'    => $defPagina['slug'],
-            'page_template'=> $defPagina['plantilla'] ?: '',
+            'page_template' => $defPagina['plantilla'] ?: '',
         ];
         $idInsertado = wp_insert_post($datosPagina, true);
 
@@ -156,7 +165,6 @@ class PageManager
 
     public static function reconciliarPaginasGestionadas(): void
     {
-        // ... (el resto del código de la clase permanece igual) ...
         $idsDefinidosActuales = self::_obtenerIdsDefinidosActualesDelTransitorioOComputar();
 
         $argsTodasGestionadas = [
@@ -182,7 +190,6 @@ class PageManager
 
     private static function _obtenerIdsDefinidosActualesDelTransitorioOComputar(): array
     {
-        // ... (el resto del código de la clase permanece igual) ...
         $idsDefinidos = get_transient('pagemanager_ids_procesados');
 
         if ($idsDefinidos === false) {
@@ -216,7 +223,7 @@ class PageManager
 
     private static function _eliminarPaginasObsoletas(array $idsPaginasParaEliminar): void
     {
-        $forzarEliminacionDirecta = true; // true para enviar a la papelera, false para eliminar permanentemente.
+        $forzarEliminacionDirecta = true;
         $idPaginaFrontalActual = (int) get_option('page_on_front');
         $idPaginaEntradasActual = (int) get_option('page_for_posts');
 
@@ -239,17 +246,16 @@ class PageManager
         }
     }
 
-    private static function actualizarOpcionesPaginaFrontal(?int $idPaginaInicio): void {
+    private static function actualizarOpcionesPaginaFrontal(?int $idPaginaInicio): void
+    {
         $opcionMostrarEnFrontActual = get_option('show_on_front');
         $opcionPaginaEnFrontActual = (int) get_option('page_on_front');
         $opcionPaginaParaEntradasActual = (int) get_option('page_for_posts');
 
         if ($idPaginaInicio && $idPaginaInicio > 0) {
             $objetoPaginaInicio = get_post($idPaginaInicio);
-            // Verifica que el ID proporcionado sea una página válida y publicada.
             if (!$objetoPaginaInicio || $objetoPaginaInicio->post_type !== 'page' || $objetoPaginaInicio->post_status !== 'publish') {
                 GloryLogger::error("PageManager actualizarOpcionesPaginaFrontal: ID de página de inicio {$idPaginaInicio} es inválido, no es una página o no está publicada. No se puede establecer como página frontal.");
-                // Si la página frontal actual es la que ahora es inválida, revierte a mostrar 'posts'.
                 if ($opcionMostrarEnFrontActual === 'page' && $opcionPaginaEnFrontActual === $idPaginaInicio) {
                     GloryLogger::warning("PageManager actualizarOpcionesPaginaFrontal: Revirtiendo a 'entradas' porque el ID de la página frontal actual {$idPaginaInicio} es inválido.");
                     update_option('show_on_front', 'posts');
@@ -258,21 +264,16 @@ class PageManager
                 return;
             }
 
-            // Configura WordPress para mostrar una página estática en el frontal.
             if ($opcionMostrarEnFrontActual !== 'page') {
                 update_option('show_on_front', 'page');
             }
-            // Establece la página de inicio.
             if ($opcionPaginaEnFrontActual !== $idPaginaInicio) {
                 update_option('page_on_front', $idPaginaInicio);
-                // Si la página de inicio era también la página de entradas, desasigna la página de entradas.
                 if ($opcionPaginaParaEntradasActual === $idPaginaInicio) {
                     update_option('page_for_posts', 0);
                 }
             }
         } else {
-            // Si no se proporciona un ID de página de inicio (o es 0/null),
-            // y WordPress está configurado para mostrar una página estática, revierte a mostrar 'posts'.
             if ($opcionMostrarEnFrontActual === 'page') {
                 update_option('show_on_front', 'posts');
                 update_option('page_on_front', 0);
