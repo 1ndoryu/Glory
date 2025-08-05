@@ -8,18 +8,18 @@ use WP_Post;
 
 class DataGridRenderer
 {
-    private WP_Query $consulta;
+    private $datos;
     private array $configuracion;
 
-    public function __construct(WP_Query $consulta, array $configuracion)
+    public function __construct($datos, array $configuracion)
     {
-        $this->consulta = $consulta;
+        $this->datos = $datos;
         $this->configuracion = $this->normalizarConfiguracion($configuracion);
     }
 
-    public static function render(WP_Query $consulta, array $configuracion): void
+    public static function render($datos, array $configuracion): void
     {
-        $instancia = new self($consulta, $configuracion);
+        $instancia = new self($datos, $configuracion);
         $instancia->renderizarTabla();
     }
 
@@ -28,7 +28,7 @@ class DataGridRenderer
         echo '<div class="gloryDataGridContenedor">';
         $this->renderizarFiltros();
         echo '<div class="gloryDataGridTablaScroll">';
-        echo '<table class="gloryDataGridTabla">';
+        echo '<table class="gloryDataGridTabla wp-list-table widefat fixed striped">';
         $this->renderizarEncabezado();
         $this->renderizarCuerpo();
         echo '</table>';
@@ -55,7 +55,6 @@ class DataGridRenderer
         echo '<div class="gloryDataGridFiltros">';
         echo '<form method="get" action="">';
 
-        // Mantener parámetros existentes que no sean de filtros
         foreach ($_GET as $clave => $valor) {
             if (strpos($clave, 'filtro_') !== 0 && !in_array($clave, ['submit', 'action'])) {
                 echo '<input type="hidden" name="' . esc_attr($clave) . '" value="' . esc_attr($valor) . '">';
@@ -123,14 +122,12 @@ class DataGridRenderer
     {
         echo '<tbody>';
 
-        if (!$this->consulta->have_posts()) {
-            $numeroColumnas = count($this->configuracion['columnas']);
-            echo '<tr>';
-            echo '<td colspan="' . esc_attr($numeroColumnas > 0 ? $numeroColumnas : 1) . '">No se encontraron resultados.</td>';
-            echo '</tr>';
-        } else {
-            while ($this->consulta->have_posts()) {
-                $this->consulta->the_post();
+        $tieneDatos = false;
+
+        if ($this->datos instanceof WP_Query && $this->datos->have_posts()) {
+            $tieneDatos = true;
+            while ($this->datos->have_posts()) {
+                $this->datos->the_post();
                 global $post;
                 echo '<tr>';
                 foreach ($this->configuracion['columnas'] as $columna) {
@@ -139,24 +136,44 @@ class DataGridRenderer
                 echo '</tr>';
             }
             wp_reset_postdata();
+        } elseif (is_array($this->datos) && !empty($this->datos)) {
+            $tieneDatos = true;
+            foreach ($this->datos as $fila) {
+                echo '<tr>';
+                foreach ($this->configuracion['columnas'] as $columna) {
+                    $this->renderizarCelda($fila, $columna);
+                }
+                echo '</tr>';
+            }
+        }
+
+        if (!$tieneDatos) {
+            $numeroColumnas = count($this->configuracion['columnas']);
+            echo '<tr>';
+            echo '<td colspan="' . esc_attr($numeroColumnas > 0 ? $numeroColumnas : 1) . '">No se encontraron resultados.</td>';
+            echo '</tr>';
         }
 
         echo '</tbody>';
     }
 
-    private function renderizarCelda(WP_Post $post, array $columna): void
+    private function renderizarCelda($item, array $columna): void
     {
         $valor = '';
         $clave = $columna['clave'] ?? null;
         $funcionCallback = $columna['callback'] ?? null;
 
         if (is_callable($funcionCallback)) {
-            $valor = call_user_func($funcionCallback, $post);
+            $valor = call_user_func($funcionCallback, $item);
         } elseif ($clave) {
-            if (property_exists($post, $clave)) {
-                $valor = $post->$clave;
-            } else {
-                $valor = get_post_meta($post->ID, $clave, true);
+            if ($item instanceof WP_Post) {
+                if (property_exists($item, $clave)) {
+                    $valor = $item->$clave;
+                } else {
+                    $valor = get_post_meta($item->ID, $clave, true);
+                }
+            } elseif (is_array($item) && isset($item[$clave])) {
+                $valor = $item[$clave];
             }
         }
 
@@ -165,8 +182,8 @@ class DataGridRenderer
 
     private function renderizarPaginacion(): void
     {
-        if ($this->configuracion['paginacion'] && $this->consulta->max_num_pages > 1) {
-            PaginationRenderer::render($this->consulta);
+        if ($this->configuracion['paginacion'] && $this->datos instanceof WP_Query && $this->datos->max_num_pages > 1) {
+            PaginationRenderer::render($this->datos);
         }
     }
 }

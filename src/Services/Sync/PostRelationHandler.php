@@ -1,15 +1,11 @@
 <?php
-// Glory/src/Services/Sync/PostRelationHandler.php
 
 namespace Glory\Services\Sync;
 
 use Glory\Core\GloryLogger;
 use Glory\Utility\AssetsUtility;
 
-/**
- * Gestiona las relaciones de un post (imagen destacada, galería, términos).
- * Su única responsabilidad es conectar un post con sus assets y taxonomías.
- */
+
 class PostRelationHandler
 {
     private const META_CLAVE_GALERIA_IDS = '_glory_default_galeria_ids';
@@ -21,9 +17,7 @@ class PostRelationHandler
         $this->postId = $postId;
     }
 
-    /**
-     * Orquesta la asignación de todas las relaciones definidas.
-     */
+
     public function setRelations(array $definicion): void
     {
         $this->setFeaturedImage($definicion);
@@ -31,9 +25,7 @@ class PostRelationHandler
         $this->setTerms($definicion);
     }
 
-    /**
-     * Asigna o elimina la imagen destacada.
-     */
+
     public function setFeaturedImage(array $definicion): void
     {
         if (!isset($definicion['imagenDestacadaAsset'])) {
@@ -54,9 +46,7 @@ class PostRelationHandler
         }
     }
 
-    /**
-     * Asigna o elimina la galería.
-     */
+
     public function setGallery(array $definicion): void
     {
         $galleryIds = $this->resolveGalleryIds($definicion);
@@ -71,26 +61,24 @@ class PostRelationHandler
         }
     }
 
-    /**
-     * Asigna los términos (categorías).
-     */
+
     public function setTerms(array $definicion): void
     {
-        $categoriasRaw = $definicion['metaEntrada']['categoria'] ?? null;
-        $taxonomia = 'category'; // Asumimos 'category', podría ser parametrizable
+        $postType = get_post_type($this->postId);
+        if (!$postType) return;
 
-        if (empty($categoriasRaw) || !is_string($categoriasRaw)) {
-            wp_set_object_terms($this->postId, null, $taxonomia);
-            return;
+        $taxonomies = get_object_taxonomies($postType);
+        $meta = $definicion['metaEntrada'] ?? [];
+
+        foreach ($taxonomies as $taxonomia) {
+            if (isset($meta[$taxonomia])) {
+                $termNames = is_array($meta[$taxonomia]) ? $meta[$taxonomia] : array_map('trim', explode(',', $meta[$taxonomia]));
+                wp_set_object_terms($this->postId, $termNames, $taxonomia, false);
+            }
         }
-
-        $nombresCategorias = array_filter(array_map('trim', explode(',', $categoriasRaw)));
-        wp_set_object_terms($this->postId, $nombresCategorias, $taxonomia, false);
     }
 
-    /**
-     * Resuelve la referencia del asset para la imagen destacada, manejando la lógica 'random'.
-     */
+
     private function resolveFeaturedImageAsset(array $datosPost): ?string
     {
         $assetRef = $datosPost['imagenDestacadaAsset'] ?? null;
@@ -107,9 +95,7 @@ class PostRelationHandler
         return $assetRef;
     }
 
-    /**
-     * Resuelve los IDs de los assets para la galería.
-     */
+
     private function resolveGalleryIds(array $definicion): array
     {
         $assets = $definicion['galeriaAssets'] ?? [];
