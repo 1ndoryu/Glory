@@ -1,3 +1,5 @@
+// FILE: Glory\assets\js\UI\gloryScheduler.js
+
 function gloryScheduler() {
     document.querySelectorAll('.glorySchedulerContenedor').forEach(inicializarCuadricula);
 }
@@ -17,7 +19,6 @@ function inicializarCuadricula(contenedor) {
         return;
     }
 
-    // Configuración de CSS Grid desde JS
     const inicioMinutosTotal = convertirHoraAMinutos(config.horaInicio);
     const finMinutosTotal = convertirHoraAMinutos(config.horaFin);
     const duracionTotalMinutos = finMinutosTotal - inicioMinutosTotal;
@@ -36,7 +37,7 @@ function convertirHoraAMinutos(hora) {
 }
 
 function renderizarEventos(eventos, capa, config, inicioCuadriculaMinutos) {
-    capa.innerHTML = ''; // Limpiar eventos previos
+    capa.innerHTML = '';
 
     eventos.forEach(evento => {
         const recursoIndex = config.recursos.indexOf(evento.recurso);
@@ -48,24 +49,20 @@ function renderizarEventos(eventos, capa, config, inicioCuadriculaMinutos) {
         const bloqueEvento = document.createElement('div');
         bloqueEvento.className = 'bloqueEvento';
 
-        // Posicionamiento
         const filaInicio = ((evento.inicioMinutos - inicioCuadriculaMinutos) / config.intervalo) + 1;
         const numFilas = evento.duracionMinutos / config.intervalo;
 
         bloqueEvento.style.gridColumn = `${recursoIndex + 1} / span 1`;
         bloqueEvento.style.gridRow = `${filaInicio} / span ${numFilas}`;
 
-        // Contenido
         bloqueEvento.innerHTML = `
-            <strong class="eventoTitulo">${esc_html(evento.titulo)}</strong>
+            <strong class="eventoTitulo">${esc_html(evento.titulo)} ${evento.exclusividad ? '<span class="iconoExclusividad">❤️</span>' : ''}</strong>
             <span class="eventoDetalle">${esc_html(evento.detalle)}</span>
         `;
-        
-        // Código de colores
-        const color = config.mapeoColores[evento.tipoServicio] || '#6c757d'; // Color por defecto
+
+        const color = config.mapeoColores[evento.tipoServicio] || '#7f8c8d';
         bloqueEvento.style.backgroundColor = color;
-        
-        // Tooltip
+
         bloqueEvento.title = `${evento.titulo} (${evento.recurso})\nDe ${evento.horaInicio.split(':')[0]}:${evento.horaInicio.split(':')[1]} a ${evento.horaFin.split(':')[0]}:${evento.horaFin.split(':')[1]}`;
 
         capa.appendChild(bloqueEvento);
