@@ -6,6 +6,10 @@ use Glory\Core\GloryLogger;
 
 class NotificationService
 {
+    /**
+     * Envía un correo de confirmación al cliente.
+     * @param int $postId ID del post de la reserva.
+     */
     public static function notificarNuevaReservaCliente(int $postId): void
     {
         $correoCliente = get_post_meta($postId, 'correo_cliente', true);
@@ -35,6 +39,10 @@ class NotificationService
         GloryLogger::info('Email de confirmación enviado al cliente.', ['post_id' => $postId, 'email' => $correoCliente]);
     }
 
+    /**
+     * Envía un correo de notificación al administrador del sitio.
+     * @param int $postId ID del post de la reserva.
+     */
     public static function notificarNuevaReservaAdmin(int $postId): void
     {
         $adminEmail = get_option('admin_email');
