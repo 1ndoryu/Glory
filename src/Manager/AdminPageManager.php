@@ -14,7 +14,7 @@ class AdminPageManager
         string $menu_title,
         string $capability,
         string $menu_slug,
-        ?callable $function = null,
+        ?string $function = null, // CORREGIDO
         string $icon_url = '',
         ?int $position = null
     ): void {
@@ -31,7 +31,7 @@ class AdminPageManager
         string $menu_title,
         string $capability,
         string $menu_slug,
-        ?callable $function = null,
+        ?string $function = null, // CORREGIDO
         ?int $position = null
     ): void {
         self::$subPages[] = compact('parent_slug', 'page_title', 'menu_title', 'capability', 'menu_slug', 'function', 'position');
