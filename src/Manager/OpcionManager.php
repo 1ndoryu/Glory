@@ -61,6 +61,11 @@ class OpcionManager
         }
 
         // Prioridad 1: Comprobar si hay una anulación por código a través de GloryFeatures.
+        // NOTA: aquí usamos intencionalmente `isEnabled()` (no `isActive()`)
+        // porque la semántica requerida es "si el código fuerza un valor
+        // verdadero/falso para esta feature, devolver ese valor inmediatamente",
+        // es decir: la anulación por código tiene máxima prioridad sobre
+        // cualquier valor almacenado en la base de datos (panel).
         if (!empty($config['featureKey'])) {
             $estadoDesdeCodigo = GloryFeatures::isEnabled($config['featureKey']);
             if ($estadoDesdeCodigo !== null) {

@@ -40,6 +40,13 @@ Nota rápida sobre control por "feature"
 
 - **Comportamiento**: si la feature fue desactivada por código con `GloryFeatures::disable('modales')` o la opción en BD (`glory_componente_modales_activado`) está en `false`, el asset no se registrará. Esto centraliza el control y evita `if` dispersos en los archivos de configuración.
 
+### Control de features: `isEnabled` vs `isActive`
+
+- **`GloryFeatures::isEnabled($feature)`**: devuelve únicamente el *override por código* (true | false | null). Úsalo cuando quieras saber si el desarrollador forzó el estado desde el código.
+- **`GloryFeatures::isActive($feature, $optionKey = null, $default = true)`**: combina el override por código **y** la opción almacenada en la base de datos. Primero consulta `isEnabled()` y, si no hay override, obtiene la opción correspondiente (o usa el default). Úsalo cuando la decisión debe respetar tanto la configuración del panel como la posible anulación por código.
+
+Recomendación: en el framework, usar `isActive()` para decidir si registrar/enqueuear funcionalidades que dependan de la configuración del panel; dejar `isEnabled()` solo para casos en los que se quiera dar prioridad absoluta al override por código (por ejemplo, en `OpcionManager::get()` donde el código debe poder forzar el valor de una opción).
+
 **Ejemplo: Registrar un script con datos localizados en `App/Config/assets.php`**
 
 ```php

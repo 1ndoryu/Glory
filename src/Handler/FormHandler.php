@@ -21,8 +21,9 @@ class FormHandler
 
     public function __construct()
     {
-        // No registrar los hooks si la feature fue desactivada explícitamente
-        if (GloryFeatures::isEnabled('gloryForm') === false) {
+        // No registrar los hooks si la feature fue desactivada explicitamente
+        // Usar isActive para combinar override por código + opción en BD.
+        if (GloryFeatures::isActive('gloryForm', 'glory_componente_glory_form_activado') === false) {
             return;
         }
 

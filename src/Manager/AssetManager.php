@@ -48,7 +48,7 @@ final class AssetManager
             $featureOptionKey = $config['feature_option'];
         }
 
-        if (!empty($featureName) && \Glory\Core\GloryFeatures::isActive($featureName, $featureOptionKey) === false) {
+        if (!empty($featureName) && GloryFeatures::isActive($featureName, $featureOptionKey) === false) {
             return;
         }
 
@@ -179,7 +179,7 @@ final class AssetManager
     public static function enqueueFrontendAssets(): void
     {
         // Respetar el flag global de GloryFeatures para cssCritico
-        if (GloryFeatures::isEnabled('cssCritico') === false) {
+        if (GloryFeatures::isActive('cssCritico', 'glory_css_critico_activado') === false) {
             self::$cssCritico = null;
         } else {
             self::$cssCritico = GestorCssCritico::getParaPaginaActual();
@@ -209,8 +209,24 @@ final class AssetManager
                 }
 
                 // Si el asset declara explícitamente una feature y esta está desactivada, omitirlo.
-                if (!empty($config['feature']) && \Glory\Core\GloryFeatures::isEnabled($config['feature']) === false) {
-                    continue;
+                if (!empty($config['feature'])) {
+                    $featureName = null;
+                    $featureOptionKey = null;
+                    if (is_array($config['feature'])) {
+                        $featureName = $config['feature']['name'] ?? ($config['feature'][0] ?? null);
+                        $featureOptionKey = $config['feature']['option'] ?? ($config['feature'][1] ?? null);
+                    } else {
+                        $featureName = (string) $config['feature'];
+                    }
+
+                    // Compatibilidad con llave antigua
+                    if (empty($featureOptionKey) && isset($config['feature_option'])) {
+                        $featureOptionKey = $config['feature_option'];
+                    }
+
+                    if (!empty($featureName) && GloryFeatures::isActive($featureName, $featureOptionKey) === false) {
+                        continue;
+                    }
                 }
 
                 if ($tipo === self::ASSET_TYPE_STYLE && self::$cssCritico && $currentArea === 'frontend') {

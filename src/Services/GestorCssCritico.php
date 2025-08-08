@@ -20,8 +20,9 @@ class GestorCssCritico
 
     public static function getParaPaginaActual(): ?string
     {
-        // Si la feature ha sido desactivada explícitamente, no generar CSS crítico
-        if (GloryFeatures::isEnabled('cssCritico') === false) {
+        // Si la feature ha sido desactivada explícitamente o la opción en BD la desactiva,
+        // no generar CSS crítico. Usar isActive para combinar override por código + opción en BD.
+        if (GloryFeatures::isActive('cssCritico', 'glory_css_critico_activado') === false) {
             return null;
         }
 

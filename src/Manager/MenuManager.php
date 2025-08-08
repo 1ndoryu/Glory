@@ -11,8 +11,9 @@ class MenuManager
 
     public static function register(): void
     {
-        // No registrar la gestión de menús si la feature 'menu' está desactivada
-        if (GloryFeatures::isEnabled('menu') === false) {
+        // No registrar la gestión de menús si la feature 'menu' está desactivada.
+        // Usar isActive para combinar override por código + opción en BD.
+        if (GloryFeatures::isActive('menu', 'glory_componente_menu_activado') === false) {
             return;
         }
 
