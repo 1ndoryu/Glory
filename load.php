@@ -11,18 +11,18 @@ if (!defined('GLORY_CONFIG_PATH')) {
     define('GLORY_CONFIG_PATH', GLORY_FRAMEWORK_PATH . '/Config');
 }
 
-// Carga de configuración de scripts
+// Carga de definición de opciones del tema (primero, para que scriptSetup pueda consultarlas)
+$optionsFile = GLORY_CONFIG_PATH . '/options.php';
+if (is_readable($optionsFile)) {
+    require_once $optionsFile;
+}
+
+// Carga de configuración de scripts (después de registrar opciones)
 $scriptSetupFile = GLORY_CONFIG_PATH . '/scriptSetup.php';
 if (is_readable($scriptSetupFile)) {
     require_once $scriptSetupFile;
 } else {
     error_log("Glory Framework: No se pudo leer el archivo de configuración: {$scriptSetupFile}");
-}
-
-// Carga de definición de opciones del tema
-$optionsFile = GLORY_CONFIG_PATH . '/options.php';
-if (is_readable($optionsFile)) {
-    require_once $optionsFile;
 }
 
 // Carga de funciones globales
