@@ -79,6 +79,50 @@ AssetManager::define(
     ]
 );
 
+// Modal y fondo: disponibles en admin y front
+AssetManager::define(
+    'script',
+    'glory-crearfondo',
+    '/Glory/assets/js/UI/crearfondo.js',
+    [
+        'deps'      => ['jquery'],
+        'in_footer' => true,
+        'area'      => 'both',
+    ]
+);
+
+AssetManager::define(
+    'script',
+    'glory-modal',
+    '/Glory/assets/js/UI/gloryModal.js',
+    [
+        'deps'      => ['jquery', 'glory-crearfondo'],
+        'in_footer' => true,
+        'area'      => 'both',
+    ]
+);
+
+AssetManager::define(
+    'script',
+    'glory-formmodal',
+    '/Glory/assets/js/UI/formModal.js',
+    [
+        'deps'      => ['jquery', 'glory-modal', 'glory-gloryform', 'glory-ajax'],
+        'in_footer' => true,
+        'area'      => 'both',
+    ]
+);
+
+AssetManager::define(
+    'style',
+    'glory-modal-css',
+    '/assets/css/reservas-admin.css',
+    [
+        'media' => 'all',
+        'area'  => 'both',
+    ]
+);
+
 // Asegurar que la función AJAX genérica esté disponible también en admin
 AssetManager::define(
     'script',

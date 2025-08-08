@@ -45,6 +45,8 @@ class DataGridRenderer
             'paginacion' => true,
             // Si se indica true, los filtros no se renderizarán dentro del contenedor principal
             'filtros_separados' => false,
+            // Array de etiquetas/atributos permitidos para kses. Si es null, se usa wp_kses_post.
+            'allowed_html' => null,
         ]);
     }
 
@@ -214,7 +216,11 @@ class DataGridRenderer
             }
         }
 
-        echo '<td>' . wp_kses_post($valor) . '</td>';
+        if (!is_null($this->configuracion['allowed_html']) && is_array($this->configuracion['allowed_html'])) {
+            echo '<td>' . wp_kses($valor, $this->configuracion['allowed_html']) . '</td>';
+        } else {
+            echo '<td>' . wp_kses_post($valor) . '</td>';
+        }
     }
 
     private function renderizarPaginacion(): void
