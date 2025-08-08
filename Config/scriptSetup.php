@@ -31,10 +31,7 @@ if (Compatibility::avadaActivo()) {
 // El script de Navegación AJAX siempre se registra para poder localizar sus datos.
 // Su activación se controla mediante la variable 'enabled' que se pasa a JavaScript.
 // Navegación AJAX: combinamos la opción en BD con la posibilidad de forzar desde código mediante GloryFeatures
-$opcionNavegacionAjax = (bool) OpcionManager::get('glory_componente_navegacion_ajax_activado', true);
-$featureNavegacionAjax = GloryFeatures::isEnabled('navegacionAjax') !== false;
-$enabledNavegacionAjax = $opcionNavegacionAjax && $featureNavegacionAjax;
-if ($enabledNavegacionAjax) {
+if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_activado')) {
     AssetManager::define(
         'script',
         'glory-gloryajaxnav', // Se ha cambiado el handle para seguir el prefijo 'glory-'
@@ -84,11 +81,10 @@ AssetManager::defineFolder(
         'options-panel.js',
         'disableMenuClicksInFusionBuilder.js',
         'fusionBuilderDetect.js',
-        'gloryAjaxNav.js', // Se define manualmente arriba
-    'gloryForm.js',
-    'gloryBusqueda.js',
-    'gloryAjax.js',
-        // Exclusiones de componentes opcionales
+        'gloryAjaxNav.js',
+        'gloryForm.js',
+        'gloryBusqueda.js',
+        'gloryAjax.js',
         'adaptiveHeader.js',
         'alertas.js',
         'crearfondo.js',
@@ -106,146 +102,122 @@ AssetManager::defineFolder(
 // --- Carga condicional de Componentes UI ---
 
 // Componente: Modales
-if (OpcionManager::get('glory_componente_modales_activado', true) && GloryFeatures::isEnabled('modales') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-crearfondo',
-        '/Glory/assets/js/UI/crearfondo.js',
-        ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both']
-    );
-    AssetManager::define(
-        'script',
-        'glory-modal',
-        '/Glory/assets/js/UI/gloryModal.js',
-        ['deps' => ['jquery', 'glory-crearfondo'], 'in_footer' => true, 'area' => 'both']
-    );
-    AssetManager::define(
-        'script',
-        'glory-formmodal',
-        '/Glory/assets/js/UI/formModal.js',
-        ['deps' => ['jquery', 'glory-modal', 'glory-gloryform', 'glory-ajax'], 'in_footer' => true, 'area' => 'both']
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-crearfondo',
+    '/Glory/assets/js/UI/crearfondo.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both', 'feature' => 'modales']
+);
+AssetManager::define(
+    'script',
+    'glory-modal',
+    '/Glory/assets/js/UI/gloryModal.js',
+    ['deps' => ['jquery', 'glory-crearfondo'], 'in_footer' => true, 'area' => 'both', 'feature' => 'modales']
+);
+AssetManager::define(
+    'script',
+    'glory-formmodal',
+    '/Glory/assets/js/UI/formModal.js',
+    ['deps' => ['jquery', 'glory-modal', 'glory-gloryform', 'glory-ajax'], 'in_footer' => true, 'area' => 'both', 'feature' => 'modales']
+);
 
 // Componente: Submenús
-if (OpcionManager::get('glory_componente_submenus_activado', true) && GloryFeatures::isEnabled('submenus') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-submenus',
-        '/Glory/assets/js/UI/submenus.js',
-        ['deps' => ['jquery'], 'in_footer' => true]
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-submenus',
+    '/Glory/assets/js/UI/submenus.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'submenus']
+);
 
 // Componente: Pestañas
-if (OpcionManager::get('glory_componente_pestanas_activado', true) && GloryFeatures::isEnabled('pestanas') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-pestanas',
-        '/Glory/assets/js/UI/pestanas.js',
-        ['deps' => ['jquery'], 'in_footer' => true]
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-pestanas',
+    '/Glory/assets/js/UI/pestanas.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'pestanas']
+);
 
 // Componente: Header Adaptativo
-if (OpcionManager::get('glory_componente_header_adaptativo_activado', true) && GloryFeatures::isEnabled('headerAdaptativo') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-adaptiveheader',
-        '/Glory/assets/js/UI/adaptiveHeader.js',
-        ['deps' => [], 'in_footer' => true]
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-adaptiveheader',
+    '/Glory/assets/js/UI/adaptiveHeader.js',
+    ['deps' => [], 'in_footer' => true, 'feature' => 'headerAdaptativo']
+);
 
 // Componente: Alertas
-if (OpcionManager::get('glory_componente_alertas_activado', true) && GloryFeatures::isEnabled('alertas') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-alertas',
-        '/Glory/assets/js/UI/alertas.js',
-        ['deps' => [], 'in_footer' => true, 'area' => 'both']
-    );
-    // Registrar también el CSS de alertas solo si la feature está activada
-    AssetManager::define(
-        'style',
-        'glory-alerts',
-        '/Glory/assets/css/alert.css',
-        ['media' => 'all', 'area' => 'frontend']
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-alertas',
+    '/Glory/assets/js/UI/alertas.js',
+    ['deps' => [], 'in_footer' => true, 'area' => 'both', 'feature' => 'alertas']
+);
+// Registrar también el CSS de alertas solo si la feature está activada
+AssetManager::define(
+    'style',
+    'glory-alerts',
+    '/Glory/assets/css/alert.css',
+    ['media' => 'all', 'area' => 'frontend', 'feature' => 'alertas']
+);
 
 // Componente: Previews
-if (OpcionManager::get('glory_componente_previews_activado', true) && GloryFeatures::isEnabled('gestionarPreviews') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-gestionarpreviews',
-        '/Glory/assets/js/UI/gestionarPreviews.js',
-        ['deps' => ['jquery'], 'in_footer' => true]
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-gestionarpreviews',
+    '/Glory/assets/js/UI/gestionarPreviews.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'gestionarPreviews']
+);
 
 // Componente: Paginación
-if (OpcionManager::get('glory_componente_paginacion_activado', true) && GloryFeatures::isEnabled('paginacion') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-glorypagination',
-        '/Glory/assets/js/UI/gloryPagination.js',
-        ['deps' => ['jquery'], 'in_footer' => true]
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-glorypagination',
+    '/Glory/assets/js/UI/gloryPagination.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'paginacion']
+);
 
 // Componente: Scheduler
-if (OpcionManager::get('glory_componente_scheduler_activado', true) && GloryFeatures::isEnabled('scheduler') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-gloryscheduler',
-        '/Glory/assets/js/UI/gloryScheduler.js',
-        ['deps' => ['jquery'], 'in_footer' => true]
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-gloryscheduler',
+    '/Glory/assets/js/UI/gloryScheduler.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'scheduler']
+);
 
 // Componente: Menu
-if (OpcionManager::get('glory_componente_menu_activado', true) && GloryFeatures::isEnabled('menu') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-menu',
-        '/Glory/assets/js/UI/menu.js',
-        ['deps' => ['jquery'], 'in_footer' => true]
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-menu',
+    '/Glory/assets/js/UI/menu.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'menu']
+);
 
 
 // --- Scripts de Servicios (controlables por feature) ---
 
 // Manejador de formularios
-if (GloryFeatures::isEnabled('gloryForm') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-gloryform',
-        '/Glory/assets/js/Services/gloryForm.js',
-        ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both']
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-gloryform',
+    '/Glory/assets/js/Services/gloryForm.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryForm']
+);
 
 // Función AJAX genérica
-if (GloryFeatures::isEnabled('gloryAjax') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-ajax',
-        '/Glory/assets/js/genericAjax/gloryAjax.js',
-        ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both']
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-ajax',
+    '/Glory/assets/js/genericAjax/gloryAjax.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryAjax']
+);
 
 // Servicio: Búsqueda
-if (GloryFeatures::isEnabled('gloryBusqueda') !== false) {
-    AssetManager::define(
-        'script',
-        'glory-glorybusqueda',
-        '/Glory/assets/js/Services/gloryBusqueda.js',
-        ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'frontend']
-    );
-}
+AssetManager::define(
+    'script',
+    'glory-glorybusqueda',
+    '/Glory/assets/js/Services/gloryBusqueda.js',
+    ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'frontend', 'feature' => 'gloryBusqueda']
+);
 
 // Carga de todos los estilos CSS de la carpeta /assets/css/
 AssetManager::defineFolder(

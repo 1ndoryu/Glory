@@ -3,6 +3,7 @@
 namespace Glory\Manager;
 
 use Glory\Core\GloryLogger;
+use Glory\Core\GloryFeatures;
 use Glory\Services\GestorCssCritico;
 
 
@@ -27,6 +28,30 @@ final class AssetManager
 
     public static function define(string $tipo, string $handle, string $ruta, array $config = []): void
     {
+        // Soporte flexible para la clave 'feature': puede ser
+        // - string: 'modales'
+        // - array asociativo: ['name' => 'modales', 'option' => 'glory_componente_modales_activado']
+        // - array indexado: ['modales', 'glory_componente_modales_activado']
+        // También se mantiene compatibilidad con 'feature_option' antigua.
+        $featureName = null;
+        $featureOptionKey = null;
+        if (isset($config['feature'])) {
+            if (is_array($config['feature'])) {
+                $featureName = $config['feature']['name'] ?? ($config['feature'][0] ?? null);
+                $featureOptionKey = $config['feature']['option'] ?? ($config['feature'][1] ?? null);
+            } else {
+                $featureName = (string) $config['feature'];
+            }
+        }
+        // Compatibilidad: si se pasó feature_option por separado
+        if (empty($featureOptionKey) && isset($config['feature_option'])) {
+            $featureOptionKey = $config['feature_option'];
+        }
+
+        if (!empty($featureName) && \Glory\Core\GloryFeatures::isActive($featureName, $featureOptionKey) === false) {
+            return;
+        }
+
         if ($tipo !== self::ASSET_TYPE_SCRIPT && $tipo !== self::ASSET_TYPE_STYLE) {
             GloryLogger::error("AssetManager: Tipo de asset '{$tipo}' inválido para '{$handle}'.");
             return;
@@ -56,6 +81,7 @@ final class AssetManager
             'localize'  => $config['localize'] ?? null,
             'dev_mode'  => $config['dev_mode'] ?? null,
             'area'      => $config['area'] ?? 'frontend',
+            'feature'   => $config['feature'] ?? null,
             'defer'     => $config['defer'],
         ];
     }
@@ -152,7 +178,12 @@ final class AssetManager
 
     public static function enqueueFrontendAssets(): void
     {
-        self::$cssCritico = GestorCssCritico::getParaPaginaActual();
+        // Respetar el flag global de GloryFeatures para cssCritico
+        if (GloryFeatures::isEnabled('cssCritico') === false) {
+            self::$cssCritico = null;
+        } else {
+            self::$cssCritico = GestorCssCritico::getParaPaginaActual();
+        }
 
         if (self::$cssCritico) {
             add_action('wp_head', [self::class, 'imprimirCssCritico'], 1);
@@ -174,6 +205,11 @@ final class AssetManager
         foreach (self::$assets as $tipo => $assetsPorTipo) {
             foreach ($assetsPorTipo as $handle => $config) {
                 if ($config['area'] !== 'both' && $config['area'] !== $currentArea) {
+                    continue;
+                }
+
+                // Si el asset declara explícitamente una feature y esta está desactivada, omitirlo.
+                if (!empty($config['feature']) && \Glory\Core\GloryFeatures::isEnabled($config['feature']) === false) {
                     continue;
                 }
 

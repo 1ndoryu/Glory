@@ -2,6 +2,8 @@
 
 namespace Glory\Core;
 
+use Glory\Manager\OpcionManager;
+
 /**
  * Clase para controlar mediante programación la activación o desactivación de funcionalidades del tema.
  * Permite a los desarrolladores anular las opciones de la base de datos directamente desde el código.
@@ -70,5 +72,37 @@ class GloryFeatures
         $key = ucwords($key);
         $key = str_replace(' ', '', $key);
         return lcfirst($key);
+    }
+
+    /**
+     * Comprueba si una feature está activa combinando el override por código (GloryFeatures)
+     * y la opción almacenada en la base de datos (OpcionManager).
+     *
+     * - Si el override por código es false => inactivo.
+     * - Si el override por código es true => activo.
+     * - Si no hay override explícito, se consulta la opción en BD si se suministra la key.
+     * - Si no hay override ni opción, se devuelve el valor por defecto proporcionado.
+     *
+     * @param string $feature
+     * @param string|null $optionKey
+     * @param bool $defaultOption
+     * @return bool
+     */
+    public static function isActive(string $feature, ?string $optionKey = null, bool $defaultOption = true): bool
+    {
+        $normalized = self::normalizeKey($feature);
+        $overridden = self::isEnabled($normalized);
+
+        if ($overridden === false) return false;
+        if ($overridden === true) return true;
+
+        // Si no se proporcionó una key de opción, inferir la clave por convención:
+        // glory_componente_{feature_snake}_activado
+        if ($optionKey === null) {
+            $snake = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $normalized));
+            $optionKey = 'glory_componente_' . $snake . '_activado';
+        }
+
+        return (bool) OpcionManager::get($optionKey, $defaultOption);
     }
 }

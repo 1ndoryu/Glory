@@ -2,6 +2,8 @@
 
 namespace Glory\Manager;
 
+use Glory\Core\GloryFeatures;
+
 class MenuManager
 {
     private const UBICACION_MENU_PRINCIPAL = 'main_navigation';
@@ -9,6 +11,11 @@ class MenuManager
 
     public static function register(): void
     {
+        // No registrar la gestión de menús si la feature 'menu' está desactivada
+        if (GloryFeatures::isEnabled('menu') === false) {
+            return;
+        }
+
         add_action('after_setup_theme', [self::class, 'registrarUbicacionesMenu']);
         add_action('after_setup_theme', [self::class, 'asegurarMenuPrincipal'], 20);
     }

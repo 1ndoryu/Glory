@@ -32,6 +32,14 @@ Estos gestores automatizan tareas comunes de configuración y gestión de datos,
 
 Unifica la gestión de scripts (JS) y estilos (CSS). Permite definir assets individualmente o cargar carpetas enteras, manejar dependencias, localizar datos de PHP a JavaScript y gestionar el versionado de archivos para evitar problemas de caché.
 
+Nota rápida sobre control por "feature"
+
+- **Controlar assets por feature**: cuando registres assets del framework (no los del tema), puedes pasar una clave opcional `feature` en la configuración para que el `AssetManager` decida si registrar el asset según el estado de esa feature. Ejemplos válidos:
+  - `'feature' => 'modales'` (forma corta, infiere la opción en BD como `glory_componente_modales_activado` si existe)
+  - `'feature' => ['modales', 'glory_componente_modales_activado']` (forma explícita con opción)
+
+- **Comportamiento**: si la feature fue desactivada por código con `GloryFeatures::disable('modales')` o la opción en BD (`glory_componente_modales_activado`) está en `false`, el asset no se registrará. Esto centraliza el control y evita `if` dispersos en los archivos de configuración.
+
 **Ejemplo: Registrar un script con datos localizados en `App/Config/assets.php`**
 
 ```php

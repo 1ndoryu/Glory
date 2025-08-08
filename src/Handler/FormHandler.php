@@ -4,6 +4,7 @@
 namespace Glory\Handler;
 
 use Glory\Core\GloryLogger;
+use Glory\Core\GloryFeatures;
 
 class FormHandler
 {
@@ -20,6 +21,11 @@ class FormHandler
 
     public function __construct()
     {
+        // No registrar los hooks si la feature fue desactivada explícitamente
+        if (GloryFeatures::isEnabled('gloryForm') === false) {
+            return;
+        }
+
         add_action('wp_ajax_gloryFormHandler', [$this, 'manejarPeticion']);
         add_action('wp_ajax_nopriv_gloryFormHandler', [$this, 'manejarPeticion']);
     }

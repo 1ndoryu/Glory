@@ -3,6 +3,7 @@
 namespace Glory\Services;
 
 use Glory\Core\GloryLogger;
+use Glory\Core\GloryFeatures;
 use Glory\Manager\OpcionManager;
 
 class GestorCssCritico
@@ -19,6 +20,11 @@ class GestorCssCritico
 
     public static function getParaPaginaActual(): ?string
     {
+        // Si la feature ha sido desactivada explícitamente, no generar CSS crítico
+        if (GloryFeatures::isEnabled('cssCritico') === false) {
+            return null;
+        }
+
         if (!OpcionManager::get('glory_css_critico_activado')) {
             return null;
         }
