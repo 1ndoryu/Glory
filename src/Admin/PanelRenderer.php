@@ -140,6 +140,7 @@ class PanelRenderer
                 }
                 break;
             case 'checkbox':
+            case 'toggle':
                 $opcionesCampo['checked'] = !empty($config['valorActual']);
                 echo FormBuilder::campoCheckbox($opcionesCampo);
                 break;

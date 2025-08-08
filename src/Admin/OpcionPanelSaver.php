@@ -25,24 +25,28 @@ class OpcionPanelSaver
         $opcionesGuardadas = [];
         $opcionesOmitidas = [];
 
-        foreach ($datosPost as $key => $valor) {
-            $config = OpcionRegistry::getDefinicion($key);
-            if (!$config) {
-                // Omite claves que no corresponden a una opción definida (ej. action, nonce).
-                $opcionesOmitidas[] = $key;
-                continue;
+        // Procesar solo las opciones registradas para garantizar que los checkboxes
+        // que no vienen en $_POST se guarden como false.
+        $definiciones = OpcionRegistry::getDefiniciones();
+        foreach ($definiciones as $key => $config) {
+            // Determinar el valor a guardar: si el campo está en los datos POST, usarlo;
+            // si no está y es un checkbox/toggle, guardar false; en otro caso, omitir.
+            if (array_key_exists($key, $datosPost)) {
+                $valor = $datosPost[$key];
+            } else {
+                $tipo = $config['tipo'] ?? 'text';
+                if (in_array($tipo, ['checkbox', 'toggle'], true)) {
+                    $valor = false;
+                } else {
+                    // No recibimos valor para este campo y no es checkbox -> no tocar
+                    continue;
+                }
             }
 
-            // La sanitización debe ocurrir en el punto de entrada, antes de llamar a este método.
-            // Aquí se confía en que el valor ya viene preparado.
+            // Guardar valor y metadatos
             OpcionRepository::save($key, $valor);
-            OpcionRepository::savePanelMeta($key, $config['hashVersionCodigo']);
-            
+            OpcionRepository::savePanelMeta($key, $config['hashVersionCodigo'] ?? '');
             $opcionesGuardadas[] = $key;
-        }
-
-        if (!empty($opcionesOmitidas)) {
-            GloryLogger::info('OpcionPanelSaver: Se omitieron claves no definidas al guardar.', ['claves' => $opcionesOmitidas]);
         }
 
         return ['guardadas' => count($opcionesGuardadas), 'omitidas' => count($opcionesOmitidas)];
