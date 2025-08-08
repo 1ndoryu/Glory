@@ -86,6 +86,10 @@ AssetManager::defineFolder(
         'gloryModal.js',
         'pestanas.js',
         'submenus.js',
+        'gestionarPreviews.js',
+        'gloryPagination.js',
+        'gloryScheduler.js',
+        'menu.js',
     ]
 );
 
@@ -156,6 +160,46 @@ if (OpcionManager::get('glory_componente_alertas_activado', true)) {
         'glory-alertas',
         '/Glory/assets/js/UI/alertas.js',
         ['deps' => [], 'in_footer' => true, 'area' => 'both']
+    );
+}
+
+// Componente: Previews
+if (OpcionManager::get('glory_componente_previews_activado', true)) {
+    AssetManager::define(
+        'script',
+        'glory-gestionarpreviews',
+        '/Glory/assets/js/UI/gestionarPreviews.js',
+        ['deps' => ['jquery'], 'in_footer' => true]
+    );
+}
+
+// Componente: Paginación
+if (OpcionManager::get('glory_componente_paginacion_activado', true)) {
+    AssetManager::define(
+        'script',
+        'glory-glorypagination',
+        '/Glory/assets/js/UI/gloryPagination.js',
+        ['deps' => ['jquery'], 'in_footer' => true]
+    );
+}
+
+// Componente: Scheduler
+if (OpcionManager::get('glory_componente_scheduler_activado', true)) {
+    AssetManager::define(
+        'script',
+        'glory-gloryscheduler',
+        '/Glory/assets/js/UI/gloryScheduler.js',
+        ['deps' => ['jquery'], 'in_footer' => true]
+    );
+}
+
+// Componente: Menu
+if (OpcionManager::get('glory_componente_menu_activado', true)) {
+    AssetManager::define(
+        'script',
+        'glory-menu',
+        '/Glory/assets/js/UI/menu.js',
+        ['deps' => ['jquery'], 'in_footer' => true]
     );
 }
 

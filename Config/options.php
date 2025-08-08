@@ -12,6 +12,7 @@ OpcionManager::register('glory_css_critico_activado', [
     'descripcion'   => 'Genera y aplica automáticamente CSS crítico para mejorar los tiempos de carga. Esto puede tardar unos segundos en la primera visita a una página.',
     'seccion'       => 'performance',
     'etiquetaSeccion' => 'Rendimiento',
+    'featureKey'    => 'cssCritico'
 ]);
 
 /*
@@ -90,4 +91,44 @@ OpcionManager::register('glory_componente_alertas_activado', [
     'seccion'       => 'componentes',
     'etiquetaSeccion' => 'Componentes',
     'featureKey'    => 'alertas'
+]);
+
+OpcionManager::register('glory_componente_previews_activado', [
+    'valorDefault'  => true,
+    'tipo'          => 'toggle',
+    'etiqueta'      => 'Activar Previews',
+    'descripcion'   => 'Activa la funcionalidad para gestionar previews (`gestionarPreviews.js`).',
+    'seccion'       => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'    => 'gestionarPreviews'
+]);
+
+OpcionManager::register('glory_componente_paginacion_activado', [
+    'valorDefault'  => true,
+    'tipo'          => 'toggle',
+    'etiqueta'      => 'Activar Paginación',
+    'descripcion'   => 'Activa la paginación dinámica (`gloryPagination.js`).',
+    'seccion'       => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'    => 'paginacion'
+]);
+
+OpcionManager::register('glory_componente_scheduler_activado', [
+    'valorDefault'  => true,
+    'tipo'          => 'toggle',
+    'etiqueta'      => 'Activar Scheduler',
+    'descripcion'   => 'Activa el scheduler de tareas (`gloryScheduler.js`).',
+    'seccion'       => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'    => 'scheduler'
+]);
+
+OpcionManager::register('glory_componente_menu_activado', [
+    'valorDefault'  => true,
+    'tipo'          => 'toggle',
+    'etiqueta'      => 'Activar Menu',
+    'descripcion'   => 'Activa las mejoras de menú (`menu.js`).',
+    'seccion'       => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'    => 'menu'
 ]);
