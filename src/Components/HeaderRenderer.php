@@ -71,33 +71,34 @@ class HeaderRenderer
                             }
                             ?>
                         </div>
+
+
+
+                        <nav class="siteMenuNav" role="navigation">
+                            <div class="nav-title">Navigation</div>
+                            <?php
+                            if (has_nav_menu('main_navigation')) {
+                                wp_nav_menu([
+                                    'theme_location' => 'main_navigation',
+                                    'container'      => false,
+                                    'menu_id'        => esc_attr($idMenu),
+                                ]);
+                            }
+                            ?>
+                        </nav>
+
+                        <button aria-label="Toggle menu" class="burger" type="button">
+                            <span></span>
+                            <span></span>
+                        </button>
                     <?php endif; ?>
-
-
-                    <nav class="siteMenuNav" role="navigation">
-                        <div class="nav-title">Navigation</div>
-                        <?php
-                        if (has_nav_menu('main_navigation')) {
-                            wp_nav_menu([
-                                'theme_location' => 'main_navigation',
-                                'container'      => false,
-                                'menu_id'        => esc_attr($idMenu),
-                            ]);
-                        }
-                        ?>
-                    </nav>
-
-                    <button aria-label="Toggle menu" class="burger" type="button">
-                        <span></span>
-                        <span></span>
-                    </button>
-                <?php endif; ?>
                 </div>
 
-                <?php if ($menuActivo): ?>
+                
                     <button class="background" aria-label="Close menu"></button>
-                <?php endif; ?>
+               
             </header>
-    <?php
+        <?php endif; ?>
+<?php
     }
 }
