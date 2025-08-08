@@ -132,3 +132,166 @@ OpcionManager::register('glory_componente_menu_activado', [
     'etiquetaSeccion' => 'Componentes',
     'featureKey'    => 'menu'
 ]);
+
+// --- Opciones para managers y servicios no expuestos todavía ---
+OpcionManager::register('glory_asset_manager_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Asset Manager',
+    'descripcion'     => 'Controla la inicialización del AssetManager del framework.',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'assetManager'
+]);
+
+OpcionManager::register('glory_sync_manager_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Sync Manager',
+    'descripcion'     => 'Controla la inicialización del SyncManager del framework.',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'syncManager'
+]);
+
+OpcionManager::register('glory_logger_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Logger',
+    'descripcion'     => 'Activa el sistema de logging interno (GloryLogger).',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'gloryLogger'
+]);
+
+OpcionManager::register('glory_default_content_manager_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Default Content Manager',
+    'descripcion'     => 'Controla la inicialización del DefaultContentManager.',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'defaultContentManager'
+]);
+
+OpcionManager::register('glory_page_manager_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Page Manager',
+    'descripcion'     => 'Controla la inicialización del PageManager.',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'pageManager'
+]);
+
+OpcionManager::register('glory_post_type_manager_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Post Type Manager',
+    'descripcion'     => 'Controla la inicialización del PostTypeManager.',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'postTypeManager'
+]);
+
+OpcionManager::register('glory_taxonomy_meta_manager_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Taxonomy Meta Manager',
+    'descripcion'     => 'Controla la inicialización del TaxonomyMetaManager.',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'taxonomyMetaManager'
+]);
+
+OpcionManager::register('glory_schedule_manager_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Schedule Manager',
+    'descripcion'     => 'Controla la inicialización del ScheduleManager.',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'scheduleManager'
+]);
+
+// --- Servicios y utilidades adicionales ---
+OpcionManager::register('glory_ajax_service_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Glory Ajax',
+    'descripcion'     => 'Habilita los endpoints y callbacks AJAX relacionados con Glory.',
+    'seccion'         => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'      => 'gloryAjax'
+]);
+
+OpcionManager::register('glory_form_service_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Glory Form',
+    'descripcion'     => 'Controla la inicialización y uso de FormHandler.',
+    'seccion'         => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'      => 'gloryForm'
+]);
+
+OpcionManager::register('glory_busqueda_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Glory Busqueda',
+    'descripcion'     => 'Habilita la búsqueda avanzada gestionada por el framework.',
+    'seccion'         => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'      => 'gloryBusqueda'
+]);
+
+// --- Renderers y control de funcionalidades del theme ---
+OpcionManager::register('glory_logo_renderer_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Logo Renderer',
+    'descripcion'     => 'Controla la renderización del logo a través de `LogoRenderer`.',
+    'seccion'         => 'header',
+    'etiquetaSeccion' => 'Header Settings',
+    'featureKey'      => 'logoRenderer'
+]);
+
+OpcionManager::register('glory_content_render_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Content Render',
+    'descripcion'     => 'Controla el componente `ContentRender`.',
+    'seccion'         => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'      => 'contentRender'
+]);
+
+OpcionManager::register('glory_term_render_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Term Render',
+    'descripcion'     => 'Controla la renderización de términos personalizados.',
+    'seccion'         => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'      => 'termRender'
+]);
+
+OpcionManager::register('glory_title_tag_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Title Tag',
+    'descripcion'     => 'Controla la gestión del title-tag por el theme.',
+    'seccion'         => 'header',
+    'etiquetaSeccion' => 'Header Settings',
+    'featureKey'      => 'titleTag'
+]);
+
+OpcionManager::register('glory_post_thumbnails_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Post Thumbnails',
+    'descripcion'     => 'Controla la habilitación de thumbnails en posts.',
+    'seccion'         => 'general',
+    'etiquetaSeccion' => 'General',
+    'featureKey'      => 'postThumbnails'
+]);

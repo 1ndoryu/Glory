@@ -12,6 +12,15 @@ use Glory\Manager\OpcionManager;
 class GloryFeatures
 {
     private static array $features = [];
+    /**
+     * Mapeo de alias para mantener compatibilidad entre nombres de features.
+     * Las claves se comparan en minúsculas sin guiones/underscores.
+     */
+    private static array $aliasMap = [
+        'schedulemanager' => 'scheduler',
+        'schedule_manager' => 'scheduler',
+        'schedule-manager' => 'scheduler',
+    ];
 
     /**
      * Desactiva una funcionalidad específica.
@@ -68,6 +77,12 @@ class GloryFeatures
      */
     private static function normalizeKey(string $key): string
     {
+        // Aplicar alias si corresponde (comparación en minúsculas sin separadores)
+        $aliasKey = strtolower(str_replace(['-', '_'], '', $key));
+        if (isset(self::$aliasMap[$aliasKey])) {
+            $key = self::$aliasMap[$aliasKey];
+        }
+
         $key = str_replace(['-', '_'], ' ', $key);
         $key = ucwords($key);
         $key = str_replace(' ', '', $key);

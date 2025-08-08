@@ -26,25 +26,74 @@ class Setup
 {
     public function __construct()
     {
-        GloryLogger::init();
-        new FormHandler();
-        new PaginationAjaxHandler();
-        new BusquedaAjaxHandler();
+        // Inicializar logger solo si la feature no está desactivada
+        if (GloryFeatures::isActive('gloryLogger') !== false) {
+            GloryLogger::init();
+        }
 
-        OpcionManager::init();
-        AssetsUtility::init();
-        GestorCssCritico::init();
+        // Formularios (FormHandler) - el propio constructor también checa la feature,
+        // pero evitamos instanciarlo si la feature está desactivada.
+        if (GloryFeatures::isActive('gloryForm') !== false) {
+            new FormHandler();
+        }
 
-        AssetManager::register();
-        PageManager::register();
-        AdminPageManager::register();
-        MenuManager::register();
-        PostTypeManager::register();
+        if (GloryFeatures::isActive('paginacion') !== false) {
+            new PaginationAjaxHandler();
+        }
 
-        (new SyncController())->register();
-        (new TaxonomyMetaManager())->register();
-        LogoRenderer::register_shortcode();
-        (new IntegrationsManager())->register();
-        (new OpcionPanelController())->registerHooks();
+        if (GloryFeatures::isActive('gloryBusqueda') !== false) {
+            new BusquedaAjaxHandler();
+        }
+
+        // Opciones y assets
+        if (GloryFeatures::isActive('opcionManagerSync') !== false) {
+            OpcionManager::init();
+        }
+
+        if (GloryFeatures::isActive('assetManager') !== false) {
+            AssetsUtility::init();
+        }
+
+        if (GloryFeatures::isActive('cssCritico') !== false) {
+            GestorCssCritico::init();
+        }
+
+        // Registro/registro de managers principales (condicionales para control de rendimiento)
+        if (GloryFeatures::isActive('assetManager') !== false) {
+            AssetManager::register();
+        }
+
+        if (GloryFeatures::isActive('pageManager') !== false) {
+            PageManager::register();
+            AdminPageManager::register();
+        }
+
+        if (GloryFeatures::isActive('menu') !== false) {
+            MenuManager::register();
+        }
+
+        if (GloryFeatures::isActive('postTypeManager') !== false) {
+            PostTypeManager::register();
+        }
+
+        if (GloryFeatures::isActive('syncManager') !== false) {
+            (new SyncController())->register();
+        }
+
+        if (GloryFeatures::isActive('taxonomyMetaManager') !== false) {
+            (new TaxonomyMetaManager())->register();
+        }
+
+        if (GloryFeatures::isActive('logoRenderer') !== false) {
+            LogoRenderer::register_shortcode();
+        }
+
+        if (GloryFeatures::isActive('integrationsManager') !== false) {
+            (new IntegrationsManager())->register();
+        }
+
+        if (GloryFeatures::isActive('opcionManagerSync') !== false) {
+            (new OpcionPanelController())->registerHooks();
+        }
     }
 }
