@@ -67,6 +67,30 @@ AssetManager::defineFolder(
     ]
 );
 
+// Asegurar que el manejador de formularios esté disponible también en el área de administración
+AssetManager::define(
+    'script',
+    'glory-gloryform',
+    '/Glory/assets/js/Services/gloryForm.js',
+    [
+        'deps'      => ['jquery'],
+        'in_footer' => true,
+        'area'      => 'both'
+    ]
+);
+
+// Asegurar que la función AJAX genérica esté disponible también en admin
+AssetManager::define(
+    'script',
+    'glory-ajax',
+    '/Glory/assets/js/genericAjax/gloryAjax.js',
+    [
+        'deps'      => ['jquery'],
+        'in_footer' => true,
+        'area'      => 'both'
+    ]
+);
+
 AssetManager::defineFolder(
     'style',
     '/Glory/assets/css/',

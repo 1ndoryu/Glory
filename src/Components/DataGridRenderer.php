@@ -43,12 +43,14 @@ class DataGridRenderer
             'columnas' => [],
             'filtros' => [],
             'paginacion' => true,
+            // Si se indica true, los filtros no se renderizarán dentro del contenedor principal
+            'filtros_separados' => false,
         ]);
     }
 
     private function renderizarFiltros(): void
     {
-        if (empty($this->configuracion['filtros'])) {
+        if (empty($this->configuracion['filtros']) || !empty($this->configuracion['filtros_separados'])) {
             return;
         }
 
@@ -69,6 +71,41 @@ class DataGridRenderer
 
         echo '<button type="submit" class="button">Filtrar</button>';
         echo '<a href="' . esc_url(remove_query_arg(array_keys($this->configuracion['filtros']))) . '" class="button">Limpiar</a>';
+
+        echo '</form>';
+        echo '</div>';
+    }
+
+    /**
+     * Renderiza los filtros a partir de una configuración (método estático útil para colocarlos fuera del contenedor principal).
+     *
+     * @param array $configuracion
+     * @return void
+     */
+    public static function renderFiltrosFromConfig(array $configuracion): void
+    {
+        $config = wp_parse_args($configuracion, ['filtros' => []]);
+        if (empty($config['filtros'])) {
+            return;
+        }
+
+        echo '<div class="gloryDataGridFiltros">';
+        echo '<form method="get" action="">';
+
+        foreach ($_GET as $clave => $valor) {
+            if (strpos($clave, 'filtro_') !== 0 && !in_array($clave, ['submit', 'action'])) {
+                echo '<input type="hidden" name="' . esc_attr($clave) . '" value="' . esc_attr($valor) . '">';
+            }
+        }
+
+        foreach ($config['filtros'] as $clave => $configuracionFiltro) {
+            $valorActual = isset($_GET[$clave]) ? sanitize_text_field($_GET[$clave]) : '';
+            $etiqueta = esc_html($configuracionFiltro['etiqueta'] ?? ucfirst($clave));
+            echo '<input type="search" name="' . esc_attr($clave) . '" value="' . esc_attr($valorActual) . '" placeholder="' . $etiqueta . '">';
+        }
+
+        echo '<button type="submit" class="button">Filtrar</button>';
+        echo '<a href="' . esc_url(remove_query_arg(array_keys($config['filtros']))) . '" class="button">Limpiar</a>';
 
         echo '</form>';
         echo '</div>';

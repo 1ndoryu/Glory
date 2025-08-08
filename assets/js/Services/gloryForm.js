@@ -193,3 +193,4 @@ function gloryForm() {
 }
 
 document.addEventListener('gloryRecarga', gloryForm);
+document.addEventListener('DOMContentLoaded', gloryForm);
