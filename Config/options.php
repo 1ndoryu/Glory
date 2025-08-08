@@ -141,7 +141,9 @@ OpcionManager::register('glory_asset_manager_activado', [
     'descripcion'     => 'Controla la inicialización del AssetManager del framework.',
     'seccion'         => 'core',
     'etiquetaSeccion' => 'Core',
-    'featureKey'      => 'assetManager'
+    'featureKey'      => 'assetManager',
+    'hideInProd'      => true,
+    'lockInProd'      => true
 ]);
 
 OpcionManager::register('glory_sync_manager_activado', [
@@ -151,7 +153,9 @@ OpcionManager::register('glory_sync_manager_activado', [
     'descripcion'     => 'Controla la inicialización del SyncManager del framework.',
     'seccion'         => 'core',
     'etiquetaSeccion' => 'Core',
-    'featureKey'      => 'syncManager'
+    'featureKey'      => 'syncManager',
+    'hideInProd'      => true,
+    'lockInProd'      => true
 ]);
 
 OpcionManager::register('glory_logger_activado', [
@@ -161,7 +165,8 @@ OpcionManager::register('glory_logger_activado', [
     'descripcion'     => 'Activa el sistema de logging interno (GloryLogger).',
     'seccion'         => 'core',
     'etiquetaSeccion' => 'Core',
-    'featureKey'      => 'gloryLogger'
+    'featureKey'      => 'gloryLogger',
+    'hideInProd'      => true
 ]);
 
 OpcionManager::register('glory_default_content_manager_activado', [
@@ -171,7 +176,8 @@ OpcionManager::register('glory_default_content_manager_activado', [
     'descripcion'     => 'Controla la inicialización del DefaultContentManager.',
     'seccion'         => 'core',
     'etiquetaSeccion' => 'Core',
-    'featureKey'      => 'defaultContentManager'
+    'featureKey'      => 'defaultContentManager',
+    'hideInProd'      => true
 ]);
 
 OpcionManager::register('glory_page_manager_activado', [
@@ -181,7 +187,8 @@ OpcionManager::register('glory_page_manager_activado', [
     'descripcion'     => 'Controla la inicialización del PageManager.',
     'seccion'         => 'core',
     'etiquetaSeccion' => 'Core',
-    'featureKey'      => 'pageManager'
+    'featureKey'      => 'pageManager',
+    'hideInProd'      => true
 ]);
 
 OpcionManager::register('glory_post_type_manager_activado', [
@@ -191,7 +198,8 @@ OpcionManager::register('glory_post_type_manager_activado', [
     'descripcion'     => 'Controla la inicialización del PostTypeManager.',
     'seccion'         => 'core',
     'etiquetaSeccion' => 'Core',
-    'featureKey'      => 'postTypeManager'
+    'featureKey'      => 'postTypeManager',
+    'hideInProd'      => true
 ]);
 
 OpcionManager::register('glory_taxonomy_meta_manager_activado', [
@@ -201,7 +209,8 @@ OpcionManager::register('glory_taxonomy_meta_manager_activado', [
     'descripcion'     => 'Controla la inicialización del TaxonomyMetaManager.',
     'seccion'         => 'core',
     'etiquetaSeccion' => 'Core',
-    'featureKey'      => 'taxonomyMetaManager'
+    'featureKey'      => 'taxonomyMetaManager',
+    'hideInProd'      => true
 ]);
 
 OpcionManager::register('glory_schedule_manager_activado', [
@@ -211,7 +220,8 @@ OpcionManager::register('glory_schedule_manager_activado', [
     'descripcion'     => 'Controla la inicialización del ScheduleManager.',
     'seccion'         => 'core',
     'etiquetaSeccion' => 'Core',
-    'featureKey'      => 'scheduleManager'
+    'featureKey'      => 'scheduleManager',
+    'hideInProd'      => true
 ]);
 
 // --- Servicios y utilidades adicionales ---

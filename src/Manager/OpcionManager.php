@@ -6,6 +6,7 @@ use Glory\Core\GloryFeatures;
 use Glory\Core\GloryLogger;
 use Glory\Core\OpcionRegistry;
 use Glory\Core\OpcionRepository;
+use Glory\Manager\AssetManager;
 
 /**
  * Gestiona el ciclo de vida completo de las opciones del tema (registro, sincronización y obtención).
@@ -18,6 +19,27 @@ use Glory\Core\OpcionRepository;
 class OpcionManager
 {
     private static bool $haSincronizado = false;
+    /**
+     * Cache en memoria para valores de opciones cuando no estamos en modo desarrollo.
+     * Clave: nombre de opción (key) -> valor final resuelto.
+     */
+    private static array $cacheValores = [];
+
+    private static function isDevMode(): bool
+    {
+        // Preferimos el flag global si está configurado, con fallback a WP_DEBUG
+        $assetDev = method_exists(AssetManager::class, 'isGlobalDevMode') ? AssetManager::isGlobalDevMode() : false;
+        $wpDebug = (defined('WP_DEBUG') && WP_DEBUG);
+        return (bool) ($assetDev || $wpDebug);
+    }
+
+    /**
+     * Limpia la cache en memoria (se usa, por ejemplo, tras guardar desde el panel).
+     */
+    public static function clearCache(): void
+    {
+        self::$cacheValores = [];
+    }
 
     /**
      * Define y registra una nueva opción para ser gestionada.
@@ -37,6 +59,9 @@ class OpcionManager
             'descripcion' => '',
             'comportamientoEscape' => ($tipoDefault === 'text'),
             'forzarDefaultAlRegistrar' => false,
+            // Control de visibilidad/comportamiento en producción
+            'hideInProd' => false,   // Ocultar en panel cuando no es modo dev
+            'lockInProd' => false,   // Forzar valor seguro en producción (pensado para toggles críticos)
         ];
         $configParseada = wp_parse_args($configuracion, $defaults);
 
@@ -53,6 +78,13 @@ class OpcionManager
      */
     public static function get(string $key, $valorPorDefecto = null)
     {
+        $esDev = self::isDevMode();
+
+        // Cache de lectura cuando NO estamos en modo desarrollo
+        if (!$esDev && array_key_exists($key, self::$cacheValores)) {
+            return self::$cacheValores[$key];
+        }
+
         $config = OpcionRegistry::getDefinicion($key);
 
         if (!$config) {
@@ -60,16 +92,27 @@ class OpcionManager
             return $valorPorDefecto;
         }
 
-        // Prioridad 1: Comprobar si hay una anulación por código a través de GloryFeatures.
-        // NOTA: aquí usamos intencionalmente `isEnabled()` (no `isActive()`)
-        // porque la semántica requerida es "si el código fuerza un valor
-        // verdadero/falso para esta feature, devolver ese valor inmediatamente",
-        // es decir: la anulación por código tiene máxima prioridad sobre
-        // cualquier valor almacenado en la base de datos (panel).
+        // En producción, si la opción está marcada como bloqueada, devolver un valor seguro inmediatamente
+        if (!$esDev && !empty($config['lockInProd'])) {
+            $valorFinal = true; // Forzamos 'activado' para no romper funcionalidades críticas
+            self::$cacheValores[$key] = $valorFinal;
+            return $valorFinal;
+        }
+
+        // Para opciones vinculadas a una feature (featureKey), ajustamos prioridad según modo dev:
+        // - Modo DEV: si el código (GloryFeatures::) fija true/false, se devuelve inmediatamente.
+        // - Modo PROD: el panel tiene prioridad; el valor del código solo define el DEFAULT.
+        $defaultDesdeCodigo = null;
         if (!empty($config['featureKey'])) {
             $estadoDesdeCodigo = GloryFeatures::isEnabled($config['featureKey']);
-            if ($estadoDesdeCodigo !== null) {
-                return $estadoDesdeCodigo; // La anulación por código tiene la máxima prioridad.
+            if ($esDev) {
+                if ($estadoDesdeCodigo !== null) {
+                    return (bool) $estadoDesdeCodigo;
+                }
+            } else {
+                if ($estadoDesdeCodigo !== null) {
+                    $defaultDesdeCodigo = (bool) $estadoDesdeCodigo;
+                }
             }
         }
 
@@ -78,7 +121,10 @@ class OpcionManager
 
         // Prioridad 3: Usar el valor por defecto si no hay nada en la BD.
         if ($valorObtenido === OpcionRepository::getCentinela()) {
-            $valorFinal = $valorPorDefecto ?? $config['valorDefault'];
+            // Si hay default derivado del código (solo PROD), úsalo; luego valorPorDefecto; luego valorDefault de la definición
+            $valorFinal = ($defaultDesdeCodigo !== null)
+                ? $defaultDesdeCodigo
+                : ($valorPorDefecto ?? $config['valorDefault']);
         } else {
             $valorFinal = $valorObtenido;
         }
@@ -86,9 +132,16 @@ class OpcionManager
         // Aplicar escape si es necesario.
         $debeEscapar = $config['comportamientoEscape'] ?? false;
         if (is_string($valorFinal) && $debeEscapar) {
-            return esc_html($valorFinal);
+            $valorEscapado = esc_html($valorFinal);
+            if (!$esDev) {
+                self::$cacheValores[$key] = $valorEscapado;
+            }
+            return $valorEscapado;
         }
 
+        if (!$esDev) {
+            self::$cacheValores[$key] = $valorFinal;
+        }
         return $valorFinal;
     }
 

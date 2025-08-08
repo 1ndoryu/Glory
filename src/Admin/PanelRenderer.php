@@ -77,6 +77,7 @@ class PanelRenderer
     private static function renderizarContenidoPestanas(): void
     {
         if (empty(self::$opcionesAgrupadas)) return;
+        $isDev = (defined('WP_DEBUG') && WP_DEBUG) || (class_exists('Glory\\Manager\\AssetManager') && \Glory\Manager\AssetManager::isGlobalDevMode());
         ?>
         <?php foreach (self::$opcionesAgrupadas as $slugSeccion => $datosSeccion) : ?>
             <div id="tab-<?php echo esc_attr($slugSeccion); ?>" class="glory-panel-tab">
@@ -85,6 +86,10 @@ class PanelRenderer
                         <h2 class="titleSubSection"><span><?php echo esc_html(ucfirst(str_replace(['_', '-'], ' ', $slugSubSeccion))); ?></span></h2>
                         <div class="inside">
                             <?php foreach ($opciones as $key => $config) {
+                                // Ocultar opciones sensibles en producción si así fueron registradas
+                                if (!$isDev && !empty($config['hideInProd'])) {
+                                    continue;
+                                }
                                 self::renderizarCampo($key, $config);
                             } ?>
                         </div>
