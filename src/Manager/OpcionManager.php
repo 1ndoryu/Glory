@@ -2,6 +2,7 @@
 
 namespace Glory\Manager;
 
+use Glory\Core\GloryFeatures;
 use Glory\Core\GloryLogger;
 use Glory\Core\OpcionRegistry;
 use Glory\Core\OpcionRepository;
@@ -59,16 +60,26 @@ class OpcionManager
             return $valorPorDefecto;
         }
 
+        // Prioridad 1: Comprobar si hay una anulación por código a través de GloryFeatures.
+        if (!empty($config['featureKey'])) {
+            $estadoDesdeCodigo = GloryFeatures::isEnabled($config['featureKey']);
+            if ($estadoDesdeCodigo !== null) {
+                return $estadoDesdeCodigo; // La anulación por código tiene la máxima prioridad.
+            }
+        }
+
+        // Prioridad 2: Obtener el valor desde la base de datos.
         $valorObtenido = OpcionRepository::get($key);
 
+        // Prioridad 3: Usar el valor por defecto si no hay nada en la BD.
         if ($valorObtenido === OpcionRepository::getCentinela()) {
             $valorFinal = $valorPorDefecto ?? $config['valorDefault'];
         } else {
             $valorFinal = $valorObtenido;
         }
 
+        // Aplicar escape si es necesario.
         $debeEscapar = $config['comportamientoEscape'] ?? false;
-
         if (is_string($valorFinal) && $debeEscapar) {
             return esc_html($valorFinal);
         }

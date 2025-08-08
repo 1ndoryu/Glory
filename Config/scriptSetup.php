@@ -1,7 +1,15 @@
 <?php
 
 use Glory\Manager\AssetManager;
+use Glory\Manager\OpcionManager;
 use Glory\Integration\Compatibility;
+
+/*
+ * jules refactor: proxima tarea, considerar obtener todos los valores de las opciones de componentes
+ * en un solo array al principio de este archivo para evitar llamadas repetidas a OpcionManager::get().
+ * Ejemplo: $componentes = ['modales' => OpcionManager::get(...), 'submenus' => OpcionManager::get(...)];
+ * y luego usar if ($componentes['modales']).
+ */
 
 // Carga condicional de scripts de Avada/Fusion Builder
 if (Compatibility::avadaActivo()) {
@@ -19,9 +27,11 @@ if (Compatibility::avadaActivo()) {
     );
 }
 
+// El script de Navegación AJAX siempre se registra para poder localizar sus datos.
+// Su activación se controla mediante la variable 'enabled' que se pasa a JavaScript.
 AssetManager::define(
     'script',
-    'gloryAjaxNav',
+    'glory-gloryajaxnav', // Se ha cambiado el handle para seguir el prefijo 'glory-'
     '/Glory/assets/js/genericAjax/gloryAjaxNav.js',
     [
         'deps'      => ['jquery'],
@@ -29,7 +39,7 @@ AssetManager::define(
         'localize'  => [
             'nombreObjeto' => 'dataGlobal',
             'datos'        => [
-                'enabled'            => true,
+                'enabled'            => (bool) OpcionManager::get('glory_componente_navegacion_ajax_activado', true),
                 'contentSelector'    => '#main',
                 'mainScrollSelector' => '#main',
                 'loadingBarSelector' => '#loadingBar',
@@ -50,6 +60,8 @@ AssetManager::define(
     ]
 );
 
+// Carga de la mayoría de scripts de la carpeta /assets/js/
+// Se excluyen los scripts que ahora son opcionales para definirlos condicionalmente más abajo.
 AssetManager::defineFolder(
     'script',
     '/Glory/assets/js/',
@@ -59,89 +71,117 @@ AssetManager::defineFolder(
     ],
     'glory-',
     [
+        // Exclusiones de utilidad
         'adminPanel.js',
         'gloryLogs.js',
         'options-panel.js',
         'disableMenuClicksInFusionBuilder.js',
-        'fusionBuilderDetect.js'
+        'fusionBuilderDetect.js',
+        'gloryAjaxNav.js', // Se define manualmente arriba
+        // Exclusiones de componentes opcionales
+        'adaptiveHeader.js',
+        'alertas.js',
+        'crearfondo.js',
+        'formModal.js',
+        'gloryModal.js',
+        'pestanas.js',
+        'submenus.js',
     ]
 );
 
-// Asegurar que el manejador de formularios esté disponible también en el área de administración
+// --- Carga condicional de Componentes UI ---
+
+// Componente: Modales
+if (OpcionManager::get('glory_componente_modales_activado', true)) {
+    AssetManager::define(
+        'script',
+        'glory-crearfondo',
+        '/Glory/assets/js/UI/crearfondo.js',
+        ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both']
+    );
+    AssetManager::define(
+        'script',
+        'glory-modal',
+        '/Glory/assets/js/UI/gloryModal.js',
+        ['deps' => ['jquery', 'glory-crearfondo'], 'in_footer' => true, 'area' => 'both']
+    );
+    AssetManager::define(
+        'script',
+        'glory-formmodal',
+        '/Glory/assets/js/UI/formModal.js',
+        ['deps' => ['jquery', 'glory-modal', 'glory-gloryform', 'glory-ajax'], 'in_footer' => true, 'area' => 'both']
+    );
+    AssetManager::define(
+        'style',
+        'glory-modal-css',
+        '/assets/css/reservas-admin.css',
+        ['media' => 'all', 'area' => 'both']
+    );
+}
+
+// Componente: Submenús
+if (OpcionManager::get('glory_componente_submenus_activado', true)) {
+    AssetManager::define(
+        'script',
+        'glory-submenus',
+        '/Glory/assets/js/UI/submenus.js',
+        ['deps' => ['jquery'], 'in_footer' => true]
+    );
+}
+
+// Componente: Pestañas
+if (OpcionManager::get('glory_componente_pestanas_activado', true)) {
+    AssetManager::define(
+        'script',
+        'glory-pestanas',
+        '/Glory/assets/js/UI/pestanas.js',
+        ['deps' => ['jquery'], 'in_footer' => true]
+    );
+}
+
+// Componente: Header Adaptativo
+if (OpcionManager::get('glory_componente_header_adaptativo_activado', true)) {
+    AssetManager::define(
+        'script',
+        'glory-adaptiveheader',
+        '/Glory/assets/js/UI/adaptiveHeader.js',
+        ['deps' => [], 'in_footer' => true]
+    );
+}
+
+// Componente: Alertas
+if (OpcionManager::get('glory_componente_alertas_activado', true)) {
+    AssetManager::define(
+        'script',
+        'glory-alertas',
+        '/Glory/assets/js/UI/alertas.js',
+        ['deps' => [], 'in_footer' => true, 'area' => 'both']
+    );
+}
+
+
+// --- Scripts de Servicios (siempre necesarios) ---
+
+// Manejador de formularios
 AssetManager::define(
     'script',
     'glory-gloryform',
     '/Glory/assets/js/Services/gloryForm.js',
-    [
-        'deps'      => ['jquery'],
-        'in_footer' => true,
-        'area'      => 'both'
-    ]
+    ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both']
 );
 
-// Modal y fondo: disponibles en admin y front
-AssetManager::define(
-    'script',
-    'glory-crearfondo',
-    '/Glory/assets/js/UI/crearfondo.js',
-    [
-        'deps'      => ['jquery'],
-        'in_footer' => true,
-        'area'      => 'both',
-    ]
-);
-
-AssetManager::define(
-    'script',
-    'glory-modal',
-    '/Glory/assets/js/UI/gloryModal.js',
-    [
-        'deps'      => ['jquery', 'glory-crearfondo'],
-        'in_footer' => true,
-        'area'      => 'both',
-    ]
-);
-
-AssetManager::define(
-    'script',
-    'glory-formmodal',
-    '/Glory/assets/js/UI/formModal.js',
-    [
-        'deps'      => ['jquery', 'glory-modal', 'glory-gloryform', 'glory-ajax'],
-        'in_footer' => true,
-        'area'      => 'both',
-    ]
-);
-
-AssetManager::define(
-    'style',
-    'glory-modal-css',
-    '/assets/css/reservas-admin.css',
-    [
-        'media' => 'all',
-        'area'  => 'both',
-    ]
-);
-
-// Asegurar que la función AJAX genérica esté disponible también en admin
+// Función AJAX genérica
 AssetManager::define(
     'script',
     'glory-ajax',
     '/Glory/assets/js/genericAjax/gloryAjax.js',
-    [
-        'deps'      => ['jquery'],
-        'in_footer' => true,
-        'area'      => 'both'
-    ]
+    ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both']
 );
 
+// Carga de todos los estilos CSS de la carpeta /assets/css/
 AssetManager::defineFolder(
     'style',
     '/Glory/assets/css/',
-    [
-        'deps'  => [],
-        'media' => 'all',
-    ],
-    'glory-',
-    []
+    ['deps' => [], 'media' => 'all'],
+    'glory-'
 );
