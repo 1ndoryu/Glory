@@ -4,6 +4,8 @@ namespace Glory\Core;
 
 use Glory\Manager\AdminPageManager;
 use Glory\Manager\AssetManager;
+use Glory\Manager\CreditosManager;
+use Glory\Manager\DefaultContentManager;
 use Glory\Manager\MenuManager;
 use Glory\Manager\OpcionManager;
 use Glory\Manager\PageManager;
@@ -29,6 +31,11 @@ class Setup
         // Inicializar logger solo si la feature no está desactivada
         if (GloryFeatures::isActive('gloryLogger') !== false) {
             GloryLogger::init();
+        }
+
+        // Verificación de licencia (controlada por feature)
+        if (GloryFeatures::isActive('licenseManager') !== false) {
+            LicenseManager::init();
         }
 
         // Formularios (FormHandler) - el propio constructor también checa la feature,
@@ -58,6 +65,11 @@ class Setup
             GestorCssCritico::init();
         }
 
+        // Créditos (cron programable)
+        if (GloryFeatures::isActive('creditosManager') !== false) {
+            CreditosManager::init();
+        }
+
         // Registro/registro de managers principales (condicionales para control de rendimiento)
         if (GloryFeatures::isActive('assetManager') !== false) {
             AssetManager::register();
@@ -74,6 +86,11 @@ class Setup
 
         if (GloryFeatures::isActive('postTypeManager') !== false) {
             PostTypeManager::register();
+        }
+
+        // Contenido por defecto (sincronización y hooks relacionados)
+        if (GloryFeatures::isActive('defaultContentManager') !== false) {
+            DefaultContentManager::register();
         }
 
         if (GloryFeatures::isActive('syncManager') !== false) {
