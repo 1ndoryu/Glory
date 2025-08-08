@@ -3,6 +3,7 @@
 namespace Glory\Manager;
 
 use Glory\Core\GloryLogger;
+use Glory\Services\GestorCssCritico;
 
 
 final class AssetManager
@@ -18,6 +19,8 @@ final class AssetManager
     private static string $versionTema = '1.0.0';
     private static bool $hooksRegistrados = false;
     private static array $deferredScripts = [];
+    private static ?string $cssCritico = null;
+    private static array $handlesEstilosAsincronos = [];
 
     private static string $cacheDir = GLORY_FRAMEWORK_PATH . '/cache';
 
@@ -127,9 +130,35 @@ final class AssetManager
         }
     }
 
+    public static function imprimirCssCritico(): void
+    {
+        if (self::$cssCritico) {
+            echo '<style id="glory-css-critico">' . self::$cssCritico . '</style>';
+        }
+    }
+
+    public static function hacerEstilosAsincronos(string $tag, string $handle): string
+    {
+        if (!in_array($handle, self::$handlesEstilosAsincronos, true)) {
+            return $tag;
+        }
+
+        $fallback = '<noscript>' . $tag . '</noscript>';
+        $tag = str_replace("media='all'", "media='print' onload=\"this.media='all'; this.onload=null;\"", $tag);
+
+        return $tag . $fallback;
+    }
+
 
     public static function enqueueFrontendAssets(): void
     {
+        self::$cssCritico = GestorCssCritico::getParaPaginaActual();
+
+        if (self::$cssCritico) {
+            add_action('wp_head', [self::class, 'imprimirCssCritico'], 1);
+            add_filter('style_loader_tag', [self::class, 'hacerEstilosAsincronos'], 999, 2);
+        }
+
         self::enqueueForArea('frontend');
     }
 
@@ -146,6 +175,10 @@ final class AssetManager
             foreach ($assetsPorTipo as $handle => $config) {
                 if ($config['area'] !== 'both' && $config['area'] !== $currentArea) {
                     continue;
+                }
+
+                if ($tipo === self::ASSET_TYPE_STYLE && self::$cssCritico && $currentArea === 'frontend') {
+                    self::$handlesEstilosAsincronos[] = $handle;
                 }
 
                 $yaRegistrado = ($tipo === self::ASSET_TYPE_SCRIPT)

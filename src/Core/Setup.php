@@ -20,6 +20,7 @@ use Glory\Utility\AssetsUtility;
 use Glory\Handler\PaginationAjaxHandler;
 use Glory\Handler\BusquedaAjaxHandler;
 use Glory\Components\LogoRenderer;
+use Glory\Services\GestorCssCritico;
 
 class Setup
 {
@@ -32,6 +33,7 @@ class Setup
 
         OpcionManager::init();
         AssetsUtility::init();
+        GestorCssCritico::init();
 
         AssetManager::register();
         PageManager::register();
