@@ -194,12 +194,40 @@ function gloryFormModal() {
                     const name = el.name;
                     if (typeof d[name] === 'undefined') return;
                     const val = d[name];
-                    if (el.tagName.toLowerCase() === 'select') {
+
+                    if (el.classList.contains('glory-image-id')) {
+                        const uploader = el.closest('.glory-image-uploader');
+                        if (uploader) {
+                            const preview = uploader.querySelector('.image-preview');
+                            const removeBtn = uploader.querySelector('.glory-remove-image-button');
+                            // Asumimos que `val` es un objeto {id, url} o solo un ID.
+                            const hasValue = val && (val.id || (typeof val === 'string' && val));
+                            const imageId = hasValue ? (val.id || val) : '';
+                            const imageUrl = hasValue ? val.url : '';
+
+                            el.value = imageId;
+
+                            if (preview) {
+                                if (imageId && imageUrl) {
+                                    preview.innerHTML = `<img src="${imageUrl}" alt="Previsualización">`;
+                                } else {
+                                    const placeholder = preview.dataset.placeholder || '';
+                                    preview.innerHTML = `<span class="image-preview-placeholder">${placeholder}</span>`;
+                                }
+                            }
+                            if (removeBtn) {
+                                removeBtn.style.display = imageId ? '' : 'none';
+                            }
+                        }
+                    } else if (el.type === 'checkbox' && el.name.endsWith('[]') && Array.isArray(val)) {
+                        // Para grupos de checkboxes, p.ej. name="servicios[]"
+                        el.checked = val.map(String).includes(el.value);
+                    } else if (el.tagName.toLowerCase() === 'select') {
                         el.value = String(val);
                         // Si el select tiene carga declarativa, recordar el valor para re-seleccionarlo tras poblar
                         if (el.dataset.fmOptionsAction) el.dataset.fmSelectedValue = String(val);
                     } else if (el.type === 'checkbox') {
-                        el.checked = !!val;
+                        el.checked = !!val && val !== '0';
                     } else if (el.type === 'radio') {
                         if (el.value === String(val)) el.checked = true;
                     } else {

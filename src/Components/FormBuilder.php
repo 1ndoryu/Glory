@@ -169,6 +169,12 @@ class FormBuilder
         $clasesInput = $opciones_select['extraClassInput'] ?? '';
         $obligatorio = $opciones_select['obligatorio'] ?? false;
         $alertaObligatorio = $opciones_select['alertaObligatorio'] ?? '';
+        $atributosExtra = $opciones_select['atributosExtra'] ?? [];
+
+        $dataAttributes = '';
+        foreach ($atributosExtra as $clave => $valor) {
+            $dataAttributes .= esc_attr($clave) . '="' . esc_attr($valor) . '" ';
+        }
 
         ob_start();
         ?>
@@ -176,7 +182,7 @@ class FormBuilder
                 <?php if ($label) : ?>
                     <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
                 <?php endif; ?>
-                <select id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" class="<?php echo esc_attr($clasesInput); ?>" <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?>>
+                <select id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" class="<?php echo esc_attr($clasesInput); ?>" <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?> <?php echo trim($dataAttributes); ?>>
                     <?php foreach ($opciones as $valor => $texto) : ?>
                         <option value="<?php echo esc_attr($valor); ?>" <?php selected($valor, $valorSeleccionado); ?>>
                             <?php echo esc_html($texto); ?>

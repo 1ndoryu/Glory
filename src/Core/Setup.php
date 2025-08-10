@@ -4,7 +4,7 @@ namespace Glory\Core;
 
 use Glory\Manager\AdminPageManager;
 use Glory\Manager\AssetManager;
-use Glory\Manager\CreditosManager;
+// use Glory\Manager\CreditosManager;
 use Glory\Manager\DefaultContentManager;
 use Glory\Manager\MenuManager;
 use Glory\Manager\OpcionManager;
@@ -35,7 +35,7 @@ class Setup
 
         // Verificación de licencia (controlada por feature)
         if (GloryFeatures::isActive('licenseManager') !== false) {
-            LicenseManager::init();
+            //LicenseManager::init();
         }
 
         // Formularios (FormHandler) - el propio constructor también checa la feature,
@@ -67,7 +67,7 @@ class Setup
 
         // Créditos (cron programable)
         if (GloryFeatures::isActive('creditosManager') !== false) {
-            CreditosManager::init();
+            // CreditosManager::init();
         }
 
         // Registro/registro de managers principales (condicionales para control de rendimiento)
