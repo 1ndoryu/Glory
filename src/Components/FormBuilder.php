@@ -241,7 +241,9 @@ class FormBuilder
                     <?php foreach ($opciones as $valor => $texto) : ?>
                         <label for="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', $valor)); ?>">
                             <input type="checkbox" id="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', $valor)); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" <?php checked(in_array($valor, $valoresSeleccionados)); ?>>
-                            <?php echo esc_html($texto); ?>
+                            <span class="checkbox-visual-wrapper">
+                                <?php echo esc_html($texto); ?>
+                            </span>
                         </label>
                     <?php endforeach; ?>
                 </div>

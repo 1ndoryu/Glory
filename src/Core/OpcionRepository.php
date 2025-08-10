@@ -57,6 +57,15 @@ class OpcionRepository
     public static function save(string $key, $valor): bool
     {
         $nombreOpcion = self::getNombreOpcion($key);
+
+        // Si la opción no existe aún en la BD, usar add_option explícitamente.
+        // En algunos entornos, update_option con valores falsy (false, '') puede no crear el registro.
+        $existe = get_option($nombreOpcion, self::$centinelaBd) !== self::$centinelaBd;
+        if (!$existe) {
+            // Autoload en 'no' para no cargar todas las opciones de Glory en cada request.
+            return add_option($nombreOpcion, $valor, '', 'no');
+        }
+
         return update_option($nombreOpcion, $valor);
     }
 

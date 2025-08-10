@@ -33,4 +33,10 @@ if (is_readable($functionsFile)) {
     error_log("Glory Framework: No se pudo leer el archivo de funciones: {$functionsFile}");
 }
 
+// Intentamos cargar las definiciones de opciones del tema (si existen) antes de instanciar Setup
+$themeOptionsFile = get_template_directory() . '/App/Config/opcionesTema.php';
+if (is_readable($themeOptionsFile)) {
+    require_once $themeOptionsFile;
+}
+
 new Setup();
