@@ -4,6 +4,7 @@ namespace Glory\Core;
 
 use Glory\Manager\OpcionManager;
 use Glory\Manager\AssetManager;
+use Glory\Core\OpcionRegistry;
 
 /**
  * Clase para controlar mediante programación la activación o desactivación de funcionalidades del tema.
@@ -21,6 +22,8 @@ class GloryFeatures
         'schedulemanager' => 'scheduler',
         'schedule_manager' => 'scheduler',
         'schedule-manager' => 'scheduler',
+        // Compatibilidad entre nombres históricos
+        'gestionarpreviews' => 'previews',
     ];
 
     /**
@@ -121,13 +124,31 @@ class GloryFeatures
             }
         }
 
-        // Si no se proporcionó una key de opción, inferir la clave por convención:
-        // glory_componente_{feature_snake}_activado
-        if ($optionKey === null) {
-            $snake = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $normalized));
-            $optionKey = 'glory_componente_' . $snake . '_activado';
+        // Resolver clave(s) de opción posibles evitando advertencias por opciones no definidas.
+        $snake = strtolower(preg_replace('/([a-z])([A-Z])/', '$1_$2', $normalized));
+
+        $candidateKeys = [];
+        if ($optionKey !== null) {
+            $candidateKeys[] = $optionKey;
+        } else {
+            // Convención principal
+            $candidateKeys[] = 'glory_componente_' . $snake . '_activado';
+            // Convención core previa
+            $candidateKeys[] = 'glory_' . $snake . '_activado';
+            // Variante "service" para claves históricas (ajax/form)
+            if (str_starts_with($snake, 'glory_')) {
+                $sinPrefijo = substr($snake, strlen('glory_'));
+                $candidateKeys[] = 'glory_' . $sinPrefijo . '_service_activado';
+            }
         }
 
-        return (bool) OpcionManager::get($optionKey, $defaultOption);
+        foreach ($candidateKeys as $key) {
+            if (OpcionRegistry::getDefinicion($key) !== null) {
+                return (bool) OpcionManager::get($key, $defaultOption);
+            }
+        }
+
+        // Si ninguna clave está definida, usar el valor por defecto.
+        return (bool) $defaultOption;
     }
 }

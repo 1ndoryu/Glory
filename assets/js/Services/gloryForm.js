@@ -126,20 +126,41 @@ function gloryForm() {
         if (config.postType) datosParaEnviar.append('postType', config.postType);
         if (config.postStatus) datosParaEnviar.append('postStatus', config.postStatus);
 
+        // Construcción robusta de payload: soportar grupos de checkboxes con nombre[]
+        const nombresProcesados = new Set();
         for (const input of campos) {
             if (!input.name) continue;
-            
             const clave = input.name;
+
+            // Evitar duplicar procesamiento por nombre en grupos
+            if (nombresProcesados.has(clave)) continue;
+
             if (input.type === 'file') {
                 if (input.files.length > 0) {
                     datosParaEnviar.append(clave, input.files[0]);
                 }
             } else if (input.type === 'checkbox') {
-                datosParaEnviar.append(clave, input.checked ? '1' : '0');
-            } else if (input.type === 'radio') {
-                if (input.checked) {
-                    datosParaEnviar.append(clave, input.value);
+                const esGrupo = clave.endsWith('[]');
+                if (esGrupo) {
+                    const grupo = contenedor.querySelectorAll(`input[type="checkbox"][name="${clave}"]`);
+                    let alguno = false;
+                    grupo.forEach(chk => {
+                        if (chk.checked) {
+                            datosParaEnviar.append(clave, chk.value);
+                            alguno = true;
+                        }
+                    });
+                    // Si ninguno marcado, no enviar nada para el grupo
+                    nombresProcesados.add(clave);
+                } else {
+                    datosParaEnviar.append(clave, input.checked ? '1' : '0');
                 }
+            } else if (input.type === 'radio') {
+                const grupo = contenedor.querySelector(`input[type="radio"][name="${clave}"]:checked`);
+                if (grupo) {
+                    datosParaEnviar.append(clave, grupo.value);
+                }
+                nombresProcesados.add(clave);
             } else {
                 datosParaEnviar.append(clave, input.value);
             }

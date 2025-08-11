@@ -245,8 +245,15 @@ class FormBuilder
                 <?php endif; ?>
                 <div class="checkbox-group">
                     <?php foreach ($opciones as $valor => $texto) : ?>
-                        <label for="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', $valor)); ?>">
-                            <input type="checkbox" id="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', $valor)); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" <?php checked(in_array($valor, $valoresSeleccionados)); ?>>
+                        <?php
+                        // Asegurar comparación estricta: si los seleccionados vienen como strings y las keys son int
+                        $estaSeleccionado = false;
+                        foreach ($valoresSeleccionados as $vs) {
+                            if ((string)$vs === (string)$valor) { $estaSeleccionado = true; break; }
+                        }
+                        ?>
+                        <label for="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', (string)$valor)); ?>">
+                            <input type="checkbox" id="form-<?php echo esc_attr(str_replace('[]', '', $nombre) . '-' . str_replace(' ', '_', (string)$valor)); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" <?php echo $estaSeleccionado ? 'checked' : ''; ?>>
                             <span class="checkbox-visual-wrapper">
                                 <?php echo esc_html($texto); ?>
                             </span>

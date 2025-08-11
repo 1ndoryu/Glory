@@ -25,7 +25,7 @@ function gloryFormModal() {
         const dispatch = (name, extra = {}) => document.dispatchEvent(new CustomEvent(name, { detail: { modal, form, trigger, ...extra } }));
 
         // -------- Helpers y configuración declarativa (agnóstico) --------
-        const namesToEnableSubmit = (form.dataset.fmSubmitEnableWhen || '')
+        const namesToEnableSubmit = (form.dataset.fmSubmitHabilitarCuando || '')
             .split(',').map(s => s.trim()).filter(Boolean);
 
         const cssEscape = (s) => s.replace(/"/g, '\\"');
@@ -59,6 +59,38 @@ function gloryFormModal() {
             form.addEventListener('input', updateSubmitState);
             form.addEventListener('change', updateSubmitState);
             updateSubmitState();
+        };
+
+        // Select All para grupos de servicios
+        const wireServiciosSelectAll = () => {
+            const container = form.querySelector('.services-field');
+            if (!container) return;
+            const checkboxes = container.querySelectorAll('input[type="checkbox"][name="services[]"]');
+            if (!checkboxes.length) return;
+            const chkAll = Array.from(checkboxes).find(ch => ch.value === 'all');
+            const others = Array.from(checkboxes).filter(ch => ch.value !== 'all');
+            if (!chkAll) return;
+
+            const syncAllState = () => {
+                const allChecked = others.length > 0 && others.every(ch => ch.checked);
+                chkAll.checked = allChecked;
+            };
+            chkAll.addEventListener('change', () => {
+                const state = chkAll.checked;
+                others.forEach(ch => { ch.checked = state; });
+            });
+            others.forEach(ch => ch.addEventListener('change', () => {
+                if (!ch.checked && chkAll.checked) chkAll.checked = false;
+                else syncAllState();
+            }));
+            // Inicial: si el servidor indica bandera de "todos", marcar todos
+            const termAll = form.querySelector('input[name="term_id"][value]');
+            if (termAll && termAll.value) {
+                // No podemos leer meta aquí, pero al entrar en edición cargamos ids, y si equivalen a todos, quedará marcado por sync
+                syncAllState();
+            } else {
+                syncAllState();
+            }
         };
 
         // Carga de opciones para <select> declarados
@@ -102,9 +134,9 @@ function gloryFormModal() {
             }
         };
         const wireOptionsSelect = (selectEl) => {
-            const action = selectEl.dataset.fmOptionsAction;
-            const depends = (selectEl.dataset.fmDepends || '').split(',').map(s => s.trim()).filter(Boolean);
-            const placeholderDisabled = selectEl.dataset.fmPlaceholderDisabled || '';
+            const action = selectEl.dataset.fmAccionOpciones;
+            const depends = (selectEl.dataset.fmDepende || '').split(',').map(s => s.trim()).filter(Boolean);
+            const placeholderDisabled = selectEl.dataset.fmPlaceholderDeshabilitado || '';
             if (!action || depends.length === 0) return;
 
             const tryLoad = async () => {
@@ -166,7 +198,8 @@ function gloryFormModal() {
             }
             dispatch('gloryFormModal:afterCreate');
             // Enlazar selects declarativos (agnóstico)
-            form.querySelectorAll('select[data-fm-options-action][data-fm-depends]').forEach(wireOptionsSelect);
+            form.querySelectorAll('select[data-fm-accion-opciones][data-fm-depende]').forEach(wireOptionsSelect);
+            wireServiciosSelectAll();
             attachSubmitWatcher();
             return;
         }
@@ -225,7 +258,7 @@ function gloryFormModal() {
                     } else if (el.tagName.toLowerCase() === 'select') {
                         el.value = String(val);
                         // Si el select tiene carga declarativa, recordar el valor para re-seleccionarlo tras poblar
-                        if (el.dataset.fmOptionsAction) el.dataset.fmSelectedValue = String(val);
+                        if (el.dataset.fmAccionOpciones) el.dataset.fmSelectedValue = String(val);
                     } else if (el.type === 'checkbox') {
                         el.checked = !!val && val !== '0';
                     } else if (el.type === 'radio') {
@@ -234,6 +267,13 @@ function gloryFormModal() {
                         el.value = String(val ?? '');
                     }
                 });
+                // Si el backend indica que son todos, marcar el checkbox "all"
+                const chkAll = form.querySelector('.services-field input[type="checkbox"][name="services[]"][value="all"]');
+                if (chkAll && d['services_all'] === '1') {
+                    chkAll.checked = true;
+                    const others = form.querySelectorAll('.services-field input[type="checkbox"][name="services[]"]');
+                    others.forEach(ch => { if (ch.value !== 'all') ch.checked = true; });
+                }
                 form.dataset.objectId = objectId;
                 if (btnSubmit) {
                     if (trigger.dataset.submitText) btnSubmit.textContent = trigger.dataset.submitText;
@@ -242,7 +282,8 @@ function gloryFormModal() {
                 dispatch('gloryFormModal:afterEdit', { objectId, data: d });
 
                 // Enlazar selects declarativos (agnóstico) y cargar opciones con dependencias actuales
-                form.querySelectorAll('select[data-fm-options-action][data-fm-depends]').forEach(wireOptionsSelect);
+                form.querySelectorAll('select[data-fm-accion-opciones][data-fm-depende]').forEach(wireOptionsSelect);
+                wireServiciosSelectAll();
                 attachSubmitWatcher();
             } catch (e) {
                 console.error('formModal: error cargando datos', e);
