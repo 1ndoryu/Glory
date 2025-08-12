@@ -28,44 +28,47 @@ if (Compatibility::avadaActivo()) {
     );
 }
 
-// El script de Navegación AJAX siempre se registra para poder localizar sus datos.
-// Su activación se controla mediante la variable 'enabled' que se pasa a JavaScript.
-// Navegación AJAX: combinamos la opción en BD con la posibilidad de forzar desde código mediante GloryFeatures
 if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_activado')) {
+    // Config base para la navegación AJAX, filtrable desde el tema
+    $glory_nav_config = [
+        'enabled'            => true,
+        'contentSelector'    => '#main',
+        'mainScrollSelector' => '#main',
+        'loadingBarSelector' => '#loadingBar',
+        'cacheEnabled'       => true,
+        'ignoreUrlPatterns'  => [
+            '/wp-admin',
+            '/wp-login\.php',
+            '\\.(pdf|zip|rar|jpg|jpeg|png|gif|webp|mp3|mp4|xml|txt|docx|xlsx)$',
+        ],
+        'ignoreUrlParams'    => ['s', 'nocache', 'preview'],
+        'noAjaxClass'        => 'noAjax',
+        'idUsuario'          => get_current_user_id(),
+        'nonce'              => wp_create_nonce('globalNonce'),
+        'nombreUsuario'      => is_user_logged_in() ? wp_get_current_user()->display_name : '',
+        'username'           => is_user_logged_in() ? wp_get_current_user()->user_login : '',
+    ];
+
+    // Permite al tema modificar fácilmente esta configuración
+    if (function_exists('apply_filters')) {
+        $glory_nav_config = apply_filters('glory/nav_config', $glory_nav_config);
+    }
+
     AssetManager::define(
         'script',
-        'glory-gloryajaxnav', // Se ha cambiado el handle para seguir el prefijo 'glory-'
+        'glory-gloryajaxnav',
         '/Glory/assets/js/genericAjax/gloryAjaxNav.js',
         [
             'deps'      => ['jquery'],
             'in_footer' => true,
             'localize'  => [
-                'nombreObjeto' => 'dataGlobal',
-                'datos'        => [
-                    'enabled'            => true,
-                    'contentSelector'    => '#main',
-                    'mainScrollSelector' => '#main',
-                    'loadingBarSelector' => '#loadingBar',
-                    'cacheEnabled'       => true,
-                    'ignoreUrlPatterns'  => [
-                        '/wp-admin',
-                        '/wp-login\.php',
-                        '\\.(pdf|zip|rar|jpg|jpeg|png|gif|webp|mp3|mp4|xml|txt|docx|xlsx)$',
-                    ],
-                    'ignoreUrlParams'    => ['s', 'nocache', 'preview'],
-                    'noAjaxClass'        => 'noAjax',
-                    'idUsuario'          => get_current_user_id(),
-                    'nonce'              => wp_create_nonce('globalNonce'),
-                    'nombreUsuario'      => is_user_logged_in() ? wp_get_current_user()->display_name : '',
-                    'username'           => is_user_logged_in() ? wp_get_current_user()->user_login : '',
-                ],
+                'nombreObjeto' => 'gloryNavConfig',
+                'datos'        => $glory_nav_config,
             ]
         ]
     );
 }
 
-// Carga de la mayoría de scripts de la carpeta /assets/js/
-// Se excluyen los scripts que ahora son opcionales para definirlos condicionalmente más abajo.
 AssetManager::defineFolder(
     'script',
     '/Glory/assets/js/',
@@ -94,6 +97,7 @@ AssetManager::defineFolder(
         'submenus.js',
         'gestionarPreviews.js',
         'gloryPagination.js',
+        'gloryFilters.js',
         'gloryScheduler.js',
         'menu.js',
     ]
@@ -174,6 +178,14 @@ AssetManager::define(
     'glory-glorypagination',
     '/Glory/assets/js/UI/gloryPagination.js',
     ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'paginacion']
+);
+
+// Componente: Filtros (actualización en tiempo real)
+AssetManager::define(
+    'script',
+    'glory-gloryfilters',
+    '/Glory/assets/js/UI/gloryFilters.js',
+    ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'feature' => 'gloryFilters']
 );
 
 // Componente: Scheduler

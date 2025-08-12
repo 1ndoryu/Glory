@@ -25,8 +25,12 @@ function inicializarCuadricula(contenedor) {
     const duracionTotalMinutos = finMinutosTotal - inicioMinutosTotal;
     const numeroFilas = duracionTotalMinutos / config.intervalo;
 
+    // Altura fija por intervalo basada en px por minuto para precisión absoluta
+    const pxPorMinuto = Number(config.pxPorMinuto) > 0 ? Number(config.pxPorMinuto) : 2; // default: 2px/minuto
+    const altoIntervaloPx = pxPorMinuto * config.intervalo;
+
     const gridTemplateColumns = `60px repeat(${config.recursos.length}, 1fr)`;
-    const gridTemplateRows = `auto repeat(${numeroFilas}, 1fr)`;
+    const gridTemplateRows = `auto repeat(${numeroFilas}, ${altoIntervaloPx}px)`;
 
     grid.style.gridTemplateColumns = gridTemplateColumns;
     grid.style.gridTemplateRows = gridTemplateRows;
@@ -34,7 +38,14 @@ function inicializarCuadricula(contenedor) {
     capaEventos.style.gridTemplateColumns = gridTemplateColumns;
     capaEventos.style.gridTemplateRows = gridTemplateRows;
 
-    renderizarEventos(eventos, capaEventos, config, inicioMinutosTotal);
+    // Alinear la altura de la fila de encabezado en la capa de eventos con la de la grilla base
+    const celdaEncabezado = grid.querySelector('.celdaEncabezadoTiempo');
+    if (celdaEncabezado) {
+        const altoHeader = Math.round(celdaEncabezado.getBoundingClientRect().height);
+        capaEventos.style.gridTemplateRows = `${altoHeader}px repeat(${numeroFilas}, ${altoIntervaloPx}px)`;
+    }
+
+    renderizarEventos(eventos, capaEventos, config, inicioMinutosTotal, { pxPorMinuto, altoIntervaloPx });
 }
 
 function convertirHoraAMinutos(hora) {
@@ -42,7 +53,7 @@ function convertirHoraAMinutos(hora) {
     return horas * 60 + minutos;
 }
 
-function renderizarEventos(eventos, capa, config, inicioCuadriculaMinutos) {
+function renderizarEventos(eventos, capa, config, inicioCuadriculaMinutos, medidas) {
     capa.innerHTML = '';
 
     eventos.forEach(evento => {
@@ -55,11 +66,17 @@ function renderizarEventos(eventos, capa, config, inicioCuadriculaMinutos) {
         const bloqueEvento = document.createElement('div');
         bloqueEvento.className = 'bloqueEvento';
 
-        const filaInicio = Math.floor((evento.inicioMinutos - inicioCuadriculaMinutos) / config.intervalo) + 2;
-        const numFilas = evento.duracionMinutos / config.intervalo;
+        const minutosDesdeInicio = (evento.inicioMinutos - inicioCuadriculaMinutos);
+        const filaInicio = Math.floor(minutosDesdeInicio / config.intervalo) + 2; // anclar a fila base
+        const offsetMinutos = ((minutosDesdeInicio % config.intervalo) + config.intervalo) % config.intervalo; // manejar negativos
+        const offsetPx = (offsetMinutos / config.intervalo) * medidas.altoIntervaloPx;
+        const alturaPx = Math.max(1, Math.round(evento.duracionMinutos * medidas.pxPorMinuto));
 
         bloqueEvento.style.gridColumn = `${recursoIndex + 2} / span 1`;
-        bloqueEvento.style.gridRow = `${filaInicio} / span ${numFilas}`;
+        // Usamos una sola fila y aplicamos desplazamiento y altura en píxeles para precisión de minutos
+        bloqueEvento.style.gridRow = `${filaInicio} / span 1`;
+        bloqueEvento.style.transform = `translateY(${offsetPx}px)`;
+        bloqueEvento.style.height = `${alturaPx}px`;
 
         bloqueEvento.innerHTML = `
             <div class="eventoContenido">

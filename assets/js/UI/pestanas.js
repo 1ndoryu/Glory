@@ -1,51 +1,74 @@
 function pestanas() {
-    const pestanasContenedor = document.querySelector('.pestanas');
-    const panelesContenido = Array.from(document.querySelectorAll('.pestanaContenido')).slice(0, 3);
+    const bloques = document.querySelectorAll('.gloryTabs');
+    if (!bloques.length) return;
 
-    if (!pestanasContenedor || panelesContenido.length === 0) {
-        return;
-    }
+    bloques.forEach((bloque, bloqueIndex) => {
+        const pestanasContenedor = bloque.querySelector('.pestanas');
+        const panelesContenido = Array.from(bloque.querySelectorAll('.pestanaContenido'));
+        if (!pestanasContenedor || panelesContenido.length === 0) return;
 
-    pestanasContenedor.innerHTML = ''; 
-
-    panelesContenido.forEach((panel, index) => {
-        const idPanel = `pestanaID-${index}`;
-        const nombrePestana = panel.dataset.pestana || `Pestaña ${index + 1}`;
-        panel.id = idPanel;
-        panel.classList.remove('activa');
-
-        const pestanaBtn = document.createElement('button');
-        pestanaBtn.setAttribute('role', 'tab');
-        pestanaBtn.setAttribute('aria-controls', idPanel);
-        pestanaBtn.dataset.target = `#${idPanel}`;
-        pestanaBtn.textContent = nombrePestana;
-
-        pestanasContenedor.appendChild(pestanaBtn);
-
-        if (index === 0) {
-            pestanaBtn.classList.add('activa');
-            pestanaBtn.setAttribute('aria-selected', 'true');
-            panel.classList.add('activa');
-        } else {
-            pestanaBtn.setAttribute('aria-selected', 'false');
+        // Determinar pestaña activa preservando estado previo
+        let activeIndex = -1;
+        if (typeof bloque.dataset.activeIndex !== 'undefined') {
+            const parsed = parseInt(bloque.dataset.activeIndex, 10);
+            if (!Number.isNaN(parsed) && parsed >= 0 && parsed < panelesContenido.length) {
+                activeIndex = parsed;
+            }
         }
-    });
+        if (activeIndex === -1) {
+            activeIndex = panelesContenido.findIndex(p => p.classList.contains('activa'));
+            if (activeIndex < 0) activeIndex = 0;
+        }
 
-    pestanasContenedor.addEventListener('click', (e) => {
-        const pestanaClickeada = e.target.closest('button');
-        if (!pestanaClickeada) return;
+        pestanasContenedor.innerHTML = '';
 
-        // Desactivar todas las pestañas y paneles
-        pestanasContenedor.querySelectorAll('button').forEach(btn => {
-            btn.classList.remove('activa');
-            btn.setAttribute('aria-selected', 'false');
+        panelesContenido.forEach((panel, index) => {
+            const idPanel = `pestanaID-${bloqueIndex}-${index}`;
+            const nombrePestana = panel.dataset.pestana || `Pestaña ${index + 1}`;
+            panel.id = idPanel;
+            panel.classList.remove('activa');
+
+            const pestanaBtn = document.createElement('button');
+            pestanaBtn.setAttribute('role', 'tab');
+            pestanaBtn.setAttribute('aria-controls', idPanel);
+            pestanaBtn.dataset.target = `#${idPanel}`;
+            pestanaBtn.textContent = nombrePestana;
+
+            pestanasContenedor.appendChild(pestanaBtn);
+
+            if (index === activeIndex) {
+                pestanaBtn.classList.add('activa');
+                pestanaBtn.setAttribute('aria-selected', 'true');
+                panel.classList.add('activa');
+            } else {
+                pestanaBtn.setAttribute('aria-selected', 'false');
+            }
         });
-        panelesContenido.forEach(p => p.classList.remove('activa'));
 
-        // Activar la pestaña y panel seleccionados
-        pestanaClickeada.classList.add('activa');
-        pestanaClickeada.setAttribute('aria-selected', 'true');
-        document.querySelector(pestanaClickeada.dataset.target)?.classList.add('activa');
+        // Evitar múltiples listeners acumulados: usar propiedad onclick (reemplaza) en lugar de addEventListener
+        pestanasContenedor.onclick = (e) => {
+            const pestanaClickeada = e.target.closest('button');
+            if (!pestanaClickeada) return;
+
+            const botones = Array.from(pestanasContenedor.querySelectorAll('button'));
+            botones.forEach(btn => {
+                btn.classList.remove('activa');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            panelesContenido.forEach(p => p.classList.remove('activa'));
+
+            pestanaClickeada.classList.add('activa');
+            pestanaClickeada.setAttribute('aria-selected', 'true');
+            const targetSel = pestanaClickeada.dataset.target;
+            const targetPanel = targetSel ? bloque.querySelector(targetSel) : null;
+            if (targetPanel) targetPanel.classList.add('activa');
+
+            // Guardar índice activo para preservar entre reinicios
+            const newIndex = botones.indexOf(pestanaClickeada);
+            if (newIndex >= 0) {
+                bloque.dataset.activeIndex = String(newIndex);
+            }
+        };
     });
 }
 

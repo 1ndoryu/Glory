@@ -24,6 +24,8 @@ class BarraFiltrosRenderer
      * - clear_text: texto del botón limpiar (por defecto: 'Limpiar')
      * - limpiar_url: URL para limpiar filtros (por defecto: admin_url('admin.php?page=' . $_REQUEST['page']))
      * - preservar_keys: array de claves GET a preservar como inputs ocultos (además de 'page')
+     * - ajax_action: si se define, el formulario se marca para envío AJAX (data-glory-filters="ajax") y usa esta acción
+     * - target_selector: selector CSS opcional para ubicar el contenedor a reemplazar con el HTML de respuesta
      */
     public static function render(array $campos, array $opciones = []): void
     {
@@ -37,17 +39,29 @@ class BarraFiltrosRenderer
         $paginaActualKey = isset($_REQUEST['page']) ? sanitize_text_field((string) $_REQUEST['page']) : '';
         $limpiarUrl      = $opciones['limpiar_url'] ?? ($paginaActualKey !== '' ? admin_url('admin.php?page=' . $paginaActualKey) : '');
 
+        $ajaxAction = isset($opciones['ajax_action']) ? sanitize_key((string) $opciones['ajax_action']) : '';
+        $targetSelector = isset($opciones['target_selector']) ? (string) $opciones['target_selector'] : '';
+
+        $method = $ajaxAction ? 'POST' : 'GET';
+        $extraAttrs = '';
+        if ($ajaxAction) {
+            $extraAttrs .= ' data-glory-filters="ajax" data-ajax-action="' . esc_attr($ajaxAction) . '"';
+            if ($targetSelector !== '') {
+                $extraAttrs .= ' data-target="' . esc_attr($targetSelector) . '"';
+            }
+        }
+
         echo '<div class="' . esc_attr($containerClass) . '">';
-        echo '  <h2 class="hndle"><span>' . esc_html__('Filtros', 'glorytemplate') . '</span></h2>';
         echo '  <div class="inside">';
-        echo '    <form method="GET" action="" class="' . esc_attr($formClass) . '">';
+        echo '    <form method="' . esc_attr($method) . '" action="" class="' . esc_attr($formClass) . '"' . $extraAttrs . '>';
 
         if ($paginaActualKey !== '') {
             echo '      <input type="hidden" name="page" value="' . esc_attr($paginaActualKey) . '">';
         }
         foreach ($preservarKeys as $k) {
-            if (isset($_GET[$k])) {
-                $val = is_array($_GET[$k]) ? '' : (string) $_GET[$k];
+            if (isset($_GET[$k]) || isset($_POST[$k])) {
+                $valFuente = isset($_POST[$k]) ? $_POST[$k] : $_GET[$k];
+                $val = is_array($valFuente) ? '' : (string) $valFuente;
                 echo '      <input type="hidden" name="' . esc_attr($k) . '" value="' . esc_attr(sanitize_text_field($val)) . '">';
             }
         }
@@ -59,7 +73,7 @@ class BarraFiltrosRenderer
             if ($name === '') { continue; }
             $label       = $campo['label'] ?? '';
             $placeholder = $campo['placeholder'] ?? '';
-            $valorActual = isset($_GET[$name]) ? (string) $_GET[$name] : '';
+            $valorActual = isset($_POST[$name]) ? (string) $_POST[$name] : (isset($_GET[$name]) ? (string) $_GET[$name] : '');
 
             echo '        <p class="form-field">';
             if ($label !== '') {

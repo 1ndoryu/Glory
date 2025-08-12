@@ -19,8 +19,9 @@
         noAjaxClass: 'noAjax' // Class name to manually disable AJAX on links/containers
     };
 
-    // Merge defaults with user-provided config (if available)
-    const config = {...defaults, ...(window.dataGlobal || {})};
+    // Merge defaults with user-provided config (prefer a specific object to avoid collisions)
+    const runtimeConfig = (window.gloryNavConfig || window.dataGlobal || {});
+    const config = {...defaults, ...runtimeConfig};
 
     /**
      * isFusionBuilderActive ahora se define globalmente en utils/fusionBuilderDetect.js
@@ -36,7 +37,7 @@
 
     // Exit immediately if disabled via config
     if (!config.enabled) {
-        // console.log('Glory AJAX Nav is disabled via configuration.');
+        console.log('Glory AJAX Nav is disabled via configuration.');
         return;
     }
 
@@ -55,7 +56,7 @@
             detail: {contentElement: contentElement}
         });
         document.dispatchEvent(event);
-        // console.log('Event gloryRecarga dispatched.');
+        console.log('Event gloryRecarga dispatched.');
     }
 
     /**
@@ -118,7 +119,7 @@
             // Don't cache if any configured param exists in the URL
             return !config.ignoreUrlParams.some(param => searchParams.has(param));
         } catch (e) {
-            // console.error("Error parsing URL for caching decision:", url, e);
+            console.error("Error parsing URL for caching decision:", url, e);
             return false; // Don't cache if URL is invalid
         }
     }
@@ -157,7 +158,7 @@
 
         // Use cache if available and caching is enabled/allowed for this URL
         if (pageCache[url] && shouldCache(url)) {
-            // console.log(`Loading from cache: ${url}`);
+            console.log(`Loading from cache: ${url}`);
             contentElement.innerHTML = pageCache[url];
             if (pushState) {
                 history.pushState({url: url}, '', url);
@@ -197,7 +198,7 @@
                 const newTitle = doc.querySelector('title');
 
                 if (!newContent) {
-                    // console.error(`AJAX Nav Error: Selector "${config.contentSelector}" not found in fetched HTML from ${url}. Loading full page.`);
+                    console.error(`AJAX Nav Error: Selector "${config.contentSelector}" not found in fetched HTML from ${url}. Loading full page.`);
                     window.location.href = url; // Fallback to full page load
                     return;
                 }
@@ -209,7 +210,7 @@
                 // Cache if applicable
                 if (shouldCache(url)) {
                     pageCache[url] = newContent.innerHTML;
-                    // console.log(`Cached: ${url}`);
+                    console.log(`Cached: ${url}`);
                 }
 
                 // Update History
@@ -292,7 +293,7 @@
 
         // Use skipAjax for detailed checks (URL pattern, class, origin etc.)
         if (skipAjax(linkElement.href, linkElement)) {
-            // console.log(`AJAX skipped for: ${linkElement.href}`);
+            console.log(`AJAX skipped for: ${linkElement.href}`);
             return; // Let the browser handle it
         }
 
@@ -322,12 +323,12 @@
         pseudoLink.href = targetUrl;
 
         if (!skipAjax(targetUrl, pseudoLink)) {
-            // console.log(`Popstate triggered: ${targetUrl}`);
+            console.log(`Popstate triggered: ${targetUrl}`);
             load(targetUrl, false); // Load content, false = don't push state again
         } else {
             // If popstate leads to a URL that should be skipped (e.g., external),
             // force a full page load to ensure correct behavior.
-            // console.log(`Popstate requires full load for: ${targetUrl}`);
+            console.log(`Popstate requires full load for: ${targetUrl}`);
             window.location.reload(); // Or window.location.href = targetUrl;
         }
     }
@@ -335,7 +336,7 @@
     // --- Initialization ---
     // Evitar doble inicialización
     if (window.gloryAjaxNavInitialized) {
-        // console.log('Glory AJAX Nav already initialized.');
+        console.log('Glory AJAX Nav already initialized.');
         return;
     }
     window.gloryAjaxNavInitialized = true;
