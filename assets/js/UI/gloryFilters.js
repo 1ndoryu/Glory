@@ -1,4 +1,6 @@
 (function(){
+  const formDebounceMap = new WeakMap();
+
   function ajaxPost(action, data){
     if (typeof gloryAjax === 'function') {
       return gloryAjax(action, data);
@@ -14,6 +16,29 @@
           .then(r => r.text()).then(t => { try { resolve(JSON.parse(t)); } catch(_) { resolve({ success: true, data: { html: t } }); } });
       }
     });
+  }
+
+  function triggerAjaxForForm(form, overrides){
+    const action = form.getAttribute('data-ajax-action') || '';
+    if (!action) return;
+    const data = serializeForm(form);
+    if (overrides && typeof overrides === 'object') {
+      Object.keys(overrides).forEach(function(k){ data[k] = overrides[k]; });
+    }
+    const target = resolveTarget(form);
+    ajaxPost(action, data).then(function(resp){
+      if (resp && resp.success && resp.data && resp.data.html){
+        replaceGridHtml(target, resp.data.html);
+        document.dispatchEvent(new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true}));
+      }
+    });
+  }
+
+  function debounceForm(form, fn, delay){
+    const current = formDebounceMap.get(form);
+    if (current) clearTimeout(current);
+    const t = setTimeout(fn, delay);
+    formDebounceMap.set(form, t);
   }
 
   function serializeForm(form){
@@ -163,11 +188,46 @@
     }
   }
 
+  function onInput(e){
+    const input = e.target;
+    const form = input.closest('form[data-glory-filters="ajax"]');
+    if (!form) return;
+    const type = (input.getAttribute('type') || input.tagName || '').toLowerCase();
+    // Solo auto-disparar con debounce en campos de texto/búsqueda
+    if (type === 'search' || type === 'text') {
+      debounceForm(form, function(){ triggerAjaxForForm(form); }, 400);
+    }
+  }
+
+  function onChange(e){
+    const el = e.target;
+    const form = el.closest('form[data-glory-filters="ajax"]');
+    if (!form) return;
+    const type = (el.getAttribute('type') || el.tagName || '').toLowerCase();
+    // Disparo inmediato en select, date, checkbox, radio
+    if (el.tagName === 'SELECT' || type === 'date' || type === 'checkbox' || type === 'radio') {
+      triggerAjaxForForm(form);
+    }
+  }
+
+  function onKeyDown(e){
+    if (e.key !== 'Enter') return;
+    const el = e.target;
+    const form = el.closest('form[data-glory-filters="ajax"]');
+    if (!form) return;
+    // Evitar envío normal y disparar AJAX inmediato
+    e.preventDefault();
+    triggerAjaxForForm(form);
+  }
+
   window.gloryFiltersInit = function gloryFiltersInit(){
     if (window.gloryFiltersInitialized) return;
     window.gloryFiltersInitialized = true;
     document.addEventListener('submit', onSubmit, true);
     document.addEventListener('click', onClick, true);
+    document.addEventListener('input', onInput, true);
+    document.addEventListener('change', onChange, true);
+    document.addEventListener('keydown', onKeyDown, true);
   };
 
   // Inicialización en carga y reinicialización en gloryRecarga

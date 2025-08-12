@@ -100,6 +100,7 @@ AssetManager::defineFolder(
         'gloryFilters.js',
         'gloryScheduler.js',
         'menu.js',
+        'gloryDateRange.js'
     ]
 );
 
@@ -186,6 +187,20 @@ AssetManager::define(
     'glory-gloryfilters',
     '/Glory/assets/js/UI/gloryFilters.js',
     ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'feature' => 'gloryFilters']
+);
+
+// Componente: DateRange (usa el mismo feature que gloryFilters)
+AssetManager::define(
+    'script',
+    'glory-glorydaterange',
+    '/Glory/assets/js/UI/gloryDateRange.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryFilters']
+);
+AssetManager::define(
+    'style',
+    'glory-daterange',
+    '/Glory/assets/css/dateRange.css',
+    ['media' => 'all', 'area' => 'both', 'feature' => 'gloryFilters']
 );
 
 // Componente: Scheduler

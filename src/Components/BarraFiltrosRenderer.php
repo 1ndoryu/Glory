@@ -88,6 +88,19 @@ class BarraFiltrosRenderer
                     echo '            <option value="' . esc_attr((string) $valor) . '"' . $selected . '>' . esc_html((string) $texto) . '</option>';
                 }
                 echo '          </select>';
+            } elseif ($tipo === 'date_range') {
+                // date_range requiere: from_name y to_name; usa un input visible y 2 hidden reales
+                $fromName = $campo['from_name'] ?? '';
+                $toName   = $campo['to_name'] ?? '';
+                $desdeVal = isset($_REQUEST[$fromName]) ? (string) $_REQUEST[$fromName] : '';
+                $hastaVal = isset($_REQUEST[$toName]) ? (string) $_REQUEST[$toName] : '';
+                $display  = ($desdeVal || $hastaVal) ? trim($desdeVal . ' — ' . $hastaVal) : '';
+                $idVis    = 'dr_' . md5($fromName . '|' . $toName);
+                echo '          <input type="hidden" name="' . esc_attr($fromName) . '" value="' . esc_attr($desdeVal) . '">';
+                echo '          <input type="hidden" name="' . esc_attr($toName) . '" value="' . esc_attr($hastaVal) . '">';
+                echo '          <input type="text" readonly class="gloryDateRangeInput" id="' . esc_attr($idVis) . '"'
+                    . ' data-from-name="' . esc_attr($fromName) . '" data-to-name="' . esc_attr($toName) . '"'
+                    . ' placeholder="' . esc_attr($placeholder ?: 'Selecciona rango') . '" value="' . esc_attr($display) . '">';
             } else {
                 $typeAttr = in_array($tipo, ['search', 'text', 'date'], true) ? $tipo : 'text';
                 echo '          <input type="' . esc_attr($typeAttr) . '" id="' . esc_attr($name) . '" name="' . esc_attr($name) . '" value="' . esc_attr($valorActual) . '" placeholder="' . esc_attr($placeholder) . '">';
