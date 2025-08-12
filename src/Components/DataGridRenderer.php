@@ -26,6 +26,7 @@ class DataGridRenderer
     public function renderizarTabla(): void
     {
         echo '<div class="gloryDataGridContenedor">';
+        $this->renderizarAccionesMasivas();
         $this->renderizarFiltros();
         echo '<div class="gloryDataGridTablaScroll">';
         echo '<table class="gloryDataGridTabla wp-list-table widefat fixed striped">';
@@ -34,6 +35,28 @@ class DataGridRenderer
         echo '</table>';
         echo '</div>';
         $this->renderizarPaginacion();
+        echo '</div>';
+    }
+
+    private function renderizarAccionesMasivas(): void
+    {
+        if (empty($this->configuracion['seleccionMultiple']) || empty($this->configuracion['accionesMasivas'])) {
+            return;
+        }
+        echo '<div class="gloryDataGridAccionesMasivas">';
+        echo '  <label for="gloryGridBulkSelect" class="screen-reader-text">' . esc_html__('Acciones masivas', 'glorytemplate') . '</label>';
+        echo '  <select id="gloryGridBulkSelect" class="gloryGridBulkSelect">';
+        echo '    <option value="">' . esc_html__('Acciones masivas', 'glorytemplate') . '</option>';
+        foreach ($this->configuracion['accionesMasivas'] as $accion) {
+            $id = esc_attr($accion['id'] ?? '');
+            $label = esc_html($accion['etiqueta'] ?? ucfirst($id));
+            $ajax = esc_attr($accion['ajax_action'] ?? '');
+            $confirm = esc_attr($accion['confirmacion'] ?? '');
+            if ($id === '' || $ajax === '') continue;
+            echo '    <option value="' . $id . '" data-ajax-action="' . $ajax . '" data-confirm="' . $confirm . '">' . $label . '</option>';
+        }
+        echo '  </select>';
+        echo '  <button type="button" class="button gloryGridBulkApply">' . esc_html__('Aplicar', 'glorytemplate') . '</button>';
         echo '</div>';
     }
 
@@ -47,6 +70,10 @@ class DataGridRenderer
             'filtros_separados' => false,
             // Array de etiquetas/atributos permitidos para kses. Si es null, se usa wp_kses_post.
             'allowed_html' => null,
+            // Selección múltiple y acciones masivas (agnóstico)
+            'seleccionMultiple' => false,
+            // Cada acción: ['id' => 'eliminar', 'etiqueta' => 'Eliminar', 'ajax_action' => '...', 'confirmacion' => '...']
+            'accionesMasivas' => [],
         ]);
     }
 
@@ -119,10 +146,18 @@ class DataGridRenderer
             return;
         }
 
-        $ordenamientoActual = isset($_GET['orderby']) ? sanitize_key($_GET['orderby']) : '';
-        $ordenActual = isset($_GET['order']) && strtolower($_GET['order']) === 'desc' ? 'desc' : 'asc';
+        // Usar $_REQUEST para soportar tanto GET (navegación normal) como POST (respuestas AJAX)
+        $ordenamientoActual = isset($_REQUEST['orderby']) ? sanitize_key((string) $_REQUEST['orderby']) : '';
+        $ordenActual = isset($_REQUEST['order']) && strtolower((string) $_REQUEST['order']) === 'desc' ? 'desc' : 'asc';
 
         echo '<thead><tr>';
+
+        if (!empty($this->configuracion['seleccionMultiple'])) {
+            echo '<th class="manage-column column-cb check-column">';
+            echo '  <label class="screen-reader-text" for="gloryGridSelectAll">' . esc_html__('Seleccionar todo', 'glorytemplate') . '</label>';
+            echo '  <input id="gloryGridSelectAll" type="checkbox" class="gloryGridSelectAll" />';
+            echo '</th>';
+        }
 
         foreach ($this->configuracion['columnas'] as $columna) {
             $etiqueta = esc_html($columna['etiqueta'] ?? '');
@@ -150,7 +185,8 @@ class DataGridRenderer
             }
 
             echo '<th class="' . esc_attr(implode(' ', $clasesTh)) . '">';
-            echo '<a href="' . esc_url($urlOrdenamiento) . '">' . $etiqueta . $indicadorOrden . '</a>';
+            // Añadimos la clase noAjax para evitar que gloryAjaxNav intercepte estos clics
+            echo '<a class="noAjax gloryGridSort" href="' . esc_url($urlOrdenamiento) . '">' . $etiqueta . $indicadorOrden . '</a>';
             echo '</th>';
         }
 
@@ -169,6 +205,10 @@ class DataGridRenderer
                 $this->datos->the_post();
                 global $post;
                 echo '<tr>';
+                if (!empty($this->configuracion['seleccionMultiple'])) {
+                    $id = esc_attr((string) $this->extraerId($post));
+                    echo '<th scope="row" class="check-column"><input type="checkbox" class="gloryGridSelect" value="' . $id . '" /></th>';
+                }
                 foreach ($this->configuracion['columnas'] as $columna) {
                     $this->renderizarCelda($post, $columna);
                 }
@@ -179,6 +219,10 @@ class DataGridRenderer
             $tieneDatos = true;
             foreach ($this->datos as $fila) {
                 echo '<tr>';
+                if (!empty($this->configuracion['seleccionMultiple'])) {
+                    $id = esc_attr((string) $this->extraerId($fila));
+                    echo '<th scope="row" class="check-column"><input type="checkbox" class="gloryGridSelect" value="' . $id . '" /></th>';
+                }
                 foreach ($this->configuracion['columnas'] as $columna) {
                     $this->renderizarCelda($fila, $columna);
                 }
@@ -228,5 +272,17 @@ class DataGridRenderer
         if ($this->configuracion['paginacion'] && $this->datos instanceof WP_Query && $this->datos->max_num_pages > 1) {
             PaginationRenderer::render($this->datos);
         }
+    }
+
+    private function extraerId($item)
+    {
+        if ($item instanceof WP_Post) {
+            return $item->ID;
+        }
+        if (is_array($item)) {
+            if (isset($item['ID'])) return $item['ID'];
+            if (isset($item['id'])) return $item['id'];
+        }
+        return '';
     }
 }

@@ -122,6 +122,45 @@
         }
       });
     }
+
+    // Acciones masivas (Aplicar)
+    const bulkBtn = e.target.closest('.gloryDataGridAccionesMasivas .gloryGridBulkApply');
+    if (bulkBtn) {
+      const contenedor = bulkBtn.closest('.gloryDataGridContenedor');
+      const form = findAjaxFilterFormFrom(bulkBtn);
+      if (!contenedor || !form) return;
+      e.preventDefault();
+      const select = contenedor.querySelector('.gloryGridBulkSelect');
+      if (!select) return;
+      const accionId = select.value;
+      const ajaxAction = select.options[select.selectedIndex]?.getAttribute('data-ajax-action') || '';
+      const confirmMsg = select.options[select.selectedIndex]?.getAttribute('data-confirm') || '';
+      if (!accionId || !ajaxAction) return;
+      if (confirmMsg && !window.confirm(confirmMsg)) return;
+      const checks = contenedor.querySelectorAll('input.gloryGridSelect:checked');
+      const ids = Array.from(checks).map(ch => ch.value).filter(Boolean);
+      if (ids.length === 0) return;
+      const data = serializeForm(form);
+      data.ids = ids.join(',');
+      const target = resolveTarget(form);
+      ajaxPost(ajaxAction, data).then(function(resp){
+        if (resp && resp.success && resp.data && resp.data.html){
+          replaceGridHtml(target, resp.data.html);
+          document.dispatchEvent(new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true}));
+        }
+      });
+      return;
+    }
+
+    // Seleccionar todo
+    const selectAll = e.target.closest('.gloryGridSelectAll');
+    if (selectAll) {
+      const contenedor = selectAll.closest('.gloryDataGridContenedor');
+      if (!contenedor) return;
+      const checks = contenedor.querySelectorAll('input.gloryGridSelect');
+      checks.forEach(ch => { ch.checked = selectAll.checked; });
+      return;
+    }
   }
 
   window.gloryFiltersInit = function gloryFiltersInit(){
