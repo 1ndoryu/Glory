@@ -10,20 +10,22 @@
 
     // Se mantiene una única referencia al elemento del fondo para toda la aplicación.
     let fondoElemento = null;
+    // Contador de reclamantes del fondo (modales, submenús, etc.).
+    let fondoContador = 0;
 
-    /**
-     * Oculta todos los elementos que tengan la clase 'modal' y también el propio fondo.
-     * Esta es la función que se ejecuta al hacer clic en el fondo.
-     */
-    function ocultarModalesYFondo() {
-        // Ocultar todos los elementos que actúan como un modal.
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.style.display = 'none';
-        });
-
-        // Ocultar el fondo.
-        if (fondoElemento) {
+    // Muestra/oculta el elemento de fondo según el contador
+    function mostrarFondoSiNecesario() {
+        if (!fondoElemento) return;
+        if (fondoContador > 0) {
+            fondoElemento.style.display = 'block';
+            document.body.classList.add('noScroll');
+        }
+    }
+    function ocultarFondoSiNecesario() {
+        if (!fondoElemento) return;
+        if (fondoContador <= 0) {
             fondoElemento.style.display = 'none';
+            document.body.classList.remove('noScroll');
         }
     }
 
@@ -42,7 +44,9 @@
         fondoElemento = document.getElementById('fondoModalGlobal');
         if (fondoElemento) {
             // Nos aseguramos de que el evento de clic esté asignado.
-            fondoElemento.addEventListener('click', ocultarModalesYFondo);
+            fondoElemento.addEventListener('click', () => {
+                document.dispatchEvent(new CustomEvent('gloryFondo:click'));
+            });
             return;
         }
 
@@ -64,8 +68,10 @@
             cursor: 'pointer'
         });
 
-        // Se asigna la función principal de cierre al evento 'click'.
-        fondoElemento.addEventListener('click', ocultarModalesYFondo);
+        // Se asigna la función principal al evento 'click': notificar para que cada componente cierre lo suyo.
+        fondoElemento.addEventListener('click', () => {
+            document.dispatchEvent(new CustomEvent('gloryFondo:click'));
+        });
 
         // Se añade el elemento al cuerpo del documento.
         document.body.appendChild(fondoElemento);
@@ -78,9 +84,8 @@
      */
     window.mostrarFondo = function() {
         asegurarExistenciaFondo(); // Se asegura que el fondo esté listo.
-        if(fondoElemento) {
-           fondoElemento.style.display = 'block';
-        }
+        fondoContador = Math.max(0, fondoContador) + 1;
+        mostrarFondoSiNecesario();
     };
 
     /**
@@ -89,7 +94,10 @@
      * @global
      */
     window.ocultarFondo = function() {
-        ocultarModalesYFondo();
+        // Notificar primero para que cada componente cierre lo suyo
+        try { document.dispatchEvent(new CustomEvent('gloryFondo:click')); } catch(_) {}
+        fondoContador = Math.max(0, fondoContador - 1);
+        ocultarFondoSiNecesario();
     };
 
 })(window);

@@ -26,6 +26,10 @@ class submenus {
         document.body.addEventListener('pointerup', this._finalizarPulsacion.bind(this));
         document.body.addEventListener('pointermove', this._cancelarPulsacion.bind(this));
         document.addEventListener('keydown', this._gestionarTecla.bind(this));
+
+        // Si se abre un modal o se hace clic en el fondo, cerramos el submenú activo
+        document.addEventListener('gloryModal:open', this.cerrar.bind(this));
+        document.addEventListener('gloryFondo:click', this.cerrar.bind(this));
     }
 
     abrir(disparador) {
@@ -50,7 +54,6 @@ class submenus {
         document.body.appendChild(this.menuActivo); // Asegura que está en el nivel superior
         this._posicionarMenu();
         this.menuActivo.classList.add('activo');
-        document.body.classList.add('noScroll');
 
         // Reutilizamos el gestor de fondo global si existe
         if (typeof window.mostrarFondo === 'function') {
@@ -62,7 +65,7 @@ class submenus {
         if (!this.menuActivo) return;
 
         this.menuActivo.classList.remove('activo');
-        document.body.classList.remove('noScroll');
+        // La clase noScroll ahora la gestiona el fondo global
         this.menuActivo = null;
         this.disparadorActivo = null;
 
@@ -83,7 +86,6 @@ class submenus {
 
         if (disparador) {
             evento.preventDefault();
-            evento.stopPropagation(); // Mover aquí: Detener solo si interactuamos con un disparador.
 
             const tipoEventoRequerido = disparador.dataset.evento || 'click';
             if (evento.type !== tipoEventoRequerido) return;
@@ -94,9 +96,7 @@ class submenus {
                 this.abrir(disparador);
             }
         } else if (this.menuActivo && !this.menuActivo.contains(evento.target)) {
-            // También detenemos aquí, para que el clic "fuera" solo cierre el menú.
-            evento.preventDefault();
-            evento.stopPropagation();
+            // Clic fuera del submenú: cerramos, pero dejamos que el evento continúe para no interferir con otros componentes (modales)
             this.cerrar();
         }
         // Si no se cumple ninguna condición, no hacemos nada y dejamos que el evento continúe.
@@ -182,3 +182,5 @@ class submenus {
 }
 
 submenus.iniciar();
+// Exponer un cierre global para que otros componentes (modales) puedan cerrar submenús antes de abrirse
+window.gloryCerrarSubmenus = function() { try { submenus.iniciar().cerrar(); } catch(_) {} };

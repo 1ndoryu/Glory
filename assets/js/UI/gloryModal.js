@@ -5,8 +5,13 @@ function gloryModal() {
     // La función de cierre ahora es mucho más simple.
     // Llama a la función global y resetea la variable local.
     const cerrarModalActivo = () => {
-        window.ocultarFondo(); // Oculta el fondo y TODOS los elementos con clase .modal
-        modalActivo = null;
+        if (modalActivo) {
+            // Oculta solo el modal activo
+            modalActivo.style.display = 'none';
+            modalActivo = null;
+            // Reduce el contador de fondo
+            if (typeof window.ocultarFondo === 'function') window.ocultarFondo();
+        }
     };
 
     const abrirModal = idModal => {
@@ -21,8 +26,13 @@ function gloryModal() {
             cerrarModalActivo();
         }
 
-        // 1. Mostramos el fondo global
-        window.mostrarFondo();
+        // Cerrar cualquier submenú antes de abrir el modal
+        if (typeof window.gloryCerrarSubmenus === 'function') {
+            window.gloryCerrarSubmenus();
+        }
+
+        // 1. Mostramos el fondo global (contador +1)
+        if (typeof window.mostrarFondo === 'function') window.mostrarFondo();
 
         // 2. Mostramos el modal específico
         modalActivo = modal;
@@ -65,6 +75,15 @@ function gloryModal() {
     // Listener para la tecla 'Escape'.
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && modalActivo) {
+            const modalCerrado = modalActivo;
+            cerrarModalActivo();
+            document.dispatchEvent(new CustomEvent('gloryModal:close', { detail: { modal: modalCerrado, modalId: modalCerrado?.id } }));
+        }
+    });
+
+    // Clic en el fondo global: cerrar modal activo si existe
+    document.addEventListener('gloryFondo:click', () => {
+        if (modalActivo) {
             const modalCerrado = modalActivo;
             cerrarModalActivo();
             document.dispatchEvent(new CustomEvent('gloryModal:close', { detail: { modal: modalCerrado, modalId: modalCerrado?.id } }));

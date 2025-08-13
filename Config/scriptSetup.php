@@ -196,6 +196,7 @@ AssetManager::define(
     '/Glory/assets/js/UI/gloryDateRange.js',
     ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryFilters']
 );
+
 AssetManager::define(
     'style',
     'glory-daterange',

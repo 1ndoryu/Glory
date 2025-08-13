@@ -26,7 +26,10 @@ class DataGridRenderer
     public function renderizarTabla(): void
     {
         echo '<div class="gloryDataGridContenedor">';
-        $this->renderizarAccionesMasivas();
+        // Acciones masivas dentro del contenedor salvo que se indiquen separadas
+        if (empty($this->configuracion['acciones_masivas_separadas'])) {
+            $this->renderizarAccionesMasivas();
+        }
         $this->renderizarFiltros();
         echo '<div class="gloryDataGridTablaScroll">';
         echo '<table class="gloryDataGridTabla wp-list-table widefat fixed striped">';
@@ -68,6 +71,8 @@ class DataGridRenderer
             'paginacion' => true,
             // Si se indica true, los filtros no se renderizarán dentro del contenedor principal
             'filtros_separados' => false,
+            // Si se indica true, las acciones masivas no se renderizarán dentro del contenedor principal
+            'acciones_masivas_separadas' => false,
             // Array de etiquetas/atributos permitidos para kses. Si es null, se usa wp_kses_post.
             'allowed_html' => null,
             // Selección múltiple y acciones masivas (agnóstico)
@@ -75,6 +80,40 @@ class DataGridRenderer
             // Cada acción: ['id' => 'eliminar', 'etiqueta' => 'Eliminar', 'ajax_action' => '...', 'confirmacion' => '...']
             'accionesMasivas' => [],
         ]);
+    }
+
+    /**
+     * Renderiza el bloque de acciones masivas a partir de una configuración (para colocarlo fuera del contenedor principal).
+     *
+     * @param array $configuracion
+     * @return void
+     */
+    public static function renderAccionesMasivasFromConfig(array $configuracion): void
+    {
+        $config = wp_parse_args($configuracion, [
+            'seleccionMultiple' => false,
+            'accionesMasivas' => [],
+        ]);
+
+        if (empty($config['seleccionMultiple']) || empty($config['accionesMasivas'])) {
+            return;
+        }
+
+        echo '<div class="gloryDataGridAccionesMasivas">';
+        echo '  <label for="gloryGridBulkSelect" class="screen-reader-text">' . esc_html__('Acciones masivas', 'glorytemplate') . '</label>';
+        echo '  <select id="gloryGridBulkSelect" class="gloryGridBulkSelect">';
+        echo '    <option value="">' . esc_html__('Acciones masivas', 'glorytemplate') . '</option>';
+        foreach ($config['accionesMasivas'] as $accion) {
+            $id = esc_attr($accion['id'] ?? '');
+            $label = esc_html($accion['etiqueta'] ?? ucfirst($id));
+            $ajax = esc_attr($accion['ajax_action'] ?? '');
+            $confirm = esc_attr($accion['confirmacion'] ?? '');
+            if ($id === '' || $ajax === '') continue;
+            echo '    <option value="' . $id . '" data-ajax-action="' . $ajax . '" data-confirm="' . $confirm . '">' . $label . '</option>';
+        }
+        echo '  </select>';
+        echo '  <button type="button" class="button gloryGridBulkApply">' . esc_html__('Aplicar', 'glorytemplate') . '</button>';
+        echo '</div>';
     }
 
     private function renderizarFiltros(): void
