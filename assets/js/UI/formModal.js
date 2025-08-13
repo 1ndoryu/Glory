@@ -1,4 +1,6 @@
 function gloryFormModal() {
+    if (window.gloryFormModalInitialized) return;
+    window.gloryFormModalInitialized = true;
     const callAjax = async (action, payload) => {
         if (typeof window.gloryAjax === 'function') {
             // Para gloryAjax, pasar un objeto plano o FormData. Evitar URLSearchParams.
