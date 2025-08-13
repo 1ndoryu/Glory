@@ -247,6 +247,14 @@ AssetManager::define(
     ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'frontend', 'feature' => 'gloryBusqueda']
 );
 
+    // Servicio: Realtime (polling por AJAX)
+    AssetManager::define(
+        'script',
+        'glory-gloryrealtime',
+        '/Glory/assets/js/Services/gloryRealtime.js',
+        ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryRealtime']
+    );
+
 // Carga de todos los estilos CSS de la carpeta /assets/css/
 AssetManager::defineFolder(
     'style',

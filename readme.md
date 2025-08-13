@@ -209,6 +209,50 @@ OpcionManager::register('glory_ga4_measurement_id', [
 
 Glory simplifica radicalmente el manejo de peticiones AJAX y el procesamiento de formularios.
 
+### Realtime por AJAX (Polling)
+
+Permite actualizar vistas en el cliente cuando cambian datos en el servidor, sin websockets. Se basa en:
+
+- `Glory\Services\EventBus` (PHP): bus simple de eventos por canal. Usa `EventBus::emit('mi_canal', $payloadOpcional)` para incrementar la versión del canal cuando ocurre un cambio.
+- `Glory\Handler\RealtimeAjaxHandler` (PHP): endpoint AJAX `glory_realtime_versions` que devuelve la versión actual de una lista de canales.
+- `Glory/assets/js/Services/gloryRealtime.js` (JS): función `gloryRealtimePoll(channels, { intervalMs })` que hace polling y dispara `gloryRealtime:update` cuando detecta cambios.
+
+Cómo usarlo en tu tema:
+
+1) Activa la feature `gloryRealtime` (viene activa por defecto). Si quieres, puedes forzarla por código:
+
+```php
+use Glory\Core\GloryFeatures;
+GloryFeatures::enable('gloryRealtime');
+```
+
+2) Emite eventos desde el servidor cuando cambien tus datos (ej. tras guardar un post):
+
+```php
+use Glory\Services\EventBus;
+EventBus::emit('post_reserva');
+```
+
+3) Suscríbete desde JS y refresca tu UI cuando llegue una actualización:
+
+```javascript
+// Cargar deps: 'glory-ajax' y 'glory-gloryrealtime'
+const stop = await window.gloryRealtimePoll(['post_reserva'], { intervalMs: 3000 });
+document.addEventListener('gloryRealtime:update', (e) => {
+  if (e.detail.channel === 'post_reserva') {
+    // Llama tu endpoint para re-renderizar la vista
+    gloryAjax('mi_endpoint_render', {/* filtros actuales */}).then((resp) => {
+      // Actualiza el DOM con resp.data.html
+    });
+  }
+});
+```
+
+Notas:
+- Es agnóstico: usa canales (strings) y no asume dominios concretos.
+- No necesita WebSockets; el polling es liviano y configurable.
+- Control por feature (panel u override por código). El asset JS se registra con handle `glory-gloryrealtime`.
+
 ### `gloryAjax.js`
 
 Es la base para todas las peticiones AJAX del framework. Permite enviar tanto objetos de datos como `FormData`, soportando la subida de archivos de forma nativa.

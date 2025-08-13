@@ -255,6 +255,17 @@ OpcionManager::register('glory_busqueda_activado', [
     'featureKey'      => 'gloryBusqueda'
 ]);
 
+// Realtime por AJAX (polling)
+OpcionManager::register('glory_realtime_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Glory Realtime',
+    'descripcion'     => 'Habilita el servicio de polling por AJAX para actualizaciones en tiempo real.',
+    'seccion'         => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'      => 'gloryRealtime'
+]);
+
 // --- Renderers y control de funcionalidades del theme ---
 OpcionManager::register('glory_logo_renderer_activado', [
     'valorDefault'    => true,

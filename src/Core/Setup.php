@@ -21,6 +21,7 @@ use Glory\Admin\TaxonomyMetaManager;
 use Glory\Utility\AssetsUtility;
 use Glory\Handler\PaginationAjaxHandler;
 use Glory\Handler\BusquedaAjaxHandler;
+use Glory\Handler\RealtimeAjaxHandler;
 use Glory\Components\LogoRenderer;
 use Glory\Services\GestorCssCritico;
 
@@ -50,6 +51,10 @@ class Setup
 
         if (GloryFeatures::isActive('gloryBusqueda') !== false) {
             new BusquedaAjaxHandler();
+        }
+
+        if (GloryFeatures::isActive('gloryRealtime') !== false) {
+            new RealtimeAjaxHandler();
         }
 
         // Opciones y assets

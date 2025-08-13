@@ -138,7 +138,8 @@ class DataGridRenderer
         }
 
         echo '<button type="submit" class="button">Filtrar</button>';
-        echo '<a href="' . esc_url(remove_query_arg(array_keys($this->configuracion['filtros']))) . '" class="button">Limpiar</a>';
+        // Añadir clase noAjax para evitar que gloryAjaxNav intercepte el enlace de limpiar
+        echo '<a href="' . esc_url(remove_query_arg(array_keys($this->configuracion['filtros']))) . '" class="button noAjax">Limpiar</a>';
 
         echo '</form>';
         echo '</div>';
@@ -173,7 +174,8 @@ class DataGridRenderer
         }
 
         echo '<button type="submit" class="button">Filtrar</button>';
-        echo '<a href="' . esc_url(remove_query_arg(array_keys($config['filtros']))) . '" class="button">Limpiar</a>';
+        // Añadir clase noAjax para evitar que gloryAjaxNav intercepte el enlace de limpiar
+        echo '<a href="' . esc_url(remove_query_arg(array_keys($config['filtros']))) . '" class="button noAjax">Limpiar</a>';
 
         echo '</form>';
         echo '</div>';

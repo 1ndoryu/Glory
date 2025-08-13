@@ -67,6 +67,15 @@ class PostActionManager
                 $resultado = $postId;
             }
         }
+        // Emitir evento realtime genérico por post actualizado
+        try {
+            $postType = get_post_type($postId);
+            if ($postType) {
+                EventBus::emit('post_' . $postType);
+            }
+        } catch (\Throwable $e) {
+            // Silencioso: no romper flujo por notificaciones
+        }
         return $resultado;
     }
 
@@ -77,6 +86,12 @@ class PostActionManager
         }
         $resultado = wp_delete_post($postId, $forzarBorrado);
         if ($resultado instanceof WP_Post || $resultado === true) {
+            try {
+                $postType = is_object($resultado) ? $resultado->post_type : get_post_type($postId);
+                if ($postType) {
+                    EventBus::emit('post_' . $postType);
+                }
+            } catch (\Throwable $e) {}
             return true;
         } else {
             GloryLogger::error("PostActionManager::deletePost() - FAILED to delete post ID: {$postId}. wp_delete_post returned: " . print_r($resultado, true));
