@@ -151,29 +151,43 @@
     // Acciones masivas (Aplicar)
     const bulkBtn = e.target.closest('.gloryDataGridAccionesMasivas .gloryGridBulkApply');
     if (bulkBtn) {
-      const contenedor = bulkBtn.closest('.gloryDataGridContenedor');
+      let contenedor = bulkBtn.closest('.gloryDataGridContenedor') || document.querySelector('.gloryDataGridContenedor');
       const form = findAjaxFilterFormFrom(bulkBtn);
-      if (!contenedor || !form) return;
+      if (!contenedor) return;
       e.preventDefault();
-      const select = contenedor.querySelector('.gloryGridBulkSelect');
+      const select = contenedor.querySelector('.gloryGridBulkSelect') || document.querySelector('.gloryGridBulkSelect');
       if (!select) return;
       const accionId = select.value;
       const ajaxAction = select.options[select.selectedIndex]?.getAttribute('data-ajax-action') || '';
       const confirmMsg = select.options[select.selectedIndex]?.getAttribute('data-confirm') || '';
       if (!accionId || !ajaxAction) return;
-      if (confirmMsg && !window.confirm(confirmMsg)) return;
-      const checks = contenedor.querySelectorAll('input.gloryGridSelect:checked');
-      const ids = Array.from(checks).map(ch => ch.value).filter(Boolean);
-      if (ids.length === 0) return;
-      const data = serializeForm(form);
-      data.ids = ids.join(',');
-      const target = resolveTarget(form);
-      ajaxPost(ajaxAction, data).then(function(resp){
-        if (resp && resp.success && resp.data && resp.data.html){
-          replaceGridHtml(target, resp.data.html);
-          document.dispatchEvent(new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true}));
+
+      function procederEliminacion(){
+        const checks = contenedor.querySelectorAll('input.gloryGridSelect:checked');
+        const ids = Array.from(checks).map(ch => ch.value).filter(Boolean);
+        if (ids.length === 0) return;
+        const data = form ? serializeForm(form) : {};
+        data.ids = ids.join(',');
+        const target = form ? resolveTarget(form) : (contenedor.parentElement || document.body);
+        ajaxPost(ajaxAction, data).then(function(resp){
+          if (resp && resp.success && resp.data && resp.data.html){
+            replaceGridHtml(target, resp.data.html);
+            document.dispatchEvent(new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true}));
+          } else if (resp && resp.success) {
+            try { location.reload(); } catch(_) {}
+          }
+        });
+      }
+
+      if (confirmMsg) {
+        const res = window.confirm(confirmMsg);
+        if (res && typeof res.then === 'function') {
+          res.then(function(ok){ if (ok) { procederEliminacion(); } });
+          return;
         }
-      });
+        if (!res) return;
+      }
+      procederEliminacion();
       return;
     }
 

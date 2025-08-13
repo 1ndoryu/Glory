@@ -134,6 +134,11 @@ function gloryFormModal() {
             } else if (previous) {
                 selectEl.value = previous;
             }
+            // Notificar a campos dependientes que el valor (posiblemente restaurado) está listo
+            try {
+                const evt = new Event('change', { bubbles: true });
+                selectEl.dispatchEvent(evt);
+            } catch(_) {}
         };
         const wireOptionsSelect = (selectEl) => {
             const action = selectEl.dataset.fmAccionOpciones;
@@ -154,6 +159,11 @@ function gloryFormModal() {
                         return;
                     }
                     payload[dep] = val;
+                }
+                // Si estamos editando un objeto y el select define un parámetro de exclusión, incluirlo
+                const excludeParam = selectEl.dataset.fmExcludeParam;
+                if (excludeParam && form && form.dataset && form.dataset.objectId) {
+                    payload[excludeParam] = form.dataset.objectId;
                 }
                 // cargar opciones
                 const resp = await callAjax(action, payload);
@@ -261,6 +271,20 @@ function gloryFormModal() {
                         el.value = String(val);
                         // Si el select tiene carga declarativa, recordar el valor para re-seleccionarlo tras poblar
                         if (el.dataset.fmAccionOpciones) el.dataset.fmSelectedValue = String(val);
+                        // Si se solicita mantener el valor actual visible aunque aún no existan opciones, insertarlo temporalmente
+                        if (el.dataset.fmKeepCurrent === '1') {
+                            const current = String(val ?? '');
+                            if (current) {
+                                const exists = Array.from(el.options).some(o => o.value === current);
+                                if (!exists) {
+                                    const opt = document.createElement('option');
+                                    opt.value = current;
+                                    opt.textContent = current;
+                                    el.appendChild(opt);
+                                }
+                                el.value = current;
+                            }
+                        }
                     } else if (el.type === 'checkbox') {
                         el.checked = !!val && val !== '0';
                     } else if (el.type === 'radio') {
@@ -269,6 +293,7 @@ function gloryFormModal() {
                         el.value = String(val ?? '');
                     }
                 });
+                // Lógica específica de campos debe implementarse en el tema
                 // Si el backend indica que son todos, marcar el checkbox "all"
                 const chkAll = form.querySelector('.services-field input[type="checkbox"][name="services[]"][value="all"]');
                 if (chkAll && d['services_all'] === '1') {
