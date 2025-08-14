@@ -265,3 +265,27 @@ AssetManager::defineFolder(
         'alert.css'
     ]
 );
+
+AssetManager::define(
+    'script',
+    'glory-scheduler-admin',
+    '/Glory/assets/js/UI/gloryScheduler.js',
+    [
+        'deps'      => [],
+        'in_footer' => true,
+        'area'      => 'admin',
+        'feature'   => 'scheduler',
+    ]
+);
+
+AssetManager::define(
+    'script',
+    'glory-realtime-core',
+    '/Glory/assets/js/Core/gloryRealtime.js',
+    [
+        'deps'      => [],
+        'in_footer' => true,
+        'area'      => 'both',
+        'feature'   => 'gloryAjax',
+    ]
+);

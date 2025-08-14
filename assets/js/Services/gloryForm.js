@@ -205,6 +205,13 @@ function gloryForm() {
                 contenedor.querySelectorAll('select').forEach(sel => {
                     sel.dispatchEvent(new Event('change'));
                 });
+
+                // Notificar éxito de formulario de manera agnóstica
+                try {
+                    document.dispatchEvent(new CustomEvent('gloryForm:success', {
+                        detail: { subAccion, respuesta, contenedor }
+                    }));
+                } catch(_) {}
             } else if (!respuesta.success && respuesta.data && respuesta.data.alert) {
                 alert(respuesta.data.alert);
             }
