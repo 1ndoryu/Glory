@@ -172,7 +172,12 @@ function gloryForm() {
         // }
 
         try {
+            const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+            window.__gloryLastSubmitAt = t0;
+            window.__gloryLastSubmitAction = subAccion;
             const respuesta = await gloryAjax('gloryFormHandler', datosParaEnviar);
+            const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
+            try { console.log(`[gloryForm] ${subAccion} ajax ms=${(t1 - t0).toFixed(1)}`); } catch(_) {}
 
             if (respuesta.success && respuesta.data && respuesta.data.alert) {
                 if (typeof ocultarFondo === 'function') {
@@ -211,6 +216,21 @@ function gloryForm() {
             alert(`Error en la petición: ${mensajeError}`);
         }
     });
+
+    // Medir tiempo desde inicio de submit hasta cierre de modal
+    if (!window.__gloryFormTimingBound) {
+        document.addEventListener('gloryModal:close', function(){
+            try {
+                if (!window.__gloryLastSubmitAt) return;
+                const t2 = (window.performance && performance.now) ? performance.now() : Date.now();
+                const delta = t2 - window.__gloryLastSubmitAt;
+                console.log(`[gloryForm] ${window.__gloryLastSubmitAction || ''} total hasta cerrar modal ms=${delta.toFixed(1)}`);
+                window.__gloryLastSubmitAt = 0;
+                window.__gloryLastSubmitAction = '';
+            } catch(_){}
+        });
+        window.__gloryFormTimingBound = true;
+    }
 }
 
 document.addEventListener('gloryRecarga', gloryForm);

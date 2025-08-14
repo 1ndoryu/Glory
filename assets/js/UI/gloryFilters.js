@@ -235,8 +235,9 @@
   }
 
   window.gloryFiltersInit = function gloryFiltersInit(){
-    if (window.gloryFiltersInitialized) return;
-    window.gloryFiltersInitialized = true;
+    // Adjuntar handlers globales solo una vez
+    if (window.__gloryFiltersHandlersAttached) return;
+    window.__gloryFiltersHandlersAttached = true;
     document.addEventListener('submit', onSubmit, true);
     document.addEventListener('click', onClick, true);
     document.addEventListener('input', onInput, true);
@@ -250,7 +251,8 @@
   } else {
     window.gloryFiltersInit();
   }
-  document.addEventListener('gloryRecarga', function(){ window.gloryFiltersInitialized = false; window.gloryFiltersInit(); });
+  // En recarga, no re-atamos handlers (ya son delegados y globales). Mantener idempotencia.
+  document.addEventListener('gloryRecarga', function(){ window.gloryFiltersInit(); });
 })();
 
 

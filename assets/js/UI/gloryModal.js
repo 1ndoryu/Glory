@@ -1,4 +1,8 @@
 function gloryModal() {
+    if (window.__gloryModalInitialized) {
+        return;
+    }
+    window.__gloryModalInitialized = true;
     let modalActivo = null;
     let ultimoDisparador = null;
 
