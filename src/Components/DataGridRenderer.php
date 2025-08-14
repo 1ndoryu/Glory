@@ -323,6 +323,10 @@ class DataGridRenderer
         if (is_array($item)) {
             if (isset($item['ID'])) return $item['ID'];
             if (isset($item['id'])) return $item['id'];
+            // Soporte para términos/taxonomías u otras estructuras
+            if (isset($item['term_id'])) return $item['term_id'];
+            if (isset($item['termId'])) return $item['termId'];
+            if (isset($item['post_id'])) return $item['post_id'];
         }
         return '';
     }

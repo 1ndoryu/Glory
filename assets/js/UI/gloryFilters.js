@@ -151,11 +151,13 @@
     // Acciones masivas (Aplicar)
     const bulkBtn = e.target.closest('.gloryDataGridAccionesMasivas .gloryGridBulkApply');
     if (bulkBtn) {
-      let contenedor = bulkBtn.closest('.gloryDataGridContenedor') || document.querySelector('.gloryDataGridContenedor');
+      // Limitar alcance al contenedor lógico (pestaña o wrap) para evitar cruzar grids
+      const scope = bulkBtn.closest('.pestanaContenido') || bulkBtn.closest('.wrap') || document;
+      const contenedor = scope.querySelector('.gloryDataGridContenedor');
       const form = findAjaxFilterFormFrom(bulkBtn);
       if (!contenedor) return;
       e.preventDefault();
-      const select = contenedor.querySelector('.gloryGridBulkSelect') || document.querySelector('.gloryGridBulkSelect');
+      const select = scope.querySelector('.gloryGridBulkSelect');
       if (!select) return;
       const accionId = select.value;
       const ajaxAction = select.options[select.selectedIndex]?.getAttribute('data-ajax-action') || '';
@@ -168,7 +170,7 @@
         if (ids.length === 0) return;
         const data = form ? serializeForm(form) : {};
         data.ids = ids.join(',');
-        const target = form ? resolveTarget(form) : (contenedor.parentElement || document.body);
+        const target = form ? resolveTarget(form) : (contenedor.parentElement || scope);
         ajaxPost(ajaxAction, data).then(function(resp){
           if (resp && resp.success && resp.data && resp.data.html){
             replaceGridHtml(target, resp.data.html);
