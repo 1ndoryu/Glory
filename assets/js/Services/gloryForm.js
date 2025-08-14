@@ -1,4 +1,3 @@
-// @tarea-pendiente Jules: Realizar una revisión más exhaustiva de este archivo JavaScript en una tarea futura para optimización y refactorización avanzada.
 function gloryForm() {
     if (document.body.dataset.gloryFormListenersAttached) {
         return;
@@ -177,7 +176,7 @@ function gloryForm() {
             window.__gloryLastSubmitAction = subAccion;
             const respuesta = await gloryAjax('gloryFormHandler', datosParaEnviar);
             const t1 = (window.performance && performance.now) ? performance.now() : Date.now();
-            try { console.log(`[gloryForm] ${subAccion} ajax ms=${(t1 - t0).toFixed(1)}`); } catch(_) {}
+            // try { console.log(`[gloryForm] ${subAccion} ajax ms=${(t1 - t0).toFixed(1)}`); } catch(_) {} // desactivado
 
             if (respuesta.success && respuesta.data && respuesta.data.alert) {
                 if (typeof ocultarFondo === 'function') {
@@ -224,7 +223,7 @@ function gloryForm() {
                 if (!window.__gloryLastSubmitAt) return;
                 const t2 = (window.performance && performance.now) ? performance.now() : Date.now();
                 const delta = t2 - window.__gloryLastSubmitAt;
-                console.log(`[gloryForm] ${window.__gloryLastSubmitAction || ''} total hasta cerrar modal ms=${delta.toFixed(1)}`);
+                // console.log(`[gloryForm] ${window.__gloryLastSubmitAction || ''} total hasta cerrar modal ms=${delta.toFixed(1)}`); // desactivado
                 window.__gloryLastSubmitAt = 0;
                 window.__gloryLastSubmitAction = '';
             } catch(_){}
