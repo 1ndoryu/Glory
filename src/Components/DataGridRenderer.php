@@ -37,8 +37,9 @@ class DataGridRenderer
         $this->renderizarCuerpo();
         echo '</table>';
         echo '</div>';
-        $this->renderizarPaginacion();
         echo '</div>';
+        // Paginación fuera del contenedor de la tabla, pero dentro del envoltorio visual
+        $this->renderizarPaginacion();
     }
 
     private function renderizarAccionesMasivas(): void
@@ -69,6 +70,9 @@ class DataGridRenderer
             'columnas' => [],
             'filtros' => [],
             'paginacion' => true,
+            // Paginación para arrays
+            'per_page' => 20,
+            'page_param' => 'paged',
             // Si se indica true, los filtros no se renderizarán dentro del contenedor principal
             'filtros_separados' => false,
             // Si se indica true, las acciones masivas no se renderizarán dentro del contenedor principal
@@ -258,7 +262,15 @@ class DataGridRenderer
             wp_reset_postdata();
         } elseif (is_array($this->datos) && !empty($this->datos)) {
             $tieneDatos = true;
-            foreach ($this->datos as $fila) {
+            $datos = $this->datos;
+            if (!empty($this->configuracion['paginacion'])) {
+                $pageParam = $this->configuracion['page_param'] ?? 'paged';
+                $perPage = max(1, intval($this->configuracion['per_page'] ?? 20));
+                $current = isset($_REQUEST[$pageParam]) ? max(1, intval($_REQUEST[$pageParam])) : 1;
+                $offset = ($current - 1) * $perPage;
+                $datos = array_slice($datos, $offset, $perPage);
+            }
+            foreach ($datos as $fila) {
                 echo '<tr>';
                 if (!empty($this->configuracion['seleccionMultiple'])) {
                     $id = esc_attr((string) $this->extraerId($fila));
@@ -310,8 +322,44 @@ class DataGridRenderer
 
     private function renderizarPaginacion(): void
     {
-        if ($this->configuracion['paginacion'] && $this->datos instanceof WP_Query && $this->datos->max_num_pages > 1) {
+        if (empty($this->configuracion['paginacion'])) {
+            return;
+        }
+        if ($this->datos instanceof WP_Query && $this->datos->max_num_pages > 1) {
             PaginationRenderer::render($this->datos);
+            return;
+        }
+        if (is_array($this->datos)) {
+            $total = count($this->datos);
+            $perPage = max(1, intval($this->configuracion['per_page'] ?? 20));
+            $pageParam = $this->configuracion['page_param'] ?? 'paged';
+            $current = isset($_REQUEST[$pageParam]) ? max(1, intval($_REQUEST[$pageParam])) : 1;
+            $maxPages = (int) ceil($total / $perPage);
+            if ($maxPages <= 1) return;
+            echo '<div class="gloryPaginacion noAjax">';
+            // Prev
+            if ($current > 1) {
+                $prev = $current - 1;
+                echo '<a class="prev" data-page="' . esc_attr((string)$prev) . '">&laquo; Prev</a>';
+            } else {
+                echo '<span class="prev">&laquo; Prev</span>';
+            }
+            // Numbers (simple)
+            for ($i = 1; $i <= $maxPages; $i++) {
+                if ($i === $current) {
+                    echo '<span class="current">' . esc_html((string)$i) . '</span>';
+                } else {
+                    echo '<a data-page="' . esc_attr((string)$i) . '">' . esc_html((string)$i) . '</a>';
+                }
+            }
+            // Next
+            if ($current < $maxPages) {
+                $next = $current + 1;
+                echo '<a class="next" data-page="' . esc_attr((string)$next) . '">Next &raquo;</a>';
+            } else {
+                echo '<span class="next">Next &raquo;</span>';
+            }
+            echo '</div>';
         }
     }
 

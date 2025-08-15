@@ -58,6 +58,8 @@ class PaginationRenderer
 
                     $link->removeAttribute('href');
                     $link->setAttribute('data-page', (string)$page_num);
+                    $existingClass = trim((string)$link->getAttribute('class'));
+                    $link->setAttribute('class', trim($existingClass . ' noAjax'));
                     echo $dom->saveHTML($link);
                 } else {
                     echo $page_html;
