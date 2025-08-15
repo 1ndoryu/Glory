@@ -51,6 +51,12 @@ class submenus {
         this.menuActivo = menu;
         this.disparadorActivo = disparador;
 
+        // Asegurar estilos mínimos por defecto si el menú no tiene clases conocidas
+        if (!this.menuActivo.classList.contains('glory-submenu') && !this.menuActivo.classList.contains('submenus')) {
+            this.menuActivo.classList.add('glory-submenu');
+            this.menuActivo.dataset.gloryAutoStyled = 'true';
+        }
+
         document.body.appendChild(this.menuActivo); // Asegura que está en el nivel superior
         this._posicionarMenu();
         this.menuActivo.classList.add('activo');
