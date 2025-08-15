@@ -77,10 +77,7 @@ async function handlePaginationClick(e) {
                 paginationTarget.innerHTML = newPaginationContainer.innerHTML;
             }
 
-            // Actualizamos la URL del navegador para reflejar el cambio de página.
-            const newUrl = new URL(window.location);
-            newUrl.searchParams.set('paged', page);
-            window.history.pushState({path: newUrl.href}, '', newUrl.href);
+            // No actualizamos la URL global para evitar que otras pestañas/áreas adopten la misma página al recargar.
 
             // Disparamos el evento 'gloryRecarga' para reinicializar otros scripts en el nuevo contenido.
             const event = new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true});

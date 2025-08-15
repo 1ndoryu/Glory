@@ -337,12 +337,10 @@ class DataGridRenderer
             $maxPages = (int) ceil($total / $perPage);
             if ($maxPages <= 1) return;
             echo '<div class="gloryPaginacion noAjax">';
-            // Prev
+            // Prev (solo si hay anterior)
             if ($current > 1) {
                 $prev = $current - 1;
                 echo '<a class="prev" data-page="' . esc_attr((string)$prev) . '">&laquo; Prev</a>';
-            } else {
-                echo '<span class="prev">&laquo; Prev</span>';
             }
             // Numbers (simple)
             for ($i = 1; $i <= $maxPages; $i++) {
@@ -352,12 +350,10 @@ class DataGridRenderer
                     echo '<a data-page="' . esc_attr((string)$i) . '">' . esc_html((string)$i) . '</a>';
                 }
             }
-            // Next
+            // Next (solo si hay siguiente)
             if ($current < $maxPages) {
                 $next = $current + 1;
                 echo '<a class="next" data-page="' . esc_attr((string)$next) . '">Next &raquo;</a>';
-            } else {
-                echo '<span class="next">Next &raquo;</span>';
             }
             echo '</div>';
         }

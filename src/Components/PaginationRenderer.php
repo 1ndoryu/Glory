@@ -33,6 +33,10 @@ class PaginationRenderer
             echo '<div class="gloryPaginacion noAjax">';
             foreach ($pages as $page_html) {
                 if (strpos($page_html, '<a') === false) {
+                    // Omitir spans de prev/next cuando no hay página previa/siguiente
+                    if (preg_match('/class=("|\')(?:[^"\']*)\b(prev|next)\b/i', $page_html)) {
+                        continue;
+                    }
                     echo $page_html;
                     continue;
                 }
