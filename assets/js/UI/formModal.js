@@ -32,6 +32,89 @@ function gloryFormModal() {
 
         const cssEscape = (s) => s.replace(/"/g, '\\"');
         const getFieldByName = (name) => form.querySelector(`[name="${cssEscape(name)}"]`);
+        
+        // Permite que el área de previsualización dentro de `.glory-image-uploader`
+        // funcione como disparador del selector de imagen (redirige al botón existente).
+        const wireImagePreviewClicks = () => {
+            try {
+                form.querySelectorAll('.glory-image-uploader .image-preview').forEach(preview => {
+                    // Evitar múltiples handlers
+                    preview.removeEventListener('click', preview.__gloryPreviewHandler);
+                    const handler = () => {
+                        const uploader = preview.closest('.glory-image-uploader');
+                        if (!uploader) return;
+                        const btn = uploader.querySelector('.glory-upload-image-button');
+                        if (btn) btn.click();
+                    };
+                    preview.__gloryPreviewHandler = handler;
+                    preview.addEventListener('click', handler);
+                });
+            } catch (e) { /* silencioso */ }
+        };
+        // Delegación como fallback: manejar clicks en previews incluso si se añaden después
+        form.removeEventListener('click', form.__gloryPreviewDelegate);
+        const delegateHandler = (ev) => {
+            const preview = ev.target.closest('.glory-image-uploader .image-preview');
+            if (!preview) return;
+            const uploader = preview.closest('.glory-image-uploader');
+            if (!uploader) return;
+            const btn = uploader.querySelector('.glory-upload-image-button');
+            if (btn) btn.click();
+        };
+        form.__gloryPreviewDelegate = delegateHandler;
+        form.addEventListener('click', delegateHandler);
+
+        // Inicializador interno para el media uploader en formularios (fallback cuando
+        // no existe el código jQuery específico del panel). Usa la API `wp.media`.
+        let __gloryFormMediaUploader = null;
+        const inicializarImageUploaderForForm = () => {
+            // Delegación en el formulario
+            form.removeEventListener('click', form.__gloryUploaderDelegate);
+            const delegado = (ev) => {
+                const btn = ev.target.closest('.glory-upload-image-button');
+                if (btn) {
+                    ev.preventDefault();
+                    const uploaderContainer = btn.closest('.glory-image-uploader');
+                    if (!uploaderContainer) return;
+                    if (__gloryFormMediaUploader) { __gloryFormMediaUploader.open(); return; }
+                    try {
+                        __gloryFormMediaUploader = wp.media.frames.file_frame = wp.media({
+                            title: 'Seleccionar una Imagen',
+                            button: { text: 'Usar esta imagen' },
+                            multiple: false
+                        });
+                        __gloryFormMediaUploader.on('select', function () {
+                            const attachment = __gloryFormMediaUploader.state().get('selection').first().toJSON();
+                            const previewUrl = (attachment.sizes && attachment.sizes.thumbnail) ? attachment.sizes.thumbnail.url : attachment.url;
+                            const hidden = uploaderContainer.querySelector('.glory-image-id');
+                            if (hidden) hidden.value = attachment.id;
+                            const preview = uploaderContainer.querySelector('.image-preview');
+                            if (preview) preview.innerHTML = '<img src="' + previewUrl + '" alt="Previsualización">';
+                            const removeBtn = uploaderContainer.querySelector('.glory-remove-image-button');
+                            if (removeBtn) removeBtn.style.display = '';
+                        });
+                        __gloryFormMediaUploader.open();
+                    } catch (e) {
+                        console.error('wp.media no disponible', e);
+                    }
+                }
+
+                const removeBtn = ev.target.closest('.glory-remove-image-button');
+                if (removeBtn) {
+                    ev.preventDefault();
+                    const uploaderContainer = removeBtn.closest('.glory-image-uploader');
+                    if (!uploaderContainer) return;
+                    const hidden = uploaderContainer.querySelector('.glory-image-id');
+                    if (hidden) hidden.value = '';
+                    const preview = uploaderContainer.querySelector('.image-preview');
+                    const placeholderText = preview ? (preview.dataset.placeholder || '') : '';
+                    if (preview) preview.innerHTML = '<span class="image-preview-placeholder">' + placeholderText + '</span>';
+                    removeBtn.style.display = 'none';
+                }
+            };
+            form.__gloryUploaderDelegate = delegado;
+            form.addEventListener('click', delegado);
+        };
         const getValueFor = (el) => {
             if (!el) return '';
             const tag = el.tagName.toLowerCase();
@@ -213,6 +296,10 @@ function gloryFormModal() {
             form.querySelectorAll('select[data-fm-accion-opciones][data-fm-depende]').forEach(wireOptionsSelect);
             wireServiciosSelectAll();
             attachSubmitWatcher();
+            // Vincular clicks en las previews de imagen para abrir el uploader
+            wireImagePreviewClicks();
+            // Inicializar el uploader de medios para este formulario (usa wp.media)
+            inicializarImageUploaderForForm();
             return;
         }
 
@@ -312,6 +399,10 @@ function gloryFormModal() {
                 form.querySelectorAll('select[data-fm-accion-opciones][data-fm-depende]').forEach(wireOptionsSelect);
                 wireServiciosSelectAll();
                 attachSubmitWatcher();
+                // Vincular clicks en las previews de imagen para abrir el uploader
+                wireImagePreviewClicks();
+                // Inicializar el uploader de medios para este formulario (usa wp.media)
+                inicializarImageUploaderForForm();
             } catch (e) {
                 console.error('formModal: error cargando datos', e);
                 alert('Error de red al cargar los datos.');

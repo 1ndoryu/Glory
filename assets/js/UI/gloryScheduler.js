@@ -29,7 +29,7 @@ function inicializarCuadricula(contenedor) {
     const pxPorMinuto = Number(config.pxPorMinuto) > 0 ? Number(config.pxPorMinuto) : 2; // default: 2px/minuto
     const altoIntervaloPx = pxPorMinuto * config.intervalo;
 
-    const gridTemplateColumns = `60px repeat(${config.recursos.length}, 1fr)`;
+    const gridTemplateColumns = `60px repeat(${config.recursos.length}, minmax(160px, 1fr))`;
     const gridTemplateRows = `auto repeat(${numeroFilas}, ${altoIntervaloPx}px)`;
 
     grid.style.gridTemplateColumns = gridTemplateColumns;
