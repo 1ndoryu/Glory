@@ -18,6 +18,25 @@
     });
   }
 
+  function applyFragments(resp){
+    try {
+      if (!resp || !resp.data || !resp.data.fragments) return;
+      const frags = resp.data.fragments;
+      Object.keys(frags).forEach(function(sel){
+        const el = document.querySelector(sel);
+        if (!el) return;
+        const temp = document.createElement('div');
+        temp.innerHTML = frags[sel];
+        const nuevo = temp.firstElementChild || temp;
+        if (nuevo && el.parentNode) {
+          el.replaceWith(nuevo);
+        } else if (nuevo) {
+          el.innerHTML = nuevo.innerHTML;
+        }
+      });
+    } catch(_) {}
+  }
+
   function triggerAjaxForForm(form, overrides){
     const action = form.getAttribute('data-ajax-action') || '';
     if (!action) return;
@@ -27,8 +46,11 @@
     }
     const target = resolveTarget(form);
     ajaxPost(action, data).then(function(resp){
-      if (resp && resp.success && resp.data && resp.data.html){
-        replaceGridHtml(target, resp.data.html);
+      if (resp && resp.success && resp.data){
+        if (resp.data.html){
+          replaceGridHtml(target, resp.data.html);
+        }
+        applyFragments(resp);
         document.dispatchEvent(new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true}));
       }
     });
@@ -96,8 +118,11 @@
     const data = serializeForm(form);
     const target = resolveTarget(form);
     ajaxPost(action, data).then(function(resp){
-      if (resp && resp.success && resp.data && resp.data.html){
-        replaceGridHtml(target, resp.data.html);
+      if (resp && resp.success && resp.data){
+        if (resp.data.html){
+          replaceGridHtml(target, resp.data.html);
+        }
+        applyFragments(resp);
         document.dispatchEvent(new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true}));
       }
     });
@@ -120,8 +145,11 @@
       if (order) data.order = order;
       const target = resolveTarget(form);
       ajaxPost(action, data).then(function(resp){
-        if (resp && resp.success && resp.data && resp.data.html){
-          replaceGridHtml(target, resp.data.html);
+        if (resp && resp.success && resp.data){
+          if (resp.data.html){
+            replaceGridHtml(target, resp.data.html);
+          }
+          applyFragments(resp);
           document.dispatchEvent(new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true}));
         }
       });
@@ -141,8 +169,11 @@
       data.paged = page;
       const target = resolveTarget(form);
       ajaxPost(action, data).then(function(resp){
-        if (resp && resp.success && resp.data && resp.data.html){
-          replaceGridHtml(target, resp.data.html);
+        if (resp && resp.success && resp.data){
+          if (resp.data.html){
+            replaceGridHtml(target, resp.data.html);
+          }
+          applyFragments(resp);
           document.dispatchEvent(new CustomEvent('gloryRecarga', {bubbles: true, cancelable: true}));
         }
       });
