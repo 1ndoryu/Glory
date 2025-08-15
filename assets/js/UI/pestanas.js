@@ -7,9 +7,28 @@ function pestanas() {
         const panelesContenido = Array.from(bloque.querySelectorAll('.pestanaContenido'));
         if (!pestanasContenedor || panelesContenido.length === 0) return;
 
+        // Clave de almacenamiento persistente por bloque
+        const storageKey = (bloque.dataset.tabsId && String(bloque.dataset.tabsId).trim())
+            ? `gloryTabs:${location.pathname}:${bloque.dataset.tabsId}`
+            : (bloque.id && String(bloque.id).trim())
+                ? `gloryTabs:${location.pathname}:${bloque.id}`
+                : `gloryTabs:${location.pathname}:idx-${bloqueIndex}`;
+
         // Determinar pestaña activa preservando estado previo
         let activeIndex = -1;
-        if (typeof bloque.dataset.activeIndex !== 'undefined') {
+        // 1) Intentar desde localStorage
+        try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved !== null) {
+                const parsed = parseInt(saved, 10);
+                if (!Number.isNaN(parsed) && parsed >= 0 && parsed < panelesContenido.length) {
+                    activeIndex = parsed;
+                }
+            }
+        } catch (_e) {}
+
+        // 2) Fallback a data-attribute en el DOM (persistencia intra-sesión)
+        if (activeIndex === -1 && typeof bloque.dataset.activeIndex !== 'undefined') {
             const parsed = parseInt(bloque.dataset.activeIndex, 10);
             if (!Number.isNaN(parsed) && parsed >= 0 && parsed < panelesContenido.length) {
                 activeIndex = parsed;
@@ -67,6 +86,9 @@ function pestanas() {
             const newIndex = botones.indexOf(pestanaClickeada);
             if (newIndex >= 0) {
                 bloque.dataset.activeIndex = String(newIndex);
+                try {
+                    localStorage.setItem(storageKey, String(newIndex));
+                } catch (_e) {}
             }
         };
     });

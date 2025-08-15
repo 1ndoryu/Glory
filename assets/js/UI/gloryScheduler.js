@@ -39,13 +39,44 @@ function inicializarCuadricula(contenedor) {
     capaEventos.style.gridTemplateRows = gridTemplateRows;
 
     // Alinear la altura de la fila de encabezado en la capa de eventos con la de la grilla base
-    const celdaEncabezado = grid.querySelector('.celdaEncabezadoTiempo');
-    if (celdaEncabezado) {
-        const altoHeader = Math.round(celdaEncabezado.getBoundingClientRect().height);
-        capaEventos.style.gridTemplateRows = `${altoHeader}px repeat(${numeroFilas}, ${altoIntervaloPx}px)`;
+    function aplicarAlturaHeader() {
+        const celdaEncabezado = grid.querySelector('.celdaEncabezadoTiempo');
+        if (celdaEncabezado) {
+            const altoHeader = Math.round(celdaEncabezado.getBoundingClientRect().height);
+            if (altoHeader > 0) {
+                capaEventos.style.gridTemplateRows = `${altoHeader}px repeat(${numeroFilas}, ${altoIntervaloPx}px)`;
+            }
+        }
+    }
+    // Aplicación inmediata y reintentos para esperar fuentes/layout
+    aplicarAlturaHeader();
+    try {
+        requestAnimationFrame(function() {
+            aplicarAlturaHeader();
+            setTimeout(aplicarAlturaHeader, 50);
+            setTimeout(aplicarAlturaHeader, 150);
+        });
+    } catch (_e) {
+        setTimeout(aplicarAlturaHeader, 50);
+    }
+    // Ajuste reactivo ante cambios de tamaño del header
+    if (typeof ResizeObserver !== 'undefined') {
+        const celdaEncabezadoObs = grid.querySelector('.celdaEncabezadoTiempo');
+        if (celdaEncabezadoObs) {
+            try {
+                const ro = new ResizeObserver(aplicarAlturaHeader);
+                ro.observe(celdaEncabezadoObs);
+            } catch (_err) {}
+        }
     }
 
     renderizarEventos(eventos, capaEventos, config, inicioMinutosTotal, { pxPorMinuto, altoIntervaloPx });
+
+    // Notificar que el scheduler ha sido renderizado para permitir mejoras del tema
+    try {
+        const evt = new CustomEvent('glorySchedulerRendered', { bubbles: true, cancelable: false, detail: { container: contenedor, eventos, config } });
+        contenedor.dispatchEvent(evt);
+    } catch (_e) {}
 }
 
 function convertirHoraAMinutos(hora) {
@@ -78,16 +109,25 @@ function renderizarEventos(eventos, capa, config, inicioCuadriculaMinutos, medid
         bloqueEvento.style.transform = `translateY(${offsetPx}px)`;
         bloqueEvento.style.height = `${alturaPx}px`;
 
-        bloqueEvento.innerHTML = `
-            <div class="eventoContenido">
-                <strong class="eventoTitulo">${esc_html(evento.titulo)} ${evento.exclusividad ? '<span class="iconoExclusividad">❤️</span>' : ''}</strong>
-                <span class="eventoDetalle">${esc_html(evento.detalle)}</span>
-                <span class="eventoTelefono">${esc_html(evento.telefono || '')}</span>
-                <span class="eventoHorario">${esc_html(evento.horaInicio)} - ${esc_html(evento.horaFin)}</span>
-            </div>
-        `;
+        // Contenido agnóstico: dejar contenedor vacío para que el tema lo decore
+        bloqueEvento.innerHTML = `<div class="eventoContenido"></div>`;
 
-        const color = config.mapeoColores[evento.tipoServicio] || config.mapeoColores['default'] || '#A0A0A0';
+        // Exponer datos en data-attributes para scripts del tema
+        try {
+            bloqueEvento.dataset.titulo = String(evento.titulo || '');
+            bloqueEvento.dataset.detalle = String(evento.detalle || '');
+            bloqueEvento.dataset.recurso = String(evento.recurso || '');
+            bloqueEvento.dataset.horaInicio = String(evento.horaInicio || '');
+            bloqueEvento.dataset.horaFin = String(evento.horaFin || '');
+            if (evento.telefono) bloqueEvento.dataset.telefono = String(evento.telefono);
+            if (evento.exclusividad) bloqueEvento.dataset.exclusividad = String(!!evento.exclusividad);
+            if (evento.tipo || evento.tipoServicio || evento.tipo_evento) {
+                bloqueEvento.dataset.tipo = String(evento.tipo || evento.tipoServicio || evento.tipo_evento);
+            }
+        } catch (_e) {}
+
+        const tipoClave = (evento && (evento.tipo || evento.tipoServicio || evento.tipo_evento)) || 'default';
+        const color = (config.mapeoColores && (config.mapeoColores[tipoClave] || config.mapeoColores['default'])) || '#A0A0A0';
         bloqueEvento.style.backgroundColor = color;
 
         // Calcular color de texto (negro o blanco) según contraste con el fondo
@@ -133,7 +173,12 @@ function renderizarEventos(eventos, capa, config, inicioCuadriculaMinutos, medid
 
         const textoColor = getTextColorForBackground(color);
         bloqueEvento.style.color = textoColor;
-        bloqueEvento.title = `${evento.titulo} (${evento.recurso})\nDe ${evento.horaInicio} a ${evento.horaFin}\nTel: ${evento.telefono || 'N/A'}`;
+        const titulo = String(evento.titulo || '');
+        const recurso = String(evento.recurso || '');
+        const hi = String(evento.horaInicio || '');
+        const hf = String(evento.horaFin || '');
+        const tel = String(evento.telefono || '');
+        bloqueEvento.title = `${titulo}${recurso ? ' (' + recurso + ')' : ''}\n${hi && hf ? 'De ' + hi + ' a ' + hf : ''}${tel ? '\nTel: ' + tel : ''}`;
 
         capa.appendChild(bloqueEvento);
     });
