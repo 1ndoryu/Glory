@@ -41,6 +41,7 @@ class BarraFiltrosRenderer
 
         $ajaxAction = isset($opciones['ajax_action']) ? sanitize_key((string) $opciones['ajax_action']) : '';
         $targetSelector = isset($opciones['target_selector']) ? (string) $opciones['target_selector'] : '';
+        $scope = isset($opciones['scope']) ? sanitize_key((string) $opciones['scope']) : '';
 
         $method = $ajaxAction ? 'POST' : 'GET';
         $extraAttrs = '';
@@ -49,6 +50,9 @@ class BarraFiltrosRenderer
             if ($targetSelector !== '') {
                 $extraAttrs .= ' data-target="' . esc_attr($targetSelector) . '"';
             }
+        }
+        if ($scope !== '') {
+            $extraAttrs .= ' data-glory-scope="' . esc_attr($scope) . '"';
         }
 
         echo '<div class="' . esc_attr($containerClass) . '">';
