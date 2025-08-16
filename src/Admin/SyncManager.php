@@ -84,7 +84,10 @@ class SyncManager
             'id'     => 'glory_clear_cache',
             'parent' => 'glory_sync_group',
             'title'  => 'Borrar Caché de Glory',
-            'href'   => add_query_arg('glory_action', 'clear_cache'),
+            'href'   => add_query_arg([
+                'glory_action' => 'clear_cache',
+                'nocache' => time(),
+            ]),
             'meta'   => [
                 'title' => 'Elimina toda la caché de contenido (transients) generada por Glory.',
             ],
@@ -114,7 +117,10 @@ class SyncManager
         } elseif ($action === 'clear_cache') {
             $this->clearAllCaches();
             GloryLogger::info('Todas las cachés limpiadas manualmente por el usuario.');
-            $redirect_url = add_query_arg('glory_sync_notice', 'cache_cleared', $redirect_url);
+            $redirect_url = add_query_arg([
+                'glory_sync_notice' => 'cache_cleared',
+                'nocache' => time(),
+            ], $redirect_url);
         }
 
         wp_safe_redirect($redirect_url);
