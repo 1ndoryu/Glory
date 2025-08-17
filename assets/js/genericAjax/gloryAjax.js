@@ -32,18 +32,34 @@ async function gloryAjax(action = '', data = {}) {
             body     // Usa el cuerpo que preparamos
         });
 
-        const responseText = await response.text();
-
         if (!response.ok) {
             throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
         }
 
+        // Detectar si la respuesta es un archivo/attachment (CSV, binarios, etc.)
+        const contentType = (response.headers.get('Content-Type') || '').toLowerCase();
+        const contentDisp = response.headers.get('Content-Disposition') || '';
+        const looksLikeAttachment = contentDisp.toLowerCase().includes('attachment') || /filename\s*=\s*"?[^";]+"?/i.test(contentDisp);
+
+        if (looksLikeAttachment || contentType.includes('application/octet-stream') || contentType.includes('text/csv') || contentType.includes('application/vnd')) {
+            // Devolver el blob y el filename si existe
+            const blob = await response.blob();
+            let filename = null;
+            const match = contentDisp.match(/filename\s*=\s*"?([^";]+)"?/i);
+            if (match && match[1]) {
+                filename = match[1];
+            }
+            return { success: true, blob: blob, filename: filename };
+        }
+
+        // No es attachment: intentar leer como texto y parsear JSON si aplica
+        const responseText = await response.text();
         try {
             return JSON.parse(responseText);
         } catch (e) {
             // La respuesta no es JSON, pero la petición fue exitosa (ej: HTML, texto)
             return {
-                success: true, 
+                success: true,
                 message: 'La respuesta del servidor no es un JSON válido.',
                 data: responseText
             };
