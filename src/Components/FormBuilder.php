@@ -266,6 +266,52 @@ class FormBuilder
     }
 
     /**
+     * Genera un campo de tipo toggle moderno con plantilla `.opcionCheck`.
+     * Estructura:
+     * <div class="opcionCheck">
+     *   <div>
+     *     <label>Título</label>
+     *     <p class="description">Descripción</p>
+     *   </div>
+     *   <label class="switch">
+     *     <input type="checkbox"> <span class="slider"></span>
+     *   </label>
+     * </div>
+     */
+    public static function campoOpcionCheck(array $opciones): string
+    {
+        $nombre = $opciones['nombre'] ?? '';
+        $id = 'form-' . $nombre;
+        $label = $opciones['label'] ?? '';
+        $descripcion = $opciones['descripcion'] ?? '';
+        $valorInput = $opciones['valorInput'] ?? '1';
+        $clasesContenedor = 'formCampo opcionCheck ' . ($opciones['classContainer'] ?? '');
+        $obligatorio = $opciones['obligatorio'] ?? false;
+        $alertaObligatorio = $opciones['alertaObligatorio'] ?? '';
+
+        $checked = !empty($opciones['checked']) ? 'checked' : '';
+
+        ob_start();
+        ?>
+            <div class="<?php echo esc_attr($clasesContenedor); ?>">
+                <div>
+                    <?php if ($label) : ?>
+                        <label for="<?php echo esc_attr($id); ?>"><?php echo esc_html($label); ?><?php if ($obligatorio) : ?><span class="obligatorio">*</span><?php endif; ?></label>
+                    <?php endif; ?>
+                    <?php if (!empty($descripcion)) : ?>
+                        <p class="description"><?php echo esc_html($descripcion); ?></p>
+                    <?php endif; ?>
+                </div>
+                <label class="switch" for="<?php echo esc_attr($id); ?>">
+                    <input type="checkbox" id="<?php echo esc_attr($id); ?>" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valorInput); ?>" <?php if ($obligatorio) : ?>required<?php endif; ?> <?php if ($obligatorio && $alertaObligatorio) : ?>data-alerta-obligatorio="<?php echo esc_attr($alertaObligatorio); ?>" <?php endif; ?> <?php echo $checked; ?>>
+                    <span class="slider"></span>
+                </label>
+            </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    /**
      * Genera un campo de tipo número.
      */
     public static function campoNumero(array $opciones): string

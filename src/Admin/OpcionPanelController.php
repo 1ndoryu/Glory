@@ -5,6 +5,7 @@ namespace Glory\Admin;
 use Glory\Admin\PanelDataProvider;
 use Glory\Admin\OpcionPanelSaver;
 use Glory\Admin\PanelRenderer;
+use Glory\Manager\AssetManager;
 
 class OpcionPanelController
 {
@@ -33,26 +34,35 @@ class OpcionPanelController
 
     public function enqueuePanelAssets(): void
     {
-        // Enqueue el selector de color de WordPress
+        // Estilos de WP necesarios para el panel
         wp_enqueue_style('wp-color-picker');
-        
-        // Enqueue los scripts y estilos de la biblioteca de medios
+
+        // Biblioteca de medios
         wp_enqueue_media();
 
-        // Enqueue los assets personalizados del panel
-        wp_enqueue_script(
+        // Registrar assets del panel mediante AssetManager para que solo se encolen en admin
+        AssetManager::define(
+            'script',
             'glory-options-panel-js',
-            get_template_directory_uri() . '/Glory/assets/js/admin/options-panel.js',
-            ['jquery', 'wp-color-picker'],
-            filemtime(get_template_directory() . '/Glory/assets/js/admin/options-panel.js'),
-            true
+            '/Glory/assets/js/admin/options-panel.js',
+            [
+                'deps' => ['jquery', 'wp-color-picker'],
+                'in_footer' => true,
+                'area' => 'admin',
+                'ver' => filemtime(get_template_directory() . '/Glory/assets/js/admin/options-panel.js'),
+            ]
         );
 
-        wp_enqueue_style(
+        AssetManager::define(
+            'style',
             'glory-admin-panel-css',
-            get_template_directory_uri() . '/Glory/assets/css/admin-panel.css',
-            [],
-            filemtime(get_template_directory() . '/Glory/assets/css/admin-panel.css')
+            '/Glory/assets/css/admin-panel.css',
+            [
+                'deps' => [],
+                'media' => 'all',
+                'area' => 'admin',
+                'ver' => filemtime(get_template_directory() . '/Glory/assets/css/admin-panel.css'),
+            ]
         );
     }
 

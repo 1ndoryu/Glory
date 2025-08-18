@@ -267,13 +267,15 @@ AssetManager::define(
     );
 
 // Carga de todos los estilos CSS de la carpeta /assets/css/
+// Excluir archivos de administración para que no se encolen en el front
 AssetManager::defineFolder(
     'style',
     '/Glory/assets/css/',
     ['deps' => [], 'media' => 'all'],
     'glory-',
     [
-        'alert.css'
+        'alert.css',
+        'admin-panel.css',
     ]
 );
 
