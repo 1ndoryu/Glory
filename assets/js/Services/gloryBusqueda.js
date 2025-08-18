@@ -90,7 +90,9 @@ function gloryBusqueda() {
                 contenedor.innerHTML = '<div class="resultado-item">No se encontraron resultados.</div>';
             }
 
-            // Si se especificó un modal, lo abrimos tras recibir resultados
+            // Si se especificó un modal, solicitamos su apertura mediante un evento para
+            // que el manejador global de modales pueda registrarlo como activo y
+            // habilitar el cierre por Escape / clic en el fondo.
             if (config.modal) {
                 const modalEl = document.getElementById(config.modal);
                 if (modalEl) {
@@ -109,10 +111,16 @@ function gloryBusqueda() {
                         modalEl.style.transform = '';
                     }
 
-                    modalEl.style.zIndex = '1001';
-                    modalEl.style.display = 'flex';
-                    if (typeof window.mostrarFondo === 'function') {
-                        window.mostrarFondo();
+                    // Pedimos al sistema de modales que abra el modal; el listener
+                    // global (`gloryModal`) se encargará de mostrar el fondo y
+                    // marcar el modal como activo para que Escape / clic fuera funcionen.
+                    try {
+                        document.dispatchEvent(new CustomEvent('gloryModal:openRequest', { detail: { modalId: config.modal } }));
+                    } catch (err) {
+                        // Fallback: en caso de que no exista el manejador, lo abrimos como antes.
+                        modalEl.style.zIndex = '1001';
+                        modalEl.style.display = 'flex';
+                        if (typeof window.mostrarFondo === 'function') window.mostrarFondo();
                     }
                 }
             }

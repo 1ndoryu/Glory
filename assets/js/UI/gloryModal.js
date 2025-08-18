@@ -40,11 +40,20 @@ function gloryModal() {
 
         // 2. Mostramos el modal específico
         modalActivo = modal;
+        // Asegurar que quede por encima del fondo global
+        modalActivo.style.zIndex = '1001';
         // Asegúrate de que tus modales tengan la clase "modal" en su HTML
         // para que window.ocultarFondo() pueda encontrarlos.
         modalActivo.style.display = 'flex'; // O 'block', según tu CSS
         document.dispatchEvent(new CustomEvent('gloryModal:open', { detail: { modal: modalActivo, modalId: idModal, trigger: ultimoDisparador } }));
     };
+
+    // Escuchar solicitudes de apertura de modal desde otros componentes (p.ej. búsquedas)
+    document.addEventListener('gloryModal:openRequest', e => {
+        const id = e?.detail?.modalId;
+        if (!id) return;
+        abrirModal(id);
+    });
 
     // Listener para los disparadores que abren los modales.
     document.addEventListener('click', event => {
