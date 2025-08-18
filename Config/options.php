@@ -277,6 +277,17 @@ OpcionManager::register('glory_logo_renderer_activado', [
     'featureKey'      => 'logoRenderer'
 ]);
 
+// Opción para activar/desactivar el Theme Toggle
+OpcionManager::register('glory_componente_theme_toggle_activado', [
+    'valorDefault' => true,
+    'tipo'         => 'toggle',
+    'etiqueta'     => 'Activar Theme Toggle',
+    'descripcion'  => 'Muestra un botón para alternar entre modo claro y oscuro.',
+    'seccion'      => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'   => 'themeToggle'
+]);
+
 OpcionManager::register('glory_content_render_activado', [
     'valorDefault'    => true,
     'tipo'            => 'toggle',

@@ -150,6 +150,14 @@ AssetManager::define(
     ['deps' => [], 'in_footer' => true, 'feature' => 'headerAdaptativo']
 );
 
+// Componente: Theme Toggle (core)
+AssetManager::define(
+    'script',
+    'glory-theme-toggle',
+    '/Glory/assets/js/UI/glory-theme-toggle.js',
+    ['deps' => [], 'in_footer' => true, 'feature' => 'themeToggle']
+);
+
 // Componente: Alertas
 AssetManager::define(
     'script',
