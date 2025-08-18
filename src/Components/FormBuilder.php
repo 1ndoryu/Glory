@@ -413,7 +413,15 @@ class FormBuilder
         $valor = $opciones['valor'] ?? ''; // Debería ser un ID de adjunto
         $descripcion = $opciones['descripcion'] ?? '';
         $previewUrl = '';
-        $placeholder = 'Haz clic para subir una imagen';
+        $placeholder = $opciones['placeholder'] ?? 'Haz clic para subir una imagen';
+        $ocultoPorDefecto = !empty($opciones['ocultoPorDefecto']);
+        $contenedorId = $opciones['contenedorId'] ?? '';
+        $extraPreviewSelector = $opciones['extraPreview'] ?? '';
+        $extraPreviewOn = $opciones['extraPreviewOn'] ?? ''; // 'drag' | 'drop' | 'change' | 'click' | 'always'
+
+        // IDs/atributos para enlazar preview <-> input
+        $previewId = $opciones['idPreview'] ?? 'preview-' . $nombre;
+        $inputId = 'form-' . $nombre . '-file';
 
         if (!empty($valor) && is_numeric($valor)) {
             $previewUrl = wp_get_attachment_image_url((int)$valor, 'thumbnail');
@@ -421,22 +429,24 @@ class FormBuilder
 
         ob_start();
         ?>
-            <div class="glory-image-uploader">
+            <div class="previewContenedor glory-image-uploader<?php echo $ocultoPorDefecto ? ' oculto' : ''; ?>" data-uploadclick="true"<?php echo $contenedorId ? ' id="' . esc_attr($contenedorId) . '"' : ''; ?><?php echo $extraPreviewSelector ? ' data-extrapreview="' . esc_attr($extraPreviewSelector) . '"' : ''; ?><?php echo $extraPreviewOn ? ' data-extrapreview-on="' . esc_attr($extraPreviewOn) . '"' : ''; ?>>
                 <?php if ($label) : ?>
                     <label><?php echo esc_html($label) ?></label>
                 <?php endif; ?>
-                <div class="image-preview" data-placeholder="<?php echo esc_attr($placeholder); ?>">
+
+                <input type="file" id="<?php echo esc_attr($inputId); ?>" name="<?php echo esc_attr($nombre); ?>" style="display:none;" accept="image/*" data-preview-for="<?php echo esc_attr($previewId); ?>" />
+
+                <div class="previewImagen" data-preview-id="<?php echo esc_attr($previewId); ?>">
                     <?php if ($previewUrl): ?>
                         <img src="<?php echo esc_url($previewUrl); ?>" alt="Previsualización">
                     <?php else: ?>
                         <span class="image-preview-placeholder"><?php echo esc_html($placeholder); ?></span>
                     <?php endif; ?>
                 </div>
-                <input type="hidden" class="glory-image-id" name="<?php echo esc_attr($nombre) ?>" value="<?php echo esc_attr($valor) ?>" />
-                <div class="actions">
-                    <button type="button" class="button glory-upload-image-button">Seleccionar Imagen</button>
-                    <button type="button" class="button glory-remove-image-button" style="<?php echo empty($valor) ? 'display:none;' : ''; ?>">Eliminar</button>
-                </div>
+
+                <?php // Mantener un campo oculto con el ID del adjunto para compatibilidad con el backend existente ?>
+                <input type="hidden" class="glory-image-id" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" />
+
                 <?php if ($descripcion) : ?>
                     <p class="description"><?php echo esc_html($descripcion) ?></p>
                 <?php endif; ?>

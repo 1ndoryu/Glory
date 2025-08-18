@@ -149,9 +149,12 @@ function gestionarPreviews() {
             
             // **NUEVO**: Activar extra preview si está definido en el botón o elemento de referencia
             if (elementoDeReferencia.dataset.extrapreview) {
+                const modo = elementoDeReferencia.dataset.extrapreviewOn || (contenedorPrincipal?.dataset.extrapreviewOn) || 'drag';
                 document.querySelectorAll(elementoDeReferencia.dataset.extrapreview).forEach(el => {
                     el.classList.add('activo');
-                    el.classList.remove('oculto');
+                    if (modo === 'click' || modo === 'always') {
+                        el.classList.remove('oculto');
+                    }
                 });
             }
 
@@ -204,7 +207,17 @@ function gestionarPreviews() {
 
     function alArrastrarSobre(evento) {
         evento.preventDefault();
-        const contenedor = evento.target.closest('.previewContenedor');
+        let contenedor = evento.target.closest('.previewContenedor');
+        // Permitir activar un contenedor oculto cuando se arrastra sobre un elemento externo
+        const activador = evento.target.closest('[data-activapreview]');
+        if (!contenedor && activador) {
+            const selectorContenedor = activador.dataset.activapreview;
+            const contenedorActivado = document.querySelector(selectorContenedor);
+            if (contenedorActivado) {
+                contenedor = contenedorActivado;
+                contenedor.classList.remove('oculto');
+            }
+        }
         if (!contenedor) return;
 
         contenedor.classList.add('arrastrando');
@@ -232,9 +245,12 @@ function gestionarPreviews() {
         }
 
         if (contenedor.dataset.extrapreview) {
+            const modo = contenedor.dataset.extrapreviewOn || 'drag';
             document.querySelectorAll(contenedor.dataset.extrapreview).forEach(el => {
                 el.classList.add('activo');
-                el.classList.remove('oculto');
+                if (modo === 'drag' || modo === 'always') {
+                    el.classList.remove('oculto');
+                }
             });
         }
     }
@@ -248,7 +264,13 @@ function gestionarPreviews() {
             contenedor.querySelectorAll('.arrastrando').forEach(el => el.classList.remove('arrastrando'));
 
             if (contenedor.dataset.extrapreview) {
-                document.querySelectorAll(contenedor.dataset.extrapreview).forEach(el => el.classList.remove('activo'));
+                const modo = contenedor.dataset.extrapreviewOn || 'drag';
+                document.querySelectorAll(contenedor.dataset.extrapreview).forEach(el => {
+                    el.classList.remove('activo');
+                    if (modo === 'drag') {
+                        el.classList.add('oculto');
+                    }
+                });
             }
         }
     }
@@ -268,6 +290,16 @@ function gestionarPreviews() {
                     componentes.input.files = archivos;
                     const eventoChange = new Event('change', { bubbles: true });
                     componentes.input.dispatchEvent(eventoChange);
+                }
+                // Mostrar extra preview si el modo es 'drop' o 'always'
+                if (contenedor.dataset.extrapreview) {
+                    const modo = contenedor.dataset.extrapreviewOn || 'drag';
+                    if (modo === 'drop' || modo === 'always') {
+                        document.querySelectorAll(contenedor.dataset.extrapreview).forEach(el => {
+                            el.classList.add('activo');
+                            el.classList.remove('oculto');
+                        });
+                    }
                 }
             }
         }
