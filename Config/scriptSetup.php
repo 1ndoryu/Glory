@@ -231,6 +231,14 @@ AssetManager::define(
     ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'menu']
 );
 
+// Componente: BadgeList (lista agnóstica de badges que persiste estado y controla visibilidad)
+AssetManager::define(
+    'script',
+    'glory-badgelist',
+    '/Glory/assets/js/UI/badgeList.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'badgeList']
+);
+
 
 // --- Scripts de Servicios (controlables por feature) ---
 
