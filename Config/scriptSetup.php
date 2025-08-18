@@ -106,6 +106,45 @@ AssetManager::defineFolder(
     ]
 );
 
+// Registrar Highlight.js (CDN) y un controlador para cambio de tema y highlight
+AssetManager::define(
+    'script',
+    'highlightjs-cdn',
+    'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js',
+    [
+        'deps'      => [],
+        'in_footer' => true,
+        'area'      => 'frontend',
+        'feature'   => 'highlight',
+    ]
+);
+
+// Controlador local que aplica theme switching y llama a hljs.highlightAll()
+AssetManager::define(
+    'script',
+    'glory-highlight-controller',
+    '/Glory/assets/js/utils/highlightThemeController.js',
+    [
+        'deps'      => ['highlightjs-cdn'],
+        'in_footer' => true,
+        'area'      => 'frontend',
+        'feature'   => 'highlight'
+    ]
+);
+
+// Registrar GSAP desde CDN como asset opcional controlado por feature 'gsap'
+AssetManager::define(
+    'script',
+    'gsap-cdn',
+    'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js',
+    [
+        'deps'      => [],
+        'in_footer' => true,
+        'area'      => 'frontend',
+        'feature'   => 'gsap'
+    ]
+);
+
 // --- Carga condicional de Componentes UI ---
 
 // Componente: Modales
@@ -149,7 +188,7 @@ AssetManager::define(
     'script',
     'glory-adaptiveheader',
     '/Glory/assets/js/UI/adaptiveHeader.js',
-    ['deps' => [], 'in_footer' => true, 'feature' => 'headerAdaptativo']
+    ['deps' => ['gsap-cdn'], 'in_footer' => true, 'feature' => 'headerAdaptativo']
 );
 
 // Componente: Theme Toggle (core)

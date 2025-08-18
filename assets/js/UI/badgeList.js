@@ -28,9 +28,22 @@
         var allowed = $root.find('.badge').map(function () { return $(this).data('target'); }).get();
         if (!allowed || allowed.length === 0) return;
 
-        // Si todos los targets están activos, no ocultamos nada (comportamiento por defecto)
+        // Si todos los targets están activos, quitamos cualquier clase de oculto aplicada
+        // anteriormente a los elementos correspondientes y no ocultamos nada.
         var anyInactive = allowed.some(function (t) { return !activeSet[t]; });
-        if (!anyInactive) return;
+        if (!anyInactive) {
+            $('[data-category], [id]').each(function () {
+                var $el = $(this);
+                var id = $el.attr('id');
+                var cat = $el.data('category');
+
+                var matchesAllowed = (id && allowed.indexOf(id) !== -1) || (cat && allowed.indexOf(cat) !== -1);
+                if (!matchesAllowed) return;
+
+                $el.removeClass('oculto');
+            });
+            return;
+        }
 
         // Iterar sólo sobre elementos que tengan data-category o id y cuyo valor esté en allowed
         $('[data-category], [id]').each(function () {

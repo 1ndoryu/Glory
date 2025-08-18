@@ -247,25 +247,35 @@ final class AssetManager
                 }
 
                 $rutaAsset = $config['ruta'];
-                if (!self::$modoDesarrolloGlobal) {
-                    $extension = pathinfo($rutaAsset, PATHINFO_EXTENSION);
-                    if ($extension === 'js' || $extension === 'css') {
-                        $minRuta = preg_replace("/\.$extension$/", ".min.$extension", $rutaAsset);
-                        $minRutaFisica = get_template_directory() . $minRuta;
-                        if (file_exists(wp_normalize_path($minRutaFisica))) {
-                            $rutaAsset = $minRuta;
+
+                // Soporte para URLs externas (CDN). Si la ruta es absoluta http(s) o protocol-relative, la usamos tal cual.
+                $isExternal = (bool) preg_match('#^https?://#i', $rutaAsset) || strpos($rutaAsset, '//') === 0;
+
+                if (!$isExternal) {
+                    if (!self::$modoDesarrolloGlobal) {
+                        $extension = pathinfo($rutaAsset, PATHINFO_EXTENSION);
+                        if ($extension === 'js' || $extension === 'css') {
+                            $minRuta = preg_replace("/\.$extension$/", ".min.$extension", $rutaAsset);
+                            $minRutaFisica = get_template_directory() . $minRuta;
+                            if (file_exists(wp_normalize_path($minRutaFisica))) {
+                                $rutaAsset = $minRuta;
+                            }
                         }
                     }
-                }
 
-                $rutaFisica = get_template_directory() . $rutaAsset;
-                if (!file_exists(wp_normalize_path($rutaFisica))) {
-                    GloryLogger::error("AssetManager: Archivo no encontrado '{$rutaAsset}' para el handle '{$handle}'.");
-                    continue;
-                }
+                    $rutaFisica = get_template_directory() . $rutaAsset;
+                    if (!file_exists(wp_normalize_path($rutaFisica))) {
+                        GloryLogger::error("AssetManager: Archivo no encontrado '{$rutaAsset}' para el handle '{$handle}'.");
+                        continue;
+                    }
 
-                $version = self::calcularVersion($rutaFisica, $config['ver'], $config['dev_mode']);
-                $url = get_template_directory_uri() . $rutaAsset;
+                    $version = self::calcularVersion($rutaFisica, $config['ver'], $config['dev_mode']);
+                    $url = get_template_directory_uri() . $rutaAsset;
+                } else {
+                    // Ruta externa: no validar existencia en disco y usar la ruta tal cual.
+                    $version = $config['ver'] ?? self::$versionTema;
+                    $url = $rutaAsset;
+                }
 
                 if ($tipo === self::ASSET_TYPE_SCRIPT) {
                     wp_register_script($handle, $url, $config['deps'], $version, $config['in_footer']);
