@@ -100,7 +100,9 @@ AssetManager::defineFolder(
         'gloryFilters.js',
         'gloryScheduler.js',
         'menu.js',
-        'gloryDateRange.js'
+        'gloryDateRange.js',
+        // Excluir el toggle aquí para que se registre solo con el handle explícito más abajo
+        'glory-theme-toggle.js',
     ]
 );
 
@@ -155,7 +157,8 @@ AssetManager::define(
     'script',
     'glory-theme-toggle',
     '/Glory/assets/js/UI/glory-theme-toggle.js',
-    ['deps' => [], 'in_footer' => true, 'feature' => 'themeToggle']
+    // Desactivar 'defer' explícitamente para asegurar inicialización consistente
+    ['deps' => [], 'in_footer' => true, 'defer' => false, 'feature' => 'themeToggle']
 );
 
 // Componente: Alertas
