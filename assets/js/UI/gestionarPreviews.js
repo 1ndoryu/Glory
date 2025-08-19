@@ -50,6 +50,12 @@ function gestionarPreviews() {
         }
         const lector = new FileReader();
         lector.onload = function(e) {
+            // Guardar contenido original una sola vez para poder restaurarlo al eliminar
+            if (!elementoPreview.dataset.__original_html_saved) {
+                elementoPreview.dataset.__original_html_saved = '1';
+                elementoPreview.dataset.__original_html = elementoPreview.innerHTML;
+            }
+            // reemplaza contenido previo por la imagen y un botón de eliminar
             elementoPreview.innerHTML = '';
             const img = document.createElement('img');
             img.src = e.target.result;
@@ -57,6 +63,22 @@ function gestionarPreviews() {
             img.style.height = '100%';
             img.style.objectFit = 'contain';
             elementoPreview.appendChild(img);
+
+            // Añadir botón de eliminar si no existe (SVG coherente con el template)
+            let btn = elementoPreview.querySelector('.preview-remove');
+            const svgClose = '<svg data-testid="geist-icon" height="16" stroke-linejoin="round" style="color:currentColor" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z" fill="currentColor"></path></svg>';
+            if (!btn) {
+                btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'preview-remove';
+                btn.setAttribute('aria-label', 'Eliminar imagen');
+                btn.innerHTML = svgClose;
+                elementoPreview.appendChild(btn);
+            } else {
+                btn.classList.remove('oculto');
+                // asegurar que tenga el SVG correcto
+                if (!btn.innerHTML || btn.innerHTML.trim() === '&times;') btn.innerHTML = svgClose;
+            }
         };
         lector.readAsDataURL(archivo);
     }
@@ -115,9 +137,48 @@ function gestionarPreviews() {
         const botonPreview = evento.target.closest('[class*="botonPreview"]');
         const zonaInteractiva = evento.target.closest('.preview, .previewImagen, .previewAudio, .previewFile');
         const contenedorPrincipal = evento.target.closest('.previewContenedor');
+        const eliminarBtn = evento.target.closest('.preview-remove');
 
         let inputADisparar = null;
         let elementoDeReferencia = null; // Botón o área que define el tipo de archivo
+
+        // Si se pulsó el botón de eliminar dentro de la preview
+        if (eliminarBtn) {
+            evento.preventDefault();
+            const previewElem = eliminarBtn.closest('.previewImagen, .preview');
+            if (!previewElem) return;
+            const cont = previewElem.closest('.previewContenedor');
+            // limpiar imagen mostrada y los campos ocultos
+            previewElem.querySelectorAll('img').forEach(i => i.remove());
+            // Restaurar contenido original si se guardó; si no, restaurar/crear placeholder
+            if (previewElem.dataset.__original_html) {
+                previewElem.innerHTML = previewElem.dataset.__original_html;
+            } else {
+                let placeholder = previewElem.querySelector('.image-preview-placeholder');
+                if (!placeholder) {
+                    const placeholderText = previewElem.dataset.placeholder || previewElem.getAttribute('data-placeholder') || '';
+                    placeholder = document.createElement('span');
+                    placeholder.className = 'image-preview-placeholder';
+                    placeholder.textContent = placeholderText;
+                    previewElem.appendChild(placeholder);
+                }
+                placeholder.classList.remove('oculto');
+            }
+            // esconder boton eliminar
+            eliminarBtn.classList.add('oculto');
+            if (cont) {
+                const hiddenId = cont.querySelector('.glory-image-id');
+                if (hiddenId) hiddenId.value = '';
+                const hiddenUrl = cont.querySelector('input[name$="_url"]');
+                if (hiddenUrl) hiddenUrl.value = '';
+                // Limpiar el input file para permitir volver a elegir el mismo archivo y dispare 'change'
+                const inputFile = cont.querySelector('input[type="file"]');
+                if (inputFile) {
+                    try { inputFile.value = ''; } catch(e) {}
+                }
+            }
+            return;
+        }
 
         if (botonPreview) {
             elementoDeReferencia = botonPreview;
@@ -159,7 +220,13 @@ function gestionarPreviews() {
             }
 
             inputADisparar.accept = acceptType;
-            inputADisparar.click();
+            // Evitar doble apertura: recordar timestamp y sólo permitir abrir si hace más de 300ms
+            const lastOpen = inputADisparar.dataset.__last_open_ts || 0;
+            const now = Date.now();
+            if (now - lastOpen > 300) {
+                inputADisparar.dataset.__last_open_ts = now;
+                inputADisparar.click();
+            }
         }
     }
 
@@ -196,6 +263,19 @@ function gestionarPreviews() {
 
 
             if (archivo.type.startsWith('image/')) {
+                // Limpiar hidden inputs previos (ID / URL) al seleccionar nuevo archivo
+                try {
+                    const cont = componentes.preview.closest('.previewContenedor');
+                    if (cont) {
+                        const hiddenId = cont.querySelector('.glory-image-id');
+                        if (hiddenId) hiddenId.value = '';
+                        const hiddenUrl = cont.querySelector('input[name$="_url"]');
+                        if (hiddenUrl) hiddenUrl.value = '';
+                    }
+                } catch (e) {
+                    // noop
+                }
+
                 mostrarImagen(archivo, componentes.preview);
             } else if (archivo.type.startsWith('audio/')) {
                 componentes.preview.innerHTML = `<span><svg width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3v10.55c-.59-.34-1.27-.55-2-.55c-2.21 0-4 1.79-4 4s1.79 4 4 4s4-1.79 4-4V7h4V3h-6Z"/></svg> Audio: ${archivo.name}</span>`;

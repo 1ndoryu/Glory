@@ -434,18 +434,28 @@ class FormBuilder
                     <label><?php echo esc_html($label) ?></label>
                 <?php endif; ?>
 
-                <input type="file" id="<?php echo esc_attr($inputId); ?>" name="<?php echo esc_attr($nombre); ?>" style="display:none;" accept="image/*" data-preview-for="<?php echo esc_attr($previewId); ?>" />
+                <input type="file" id="<?php echo esc_attr($inputId); ?>" name="<?php echo esc_attr($nombre . '_file'); ?>" style="display:none;" accept="image/*" data-preview-for="<?php echo esc_attr($previewId); ?>" />
 
                 <div class="previewImagen" data-preview-id="<?php echo esc_attr($previewId); ?>">
                     <?php if ($previewUrl): ?>
                         <img src="<?php echo esc_url($previewUrl); ?>" alt="Previsualización">
+                        <button type="button" class="preview-remove" aria-label="<?php echo esc_attr__('Eliminar imagen', 'glorytemplate'); ?>">
+                            <svg data-testid="geist-icon" height="16" stroke-linejoin="round" style="color:currentColor" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z" fill="currentColor"></path></svg>
+                        </button>
                     <?php else: ?>
                         <span class="image-preview-placeholder"><?php echo esc_html($placeholder); ?></span>
+                        <button type="button" class="preview-remove oculto" aria-label="<?php echo esc_attr__('Eliminar imagen', 'glorytemplate'); ?>">
+                            <svg data-testid="geist-icon" height="16" stroke-linejoin="round" style="color:currentColor" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z" fill="currentColor"></path></svg>
+                        </button>
                     <?php endif; ?>
                 </div>
 
                 <?php // Mantener un campo oculto con el ID del adjunto para compatibilidad con el backend existente ?>
                 <input type="hidden" class="glory-image-id" name="<?php echo esc_attr($nombre); ?>" value="<?php echo esc_attr($valor); ?>" />
+                <?php /* Hidden para guardar URL cuando no se usa la librería de medios */ ?>
+                <input type="hidden" class="glory-image-url" name="<?php echo esc_attr($nombre . '_url'); ?>" value="<?php echo esc_attr($opciones['valor_url'] ?? ''); ?>" />
+                <?php /* Modo de almacenamiento: 'media' (por defecto, usa media_handle_upload) o 'meta' (sube archivo y guarda URL en meta) */ ?>
+                <input type="hidden" name="<?php echo esc_attr($nombre . '_store'); ?>" value="<?php echo esc_attr($opciones['store'] ?? 'media'); ?>" />
 
                 <?php if ($descripcion) : ?>
                     <p class="description"><?php echo esc_html($descripcion) ?></p>

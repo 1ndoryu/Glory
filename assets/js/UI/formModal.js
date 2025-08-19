@@ -269,29 +269,39 @@ function gloryFormModal() {
 
         // CREATE MODE
         if (trigger && trigger.dataset.formMode === 'create') {
-            dispatch('gloryFormModal:beforeCreate');
-            const inputs = form.querySelectorAll('input, textarea, select');
-            inputs.forEach(el => {
-                const tag = el.tagName.toLowerCase();
-                if (tag === 'input') {
-                    if (['text','number','date','email','tel','range','hidden'].includes(el.type)) el.value = '';
-                    if (['checkbox','radio'].includes(el.type)) el.checked = false;
-                } else if (tag === 'textarea') {
-                    el.value = '';
-                } else if (tag === 'select') {
-                    if (!el.multiple) el.selectedIndex = 0;
+            // Evitar reiniciar el formulario si se está reabriendo el mismo modal (aplicación de UX solicitada)
+            const reopenSame = (trigger && trigger.dataset && trigger.dataset.reopenSame) || false;
+            // También soportamos la señal enviada por gloryModal: 'reopenSame' en el evento
+            const evDetail = (trigger && trigger.__lastOpenEventDetail) || {};
+            const reopenedViaModal = !!evDetail.reopenSame;
+
+            // Si es re-apertura del mismo modal, NO reiniciamos los valores del formulario
+            if (!reopenSame && !reopenedViaModal) {
+                dispatch('gloryFormModal:beforeCreate');
+                const inputs = form.querySelectorAll('input, textarea, select');
+                inputs.forEach(el => {
+                    const tag = el.tagName.toLowerCase();
+                    if (tag === 'input') {
+                        if (['text','number','date','email','tel','range','hidden'].includes(el.type)) el.value = '';
+                        if (['checkbox','radio'].includes(el.type)) el.checked = false;
+                    } else if (tag === 'textarea') {
+                        el.value = '';
+                    } else if (tag === 'select') {
+                        if (!el.multiple) el.selectedIndex = 0;
+                    }
+                });
+                form.removeAttribute('data-object-id');
+                if (btnSubmit) {
+                    if (trigger.dataset.submitText) btnSubmit.textContent = trigger.dataset.submitText;
+                    if (trigger.dataset.submitAction) btnSubmit.dataset.accion = trigger.dataset.submitAction;
                 }
-            });
-            form.removeAttribute('data-object-id');
-            if (btnSubmit) {
-                if (trigger.dataset.submitText) btnSubmit.textContent = trigger.dataset.submitText;
-                if (trigger.dataset.submitAction) btnSubmit.dataset.accion = trigger.dataset.submitAction;
+                if (titulo) {
+                    const tituloCreate = trigger.dataset.modalTitleCreate || trigger.dataset.modalTitle;
+                    if (tituloCreate) titulo.textContent = tituloCreate;
+                }
+                dispatch('gloryFormModal:afterCreate');
             }
-            if (titulo) {
-                const tituloCreate = trigger.dataset.modalTitleCreate || trigger.dataset.modalTitle;
-                if (tituloCreate) titulo.textContent = tituloCreate;
-            }
-            dispatch('gloryFormModal:afterCreate');
+
             // Enlazar selects declarativos (agnóstico)
             form.querySelectorAll('select[data-fm-accion-opciones][data-fm-depende]').forEach(wireOptionsSelect);
             wireServiciosSelectAll();

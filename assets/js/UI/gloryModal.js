@@ -5,6 +5,8 @@ function gloryModal() {
     window.__gloryModalInitialized = true;
     let modalActivo = null;
     let ultimoDisparador = null;
+    // Mantener id del último modal abierto para detectar re-aperturas del mismo modal
+    let ultimoModalAbiertoId = null;
 
     // La función de cierre ahora es mucho más simple.
     // Llama a la función global y resetea la variable local.
@@ -39,13 +41,21 @@ function gloryModal() {
         if (typeof window.mostrarFondo === 'function') window.mostrarFondo();
 
         // 2. Mostramos el modal específico
-        modalActivo = modal;
+        // Soportar tanto la estructura nueva (overlay -> dialog -> contenido)
+        // como la estructura antigua donde el elemento con id puede ser el contenedor del contenido.
+        const overlayEl = modal.classList.contains('modalOverlay') ? modal : (modal.closest('.modalOverlay') || modal);
+        modalActivo = overlayEl;
         // Asegurar que quede por encima del fondo global
         modalActivo.style.zIndex = '1001';
         // Asegúrate de que tus modales tengan la clase "modal" en su HTML
         // para que window.ocultarFondo() pueda encontrarlos.
         modalActivo.style.display = 'flex'; // O 'block', según tu CSS
-        document.dispatchEvent(new CustomEvent('gloryModal:open', { detail: { modal: modalActivo, modalId: idModal, trigger: ultimoDisparador } }));
+        const esReaperturaMisma = (ultimoModalAbiertoId === idModal);
+        // Actualizar registro del último modal abierto
+        ultimoModalAbiertoId = idModal;
+        // Marcar en el disparador la información del evento para que otros listeners puedan leerlo si lo necesitan
+        if (ultimoDisparador) ultimoDisparador.__lastOpenEventDetail = { reopenSame: esReaperturaMisma };
+        document.dispatchEvent(new CustomEvent('gloryModal:open', { detail: { modal: modalActivo, modalId: idModal, trigger: ultimoDisparador, reopenSame: esReaperturaMisma } }));
     };
 
     // Escuchar solicitudes de apertura de modal desde otros componentes (p.ej. búsquedas)
@@ -73,16 +83,20 @@ function gloryModal() {
         }
     });
 
-    // Cerrar modal al hacer clic fuera del contenido (sobre el overlay del propio modal)
+    // Cerrar modal al hacer click en el overlay solo si el overlay lo permite explícitamente (data-close-on-overlay="1")
     document.addEventListener('click', event => {
-        const overlay = event.target.closest('.modal');
+        if (!modalActivo) return;
+        // Ignorar clicks que vienen del disparador (.openModal)
+        if (event.target.closest && event.target.closest('.openModal')) return;
+        const overlay = modalActivo.classList.contains('modalOverlay') ? modalActivo : modalActivo.closest('.modalOverlay');
         if (!overlay) return;
-        const dentroContenido = event.target.closest('.modalContenido');
-        if (!dentroContenido && modalActivo && overlay === modalActivo) {
-            const modalCerrado = modalActivo;
-            cerrarModalActivo();
-            document.dispatchEvent(new CustomEvent('gloryModal:close', { detail: { modal: modalCerrado, modalId: modalCerrado?.id } }));
-        }
+        // Solo cerrar si el click fue exactamente sobre el overlay y está habilitado mediante data-close-on-overlay="1"
+        const allowClose = overlay.dataset && overlay.dataset.closeOnOverlay === '1';
+        if (!allowClose) return;
+        if (event.target !== overlay) return;
+        const modalCerrado = overlay;
+        cerrarModalActivo();
+        document.dispatchEvent(new CustomEvent('gloryModal:close', { detail: { modal: modalCerrado, modalId: modalCerrado?.id } }));
     });
 
     // Listener para la tecla 'Escape'.

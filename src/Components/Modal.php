@@ -13,12 +13,14 @@ class Modal
 
         ob_start();
         ?>
-        <div id="<?php echo esc_attr($id); ?>" class="modal" role="dialog" aria-modal="true" style="display:none;" <?php echo trim($attrs); ?>>
-            <div class="modalContenido">
-                <?php if ($titulo !== ''): ?>
-                    <h2><?php echo esc_html($titulo); ?></h2>
-                <?php endif; ?>
-                <?php echo $contenidoHtml; ?>
+        <div id="<?php echo esc_attr($id); ?>" class="modalOverlay modal" role="dialog" aria-modal="true" style="display:none;" data-close-on-overlay="0" <?php echo trim($attrs); ?>>
+            <div class="modalDialog">
+                <div class="modalContenido">
+                    <?php if ($titulo !== ''): ?>
+                        <h2><?php echo esc_html($titulo); ?></h2>
+                    <?php endif; ?>
+                    <?php echo $contenidoHtml; ?>
+                </div>
             </div>
         </div>
         <?php
