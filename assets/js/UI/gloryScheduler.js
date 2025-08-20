@@ -27,7 +27,11 @@ function inicializarCuadricula(contenedor) {
 
     // Altura fija por intervalo basada en px por minuto para precisión absoluta
     const pxPorMinuto = Number(config.pxPorMinuto) > 0 ? Number(config.pxPorMinuto) : 2; // default: 2px/minuto
-    const altoIntervaloPx = pxPorMinuto * config.intervalo;
+    // Añadir 5px extras por fila (config.intervalo) y propagarlo por minuto para mantener consistencia
+    const EXTRA_PX_POR_INTERVALO = 12; // cambiar aquí si se quiere otro incremento
+    const extraPxPorMinuto = EXTRA_PX_POR_INTERVALO / Number(config.intervalo || 1);
+    const efectivoPxPorMinuto = pxPorMinuto + extraPxPorMinuto;
+    const altoIntervaloPx = efectivoPxPorMinuto * config.intervalo;
 
     const gridTemplateColumns = `60px repeat(${config.recursos.length}, minmax(160px, 1fr))`;
     const gridTemplateRows = `auto repeat(${numeroFilas}, ${altoIntervaloPx}px)`;
@@ -70,7 +74,7 @@ function inicializarCuadricula(contenedor) {
         }
     }
 
-    renderizarEventos(eventos, capaEventos, config, inicioMinutosTotal, { pxPorMinuto, altoIntervaloPx });
+    renderizarEventos(eventos, capaEventos, config, inicioMinutosTotal, { pxPorMinuto: efectivoPxPorMinuto, altoIntervaloPx });
 
     // Notificar que el scheduler ha sido renderizado para permitir mejoras del tema
     try {
