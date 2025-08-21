@@ -32,6 +32,10 @@ function gloryForm() {
 
         event.preventDefault();
         const boton = event.target;
+        // Desactivar botón y mostrar estado de guardado para mejorar UX
+        const textoOriginal = boton.textContent;
+        const estabaDeshabilitado = boton.disabled === true;
+        try { boton.disabled = true; boton.textContent = (boton.dataset.textoGuardando || 'Guardando...'); } catch(_) {}
         const subAccion = boton.dataset.accion;
 
         if (!subAccion) {
@@ -220,6 +224,10 @@ function gloryForm() {
             console.error(`Error en la petición para "${subAccion}":`, error);
             const mensajeError = error.message || 'Ocurrió un error inesperado al procesar su solicitud.';
             alert(`Error en la petición: ${mensajeError}`);
+        }
+        finally {
+            // Restaurar botón a su estado original
+            try { boton.textContent = textoOriginal; boton.disabled = estabaDeshabilitado; } catch(_) {}
         }
     });
 

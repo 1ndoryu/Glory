@@ -101,6 +101,9 @@ class submenus {
             } else {
                 this.abrir(disparador);
             }
+        } else if (this.menuActivo && this.menuActivo.contains(evento.target)) {
+            // Clic dentro del submenú: ejecutar acción y cerrar automáticamente
+            try { setTimeout(() => this.cerrar(), 0); } catch(_) {}
         } else if (this.menuActivo && !this.menuActivo.contains(evento.target)) {
             // Clic fuera del submenú: cerramos, pero dejamos que el evento continúe para no interferir con otros componentes (modales)
             this.cerrar();
