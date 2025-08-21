@@ -44,7 +44,8 @@ async function gloryRealtimePoll(channels, { intervalMs = 4000 } = {}) {
                 if (curr.version !== prev.version) {
                     emit(ch, curr);
                     try {
-                        document.dispatchEvent(new CustomEvent('gloryRealtime:update', { detail: { channel: ch, info: curr } }));
+                        // Propagar también el payload si viene del backend
+                        document.dispatchEvent(new CustomEvent('gloryRealtime:update', { detail: { channel: ch, info: curr, payload: curr && curr.payload } }));
                     } catch(_) {}
                 }
                 last[ch] = curr;

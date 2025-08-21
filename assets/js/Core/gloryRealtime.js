@@ -79,11 +79,14 @@
 		function onSuccess(map){
 			lastErrorMs = 0;
 			Object.keys(map).forEach(function(ch){
-				var v = map[ch] && map[ch].version;
+				var info = map[ch] || {};
+				var v = typeof info.version !== 'undefined' ? info.version : undefined;
 				if (typeof v === 'undefined') return;
-				if (lastVersions[ch] !== v) {
+				var prev = lastVersions[ch];
+				if (prev !== v) {
 					lastVersions[ch] = v;
-					dispatch({ channel: ch, version: v, prevVersion: lastVersions[ch] });
+					// Propagar también payload si está disponible
+					dispatch({ channel: ch, version: v, prevVersion: prev, payload: info.payload });
 				}
 			});
 		}

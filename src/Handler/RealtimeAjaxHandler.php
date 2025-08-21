@@ -22,6 +22,19 @@ class RealtimeAjaxHandler
             return;
         }
         $versions = EventBus::getVersions($channels);
+
+        // Incluir, cuando exista, el último payload almacenado por canal
+        foreach ($versions as $ch => &$info) {
+            $payloadJson = get_option('glory_eventbus_last_' . $ch, '');
+            if (is_string($payloadJson) && $payloadJson !== '') {
+                $decoded = json_decode($payloadJson, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    $info['payload'] = $decoded;
+                }
+            }
+        }
+        unset($info);
+
         wp_send_json_success(['channels' => $versions]);
     }
 }
