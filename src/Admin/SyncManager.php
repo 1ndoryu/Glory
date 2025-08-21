@@ -116,17 +116,6 @@ class SyncManager
 
         } elseif ($action === 'clear_cache') {
             $this->clearAllCaches();
-            // Bump de versión de assets para invalidar cache de navegador/CDN cuando dev está apagado
-            $current = get_option('glory_theme_asset_version', '0.1.1');
-            $new = is_string($current) ? $current : '0.1.1';
-            // Si es semver, incrementar patch; si no, usar timestamp
-            if (preg_match('/^(\d+)\.(\d+)\.(\d+)$/', $new, $m)) {
-                $new = $m[1] . '.' . $m[2] . '.' . ((int)$m[3] + 1);
-            } else {
-                $new = (string) time();
-            }
-            update_option('glory_theme_asset_version', $new, false);
-            \Glory\Manager\AssetManager::setThemeVersion($new);
             GloryLogger::info('Todas las cachés limpiadas manualmente por el usuario.');
             $redirect_url = add_query_arg([
                 'glory_sync_notice' => 'cache_cleared',
