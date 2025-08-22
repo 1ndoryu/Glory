@@ -291,6 +291,20 @@ function gloryFormModal() {
                     }
                 });
                 form.removeAttribute('data-object-id');
+                // Limpiar las previews de los uploaders de imagen al crear un nuevo objeto
+                try {
+                    form.querySelectorAll('.glory-image-uploader').forEach(uploader => {
+                        const hidden = uploader.querySelector('.glory-image-id');
+                        if (hidden) hidden.value = '';
+                        const preview = uploader.querySelector('.image-preview');
+                        if (preview) {
+                            const placeholder = preview.dataset.placeholder || '';
+                            preview.innerHTML = '<span class="image-preview-placeholder">' + placeholder + '</span>';
+                        }
+                        const removeBtn = uploader.querySelector('.glory-remove-image-button');
+                        if (removeBtn) removeBtn.style.display = 'none';
+                    });
+                } catch (e) { /* silencioso */ }
                 if (btnSubmit) {
                     if (trigger.dataset.submitText) btnSubmit.textContent = trigger.dataset.submitText;
                     if (trigger.dataset.submitAction) btnSubmit.dataset.accion = trigger.dataset.submitAction;
