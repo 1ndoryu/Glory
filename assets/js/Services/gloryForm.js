@@ -37,15 +37,19 @@ function gloryForm() {
         const estabaDeshabilitado = boton.disabled === true;
         try { boton.disabled = true; boton.textContent = (boton.dataset.textoGuardando || 'Guardando...'); } catch(_) {}
         const subAccion = boton.dataset.accion;
+        // Helper para restaurar el estado del botón en salidas tempranas
+        const restore = () => { try { boton.textContent = textoOriginal; boton.disabled = estabaDeshabilitado; } catch(_) {} };
 
         if (!subAccion) {
             console.error('El botón de envío no tiene un atributo data-accion definido.');
+            restore();
             return;
         }
 
         const contenedor = boton.closest('.gloryForm');
         if (!contenedor) {
             console.error('El botón .dataSubir debe estar dentro de un elemento con la clase .gloryForm');
+            restore();
             return;
         }
 
@@ -109,12 +113,14 @@ function gloryForm() {
 
         if (errores.length > 0) {
             alert("Por favor, corrige los siguientes errores:\n\n- " + errores.join('\n- '));
+            restore();
             return;
         }
 
         if (!window.dataGlobal || !window.dataGlobal.nonce) {
             console.error('El nonce de seguridad (nonce) no se encontró en window.dataGlobal.');
             alert('Error de configuración de seguridad. No se puede enviar el formulario.');
+            restore();
             return;
         }
 
