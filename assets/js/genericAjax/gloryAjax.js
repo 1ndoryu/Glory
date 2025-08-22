@@ -3,6 +3,7 @@ const ajaxUrl = (typeof ajax_params !== 'undefined' && ajax_params.ajax_url)
     : '/wp-admin/admin-ajax.php';
 
 async function gloryAjax(action = '', data = {}) {
+    const gloryLog = (...args) => { if (typeof window !== 'undefined' && window.gloryDebug) console.log(...args); };
     if (window.location.href.includes('fb-edit=1')) {
         console.warn('gloryAjax: modo fb-edit detectado, petición cancelada.');
         return { success: false, message: 'Solicitud cancelada en modo edición FB.' };
@@ -65,7 +66,7 @@ async function gloryAjax(action = '', data = {}) {
             };
         }
     } catch (error) {
-        console.error('Error en gloryAjax:', error);
+        gloryLog('Error en gloryAjax:', error);
         return {
             success: false,
             message: error.message || 'Error de red o en la solicitud.'

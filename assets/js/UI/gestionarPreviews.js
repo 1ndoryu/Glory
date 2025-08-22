@@ -38,6 +38,9 @@
  * durante la operación de arrastre o al hacer clic en un botón que lo contenga.
  */
 function gestionarPreviews() {
+    // Logging controlado por window.gloryDebug
+    const gloryLog = (...args) => { if (typeof window !== 'undefined' && window.gloryDebug) console.log(...args); };
+    gloryLog('✨ [gestionarPreviews] Función gestionarPreviews() inicializada.');
 
     /**
      * Muestra la previsualización de un archivo de imagen.
@@ -55,8 +58,11 @@ function gestionarPreviews() {
                 elementoPreview.dataset.__original_html_saved = '1';
                 elementoPreview.dataset.__original_html = elementoPreview.innerHTML;
             }
-            // reemplaza contenido previo por la imagen y un botón de eliminar
-            elementoPreview.innerHTML = '';
+            // Limpiar contenido previo si no es un placeholder, y asegurar que el placeholder esté oculto
+            elementoPreview.querySelectorAll('img, .preview-text').forEach(el => el.remove());
+            const placeholderSpan = elementoPreview.querySelector('.image-preview-placeholder');
+            if (placeholderSpan) placeholderSpan.classList.add('oculto');
+
             const img = document.createElement('img');
             img.src = e.target.result;
             img.style.width = '100%';
@@ -64,19 +70,21 @@ function gestionarPreviews() {
             img.style.objectFit = 'contain';
             elementoPreview.appendChild(img);
 
-            // Añadir botón de eliminar si no existe (SVG coherente con el template)
+            // Asegurar que el botón de eliminar esté visible (crear si falta)
             let btn = elementoPreview.querySelector('.preview-remove');
             const svgClose = '<svg data-testid="geist-icon" height="16" stroke-linejoin="round" style="color:currentColor" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z" fill="currentColor"></path></svg>';
             if (!btn) {
-                btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'preview-remove';
-                btn.setAttribute('aria-label', 'Eliminar imagen');
-                btn.innerHTML = svgClose;
-                elementoPreview.appendChild(btn);
-            } else {
+                try {
+                    btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'preview-remove';
+                    btn.setAttribute('aria-label', 'Eliminar imagen');
+                    btn.innerHTML = svgClose;
+                    elementoPreview.appendChild(btn);
+                } catch (e) { btn = null; }
+            }
+            if (btn) {
                 btn.classList.remove('oculto');
-                // asegurar que tenga el SVG correcto
                 if (!btn.innerHTML || btn.innerHTML.trim() === '&times;') btn.innerHTML = svgClose;
             }
         };
@@ -130,6 +138,65 @@ function gestionarPreviews() {
     }
 
     /**
+     * Muestra una imagen directamente desde una URL.
+     * Similar a `mostrarImagen` pero para URLs preexistentes.
+     * @param {string} imageUrl - La URL de la imagen a mostrar.
+     * @param {HTMLElement} elementoPreview - El elemento donde se mostrará la preview.
+     * @param {string|number} [imageId=''] - Opcional, el ID de la imagen si está disponible.
+     */
+    function mostrarImagenDesdeUrl(imageUrl, elementoPreview, imageId = '') {
+        if (!imageUrl) {
+            console.warn('✨ [mostrarImagenDesdeUrl] No se proporcionó URL para mostrar la imagen.');
+            return;
+        }
+        gloryLog('✨ [mostrarImagenDesdeUrl] Llamada con imageUrl:', imageUrl, 'imageId:', imageId, 'elementoPreview:', elementoPreview.outerHTML);
+
+        // Limpiar contenido previo si no es un placeholder, y asegurar que el placeholder esté oculto
+        elementoPreview.querySelectorAll('img, .preview-text').forEach(el => el.remove());
+        const placeholderSpan = elementoPreview.querySelector('.image-preview-placeholder');
+        if (placeholderSpan) placeholderSpan.classList.add('oculto');
+
+        let img = elementoPreview.querySelector('img');
+        if (!img) {
+            img = document.createElement('img');
+            elementoPreview.appendChild(img);
+        }
+        img.src = imageUrl;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        if (imageId) img.dataset.imageId = imageId; // Guardar el ID si existe
+
+        // Asegurarse de que el botón de eliminar esté visible (crear si falta)
+        let btn = elementoPreview.querySelector('.preview-remove');
+        const svgClose = '<svg data-testid="geist-icon" height="16" stroke-linejoin="round" style="color:currentColor" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z" fill="currentColor"></path></svg>';
+        if (!btn) {
+            try {
+                btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'preview-remove';
+                btn.setAttribute('aria-label', 'Eliminar imagen');
+                btn.innerHTML = svgClose;
+                elementoPreview.appendChild(btn);
+            } catch (e) { btn = null; }
+        }
+        if (btn) {
+            btn.classList.remove('oculto');
+            if (!btn.innerHTML || btn.innerHTML.trim() === '&times;') btn.innerHTML = svgClose;
+        }
+        const currentPlaceholderSpan = elementoPreview.querySelector('.image-preview-placeholder');
+        const currentBtn = elementoPreview.querySelector('.preview-remove');
+        gloryLog('✨ [mostrarImagenDesdeUrl] Placeholder.classList después de ocultar:', currentPlaceholderSpan?.classList.toString(), 'btn.classList después de mostrar:', currentBtn?.classList.toString());
+
+        gloryLog('✨ [mostrarImagenDesdeUrl] IMG creado/actualizado. src:', img?.src, 'display:', img?.style.display, 'visibility:', img?.style.visibility, 'opacity:', img?.style.opacity, 'width:', img?.offsetWidth, 'height:', img?.offsetHeight);
+        gloryLog('✨ [mostrarImagenDesdeUrl] elementoPreview.outerHTML al final:', elementoPreview.outerHTML);
+
+        elementoPreview.classList.remove('oculto');
+        const contenedor = elementoPreview.closest('.previewContenedor');
+        if (contenedor) contenedor.classList.remove('oculto');
+    }
+
+    /**
      * Gestiona el clic para abrir el selector de archivos, aplicando filtros.
      * @param {Event} evento
      */
@@ -150,27 +217,32 @@ function gestionarPreviews() {
             const cont = previewElem.closest('.previewContenedor');
             // limpiar imagen mostrada y los campos ocultos
             previewElem.querySelectorAll('img').forEach(i => i.remove());
-            // Restaurar contenido original si se guardó; si no, restaurar/crear placeholder
-            if (previewElem.dataset.__original_html) {
-                previewElem.innerHTML = previewElem.dataset.__original_html;
-            } else {
-                let placeholder = previewElem.querySelector('.image-preview-placeholder');
-                if (!placeholder) {
-                    const placeholderText = previewElem.dataset.placeholder || previewElem.getAttribute('data-placeholder') || '';
-                    placeholder = document.createElement('span');
-                    placeholder.className = 'image-preview-placeholder';
-                    placeholder.textContent = placeholderText;
-                    previewElem.appendChild(placeholder);
-                }
-                placeholder.classList.remove('oculto');
-            }
-            // esconder boton eliminar
+
+            // Mostrar el placeholder y ocultar el botón de eliminar
+            const placeholderSpan = previewElem.querySelector('.image-preview-placeholder');
+            if (placeholderSpan) placeholderSpan.classList.remove('oculto');
             eliminarBtn.classList.add('oculto');
+
+            gloryLog('🗑️ [gestionarPreviews][alHacerClick] Botón eliminar clicado. previewElem.outerHTML antes de eliminación:', previewElem.outerHTML);
+            gloryLog('🗑️ [gestionarPreviews][alHacerClick] Placeholder.classList después de mostrar:', placeholderSpan?.classList.toString(), 'eliminarBtn.classList después de ocultar:', eliminarBtn?.classList.toString());
+
             if (cont) {
                 const hiddenId = cont.querySelector('.glory-image-id');
                 if (hiddenId) hiddenId.value = '';
                 const hiddenUrl = cont.querySelector('input[name$="_url"]');
                 if (hiddenUrl) hiddenUrl.value = '';
+                gloryLog('🗑️ [gestionarPreviews][alHacerClick] Valores hidden inputs después de limpiar: glory-image-id:', cont?.querySelector('.glory-image-id')?.value, 'glory-image-url:', cont?.querySelector('input[name$="_url"]')?.value);
+                // Añadir el campo oculto para indicar explícitamente la eliminación de la imagen al guardar
+                const deleteInputName = (hiddenId ? hiddenId.name : 'image_id') + '_delete';
+                let deleteInput = cont.querySelector(`input[name="${deleteInputName}"]`);
+                if (!deleteInput) {
+                    deleteInput = document.createElement('input');
+                    deleteInput.type = 'hidden';
+                    deleteInput.name = deleteInputName;
+                    cont.appendChild(deleteInput);
+                }
+                deleteInput.value = '1'; // Establecer a '1' para indicar eliminación
+
                 // Limpiar el input file para permitir volver a elegir el mismo archivo y dispare 'change'
                 const inputFile = cont.querySelector('input[type="file"]');
                 if (inputFile) {
@@ -390,7 +462,33 @@ function gestionarPreviews() {
     document.addEventListener('dragover', alArrastrarSobre);
     document.addEventListener('dragleave', alDejarDeArrastrar);
     document.addEventListener('drop', alSoltarArchivo);
-}
 
+    // Mover el listener del evento personalizado dentro de este scope
+    if (window.gloryImageUploaderListenerInitialized) return;
+    window.gloryImageUploaderListenerInitialized = true;
+
+    document.addEventListener('gloryImageUploader:showExistingImage', (event) => {
+        const { imageUrl, imageId, uploaderContainer } = event.detail;
+        const previewElement = uploaderContainer.querySelector('.previewImagen'); // CAMBIADO DE .image-preview
+        if (previewElement) {
+            gloryLog('✨ [gestionarPreviews] Evento gloryImageUploader:showExistingImage recibido. imageUrl:', imageUrl, 'imageId:', imageId, 'uploaderContainer:', uploaderContainer.outerHTML);
+            gloryLog('✨ [gestionarPreviews] previewElement encontrado:', previewElement.outerHTML);
+            gloryLog('✨ [gestionarPreviews] previewElement.outerHTML antes de mostrarImagenDesdeUrl:', previewElement.outerHTML);
+            mostrarImagenDesdeUrl(imageUrl, previewElement, imageId);
+            // Asegurarse de que el hidden input de image_id tenga el valor si lo tenemos
+            const hiddenIdInput = uploaderContainer.querySelector('.glory-image-id');
+            if (hiddenIdInput) {
+                hiddenIdInput.value = imageId;
+            }
+            // Asegurarse de que el hidden input de image_id_url tenga el valor si lo tenemos
+            const hiddenUrlInput = uploaderContainer.querySelector('.glory-image-url');
+            if (hiddenUrlInput) {
+                hiddenUrlInput.value = imageUrl;
+            }
+        } else {
+            console.warn('✨ [gestionarPreviews] No se encontró previewElement para gloryImageUploader:showExistingImage en', uploaderContainer);
+        }
+    });
+}
 
 document.addEventListener('gloryRecarga', gestionarPreviews);

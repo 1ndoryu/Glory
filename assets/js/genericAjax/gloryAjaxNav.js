@@ -23,6 +23,9 @@
     const runtimeConfig = (window.gloryNavConfig || window.dataGlobal || {});
     const config = {...defaults, ...runtimeConfig};
 
+    // Helper de logging: activo solo si `window.gloryDebug` es truthy
+    const gloryLog = (...args) => { if (typeof window !== 'undefined' && window.gloryDebug) console.log(...args); };
+
     /**
      * isFusionBuilderActive ahora se define globalmente en utils/fusionBuilderDetect.js
      * y está disponible como window.isFusionBuilderActive()
@@ -31,13 +34,13 @@
 
     // Si detectamos que el editor de Fusion Builder está activo, abortamos inmediatamente.
     if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
-        console.log('Glory AJAX Nav desactivado por Fusion Builder (detección temprana)');
+        gloryLog('Glory AJAX Nav desactivado por Fusion Builder (detección temprana)');
         return;
     }
 
     // Exit immediately if disabled via config
     if (!config.enabled) {
-        console.log('Glory AJAX Nav is disabled via configuration.');
+        gloryLog('Glory AJAX Nav is disabled via configuration.');
         return;
     }
 
@@ -56,7 +59,7 @@
             detail: {contentElement: contentElement}
         });
         document.dispatchEvent(event);
-        console.log('Event gloryRecarga dispatched.');
+        gloryLog('Event gloryRecarga dispatched.');
     }
 
     /**
@@ -158,7 +161,7 @@
 
         // Use cache if available and caching is enabled/allowed for this URL
         if (pageCache[url] && shouldCache(url)) {
-            console.log(`Loading from cache: ${url}`);
+            gloryLog(`Loading from cache: ${url}`);
             contentElement.innerHTML = pageCache[url];
             if (pushState) {
                 history.pushState({url: url}, '', url);
@@ -210,7 +213,7 @@
                 // Cache if applicable
                 if (shouldCache(url)) {
                     pageCache[url] = newContent.innerHTML;
-                    console.log(`Cached: ${url}`);
+                    gloryLog(`Cached: ${url}`);
                 }
 
                 // Update History
@@ -293,7 +296,7 @@
 
         // Use skipAjax for detailed checks (URL pattern, class, origin etc.)
         if (skipAjax(linkElement.href, linkElement)) {
-            console.log(`AJAX skipped for: ${linkElement.href}`);
+            gloryLog(`AJAX skipped for: ${linkElement.href}`);
             return; // Let the browser handle it
         }
 
@@ -323,12 +326,12 @@
         pseudoLink.href = targetUrl;
 
         if (!skipAjax(targetUrl, pseudoLink)) {
-            console.log(`Popstate triggered: ${targetUrl}`);
+            gloryLog(`Popstate triggered: ${targetUrl}`);
             load(targetUrl, false); // Load content, false = don't push state again
         } else {
             // If popstate leads to a URL that should be skipped (e.g., external),
             // force a full page load to ensure correct behavior.
-            console.log(`Popstate requires full load for: ${targetUrl}`);
+            gloryLog(`Popstate requires full load for: ${targetUrl}`);
             window.location.reload(); // Or window.location.href = targetUrl;
         }
     }
@@ -336,7 +339,7 @@
     // --- Initialization ---
     // Evitar doble inicialización
     if (window.gloryAjaxNavInitialized) {
-        console.log('Glory AJAX Nav already initialized.');
+        gloryLog('Glory AJAX Nav already initialized.');
         return;
     }
     window.gloryAjaxNavInitialized = true;
@@ -347,7 +350,7 @@
         // actualiza la URL con history.replaceState()). Si detectamos "fb-edit" en
         // este punto, abortamos completamente la inicialización.
         if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
-            console.log('Glory AJAX Nav detenido en DOMContentLoaded por Fusion Builder');
+            gloryLog('Glory AJAX Nav detenido en DOMContentLoaded por Fusion Builder');
             return;
         }
 
@@ -375,6 +378,6 @@
         // Use requestAnimationFrame to ensure layout is stable before firing
         requestAnimationFrame(triggerPageReady);
 
-        console.log('Glory AJAX Navigation Initialized with config:', config);
+        gloryLog('Glory AJAX Navigation Initialized with config:', config);
     });
 })();

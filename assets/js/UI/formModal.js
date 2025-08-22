@@ -1,4 +1,7 @@
 function gloryFormModal() {
+    // Helper de logging controlado por `window.gloryDebug`
+    const gloryLog = (...args) => { if (typeof window !== 'undefined' && window.gloryDebug) console.log(...args); };
+    gloryLog('⚡️ [formModal] Función gloryFormModal() inicializada.');
     if (window.gloryFormModalInitialized) return;
     window.gloryFormModalInitialized = true;
     const callAjax = async (action, payload) => {
@@ -30,7 +33,7 @@ function gloryFormModal() {
         const namesToEnableSubmit = (form.dataset.fmSubmitHabilitarCuando || '')
             .split(',').map(s => s.trim()).filter(Boolean);
 
-        const cssEscape = (s) => s.replace(/"/g, '\\"');
+        const cssEscape = (s) => s.replace(/"/g, '\"');
         const getFieldByName = (name) => form.querySelector(`[name="${cssEscape(name)}"]`);
         
         // Permite que el área de previsualización dentro de `.glory-image-uploader`
@@ -66,6 +69,22 @@ function gloryFormModal() {
 
         // Inicializador interno para el media uploader en formularios (fallback cuando
         // no existe el código jQuery específico del panel). Usa la API `wp.media`.
+        function ensureRemoveButton(previewElem) {
+            try {
+                if (!previewElem) return;
+                // Si ya existe el botón, no hacemos nada
+                if (previewElem.querySelector('.preview-remove')) return;
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'preview-remove oculto';
+                btn.setAttribute('aria-label', 'Eliminar imagen');
+                btn.innerHTML = '<svg data-testid="geist-icon" height="16" stroke-linejoin="round" style="color:currentColor" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z" fill="currentColor"></path></svg>';
+                previewElem.appendChild(btn);
+            } catch (e) { /* silencioso */ }
+        }
+
+        // Inicializador interno para el media uploader en formularios (fallback cuando
+        // no existe el código jQuery específico del panel). Usa la API `wp.media`.
         let __gloryFormMediaUploader = null;
         const inicializarImageUploaderForForm = () => {
             // Delegación en el formulario
@@ -89,9 +108,13 @@ function gloryFormModal() {
                             const hidden = uploaderContainer.querySelector('.glory-image-id');
                             if (hidden) hidden.value = attachment.id;
                             const preview = uploaderContainer.querySelector('.image-preview');
-                            if (preview) preview.innerHTML = '<img src="' + previewUrl + '" alt="Previsualización">';
-                            const removeBtn = uploaderContainer.querySelector('.glory-remove-image-button');
-                            if (removeBtn) removeBtn.style.display = '';
+                            if (preview) {
+                                preview.innerHTML = '<img src="' + previewUrl + '" alt="Previsualización">';
+                                // Asegurar que exista botón remove compatible
+                                ensureRemoveButton(preview);
+                            }
+                            const removeBtn = uploaderContainer.querySelector('.glory-remove-image-button, .preview-remove');
+                            if (removeBtn) removeBtn.classList.remove('oculto');
                         });
                         __gloryFormMediaUploader.open();
                     } catch (e) {
@@ -99,17 +122,28 @@ function gloryFormModal() {
                     }
                 }
 
-                const removeBtn = ev.target.closest('.glory-remove-image-button');
+                const removeBtn = ev.target.closest('.glory-remove-image-button, .preview-remove');
                 if (removeBtn) {
                     ev.preventDefault();
                     const uploaderContainer = removeBtn.closest('.glory-image-uploader');
                     if (!uploaderContainer) return;
                     const hidden = uploaderContainer.querySelector('.glory-image-id');
-                    if (hidden) hidden.value = '';
+                    if (hidden) hidden.value = ''; // Limpiar el ID de la imagen
                     const preview = uploaderContainer.querySelector('.image-preview');
                     const placeholderText = preview ? (preview.dataset.placeholder || '') : '';
                     if (preview) preview.innerHTML = '<span class="image-preview-placeholder">' + placeholderText + '</span>';
-                    removeBtn.style.display = 'none';
+                    removeBtn.classList.add('oculto');
+
+                    // Añadir un campo oculto para indicar explícitamente la eliminación de la imagen al guardar
+                    const deleteInputName = hidden.name + '_delete';
+                    let deleteInput = form.querySelector(`input[name="${deleteInputName}"]`);
+                    if (!deleteInput) {
+                        deleteInput = document.createElement('input');
+                        deleteInput.type = 'hidden';
+                        deleteInput.name = deleteInputName;
+                        form.appendChild(deleteInput);
+                    }
+                    deleteInput.value = '1'; // Establecer a '1' para indicar eliminación
                 }
             };
             form.__gloryUploaderDelegate = delegado;
@@ -271,12 +305,9 @@ function gloryFormModal() {
         if (trigger && trigger.dataset.formMode === 'create') {
             // Evitar reiniciar el formulario si se está reabriendo el mismo modal (aplicación de UX solicitada)
             const reopenSame = (trigger && trigger.dataset && trigger.dataset.reopenSame) || false;
-            // También soportamos la señal enviada por gloryModal: 'reopenSame' en el evento
-            const evDetail = (trigger && trigger.__lastOpenEventDetail) || {};
-            const reopenedViaModal = !!evDetail.reopenSame;
 
-            // Si es re-apertura del mismo modal, NO reiniciamos los valores del formulario
-            if (!reopenSame && !reopenedViaModal) {
+            // Si es re-apertura del mismo modal (flag en el trigger), NO reiniciamos los valores del formulario
+            if (!reopenSame) {
                 dispatch('gloryFormModal:beforeCreate');
                 const inputs = form.querySelectorAll('input, textarea, select');
                 inputs.forEach(el => {
@@ -291,6 +322,11 @@ function gloryFormModal() {
                     }
                 });
                 form.removeAttribute('data-object-id');
+                // Asegurar que no quedan indicadores de edición anteriores
+                try {
+                    // Eliminar cualquier input hidden que indique eliminación previa
+                    form.querySelectorAll('input[name$="_delete"]').forEach(i => i.remove());
+                } catch (e) {}
                 // Limpiar las previews de los uploaders de imagen al crear un nuevo objeto
                 try {
                     form.querySelectorAll('.glory-image-uploader').forEach(uploader => {
@@ -301,8 +337,8 @@ function gloryFormModal() {
                             const placeholder = preview.dataset.placeholder || '';
                             preview.innerHTML = '<span class="image-preview-placeholder">' + placeholder + '</span>';
                         }
-                        const removeBtn = uploader.querySelector('.glory-remove-image-button');
-                        if (removeBtn) removeBtn.style.display = 'none';
+                        const removeBtn = uploader.querySelector('.glory-remove-image-button, .preview-remove');
+                        if (removeBtn) removeBtn.classList.add('oculto');
                     });
                 } catch (e) { /* silencioso */ }
                 if (btnSubmit) {
@@ -315,6 +351,47 @@ function gloryFormModal() {
                 }
                 dispatch('gloryFormModal:afterCreate');
             }
+
+            // Asegurar que al abrir en modo CREATE siempre se limpien/restablezcan las previews
+            try {
+                form.querySelectorAll('.glory-image-uploader').forEach(uploader => {
+                    const hidden = uploader.querySelector('.glory-image-id');
+                    if (hidden) hidden.value = '';
+                    const hiddenUrl = uploader.querySelector('.glory-image-url');
+                    if (hiddenUrl) hiddenUrl.value = '';
+                    const preview = uploader.querySelector('.image-preview, .previewImagen, .preview');
+                    if (preview) {
+                        const placeholder = preview.dataset.placeholder || 'Haz clic para subir una imagen';
+                        // Eliminar cualquier imagen residual
+                        preview.querySelectorAll('img, .preview-text').forEach(i => i.remove());
+                        preview.innerHTML = '<span class="image-preview-placeholder">' + placeholder + '</span>';
+                        preview.classList.remove('oculto');
+                    }
+                    const removeBtn = uploader.querySelector('.glory-remove-image-button, .preview-remove');
+                    if (removeBtn) removeBtn.classList.add('oculto');
+
+                    // Limpiar input file para evitar que permanezca seleccionado
+                    const inputFile = uploader.querySelector('input[type="file"]');
+                    if (inputFile) {
+                        try { inputFile.value = ''; } catch (e) {}
+                    }
+                });
+            } catch (e) { /* silencioso */ }
+
+            // Limpieza extra por si hay inputs ocultos fuera del <form> (p.ej. term_id renderizado fuera)
+            try {
+                // Limpiar posibles campos de identificación que provoquen ediciones en lugar de creación
+                const modalRoot = modal;
+                ['term_id', 'id', 'object_id'].forEach(name => {
+                    modalRoot.querySelectorAll(`input[name="${name}"]`).forEach(i => { i.value = ''; });
+                });
+                // Limpiar cualquier input oculto relacionado con imagenes en todo el modal
+                modalRoot.querySelectorAll('input.glory-image-id, input[name$="_image_id"], input[name="image_id"]').forEach(i => { i.value = ''; });
+                // Eliminar flags de delete previos
+                modalRoot.querySelectorAll('input[name$="_delete"]').forEach(i => i.remove());
+                // Asegurar que el formulario no tenga data-object-id
+                try { form.removeAttribute('data-object-id'); } catch (e) {}
+            } catch (e) {}
 
             // Enlazar selects declarativos (agnóstico)
             form.querySelectorAll('select[data-fm-accion-opciones][data-fm-depende]').forEach(wireOptionsSelect);
@@ -338,13 +415,48 @@ function gloryFormModal() {
                 if (tituloEdit) titulo.textContent = tituloEdit;
             }
             dispatch('gloryFormModal:beforeEdit', { objectId });
+
+            // Limpieza previa a cargar datos de edición para evitar reutilizar valores del modal anterior
             try {
+                const modalRoot = modal || document;
+                // Limpiar uploaders dentro del modal
+                modalRoot.querySelectorAll('.glory-image-uploader').forEach(uploader => {
+                    const hidden = uploader.querySelector('.glory-image-id');
+                    if (hidden) hidden.value = '';
+                    const hiddenUrl = uploader.querySelector('.glory-image-url');
+                    if (hiddenUrl) hiddenUrl.value = '';
+                    // eliminar imgs residuales
+                    const preview = uploader.querySelector('.previewImagen, .image-preview, .preview');
+                    if (preview) {
+                        preview.querySelectorAll('img, .preview-text').forEach(i => i.remove());
+                        const placeholder = preview.dataset.placeholder || 'Haz clic para subir una imagen';
+                        // asegurar placeholder visible
+                        while (preview.firstChild) preview.removeChild(preview.firstChild);
+                        const spanPh = document.createElement('span');
+                        spanPh.className = 'image-preview-placeholder';
+                        spanPh.textContent = placeholder;
+                        preview.appendChild(spanPh);
+                        preview.classList.remove('oculto');
+                    }
+                    const removeBtn = uploader.querySelector('.glory-remove-image-button, .preview-remove');
+                    if (removeBtn) removeBtn.classList.add('oculto');
+                    const inputFile = uploader.querySelector('input[type="file"]');
+                    if (inputFile) try { inputFile.value = ''; } catch(e) {}
+                });
+                // Eliminar flags de delete previos
+                modalRoot.querySelectorAll('input[name$="_delete"]').forEach(i => i.remove());
+            } catch (e) {}
+
+            try {
+                gloryLog('⚡️ [formModal] Llamando AJAX con action:', fetchAction, 'y objectId:', objectId);
                 const json = await callAjax(fetchAction, { id: objectId });
+                gloryLog('⚡️ [formModal] Respuesta AJAX recibida:', json);
                 if (!json || !json.success || !json.data) {
                     alert((json && json.data && json.data.mensaje) ? json.data.mensaje : 'No se pudo cargar la información.');
                     return;
                 }
                 const d = json.data;
+                gloryLog('⚡️ [formModal] Datos procesados (d) del AJAX:', d);
                 const campos = form.querySelectorAll('input[name], textarea[name], select[name]');
                 campos.forEach(el => {
                     const name = el.name;
@@ -354,25 +466,64 @@ function gloryFormModal() {
                     if (el.classList.contains('glory-image-id')) {
                         const uploader = el.closest('.glory-image-uploader');
                         if (uploader) {
-                            const preview = uploader.querySelector('.image-preview');
+                            const preview = uploader.querySelector('.previewImagen, .image-preview, .preview'); // Soporta múltiples variantes de clase
                             const removeBtn = uploader.querySelector('.glory-remove-image-button');
                             // Asumimos que `val` es un objeto {id, url} o solo un ID.
-                            const hasValue = val && (val.id || (typeof val === 'string' && val));
-                            const imageId = hasValue ? (val.id || val) : '';
-                            const imageUrl = hasValue ? val.url : '';
+                            const hasValue = val && (val.id || val.url || (typeof val === 'string' && val));
+                            const imageId = (val && val.id) ? val.id : '';
+                            const imageUrl = (val && val.url) ? val.url : '';
 
-                            el.value = imageId;
+                            gloryLog('⚡️ [formModal] Manejando campo glory-image-id. Valor actual (val):', val);
+                            gloryLog('⚡️ [formModal] ImageId extraído:', imageId, 'ImageUrl extraído:', imageUrl);
 
+                            // Asegurar que el campo oculto se sincronice (vacío si no hay ID)
+                            el.value = imageId || '';
+
+                            gloryLog('⚡️ [formModal] Valor de uploader:', uploader, 'Valor de preview:', preview); // Nuevo log
                             if (preview) {
-                                if (imageId && imageUrl) {
-                                    preview.innerHTML = `<img src="${imageUrl}" alt="Previsualización">`;
+                                gloryLog('⚡️ [formModal] Evaluando condicion if (imageUrl): ', imageUrl); // Nuevo log
+
+                                // Si el backend proporciona URL, delegamos la renderización a gestionarPreviews
+                                if (imageUrl) {
+                                    // Emitir un evento para que gestionarPreviews.js se encargue de mostrar la URL
+                                    const event = new CustomEvent('gloryImageUploader:showExistingImage', {
+                                        bubbles: true,
+                                        detail: { imageUrl, imageId, uploaderContainer: uploader }
+                                    });
+                                    document.dispatchEvent(event);
+                                    gloryLog('⚡️ [formModal] CONDICION CUMPLIDA. Emitiendo evento gloryImageUploader:showExistingImage con imageUrl:', imageUrl, 'imageId:', imageId, 'en uploaderContainer:', uploader); // Log modificado
+
+                                // Si hay sólo ID (sin URL), mostramos placeholder salvo que ya haya imagen
+                                } else if (imageId) {
+                                    const placeholder = preview.dataset.placeholder || 'Haz clic para subir una imagen';
+                                    const hasImg = !!preview.querySelector('img');
+                                    const hasPlaceholder = !!preview.querySelector('.image-preview-placeholder');
+                                    if (!hasImg && !hasPlaceholder) {
+                                        preview.innerHTML = `<span class="image-preview-placeholder">${placeholder}</span>`;
+                                    }
+                                    gloryLog('⚡️ [formModal] Solo ImageId presente (sin URL). Asegurando placeholder si era necesario.', 'imageId:', imageId);
+
+                                // Si NO hay ni URL ni ID, limpiar explícitamente la preview para evitar reutilizar imágenes previas
                                 } else {
-                                    const placeholder = preview.dataset.placeholder || '';
+                                    const placeholder = preview.dataset.placeholder || 'Haz clic para subir una imagen';
+                                    // Forzar placeholder y eliminar cualquier <img> residual
+                                    preview.querySelectorAll('img, .preview-text').forEach(i => i.remove());
                                     preview.innerHTML = `<span class="image-preview-placeholder">${placeholder}</span>`;
+                                    // Asegurar que la preview y su contenedor estén visibles
+                                    try {
+                                        preview.classList.remove('oculto');
+                                        const cont = preview.closest('.previewContenedor');
+                                        if (cont) cont.classList.remove('oculto');
+                                    } catch (e) {}
+                                    gloryLog('⚡️ [formModal] No hay imageId ni imageUrl. Limpiando preview y mostrando placeholder.');
                                 }
+                            } else {
+                                console.error('⚡️ [formModal] ERROR: Elemento preview no encontrado para el uploader.', uploader);
                             }
+
+                            // Actualizar visibilidad/estado del botón eliminar
                             if (removeBtn) {
-                                removeBtn.style.display = imageId ? '' : 'none';
+                                if (imageId || imageUrl) removeBtn.classList.remove('oculto'); else removeBtn.classList.add('oculto');
                             }
                         }
                     } else if (el.type === 'checkbox' && el.name.endsWith('[]') && Array.isArray(val)) {
