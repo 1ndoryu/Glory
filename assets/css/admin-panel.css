@@ -1,19 +1,19 @@
 /* Contenedor principal del panel de opciones de Glory */
 .glory-options-panel {
-    margin-top: 20px;
+    margin-top: 2rem;
 }
 
 /* Estructura de pestañas y contenido */
 .glory-panel-container {
     display: flex;
-    /* gap: 20px; */
-    margin-top: 15px;
-    border-radius: 5px;
+    /* gap: 2rem; */
+    margin-top: 1.5rem;
+    border-radius: 0.5rem;
     overflow: auto;
 }
 /* Navegación de pestañas (barra lateral) */
 .glory-panel-nav {
-    flex: 0 0 180px; /* Ancho fijo para la navegación */
+    flex: 0 0 18rem; /* Ancho fijo para la navegación */
     background: #1f1f1f;
 }
 
@@ -76,15 +76,15 @@
     border: unset !important;
     box-shadow: unset;
     background: #fff;
-    padding: 25px;
-    padding-top: 5px;
-    margin-bottom: 0px;
-    padding-bottom: 0px;
+    padding: 2.5rem;
+    padding-top: 0.5rem;
+    margin-bottom: 0rem;
+    padding-bottom: 0rem;
 }
 
 h2.titleSubSection {
-    border-bottom: 1px solid #cacaca;
-    padding-bottom: 10px;
+    border-bottom: 0.1rem solid #cacaca;
+    padding-bottom: 1rem;
     font-size: 1.8em;
 }
 
@@ -96,8 +96,8 @@ h2.titleSubSection {
 
 /* Estilos para los campos del formulario */
 .form-field-wrapper {
-    margin-bottom: 25px;
-    padding: 0 12px;
+    margin-bottom: 2.5rem;
+    padding: 0 1.2rem;
 }
 
 .form-field-wrapper label {
@@ -117,19 +117,19 @@ h2.titleSubSection {
 .form-field-wrapper textarea,
 .form-field-wrapper select {
     width: 100%;
-    max-width: 500px;
+    max-width: 50rem;
 }
 
 /* Estilos para el campo de imagen */
 .glory-image-uploader .image-preview {
-    width: 150px;
-    height: 150px;
-    border: 1px dashed #ccd0d4;
+    width: 15rem;
+    height: 15rem;
+    border: 0.1rem dashed #ccd0d4;
     background-color: #f6f7f7;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 10px;
+    margin-bottom: 1rem;
     cursor: pointer;
 }
 .glory-image-uploader .image-preview img {
@@ -139,7 +139,7 @@ h2.titleSubSection {
 }
 .glory-image-uploader .image-preview-placeholder {
     color: #a0a5aa;
-    font-size: 13px;
+    font-size: 1.3rem;
     text-align: center;
 }
 .glory-image-uploader .actions button {

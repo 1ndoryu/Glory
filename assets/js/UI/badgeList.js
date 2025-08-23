@@ -91,6 +91,9 @@
 
                     saveState(state);
                     applyVisibility($root, state);
+                    try{ document.dispatchEvent(new Event('glory:seccionesActualizadas')); }catch(e){}
+                    // Llamada directa a API de Glory si existe (fallback más fiable)
+                    try{ if(window.Glory && typeof window.Glory.recalcularMasonryRowMajor === 'function'){ setTimeout(window.Glory.recalcularMasonryRowMajor, 60); } }catch(err){}
 
                     if (mode === 'navigate') {
                         var el = document.getElementById(target);
@@ -129,6 +132,8 @@
 
                     saveState(state);
                     applyVisibility($root, state);
+                    try{ document.dispatchEvent(new Event('glory:seccionesActualizadas')); }catch(e){}
+                    try{ if(window.Glory && typeof window.Glory.recalcularMasonryRowMajor === 'function'){ setTimeout(window.Glory.recalcularMasonryRowMajor, 60); } }catch(err){}
                     return;
                 }
 
@@ -140,6 +145,8 @@
 
                 // aplicar cambios de visibilidad localmente
                 applyVisibility($root, state);
+                try{ document.dispatchEvent(new Event('glory:seccionesActualizadas')); }catch(e){}
+                try{ if(window.Glory && typeof window.Glory.recalcularMasonryRowMajor === 'function'){ setTimeout(window.Glory.recalcularMasonryRowMajor, 60); } }catch(err){}
             });
         });
 
@@ -159,10 +166,12 @@
 
         // Aplicar al inicio
         applyVisibility($root, state);
+        try{ document.dispatchEvent(new Event('glory:seccionesActualizadas')); }catch(e){}
+        try{ if(window.Glory && typeof window.Glory.recalcularMasonryRowMajor === 'function'){ setTimeout(window.Glory.recalcularMasonryRowMajor, 60); } }catch(err){}
     }
 
     $(function () {
-        $('.badge-list').each(function () {
+        $('.badge-list, .badgeList').each(function () {
             init($(this));
         });
     });

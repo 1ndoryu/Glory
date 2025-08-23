@@ -14,7 +14,7 @@ class BadgeList
         $mode = $options['mode'] ?? 'toggle';
         $id = 'glory-badgelist-' . bin2hex(random_bytes(4));
 
-        $html = "<div id='$id' class='badge-list' data-mode='$mode'>";
+        $html = "<div id='$id' class='badgeList' data-mode='$mode'>";
         foreach ($badges as $badge) {
             // usar la primera palabra como label/slug y normalizar caracteres (ñ, acentos)
             $parts = preg_split('/\s+/', trim($badge));

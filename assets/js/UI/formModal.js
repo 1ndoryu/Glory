@@ -40,7 +40,7 @@ function gloryFormModal() {
         // funcione como disparador del selector de imagen (redirige al botón existente).
         const wireImagePreviewClicks = () => {
             try {
-                form.querySelectorAll('.glory-image-uploader .image-preview').forEach(preview => {
+                form.querySelectorAll('.glory-image-uploader .image-preview, .glory-image-uploader .previewImagen, .gloryImageUploader .image-preview, .gloryImageUploader .previewImagen').forEach(preview => {
                     // Evitar múltiples handlers
                     preview.removeEventListener('click', preview.__gloryPreviewHandler);
                     const handler = () => {
@@ -57,9 +57,9 @@ function gloryFormModal() {
         // Delegación como fallback: manejar clicks en previews incluso si se añaden después
         form.removeEventListener('click', form.__gloryPreviewDelegate);
         const delegateHandler = (ev) => {
-            const preview = ev.target.closest('.glory-image-uploader .image-preview');
+            const preview = ev.target.closest('.glory-image-uploader .image-preview, .gloryImageUploader .image-preview, .glory-image-uploader .previewImagen, .gloryImageUploader .previewImagen');
             if (!preview) return;
-            const uploader = preview.closest('.glory-image-uploader');
+            const uploader = preview.closest('.glory-image-uploader, .gloryImageUploader');
             if (!uploader) return;
             const btn = uploader.querySelector('.glory-upload-image-button');
             if (btn) btn.click();
@@ -93,7 +93,7 @@ function gloryFormModal() {
                 const btn = ev.target.closest('.glory-upload-image-button');
                 if (btn) {
                     ev.preventDefault();
-                    const uploaderContainer = btn.closest('.glory-image-uploader');
+                    const uploaderContainer = btn.closest('.glory-image-uploader, .gloryImageUploader');
                     if (!uploaderContainer) return;
                     if (__gloryFormMediaUploader) { __gloryFormMediaUploader.open(); return; }
                     try {
@@ -107,7 +107,7 @@ function gloryFormModal() {
                             const previewUrl = (attachment.sizes && attachment.sizes.thumbnail) ? attachment.sizes.thumbnail.url : attachment.url;
                             const hidden = uploaderContainer.querySelector('.glory-image-id');
                             if (hidden) hidden.value = attachment.id;
-                            const preview = uploaderContainer.querySelector('.image-preview');
+                            const preview = uploaderContainer.querySelector('.image-preview, .imagePreview, .previewImagen, .preview');
                             if (preview) {
                                 preview.innerHTML = '<img src="' + previewUrl + '" alt="Previsualización">';
                                 // Asegurar que exista botón remove compatible
@@ -125,11 +125,11 @@ function gloryFormModal() {
                 const removeBtn = ev.target.closest('.glory-remove-image-button, .preview-remove');
                 if (removeBtn) {
                     ev.preventDefault();
-                    const uploaderContainer = removeBtn.closest('.glory-image-uploader');
+                    const uploaderContainer = removeBtn.closest('.glory-image-uploader, .gloryImageUploader');
                     if (!uploaderContainer) return;
                     const hidden = uploaderContainer.querySelector('.glory-image-id');
                     if (hidden) hidden.value = ''; // Limpiar el ID de la imagen
-                    const preview = uploaderContainer.querySelector('.image-preview');
+                    const preview = uploaderContainer.querySelector('.image-preview, .imagePreview, .previewImagen, .preview');
                     const placeholderText = preview ? (preview.dataset.placeholder || '') : '';
                     if (preview) preview.innerHTML = '<span class="image-preview-placeholder">' + placeholderText + '</span>';
                     removeBtn.classList.add('oculto');
@@ -329,10 +329,10 @@ function gloryFormModal() {
                 } catch (e) {}
                 // Limpiar las previews de los uploaders de imagen al crear un nuevo objeto
                 try {
-                    form.querySelectorAll('.glory-image-uploader').forEach(uploader => {
+                    form.querySelectorAll('.glory-image-uploader, .gloryImageUploader').forEach(uploader => {
                         const hidden = uploader.querySelector('.glory-image-id');
                         if (hidden) hidden.value = '';
-                        const preview = uploader.querySelector('.image-preview');
+                        const preview = uploader.querySelector('.image-preview, .imagePreview, .previewImagen, .preview');
                         if (preview) {
                             const placeholder = preview.dataset.placeholder || '';
                             preview.innerHTML = '<span class="image-preview-placeholder">' + placeholder + '</span>';
@@ -354,12 +354,12 @@ function gloryFormModal() {
 
             // Asegurar que al abrir en modo CREATE siempre se limpien/restablezcan las previews
             try {
-                form.querySelectorAll('.glory-image-uploader').forEach(uploader => {
+                form.querySelectorAll('.glory-image-uploader, .gloryImageUploader').forEach(uploader => {
                     const hidden = uploader.querySelector('.glory-image-id');
                     if (hidden) hidden.value = '';
                     const hiddenUrl = uploader.querySelector('.glory-image-url');
                     if (hiddenUrl) hiddenUrl.value = '';
-                    const preview = uploader.querySelector('.image-preview, .previewImagen, .preview');
+                    const preview = uploader.querySelector('.image-preview, .imagePreview, .previewImagen, .preview');
                     if (preview) {
                         const placeholder = preview.dataset.placeholder || 'Haz clic para subir una imagen';
                         // Eliminar cualquier imagen residual
@@ -420,13 +420,13 @@ function gloryFormModal() {
             try {
                 const modalRoot = modal || document;
                 // Limpiar uploaders dentro del modal
-                modalRoot.querySelectorAll('.glory-image-uploader').forEach(uploader => {
+                modalRoot.querySelectorAll('.glory-image-uploader, .gloryImageUploader').forEach(uploader => {
                     const hidden = uploader.querySelector('.glory-image-id');
                     if (hidden) hidden.value = '';
                     const hiddenUrl = uploader.querySelector('.glory-image-url');
                     if (hiddenUrl) hiddenUrl.value = '';
                     // eliminar imgs residuales
-                    const preview = uploader.querySelector('.previewImagen, .image-preview, .preview');
+                    const preview = uploader.querySelector('.image-preview, .imagePreview, .previewImagen, .preview');
                     if (preview) {
                         preview.querySelectorAll('img, .preview-text').forEach(i => i.remove());
                         const placeholder = preview.dataset.placeholder || 'Haz clic para subir una imagen';
@@ -466,7 +466,7 @@ function gloryFormModal() {
                     if (el.classList.contains('glory-image-id')) {
                         const uploader = el.closest('.glory-image-uploader');
                         if (uploader) {
-                            const preview = uploader.querySelector('.previewImagen, .image-preview, .preview'); // Soporta múltiples variantes de clase
+                            const preview = uploader.querySelector('.image-preview, .imagePreview, .previewImagen, .preview'); // Soporta múltiples variantes de clase
                             const removeBtn = uploader.querySelector('.glory-remove-image-button');
                             // Asumimos que `val` es un objeto {id, url} o solo un ID.
                             const hasValue = val && (val.id || val.url || (typeof val === 'string' && val));

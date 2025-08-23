@@ -278,6 +278,14 @@ AssetManager::define(
     ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'badgeList']
 );
 
+// Masonry row-major agnóstico para páginas de ejemplos (se activa cuando existe el contenedor)
+AssetManager::define(
+    'script',
+    'glory-masonry-row-major',
+    '/Glory/assets/js/UI/masonryRowMajor.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'badgeList']
+);
+
 
 // --- Scripts de Servicios (controlables por feature) ---
 

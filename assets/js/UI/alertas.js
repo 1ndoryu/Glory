@@ -49,14 +49,14 @@ window.inicializarAlerta = function () {
 
                 const confirmButton = document.createElement('button');
                 confirmButton.textContent = 'Confirmar';
-                confirmButton.className = 'botonprincipal';
+                confirmButton.className = 'botonPrincipal';
                 confirmButton.onclick = () => {
                     closeNotification(true);
                 };
 
                 const cancelButton = document.createElement('button');
                 cancelButton.textContent = 'Cancelar';
-                cancelButton.className = 'botonsecundario';
+                cancelButton.className = 'botonSecundario';
                 cancelButton.onclick = () => {
                     closeNotification(false);
                 };
