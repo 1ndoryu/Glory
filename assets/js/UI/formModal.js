@@ -73,10 +73,10 @@ function gloryFormModal() {
             try {
                 if (!previewElem) return;
                 // Si ya existe el botón, no hacemos nada
-                if (previewElem.querySelector('.preview-remove')) return;
+                if (previewElem.querySelector('.previewRemover')) return;
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'preview-remove oculto';
+                btn.className = 'previewRemover oculto';
                 btn.setAttribute('aria-label', 'Eliminar imagen');
                 btn.innerHTML = '<svg data-testid="geist-icon" height="16" stroke-linejoin="round" style="color:currentColor" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z" fill="currentColor"></path></svg>';
                 previewElem.appendChild(btn);
@@ -113,7 +113,7 @@ function gloryFormModal() {
                                 // Asegurar que exista botón remove compatible
                                 ensureRemoveButton(preview);
                             }
-                            const removeBtn = uploaderContainer.querySelector('.glory-remove-image-button, .preview-remove');
+                            const removeBtn = uploaderContainer.querySelector('.glory-remove-image-button, .previewRemover');
                             if (removeBtn) removeBtn.classList.remove('oculto');
                         });
                         __gloryFormMediaUploader.open();
@@ -122,7 +122,7 @@ function gloryFormModal() {
                     }
                 }
 
-                const removeBtn = ev.target.closest('.glory-remove-image-button, .preview-remove');
+                const removeBtn = ev.target.closest('.glory-remove-image-button, .previewRemover');
                 if (removeBtn) {
                     ev.preventDefault();
                     const uploaderContainer = removeBtn.closest('.glory-image-uploader, .gloryImageUploader');
@@ -337,7 +337,7 @@ function gloryFormModal() {
                             const placeholder = preview.dataset.placeholder || '';
                             preview.innerHTML = '<span class="image-preview-placeholder">' + placeholder + '</span>';
                         }
-                        const removeBtn = uploader.querySelector('.glory-remove-image-button, .preview-remove');
+                        const removeBtn = uploader.querySelector('.glory-remove-image-button, .previewRemover');
                         if (removeBtn) removeBtn.classList.add('oculto');
                     });
                 } catch (e) { /* silencioso */ }
@@ -367,7 +367,7 @@ function gloryFormModal() {
                         preview.innerHTML = '<span class="image-preview-placeholder">' + placeholder + '</span>';
                         preview.classList.remove('oculto');
                     }
-                    const removeBtn = uploader.querySelector('.glory-remove-image-button, .preview-remove');
+                    const removeBtn = uploader.querySelector('.glory-remove-image-button, .previewRemover');
                     if (removeBtn) removeBtn.classList.add('oculto');
 
                     // Limpiar input file para evitar que permanezca seleccionado
@@ -438,7 +438,7 @@ function gloryFormModal() {
                         preview.appendChild(spanPh);
                         preview.classList.remove('oculto');
                     }
-                    const removeBtn = uploader.querySelector('.glory-remove-image-button, .preview-remove');
+                    const removeBtn = uploader.querySelector('.glory-remove-image-button, .previewRemover');
                     if (removeBtn) removeBtn.classList.add('oculto');
                     const inputFile = uploader.querySelector('input[type="file"]');
                     if (inputFile) try { inputFile.value = ''; } catch(e) {}

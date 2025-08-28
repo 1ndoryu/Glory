@@ -223,6 +223,14 @@ AssetManager::define(
     ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'gestionarPreviews']
 );
 
+// Componente: Calendario (gloryCalendario)
+AssetManager::define(
+    'script',
+    'glory-calendario',
+    '/Glory/assets/js/UI/gloryCalendario.js',
+    ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'calendario']
+);
+
 // Componente: Paginación
 AssetManager::define(
     'script',

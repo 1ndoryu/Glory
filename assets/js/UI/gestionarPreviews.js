@@ -71,13 +71,13 @@ function gestionarPreviews() {
             elementoPreview.appendChild(img);
 
             // Asegurar que el botón de eliminar esté visible (crear si falta)
-            let btn = elementoPreview.querySelector('.preview-remove');
+            let btn = elementoPreview.querySelector('.previewRemover');
             const svgClose = '<svg data-testid="geist-icon" height="16" stroke-linejoin="round" style="color:currentColor" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z" fill="currentColor"></path></svg>';
             if (!btn) {
                 try {
                     btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = 'preview-remove';
+                    btn.className = 'previewRemover';
                     btn.setAttribute('aria-label', 'Eliminar imagen');
                     btn.innerHTML = svgClose;
                     elementoPreview.appendChild(btn);
@@ -168,13 +168,13 @@ function gestionarPreviews() {
         if (imageId) img.dataset.imageId = imageId; // Guardar el ID si existe
 
         // Asegurarse de que el botón de eliminar esté visible (crear si falta)
-        let btn = elementoPreview.querySelector('.preview-remove');
+        let btn = elementoPreview.querySelector('.previewRemover');
         const svgClose = '<svg data-testid="geist-icon" height="16" stroke-linejoin="round" style="color:currentColor" viewBox="0 0 16 16" width="16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.4697 13.5303L13 14.0607L14.0607 13L13.5303 12.4697L9.06065 7.99999L13.5303 3.53032L14.0607 2.99999L13 1.93933L12.4697 2.46966L7.99999 6.93933L3.53032 2.46966L2.99999 1.93933L1.93933 2.99999L2.46966 3.53032L6.93933 7.99999L2.46966 12.4697L1.93933 13L2.99999 14.0607L3.53032 13.5303L7.99999 9.06065L12.4697 13.5303Z" fill="currentColor"></path></svg>';
         if (!btn) {
             try {
                 btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'preview-remove';
+                btn.className = 'previewRemover';
                 btn.setAttribute('aria-label', 'Eliminar imagen');
                 btn.innerHTML = svgClose;
                 elementoPreview.appendChild(btn);
@@ -185,7 +185,7 @@ function gestionarPreviews() {
             if (!btn.innerHTML || btn.innerHTML.trim() === '&times;') btn.innerHTML = svgClose;
         }
         const currentPlaceholderSpan = elementoPreview.querySelector('.image-preview-placeholder');
-        const currentBtn = elementoPreview.querySelector('.preview-remove');
+        const currentBtn = elementoPreview.querySelector('.previewRemover');
         gloryLog('✨ [mostrarImagenDesdeUrl] Placeholder.classList después de ocultar:', currentPlaceholderSpan?.classList.toString(), 'btn.classList después de mostrar:', currentBtn?.classList.toString());
 
         gloryLog('✨ [mostrarImagenDesdeUrl] IMG creado/actualizado. src:', img?.src, 'display:', img?.style.display, 'visibility:', img?.style.visibility, 'opacity:', img?.style.opacity, 'width:', img?.offsetWidth, 'height:', img?.offsetHeight);
@@ -204,7 +204,7 @@ function gestionarPreviews() {
         const botonPreview = evento.target.closest('[class*="botonPreview"]');
         const zonaInteractiva = evento.target.closest('.preview, .previewImagen, .previewAudio, .previewFile');
         const contenedorPrincipal = evento.target.closest('.previewContenedor');
-        const eliminarBtn = evento.target.closest('.preview-remove');
+        const eliminarBtn = evento.target.closest('.previewRemover');
 
         let inputADisparar = null;
         let elementoDeReferencia = null; // Botón o área que define el tipo de archivo
