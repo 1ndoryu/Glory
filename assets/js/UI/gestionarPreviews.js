@@ -42,6 +42,12 @@ function gestionarPreviews() {
     const gloryLog = (...args) => { if (typeof window !== 'undefined' && window.gloryDebug) console.log(...args); };
     gloryLog('✨ [gestionarPreviews] Función gestionarPreviews() inicializada.');
 
+    // Evitar registrar múltiples veces los mismos listeners en recargas sucesivas
+    if (window.__gloryPreviewsHandlersBound) {
+        gloryLog('✨ [gestionarPreviews] Listeners ya estaban vinculados. Abortando nueva vinculación.');
+        return;
+    }
+
     /**
      * Muestra la previsualización de un archivo de imagen.
      */
@@ -219,7 +225,28 @@ function gestionarPreviews() {
             previewElem.querySelectorAll('img').forEach(i => i.remove());
 
             // Mostrar el placeholder y ocultar el botón de eliminar
-            const placeholderSpan = previewElem.querySelector('.image-preview-placeholder');
+            let placeholderSpan = previewElem.querySelector('.image-preview-placeholder');
+            // Si no existe o está vacío, intentar restaurar desde el HTML original guardado o insertar uno por defecto
+            if (!placeholderSpan || !placeholderSpan.textContent || placeholderSpan.textContent.trim() === '') {
+                let restoredHtml = '';
+                try {
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = previewElem.dataset.__original_html || '';
+                    const p = tmp.querySelector('.image-preview-placeholder');
+                    if (p && p.textContent && p.textContent.trim()) {
+                        restoredHtml = `<span class="image-preview-placeholder">${p.textContent.trim()}</span>`;
+                    }
+                } catch(_) {}
+                if (!restoredHtml) {
+                    restoredHtml = '<span class="image-preview-placeholder">Haz clic para subir una imagen</span>';
+                }
+                if (!placeholderSpan) {
+                    previewElem.insertAdjacentHTML('afterbegin', restoredHtml);
+                    placeholderSpan = previewElem.querySelector('.image-preview-placeholder');
+                } else {
+                    placeholderSpan.innerHTML = restoredHtml.replace(/^[^>]*>|<[^>]*>$/g, '');
+                }
+            }
             if (placeholderSpan) placeholderSpan.classList.remove('oculto');
             eliminarBtn.classList.add('oculto');
 
@@ -278,6 +305,14 @@ function gestionarPreviews() {
                 acceptType = 'audio/*';
             } else if (elementoDeReferencia.matches('[class*="botonPreviewImagen"]') || elementoDeReferencia.matches('.previewImagen') || elementoDeReferencia.matches('.preview')) {
                 acceptType = 'image/*';
+            }
+            // Caso contenedor con data-uploadclick: inferir tipo por contenido si aún no se definió
+            if (!acceptType && contenedorPrincipal) {
+                if (contenedorPrincipal.querySelector('.previewImagen, .preview')) {
+                    acceptType = 'image/*';
+                } else if (contenedorPrincipal.querySelector('.previewAudio')) {
+                    acceptType = 'audio/*';
+                }
             }
             
             // **NUEVO**: Activar extra preview si está definido en el botón o elemento de referencia
@@ -343,6 +378,11 @@ function gestionarPreviews() {
                         if (hiddenId) hiddenId.value = '';
                         const hiddenUrl = cont.querySelector('input[name$="_url"]');
                         if (hiddenUrl) hiddenUrl.value = '';
+                        // Si existía la bandera de eliminación, limpiarla
+                        try {
+                            const deleteInput = cont.querySelector('input[name$="_delete"]');
+                            if (deleteInput) deleteInput.value = '';
+                        } catch(_) {}
                     }
                 } catch (e) {
                     // noop
@@ -462,6 +502,9 @@ function gestionarPreviews() {
     document.addEventListener('dragover', alArrastrarSobre);
     document.addEventListener('dragleave', alDejarDeArrastrar);
     document.addEventListener('drop', alSoltarArchivo);
+
+    // Marcar como vinculados para evitar duplicados en futuras gloryRecarga
+    window.__gloryPreviewsHandlersBound = true;
 
     // Mover el listener del evento personalizado dentro de este scope
     if (window.gloryImageUploaderListenerInitialized) return;
