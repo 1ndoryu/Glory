@@ -101,8 +101,8 @@ AssetManager::defineFolder(
         'gloryScheduler.js',
         'menu.js',
         'gloryDateRange.js',
-        // Excluir el toggle aquí para que se registre solo con el handle explícito más abajo
         'glory-theme-toggle.js',
+        'gloryContentActions.js'
     ]
 );
 
@@ -173,6 +173,14 @@ AssetManager::define(
     'glory-submenus',
     '/Glory/assets/js/UI/submenus.js',
     ['deps' => ['jquery'], 'in_footer' => true, 'feature' => 'submenus']
+);
+
+// Componente: Content Actions (agnóstico)
+AssetManager::define(
+    'script',
+    'glory-content-actions',
+    '/Glory/assets/js/UI/gloryContentActions.js',
+    ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryAjax']
 );
 
 // Componente: Pestañas

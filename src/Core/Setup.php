@@ -24,6 +24,7 @@ use Glory\Handler\BusquedaAjaxHandler;
 use Glory\Handler\RealtimeAjaxHandler;
 use Glory\Components\LogoRenderer;
 use Glory\Services\GestorCssCritico;
+use Glory\Handler\ContentActionAjaxHandler;
 
 class Setup
 {
@@ -55,6 +56,11 @@ class Setup
 
         if (GloryFeatures::isActive('gloryRealtime') !== false) {
             new RealtimeAjaxHandler();
+        }
+
+        // Acciones agnósticas de contenido (eliminar, etc.)
+        if (GloryFeatures::isActive('contentActions') !== false) {
+            new ContentActionAjaxHandler();
         }
 
         // Opciones y assets

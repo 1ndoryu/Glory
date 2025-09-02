@@ -32,7 +32,7 @@ class submenus {
         document.addEventListener('gloryFondo:click', this.cerrar.bind(this));
     }
 
-    abrir(disparador) {
+    abrir(disparador, opciones = {}) {
         if (!disparador) return;
 
         // CAMBIO AQUÍ: Usamos getAttribute para evitar problemas con mayúsculas en el nombre del atributo.
@@ -56,9 +56,11 @@ class submenus {
             this.menuActivo.classList.add('glory-submenu');
             this.menuActivo.dataset.gloryAutoStyled = 'true';
         }
+        // Asegurar posicionamiento para coord. absolutas
+        this.menuActivo.style.position = this.menuActivo.style.position || 'fixed';
 
         document.body.appendChild(this.menuActivo); // Asegura que está en el nivel superior
-        this._posicionarMenu();
+        this._posicionarMenu(opciones);
         this.menuActivo.classList.add('activo');
 
         // Reutilizamos el gestor de fondo global si existe
@@ -138,12 +140,13 @@ class submenus {
         }
     }
 
-    _posicionarMenu() {
+    _posicionarMenu(opciones = {}) {
         if (!this.menuActivo || !this.disparadorActivo) return;
 
         const menu = this.menuActivo;
         const disparador = this.disparadorActivo;
         const pos = disparador.dataset.posicion || 'abajo';
+        const cursor = opciones && opciones.cursor ? opciones.cursor : null;
         const rect = disparador.getBoundingClientRect();
         const vw = window.innerWidth;
         const vh = window.innerHeight;
@@ -157,6 +160,12 @@ class submenus {
         menu.style.visibility = '';
 
         let top, left;
+
+        // Si nos pasan coordenadas exactas del cursor (click derecho), usar esas
+        if (cursor && Number.isFinite(cursor.x) && Number.isFinite(cursor.y)) {
+            top = cursor.y;
+            left = cursor.x;
+        } else {
 
         // En móvil, generalmente se prefiere una vista centrada tipo modal
         if (vw <= 640 || pos === 'centro') {
@@ -182,6 +191,7 @@ class submenus {
                     left = rect.left + rect.width / 2 - menuWidth / 2;
                     break;
             }
+        }
         }
 
         // Ajuste para que no se salga de la pantalla

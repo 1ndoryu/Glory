@@ -27,6 +27,11 @@ class ContentRender
             'minPaginas'           => 1,
             'tiempoCache'          => HOUR_IN_SECONDS, // Cache por 1 hora por defecto
             'forzarSinCache'       => false, // Permite forzar la no-cache para un llamado específico
+            // Opciones UI agnósticas
+            'acciones'             => [],     // ej: ['eliminar']
+            'submenu'              => false,  // habilita data-submenu-enabled
+            'eventoAccion'         => 'dblclick', // click | dblclick | longpress
+            'selectorItem'         => '[id^="post-"]', // selector CSS para identificar el item clicado
         ];
         $config = wp_parse_args($opciones, $defaults);
 
@@ -93,6 +98,10 @@ class ContentRender
         }
 
         $args = array_merge($args, $config['argumentosConsulta']);
+        // Si la consulta trae un post__in sin especificar orderby, respetar el orden explícito.
+        if (!empty($args['post__in']) && empty($args['orderby'])) {
+            $args['orderby'] = 'post__in';
+        }
         $query = new WP_Query($args);
 
         if (!$query->have_posts()) {
@@ -124,7 +133,21 @@ class ContentRender
                 echo '<div class="' . esc_attr($content_target_class) . '">';
             }
             
-            echo '<div class="' . esc_attr($contenedorClass) . '">';
+            // Data attributes para JS/UI agnóstico
+            $acciones = is_array($config['acciones']) ? implode(',', array_map('sanitize_key', $config['acciones'])) : sanitize_text_field(strval($config['acciones']));
+            $submenuEnabled = !empty($config['submenu']);
+            $eventoAccion = sanitize_key($config['eventoAccion']);
+            $callback_str = is_array($config['plantillaCallback']) ? implode('::', $config['plantillaCallback']) : $config['plantillaCallback'];
+            echo '<div class="' . esc_attr($contenedorClass) . '"'
+                . ' data-post-type="' . esc_attr($postType) . '"'
+                . (!empty($acciones) ? ' data-content-actions="' . esc_attr($acciones) . '"' : '')
+                . ' data-submenu-enabled="' . ($submenuEnabled ? '1' : '0') . '"'
+                . ' data-accion-evento="' . esc_attr($eventoAccion) . '"'
+                . ' data-item-selector="' . esc_attr($config['selectorItem']) . '"'
+                . ' data-publicaciones-por-pagina="' . esc_attr($config['publicacionesPorPagina']) . '"'
+                . ' data-clase-contenedor="' . esc_attr($config['claseContenedor']) . '"'
+                . ' data-clase-item="' . esc_attr($config['claseItem']) . '"'
+                . ' data-template-callback="' . esc_attr($callback_str) . '">';
             $indiceGlobal = 0;
             while ($query->have_posts()) {
                 $query->the_post();
