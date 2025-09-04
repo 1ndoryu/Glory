@@ -33,6 +33,22 @@
         }
     }
 
+    function limpiarHijasDelDom(contenedor, postId) {
+        try {
+            const scope = contenedor || document;
+            const claseItemRaw = (contenedor && (contenedor.dataset.claseItem || contenedor.dataset.itemClass)) || 'glory-content-item';
+            const claseItem = (claseItemRaw || '').split(/\s+/)[0];
+            const atributosPadre = ['padre', 'parent', 'parent-id', 'data-parent', 'data-padre'];
+            const selectores = atributosPadre.map(attr => `[${attr}="${postId}"]`).join(', ');
+            const posiblesHijas = scope.querySelectorAll(selectores);
+            posiblesHijas.forEach(el => {
+                const wrapper = (claseItem && el.closest) ? el.closest('.' + claseItem) : null;
+                const nodo = wrapper || el;
+                if (nodo && nodo.parentNode) nodo.parentNode.removeChild(nodo);
+            });
+        } catch(_) {}
+    }
+
     function refrescarLista(contenedor) {
         const postType = contenedor.dataset.postType || 'post';
         const publicacionesPorPagina = parseInt(contenedor.dataset.publicacionesPorPagina || '10', 10);
@@ -83,7 +99,10 @@
                 const pid = getItemPostId(item);
                 if (accion === 'eliminar' && pid) {
                     eliminarItem(pid, postType, 'trash').then(ok => {
-                        if (ok) refrescarLista(contenedor);
+                        if (ok) {
+                            limpiarHijasDelDom(contenedor, pid);
+                            refrescarLista(contenedor);
+                        }
                     });
                 }
                 // Cerrar el submenú tras ejecutar una acción
@@ -161,7 +180,10 @@
         }
         if (acciones.includes('eliminar')) {
             eliminarItem(postId, postType, 'trash').then(ok => {
-                if (ok) refrescarLista(contenedor);
+                if (ok) {
+                    limpiarHijasDelDom(contenedor, postId);
+                    refrescarLista(contenedor);
+                }
             });
         }
     }
@@ -192,7 +214,7 @@
             // Click derecho: asegurar atributos y abrir el submenú en el punto del clic
             cont.addEventListener('contextmenu', function (e) {
                 const selector = cont.dataset.itemSelector || '[id^="post-"]';
-                let item = closestItem(e.target, selector) || e.target.closest('[id-post]') || e.target.closest('.draggable-element');
+                let item = closestItem(e.target, selector);
                 if (!item) return;
                 e.preventDefault();
                 e.stopPropagation();
