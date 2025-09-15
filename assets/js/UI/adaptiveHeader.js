@@ -157,7 +157,7 @@ function gloryMenu() {
         header.dataset.menuInitialized = 'true';
     }
 
-    const navTitle = navMenu.querySelector('.nav-title');
+    const navTitle = navMenu.querySelector('.navTitle');
     const navItems = navMenu.querySelectorAll('ul > li');
 
     let isMenuOpen = false;

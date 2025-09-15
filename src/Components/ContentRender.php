@@ -118,13 +118,25 @@ class ContentRender
             if ($is_ajax_pagination) {
                 $content_target_class = 'glory-content-target';
                 $pagination_target_class = 'glory-pagination-target';
-                $callback_str = is_array($config['plantillaCallback']) ? implode('::', $config['plantillaCallback']) : $config['plantillaCallback'];
+                // Representación segura del callback para atributos data-* (omite closures)
+                $callback_str = null;
+                if (is_array($config['plantillaCallback'])) {
+                    $parts = [];
+                    foreach ($config['plantillaCallback'] as $p) {
+                        $parts[] = is_object($p) ? get_class($p) : (string) $p;
+                    }
+                    $callback_str = implode('::', $parts);
+                } elseif (is_string($config['plantillaCallback'])) {
+                    $callback_str = $config['plantillaCallback'];
+                } elseif (is_object($config['plantillaCallback']) && !($config['plantillaCallback'] instanceof \Closure)) {
+                    $callback_str = get_class($config['plantillaCallback']);
+                }
 
                 echo '<div class="glory-pagination-container"
                          data-nonce="' . esc_attr(wp_create_nonce('glory_pagination_nonce')) . '"
                          data-post-type="' . esc_attr($postType) . '"
                          data-posts-per-page="' . esc_attr($config['publicacionesPorPagina']) . '"
-                         data-template-callback="' . esc_attr($callback_str) . '"
+                         ' . (!empty($callback_str) ? 'data-template-callback="' . esc_attr($callback_str) . '"' : '') . '
                          data-container-class="' . esc_attr($config['claseContenedor']) . '"
                          data-item-class="' . esc_attr($config['claseItem']) . '"
                          data-content-target=".' . esc_attr($content_target_class) . '"
@@ -137,7 +149,19 @@ class ContentRender
             $acciones = is_array($config['acciones']) ? implode(',', array_map('sanitize_key', $config['acciones'])) : sanitize_text_field(strval($config['acciones']));
             $submenuEnabled = !empty($config['submenu']);
             $eventoAccion = sanitize_key($config['eventoAccion']);
-            $callback_str = is_array($config['plantillaCallback']) ? implode('::', $config['plantillaCallback']) : $config['plantillaCallback'];
+            // Representación segura del callback (omite closures)
+            $callback_str = null;
+            if (is_array($config['plantillaCallback'])) {
+                $parts = [];
+                foreach ($config['plantillaCallback'] as $p) {
+                    $parts[] = is_object($p) ? get_class($p) : (string) $p;
+                }
+                $callback_str = implode('::', $parts);
+            } elseif (is_string($config['plantillaCallback'])) {
+                $callback_str = $config['plantillaCallback'];
+            } elseif (is_object($config['plantillaCallback']) && !($config['plantillaCallback'] instanceof \Closure)) {
+                $callback_str = get_class($config['plantillaCallback']);
+            }
             echo '<div class="' . esc_attr($contenedorClass) . '"'
                 . ' data-post-type="' . esc_attr($postType) . '"'
                 . (!empty($acciones) ? ' data-content-actions="' . esc_attr($acciones) . '"' : '')
@@ -147,7 +171,8 @@ class ContentRender
                 . ' data-publicaciones-por-pagina="' . esc_attr($config['publicacionesPorPagina']) . '"'
                 . ' data-clase-contenedor="' . esc_attr($config['claseContenedor']) . '"'
                 . ' data-clase-item="' . esc_attr($config['claseItem']) . '"'
-                . ' data-template-callback="' . esc_attr($callback_str) . '">';
+                . (!empty($callback_str) ? ' data-template-callback="' . esc_attr($callback_str) . '"' : '')
+                . '>';
             $indiceGlobal = 0;
             while ($query->have_posts()) {
                 $query->the_post();

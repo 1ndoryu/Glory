@@ -12,7 +12,7 @@ class ThemeToggle
     public static function render(): string
     {
         // ID y clases estandarizadas para que JS las encuentre.
-        $html = '<button id="theme-toggle" class="borde glory-theme-toggle" aria-label="Alternar tema" title="Alternar tema" type="button" style="position:fixed;top:1rem;right:1rem;z-index:2000;display:flex;align-items:center;justify-content:center;border-radius:6px;">';
+        $html = '<button id="themeToggle" class="borde gloryThemeToggle" aria-label="Alternar tema" title="Alternar tema" type="button">';
         $html .= '</button>';
         return $html;
     }

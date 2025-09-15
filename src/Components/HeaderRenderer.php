@@ -14,7 +14,7 @@ class HeaderRenderer
         $logoModo = $config['modoLogo'] ?? (Compatibility::avadaActivo() ? 'default' : 'image');
         $textoLogo = $config['textoLogo'] ?? get_bloginfo('name', 'display');
         $logoImageId = $config['logoImageId'] ?? null;
-        $idMenu = $config['idMenu'] ?? 'main-menu';
+        $idMenu = $config['idMenu'] ?? 'mainMenu';
 
         $claseExtraHeader = '';
         if ($logoModo === 'text') {
@@ -75,7 +75,7 @@ class HeaderRenderer
 
 
                         <nav class="siteMenuNav" role="navigation">
-                            <div class="nav-title">Navigation</div>
+                            <div class="navTitle">Navigation</div>
                             <?php
                             if (has_nav_menu('main_navigation')) {
                                 wp_nav_menu([
@@ -91,12 +91,14 @@ class HeaderRenderer
                             <span></span>
                             <span></span>
                         </button>
+
+                        <?php echo ThemeToggle::render(); ?>
                     <?php endif; ?>
                 </div>
 
-                
-                    <button class="background" aria-label="Close menu"></button>
-               
+
+                <button class="background" aria-label="Close menu"></button>
+
             </header>
         <?php endif; ?>
 <?php

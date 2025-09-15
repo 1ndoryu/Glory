@@ -4,6 +4,8 @@ use Glory\Manager\AssetManager;
 use Glory\Manager\OpcionManager;
 use Glory\Integration\Compatibility;
 use Glory\Core\GloryFeatures;
+use Glory\Integration\IntegrationsManager;
+use Glory\Services\QueryProfiler;
 
 /*
  * jules refactor: proxima tarea, considerar obtener todos los valores de las opciones de componentes
@@ -101,8 +103,10 @@ AssetManager::defineFolder(
         'gloryScheduler.js',
         'menu.js',
         'gloryDateRange.js',
-        'glory-theme-toggle.js',
-        'gloryContentActions.js'
+        'gloryThemeToggle.js',
+        'gloryContentActions.js',
+        // Excluir el perfilador para definirlo de forma controlada abajo
+        'query-profiler.js'
     ]
 );
 
@@ -202,8 +206,8 @@ AssetManager::define(
 // Componente: Theme Toggle (core)
 AssetManager::define(
     'script',
-    'glory-theme-toggle',
-    '/Glory/assets/js/UI/glory-theme-toggle.js',
+    'gloryThemeToggle',
+    '/Glory/assets/js/UI/gloryThemeToggle.js',
     // Desactivar 'defer' explícitamente para asegurar inicialización consistente
     ['deps' => [], 'in_footer' => true, 'defer' => false, 'feature' => 'themeToggle']
 );
@@ -347,8 +351,25 @@ AssetManager::defineFolder(
     [
         'alert.css',
         'admin-panel.css',
+        // Excluir el perfilador para definirlo de forma controlada abajo
+        'query-profiler.css',
     ]
 );
+
+// CSS específico para admin cuando Elementor está activo: ocultar el banner "Get Pro"
+if (class_exists('Elementor\\Plugin')) {
+    AssetManager::define(
+        'style',
+        'glory-admin-elementor-tweaks',
+        '/Glory/assets/css/admin-elementor.css',
+        [
+            'deps'  => [],
+            'media' => 'all',
+            'area'  => 'admin',
+            'ver'   => filemtime(get_template_directory() . '/Glory/assets/css/admin-elementor.css'),
+        ]
+    );
+}
 
 AssetManager::define(
     'script',
@@ -371,5 +392,32 @@ AssetManager::define(
         'in_footer' => true,
         'area'      => 'both',
         'feature'   => 'gloryAjax',
+    ]
+);
+
+// --- Query Profiler (UI + Datos) ---
+// Siempre definimos assets; inicialización diferida para respetar overrides en App/Config/control.php
+add_action('after_setup_theme', [QueryProfiler::class, 'init'], 100);
+
+AssetManager::define(
+    'style',
+    'glory-query-profiler',
+    '/Glory/assets/css/query-profiler.css',
+    [
+        'media'   => 'all',
+        'area'    => 'both',
+        'dev_mode'=> true,
+    ]
+);
+
+AssetManager::define(
+    'script',
+    'glory-query-profiler',
+    '/Glory/assets/js/query-profiler.js',
+    [
+        'deps'      => ['jquery'],
+        'in_footer' => true,
+        'area'      => 'both',
+        'dev_mode'  => true,
     ]
 );

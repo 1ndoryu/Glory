@@ -1,0 +1,6 @@
+/* Ocultar bloque promocional de Elementor Pro en el panel del editor */
+#elementor-panel-get-pro-elements-sticky {
+    display: none !important;
+}
+
+

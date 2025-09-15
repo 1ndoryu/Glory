@@ -118,6 +118,10 @@ class Setup
 
         if (GloryFeatures::isActive('integrationsManager') !== false) {
             (new IntegrationsManager())->register();
+            // Registrar integraciones específicas (Elementor)
+            if (class_exists('Elementor\\Plugin')) {
+                \Glory\Integration\Elementor\ElementorIntegration::register();
+            }
         }
 
         if (GloryFeatures::isActive('opcionManagerSync') !== false) {

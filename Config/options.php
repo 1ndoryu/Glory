@@ -15,6 +15,30 @@ OpcionManager::register('glory_css_critico_activado', [
     'featureKey'    => 'cssCritico'
 ]);
 
+// Perfilador de Consultas (UI). Por defecto activo en DEV, inactivo en PROD.
+OpcionManager::register('glory_query_profiler_activado', [
+    'valorDefault'  => false,
+    'tipo'          => 'toggle',
+    'etiqueta'      => 'Activar Query Profiler (UI)',
+    'descripcion'   => 'Muestra un widget minimalista con las consultas SQL y sus tiempos (front y admin).',
+    'seccion'       => 'debug',
+    'etiquetaSeccion' => 'Depuración',
+    'featureKey'    => 'queryProfiler',
+    'hideInProd'    => true,
+]);
+
+// Perfilador de Consultas (Logs). Por defecto inactivo. Si se activa, escribe Top 10 más lentas por petición.
+OpcionManager::register('glory_query_profiler_logs_activado', [
+    'valorDefault'  => false,
+    'tipo'          => 'toggle',
+    'etiqueta'      => 'Activar Query Profiler Logs',
+    'descripcion'   => 'Escribe en el log el Top 10 de consultas más lentas por petición.',
+    'seccion'       => 'debug',
+    'etiquetaSeccion' => 'Depuración',
+    'featureKey'    => 'queryProfilerLogs',
+    'hideInProd'    => true,
+]);
+
 /*
  * jules refactor: proxima tarea, crear un sistema de registro de funcionalidades centralizado.
  *
