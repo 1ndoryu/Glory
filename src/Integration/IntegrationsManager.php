@@ -3,6 +3,7 @@
 namespace Glory\Integration;
 
 use Glory\Manager\OpcionManager;
+use Glory\Integration\Avada\AvadaIntegration;
 
 class IntegrationsManager
 {
@@ -12,6 +13,18 @@ class IntegrationsManager
     public function register(): void
     {
         add_action('wp_head', [$this, 'agregarScriptsAlHeader']);
+
+        // Registrar integración con Avada Builder si está disponible.
+        if ( function_exists('fusion_builder_map') || class_exists('Fusion_Element') ) {
+            AvadaIntegration::register();
+        } else {
+            // Alternativamente, podemos enganchar tarde por si Avada carga después.
+            add_action('after_setup_theme', function(){
+                if ( function_exists('fusion_builder_map') || class_exists('Fusion_Element') ) {
+                    AvadaIntegration::register();
+                }
+            }, 20);
+        }
     }
 
     /**
