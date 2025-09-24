@@ -2,10 +2,16 @@
 
 namespace Glory\Integration\Avada;
 
+use Glory\Core\GloryFeatures;
+
 class AvadaIntegration
 {
     public static function register(): void
     {
+        // Respetar flag global de integración con Avada
+        if (\Glory\Core\GloryFeatures::isEnabled('avadaIntegration') === false) {
+            return;
+        }
         // Remueve la pestaña/sección "Portfolio" del panel de opciones globales de Avada.
         add_filter('avada_options_sections', [self::class, 'filterRemovePortfolioSection']);
 
@@ -23,20 +29,37 @@ class AvadaIntegration
         if (class_exists(AvadaFontsIntegration::class)) {
             AvadaFontsIntegration::register();
         }
+        if (class_exists(AvadaResponsiveTypographyIntegration::class)) {
+            AvadaResponsiveTypographyIntegration::register();
+        }
+        if ( ! function_exists('add_action') ) {
+            return;
+        }
+        add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);
     }
 
     // Delegaciones al registrador de elementos/shortcode
     public static function registerElement(): void
     {
-        if (class_exists(AvadaElementRegistrar::class) && method_exists(AvadaElementRegistrar::class, 'registerElement')) {
-            AvadaElementRegistrar::registerElement();
+        $gloryCrRegistrar = '\\Glory\\Integration\\Avada\\Elements\\GloryContentRender\\GloryContentRenderRegistrar';
+        if (class_exists($gloryCrRegistrar) && method_exists($gloryCrRegistrar, 'registerElement')) {
+            $gloryCrRegistrar::registerElement();
+        }
+        $gloryImgRegistrar = '\\Glory\\Integration\\Avada\\Elements\\GloryImage\\GloryImageRegistrar';
+        if (class_exists($gloryImgRegistrar) && method_exists($gloryImgRegistrar, 'registerElement')) {
+            $gloryImgRegistrar::registerElement();
         }
     }
 
     public static function ensureShortcode(): void
     {
-        if (class_exists(AvadaElementRegistrar::class) && method_exists(AvadaElementRegistrar::class, 'ensureShortcode')) {
-            AvadaElementRegistrar::ensureShortcode();
+        $gloryCrRegistrar = '\\Glory\\Integration\\Avada\\Elements\\GloryContentRender\\GloryContentRenderRegistrar';
+        if (class_exists($gloryCrRegistrar) && method_exists($gloryCrRegistrar, 'ensureShortcode')) {
+            $gloryCrRegistrar::ensureShortcode();
+        }
+        $gloryImgRegistrar = '\\Glory\\Integration\\Avada\\Elements\\GloryImage\\GloryImageRegistrar';
+        if (class_exists($gloryImgRegistrar) && method_exists($gloryImgRegistrar, 'ensureShortcode')) {
+            $gloryImgRegistrar::ensureShortcode();
         }
     }
 
@@ -131,6 +154,24 @@ class AvadaIntegration
             unset($sections['portfolio']);
         }
         return $sections;
+    }
+
+    public static function enqueueAssets(): void
+    {
+        if ( ! function_exists('wp_enqueue_script') ) {
+            return;
+        }
+        $themeDir = get_template_directory_uri();
+        $childDir = get_stylesheet_directory_uri();
+
+        // Intentar cargar desde child-theme si existe
+        $childPath = get_stylesheet_directory() . '/Glory/assets/js/glory-carousel.js';
+        $themePath = get_template_directory() . '/Glory/assets/js/glory-carousel.js';
+        if ( is_readable($childPath) ) {
+            wp_enqueue_script('glory-carousel', $childDir . '/Glory/assets/js/glory-carousel.js', [], null, true);
+        } elseif ( is_readable($themePath) ) {
+            wp_enqueue_script('glory-carousel', $themeDir . '/Glory/assets/js/glory-carousel.js', [], null, true);
+        }
     }
 }
 

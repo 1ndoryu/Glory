@@ -225,8 +225,13 @@ class SyncManager
     
     private function runFullSync(): void {
         OpcionManager::sincronizarTodasLasOpciones();
-        PageManager::procesarPaginasDefinidas();
-        PageManager::reconciliarPaginasGestionadas();
+
+        // Solo ejecutar PageManager si la feature está activa
+        if (\Glory\Core\GloryFeatures::isActive('pageManager') !== false) {
+            PageManager::procesarPaginasDefinidas();
+            PageManager::reconciliarPaginasGestionadas();
+        }
+
         $sync = new DefaultContentSynchronizer();
         $sync->sincronizar();
     }

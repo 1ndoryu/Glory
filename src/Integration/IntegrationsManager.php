@@ -4,6 +4,8 @@ namespace Glory\Integration;
 
 use Glory\Manager\OpcionManager;
 use Glory\Integration\Avada\AvadaIntegration;
+use Glory\Core\GloryFeatures;
+use Glory\Integration\Avada\AvadaOptionsBridge;
 
 class IntegrationsManager
 {
@@ -14,16 +16,54 @@ class IntegrationsManager
     {
         add_action('wp_head', [$this, 'agregarScriptsAlHeader']);
 
-        // Registrar integración con Avada Builder si está disponible.
-        if ( function_exists('fusion_builder_map') || class_exists('Fusion_Element') ) {
-            AvadaIntegration::register();
-        } else {
-            // Alternativamente, podemos enganchar tarde por si Avada carga después.
-            add_action('after_setup_theme', function(){
-                if ( function_exists('fusion_builder_map') || class_exists('Fusion_Element') ) {
-                    AvadaIntegration::register();
+        // Control centralizado de la integración con Avada.
+        // Reglas:
+        // - Si el flag está explícitamente en off => no cargar nunca.
+        // - Si está explícitamente en on => intentar registrar (si Avada existe).
+        // - Si no está definido en control.php => autodetectar Avada y registrar cuando exista.
+        $flag = GloryFeatures::isEnabled('avadaIntegration');
+
+        // Helper de detección de Avada (builder/elementos presentes).
+        $avadaDisponible = function (): bool {
+            return function_exists('fusion_builder_map') || class_exists('Fusion_Element') || function_exists('fusion_core') || class_exists('Fusion_Settings');
+        };
+
+        if ($flag === false) {
+            // Integración desactivada explícitamente: no registrar nada relacionado a Avada.
+            // Además, limpiar caché de secciones del panel de Avada para ocultar "Glory" si quedó cacheada.
+            add_action('init', function() {
+                try {
+                    if (function_exists('delete_transient')) {
+                        delete_transient('fusion_tos');
+                        delete_transient('fusion_fb_tos');
+                    }
+                    // Intentar remover filtros en caso de que se hayan agregado antes en el ciclo actual.
+                    remove_filter('avada_options_sections', [AvadaOptionsBridge::class, 'injectGlorySection']);
+                } catch (\Throwable $t) {
                 }
-            }, 20);
+            }, 5);
+            return;
+        }
+
+        $registrar = function () use ($avadaDisponible) {
+            if ($avadaDisponible()) {
+                AvadaIntegration::register();
+            }
+        };
+
+        if ($flag === true) {
+            // Forzar registro si Avada está presente ahora o más tarde.
+            $registrar();
+            add_action('after_setup_theme', $registrar, 20);
+            add_action('init', $registrar, 20);
+        } else {
+            // Sin definición: autodetectar.
+            if ($avadaDisponible()) {
+                AvadaIntegration::register();
+            } else {
+                add_action('after_setup_theme', $registrar, 20);
+                add_action('init', $registrar, 20);
+            }
         }
     }
 

@@ -22,6 +22,8 @@ class AssetsUtility
         self::registerAssetPath('glory', 'Glory/assets/images');
         self::registerAssetPath('elements', 'Glory/assets/images/elements');
         self::registerAssetPath('tema', 'App/assets/images');
+        // Alias dedicado a la carpeta de colores solicitada para portafolio
+        self::registerAssetPath('colors', 'Glory/assets/images/colors');
         self::$isInitialized = true;
     }
 
@@ -72,6 +74,48 @@ class AssetsUtility
         }
 
         return basename($archivos[array_rand($archivos)]);
+    }
+
+
+    /**
+     * Retorna un arreglo de nombres de archivo (basename) de imágenes aleatorias y únicas
+     * dentro del alias de assets indicado. Útil para sembrar contenido sin repetición.
+     *
+     * @param string $alias Alias registrado del directorio de assets (por ejemplo, 'colors').
+     * @param int $cantidad Número de imágenes únicas a seleccionar.
+     * @param array $extensiones Extensiones permitidas.
+     * @return array<string> Lista de nombres de archivo (sin ruta) seleccionados aleatoriamente.
+     */
+    public static function getRandomUniqueImagesFromAlias(
+        string $alias,
+        int $cantidad,
+        array $extensiones = ['jpg','jpeg','png','gif','webp']
+    ): array {
+        if (!self::$isInitialized) self::init();
+
+        if (!isset(self::$assetPaths[$alias])) {
+            GloryLogger::error("AssetsUtility: Alias '{$alias}' no registrado para selección aleatoria.");
+            return [];
+        }
+
+        $directorioImagenes = trailingslashit(get_template_directory() . '/' . self::$assetPaths[$alias]);
+
+        $archivos = [];
+        foreach ($extensiones as $ext) {
+            $glob = glob($directorioImagenes . '*.' . $ext, GLOB_NOSORT);
+            if (is_array($glob)) {
+                $archivos = array_merge($archivos, $glob);
+            }
+        }
+
+        if (empty($archivos)) {
+            GloryLogger::warning("AssetsUtility: No se encontraron imágenes en '{$directorioImagenes}'.");
+            return [];
+        }
+
+        shuffle($archivos);
+        $seleccionados = array_slice($archivos, 0, max(0, $cantidad));
+        return array_values(array_map('basename', $seleccionados));
     }
 
 

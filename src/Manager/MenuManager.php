@@ -30,43 +30,289 @@ class MenuManager
 
     public static function asegurarMenuPrincipal(): void
     {
-        if (has_nav_menu(self::UBICACION_MENU_PRINCIPAL)) {
-            $locations = get_nav_menu_locations();
-            $menu_id = $locations[self::UBICACION_MENU_PRINCIPAL];
-            $menu_items = wp_get_nav_menu_items($menu_id);
-            if (!empty($menu_items)) {
-                return;
-            }
-        }
-
-        $nombreMenu = __('Main Menu', 'glory');
-        $menu = wp_get_nav_menu_object($nombreMenu);
+        // 1) Determinar/crear el menú objetivo
+        $menuName = __('Main Menu', 'glory');
         $menuId = null;
 
-        if (!$menu) {
-            $menuId = wp_create_nav_menu($nombreMenu);
-            if (is_wp_error($menuId)) {
-                return;
+        if (has_nav_menu(self::UBICACION_MENU_PRINCIPAL)) {
+            $locations = get_nav_menu_locations();
+            if (isset($locations[self::UBICACION_MENU_PRINCIPAL])) {
+                $menuId = (int) $locations[self::UBICACION_MENU_PRINCIPAL];
             }
-        } else {
-            $menuId = $menu->term_id;
         }
 
-        // Si el menú está vacío, crear items por defecto.
-        $menu_items = wp_get_nav_menu_items($menuId);
-        if (empty($menu_items)) {
-            $items = ['Inicio', 'example', 'example', 'example', 'example'];
-            foreach ($items as $index => $title) {
+        if (!$menuId) {
+            $menuId = self::getOrCreateMenuId($menuName);
+            if (!$menuId) {
+                return;
+            }
+        }
+
+        // 2) Comprobar si el menú contiene elementos no-placeholder (personalizado)
+        $menuItems = wp_get_nav_menu_items($menuId);
+        if (!is_array($menuItems)) {
+            $menuItems = [];
+        }
+
+        $hasNonPlaceholders = self::tieneItemsNoPlaceholders($menuItems);
+        if ($hasNonPlaceholders) {
+            // Marcar como personalizado si detectamos cambios respecto a placeholders
+            update_term_meta($menuId, 'glory_customized', 1);
+            self::asignarUbicacion($menuId);
+            return;
+        }
+
+        // 3) Normalizar placeholders (evitar duplicados, crear faltantes, ordenar)
+        self::normalizarPlaceholders($menuId, $menuItems);
+
+        // 4) Marcar como sembrado y asignar a la ubicación
+        update_term_meta($menuId, 'glory_seeded', 1);
+        self::asignarUbicacion($menuId);
+    }
+
+    /**
+     * Devuelve la definición de los ítems por defecto.
+     * Mantener el mismo contenido para que la normalización sea idempotente.
+     * @return array<int, array{title:string,url:string}>
+     */
+    private static function obtenerSeedPorDefecto(): array
+    {
+        return [
+            [ 'title' => 'Inicio',  'url' => home_url('/') ],
+            [ 'title' => 'example', 'url' => '#' ],
+            [ 'title' => 'example', 'url' => '#' ],
+            [ 'title' => 'example', 'url' => '#' ],
+            [ 'title' => 'example', 'url' => '#' ],
+        ];
+    }
+
+    /**
+     * Crear u obtener el ID del menú dado su nombre.
+     */
+    private static function getOrCreateMenuId(string $menuName): ?int
+    {
+        $menu = wp_get_nav_menu_object($menuName);
+        if ($menu && isset($menu->term_id)) {
+            return (int) $menu->term_id;
+        }
+
+        $menuId = wp_create_nav_menu($menuName);
+            if (is_wp_error($menuId)) {
+            return null;
+        }
+        return (int) $menuId;
+    }
+
+    /**
+     * Verifica si el array de ítems contiene algún elemento que NO sea un placeholder del seed.
+     */
+    private static function tieneItemsNoPlaceholders(array $menuItems): bool
+    {
+        if (empty($menuItems)) {
+            return false;
+        }
+
+        $seed = self::obtenerSeedPorDefecto();
+        $permitidos = self::construirMulticonjuntoPermitidos($seed);
+
+        foreach ($menuItems as $item) {
+            $titleRaw = (string) ($item->title ?? $item->post_title ?? '');
+            $urlRaw = (string) ($item->url ?? '');
+            if (trim($titleRaw) === '' || trim($urlRaw) === '') {
+                // Ítems vacíos no indican personalización; se normalizarán luego
+                continue;
+            }
+            $key = self::claveItem($titleRaw, $urlRaw);
+            if (!array_key_exists($key, $permitidos)) {
+                return true; // hay un ítem que no es placeholder
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Normaliza el menú para que contenga exactamente los placeholders (sin duplicados extra) y ordenados.
+     */
+    private static function normalizarPlaceholders(int $menuId, array $menuItems): void
+    {
+        $seed = self::obtenerSeedPorDefecto();
+        $permitidos = self::construirMulticonjuntoPermitidos($seed); // key => cantidad requerida
+        $keyToDef = [];
+        foreach ($seed as $def) {
+            $keyToDef[self::claveItem($def['title'], $def['url'])] = $def; // conservar mayúsculas originales
+        }
+
+        // Conteo actual
+        $conteoActual = [];
+        foreach ($menuItems as $item) {
+            $titleRaw = (string) ($item->title ?? $item->post_title ?? '');
+            $urlRaw = (string) ($item->url ?? '');
+            $key = self::claveItem($titleRaw, $urlRaw);
+            if (!isset($conteoActual[$key])) {
+                $conteoActual[$key] = 0;
+            }
+            $conteoActual[$key]++;
+        }
+
+        // 1) Eliminar ítems vacíos y excedentes de placeholders permitidos
+        foreach ($menuItems as $item) {
+            $titleRaw = (string) ($item->title ?? $item->post_title ?? '');
+            $urlRaw = (string) ($item->url ?? '');
+            if (trim($titleRaw) === '' || trim($urlRaw) === '') {
+                wp_delete_post((int) $item->ID, true);
+                continue;
+            }
+            $key = self::claveItem($titleRaw, $urlRaw);
+            if (!array_key_exists($key, $permitidos)) {
+                // Ítem no permitido (si llegamos aquí, asumimos que no hay personalización real; lo dejamos)
+                continue;
+            }
+            $requeridos = (int) $permitidos[$key];
+            if ($conteoActual[$key] > $requeridos) {
+                // eliminar excedentes hasta igualar el requerido
+                wp_delete_post((int) $item->ID, true);
+                $conteoActual[$key]--;
+            }
+        }
+
+        // 2) Agregar faltantes hasta alcanzar la cantidad requerida de cada placeholder
+        foreach ($permitidos as $key => $requeridos) {
+            $faltantes = max(0, (int) $requeridos - (int) ($conteoActual[$key] ?? 0));
+            if ($faltantes <= 0) {
+                continue;
+            }
+
+            // Obtener título (con mayúsculas originales) y url desde el seed
+            $def = $keyToDef[$key] ?? null;
+            if (!$def) {
+                continue;
+            }
+            $title = (string) $def['title'];
+            $url = (string) $def['url'];
+            for ($i = 0; $i < $faltantes; $i++) {
                 wp_update_nav_menu_item($menuId, 0, [
-                    'menu-item-title'  => $title,
-                    'menu-item-url'    => ($title === 'Inicio') ? home_url('/') : '#',
-                    'menu-item-status' => 'publish',
-                    'menu-item-position' => $index + 1,
+                    'menu-item-type'      => 'custom',
+                    'menu-item-object'    => 'custom',
+                    'menu-item-title'     => $title,
+                    'menu-item-attr-title'=> $title,
+                    'menu-item-url'       => $url,
+                    'menu-item-status'    => 'publish',
                 ]);
             }
         }
 
+        // 2.b) Reparar ítems permitidos existentes con título vacío
+        $actual = wp_get_nav_menu_items($menuId);
+        if (!is_array($actual)) {
+            $actual = [];
+        }
+        foreach ($actual as $item) {
+            $titleRaw = (string) ($item->title ?? $item->post_title ?? '');
+            $urlRaw = (string) ($item->url ?? '');
+            $key = self::claveItem($titleRaw, $urlRaw);
+            if (isset($keyToDef[$key]) && trim($titleRaw) === '') {
+                $def = $keyToDef[$key];
+                wp_update_nav_menu_item($menuId, (int) $item->ID, [
+                    'menu-item-type'       => 'custom',
+                    'menu-item-object'     => 'custom',
+                    'menu-item-title'      => (string) $def['title'],
+                    'menu-item-attr-title' => (string) $def['title'],
+                    'menu-item-url'        => (string) $def['url'],
+                    'menu-item-status'     => 'publish',
+                ]);
+            }
+        }
+
+        // 3) Ordenar exactamente como el seed
+        $pos = 1;
+        foreach ($seed as $def) {
+            $title = $def['title'];
+            $url = $def['url'];
+            $keyObjetivo = self::claveItem($title, $url);
+
+            // Obtener ítems actuales otra vez para reflejar altas/bajas
+            $actual = wp_get_nav_menu_items($menuId);
+            if (!is_array($actual)) {
+                $actual = [];
+            }
+
+            foreach ($actual as $item) {
+                $titleRaw = (string) ($item->title ?? $item->post_title ?? '');
+                $urlRaw = (string) ($item->url ?? '');
+                $key = self::claveItem($titleRaw, $urlRaw);
+                if ($key === $keyObjetivo) {
+                    // Actualizar con todos los campos para no perder título/URL al reordenar
+                    wp_update_nav_menu_item($menuId, (int) $item->ID, [
+                        'menu-item-type'       => 'custom',
+                        'menu-item-object'     => 'custom',
+                        'menu-item-title'      => $title,
+                        'menu-item-attr-title' => $title,
+                        'menu-item-url'        => $url,
+                        'menu-item-status'     => 'publish',
+                        'menu-item-position'   => $pos,
+                    ]);
+                    $pos++;
+                    // Quitar uno de este tipo para no reordenar el mismo ítem múltiples veces
+                    // Disminuir temporalmente el conteo para evitar volver a elegirlo
+                    if (!isset($conteoActual[$key])) {
+                        $conteoActual[$key] = 0;
+                    }
+                    $conteoActual[$key]--;
+                    if ($conteoActual[$key] < 0) {
+                        $conteoActual[$key] = 0;
+                    }
+                    // Romper para continuar con el siguiente elemento del seed
+                    break;
+                }
+            }
+        }
+    }
+
+    private static function construirMulticonjuntoPermitidos(array $seed): array
+    {
+        $map = [];
+        foreach ($seed as $def) {
+            $key = self::claveItem((string) $def['title'], (string) $def['url']);
+            if (!isset($map[$key])) {
+                $map[$key] = 0;
+            }
+            $map[$key]++;
+        }
+        return $map;
+    }
+
+    private static function claveItem(string $title, string $url): string
+    {
+        $t = strtolower(trim($title));
+        $u = self::normalizarUrl($url);
+        return $t . '|' . $u;
+    }
+
+    private static function descomponerClave(string $key): array
+    {
+        $parts = explode('|', $key, 2);
+        $title = $parts[0] ?? '';
+        $url = $parts[1] ?? '';
+        return [$title, $url];
+    }
+
+    private static function normalizarUrl(string $url): string
+    {
+        // Normalizar URLs para comparación (quitar slash final, minúsculas para esquemas, etc.)
+        if ($url === '#') {
+            return '#';
+        }
+        $normalized = untrailingslashit($url);
+        return $normalized !== '' ? $normalized : '/';
+    }
+
+    private static function asignarUbicacion(int $menuId): void
+    {
         $ubicaciones = get_theme_mod('nav_menu_locations');
+        if (!is_array($ubicaciones)) {
+            $ubicaciones = [];
+        }
         $ubicaciones[self::UBICACION_MENU_PRINCIPAL] = $menuId;
         set_theme_mod('nav_menu_locations', $ubicaciones);
     }

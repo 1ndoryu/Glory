@@ -16,19 +16,12 @@ class AvadaFontsIntegration
         add_action('admin_enqueue_scripts', [self::class, 'enqueueInlineFontsCss'], 1);
         add_action('enqueue_block_editor_assets', [self::class, 'enqueueInlineFontsCss'], 1);
 
-        $optionNames = [];
-        if ( class_exists('\\Avada') && method_exists('\\Avada', 'get_option_name') ) {
-            $optionNames[] = \Avada::get_option_name();
-        }
-        $optionNames[] = 'fusion_options';
-        $optionNames[] = 'avada_options';
-        $optionNames = array_values(array_unique(array_filter($optionNames)));
-        foreach ($optionNames as $opt) {
-            add_filter('option_' . $opt, [self::class, 'filterInjectCustomFontsOption']);
-            add_filter('pre_option_' . $opt, [self::class, 'filterInjectCustomFontsOption']);
-        }
-
+        // Persistencia segura tras guardar opciones de Avada y en admin init.
+        add_action('fusionredux/options/fusion_options/saved', [self::class, 'onOptionsSaved'], 10, 2);
         add_action('admin_init', [self::class, 'ensureCustomFontsPersisted'], 20);
+
+        // Evitar escribir en fusion_options automáticamente en admin_init para no sobrescribir valores.
+        // Si es necesario persistir nombres de fuentes, hacerlo en un hook post-guardado específico.
     }
 
     public static function filterAddCustomFontGroups($fontGroups)
@@ -102,6 +95,14 @@ class AvadaFontsIntegration
                 $options['custom_fonts']['name'] = $existingNames;
                 update_option($optName, $options, false);
             }
+        } catch (\Throwable $t) {
+        }
+    }
+
+    public static function onOptionsSaved($data, $changed_values): void
+    {
+        try {
+            self::ensureCustomFontsPersisted();
         } catch (\Throwable $t) {
         }
     }

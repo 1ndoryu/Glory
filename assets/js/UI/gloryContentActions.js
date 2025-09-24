@@ -211,10 +211,12 @@
                 });
             }
 
-            // Click derecho: asegurar atributos y abrir el submenú en el punto del clic
+            // Click derecho: solo si el submenú está habilitado
             cont.addEventListener('contextmenu', function (e) {
+                const submenuEnabled = cont.dataset.submenuEnabled === '1';
+                if (!submenuEnabled) return; // respetar OFF
                 const selector = cont.dataset.itemSelector || '[id^="post-"]';
-                let item = closestItem(e.target, selector);
+                const item = closestItem(e.target, selector);
                 if (!item) return;
                 e.preventDefault();
                 e.stopPropagation();
