@@ -7,8 +7,15 @@
 
     var GloryHorizontalDrag = {
         instances: [],
+        registeredSelectors: [],
 
         init: function(selector) {
+            // Registrar selector para re-inicializar tras gloryRecarga
+            if (typeof selector === 'string' && selector) {
+                if (this.registeredSelectors.indexOf(selector) === -1) {
+                    this.registeredSelectors.push(selector);
+                }
+            }
             var containers = document.querySelectorAll(selector);
             containers.forEach(function(container) {
                 if (!container.hasAttribute('data-glory-horizontal-drag')) {
@@ -274,6 +281,17 @@
         });
         window.GloryHorizontalDragQueue = [];
     }
+
+    // Re-inicializar tras recarga AJAX (gloryRecarga): ejecutar init en todos los selectores registrados
+    document.addEventListener('gloryRecarga', function() {
+        try {
+            var regs = GloryHorizontalDrag.registeredSelectors || [];
+            for (var i = 0; i < regs.length; i++) {
+                var sel = regs[i];
+                if (sel) { GloryHorizontalDrag.init(sel); }
+            }
+        } catch(_e) {}
+    });
 
 })();
 

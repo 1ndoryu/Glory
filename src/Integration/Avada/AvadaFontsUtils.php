@@ -7,7 +7,7 @@ class AvadaFontsUtils
     /**
      * Construye CSS @font-face a partir del mapa de fuentes detectadas.
      *
-     * @param array<string,array<string,string>> $fonts
+     * @param array<string,array<int,string>> $fonts
      * @return string
      */
     public static function buildFontFaceCss(array $fonts): string
@@ -19,24 +19,34 @@ class AvadaFontsUtils
             $display = ('block' === $val) ? 'block' : 'swap';
         }
 
-        foreach ($fonts as $family => $sources) {
-            $hasFile = false;
-            foreach (['woff2','woff','ttf','eot','svg','otf'] as $ext) {
-                if (!empty($sources[$ext])) { $hasFile = true; break; }
-            }
-            if (!$hasFile) { continue; }
+        foreach ($fonts as $family => $files) {
+            if (empty($files)) { continue; }
 
-            $first = true;
-            $fontFace .= '@font-face{';
-            $fontFace .= 'font-family:' . (false !== strpos($family, ' ') ? '"' . $family . '"' : $family) . ';';
-            $fontFace .= 'src:';
-            if (!empty($sources['woff2'])) { $fontFace .= 'url("' . $sources['woff2'] . '") format("woff2")'; $first = false; }
-            if (!empty($sources['woff']))  { $fontFace .= ($first ? '' : ',') . 'url("' . $sources['woff'] . '") format("woff")'; $first = false; }
-            if (!empty($sources['ttf']))   { $fontFace .= ($first ? '' : ',') . 'url("' . $sources['ttf'] . '") format("truetype")'; $first = false; }
-            if (!empty($sources['eot']))   { $fontFace .= ($first ? '' : ',') . 'url("' . $sources['eot'] . '?#iefix") format("embedded-opentype")'; $first = false; }
-            if (!empty($sources['svg']))   { $fontFace .= ($first ? '' : ',') . 'url("' . $sources['svg'] . '") format("svg")'; $first = false; }
-            if (!empty($sources['otf']))   { $fontFace .= ($first ? '' : ',') . 'url("' . $sources['otf'] . '") format("opentype")'; $first = false; }
-            $fontFace .= ';font-weight:normal;font-style:normal;font-display:' . $display . ';}';
+            // Agrupar por peso inferido y acumular formatos por peso.
+            $byWeight = [];
+            foreach ($files as $url) {
+                $weight = self::inferWeightFromFilename($url);
+                $byWeight[$weight] = $byWeight[$weight] ?? [];
+                $byWeight[$weight][] = $url;
+            }
+
+            foreach ($byWeight as $weight => $urls) {
+                // Construir lista de src combinando múltiples formatos del mismo peso.
+                $srcParts = [];
+                foreach ($urls as $url) {
+                    $ext = strtolower(pathinfo($url, PATHINFO_EXTENSION));
+                    $srcParts[] = 'url("' . $url . '") format("' . self::extToFormat($ext) . '")';
+                }
+                if (empty($srcParts)) { continue; }
+
+                $familyWithWeight = $family . '-' . (is_numeric($weight) ? $weight : 'normal');
+                $fontFace .= '@font-face{';
+                $fontFace .= 'font-family:' . (false !== strpos($familyWithWeight, ' ') ? '"' . $familyWithWeight . '"' : $familyWithWeight) . ';';
+                $fontFace .= 'src:' . implode(',', $srcParts) . ';';
+                // Dejamos normal para que Avada seleccione por familia (variant 400) sin conflicto.
+                $fontFace .= 'font-weight:normal;font-style:normal;font-display:' . $display . ';';
+                $fontFace .= '}';
+            }
         }
 
         return $fontFace;
@@ -56,7 +66,11 @@ class AvadaFontsUtils
     /**
      * Escanea la(s) carpeta(s) App/assets/fonts para detectar fuentes.
      *
-     * @return array<string,array<string,string>>
+     * Estructura devuelta:
+     *  - Clave: nombre de familia
+     *  - Valor: array de URLs de archivos de fuente para esa familia
+     *
+     * @return array<string,array<int,string>>
      */
     public static function discoverFonts(): array
     {
@@ -79,9 +93,8 @@ class AvadaFontsUtils
                         foreach ($files as $file) {
                             $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
                             if (!in_array($ext, ['woff2','woff','ttf','eot','svg','otf'], true)) { continue; }
-                            if (!isset($result[$family][$ext])) {
-                                $result[$family][$ext] = self::filePathToUrl($file, $basePath, $baseUrl);
-                            }
+                            $url = self::filePathToUrl($file, $basePath, $baseUrl);
+                            $result[$family][] = $url;
                         }
                     }
                 }
@@ -96,9 +109,7 @@ class AvadaFontsUtils
                     if (!in_array($ext, ['woff2','woff','ttf','eot','svg','otf'], true)) { continue; }
                     $family = pathinfo($file, PATHINFO_FILENAME);
                     $result[$family] = $result[$family] ?? [];
-                    if (!isset($result[$family][$ext])) {
-                        $result[$family][$ext] = self::filePathToUrl($file, $basePath, $baseUrl);
-                    }
+                    $result[$family][] = self::filePathToUrl($file, $basePath, $baseUrl);
                 }
             }
         }
@@ -123,6 +134,34 @@ class AvadaFontsUtils
     {
         $relative = ltrim(str_replace(wp_normalize_path($basePath), '', wp_normalize_path($file)), '/\\');
         return rtrim($baseUrl, '/\\') . '/' . str_replace('\\', '/', $relative);
+    }
+
+    private static function extToFormat(string $ext): string
+    {
+        $map = [
+            'woff2' => 'woff2',
+            'woff'  => 'woff',
+            'ttf'   => 'truetype',
+            'eot'   => 'embedded-opentype',
+            'svg'   => 'svg',
+            'otf'   => 'opentype',
+        ];
+        return $map[strtolower($ext)] ?? 'woff2';
+    }
+
+    public static function inferWeightFromFilename(string $url)
+    {
+        $filename = strtolower(pathinfo(parse_url($url, PHP_URL_PATH) ?? $url, PATHINFO_FILENAME));
+        if (preg_match('/(?:_|-)(\d{3})(?:[^0-9]|$)/', $filename, $m)) {
+            return (int) $m[1];
+        }
+        if (preg_match('/extrabold|extra[-_]?bold/', $filename)) { return 800; }
+        if (preg_match('/bold/', $filename)) { return 700; }
+        if (preg_match('/semibold|semi[-_]?bold/', $filename)) { return 600; }
+        if (preg_match('/medium/', $filename)) { return 500; }
+        if (preg_match('/regular|book|normal/', $filename)) { return 400; }
+        if (preg_match('/light/', $filename)) { return 300; }
+        return 'normal';
     }
 }
 
