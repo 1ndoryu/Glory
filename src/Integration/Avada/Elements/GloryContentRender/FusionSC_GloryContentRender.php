@@ -219,7 +219,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 $modo_interaccion = \Glory\Support\ContentRender\Args::sanitizeModo((string) ($this->args['interaccion_modo'] ?? 'normal'));
                 if ('toggle' === $modo_interaccion && empty($this->currentTemplateSupports['toggle'])) {
                     if (current_user_can('manage_options')) {
-                        $html .= '<div class="glory-warning">' . esc_html__('La plantilla seleccionada no declara soporte para modo toggle. Se usará el modo normal.', 'glory-ab') . '</div>';
+                        $html .= '<div class="glory-warning">The selected template does not declare support for toggle mode. Normal mode will be used.</div>';
                     }
                     $modo_interaccion = 'normal';
                 }
@@ -252,7 +252,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                         $argumentosConsulta = $parsed;
                     } else {
                         if (current_user_can('manage_options')) {
-                            $html .= '<div class="glory-warning">' . esc_html__('JSON inválido en argumentos de consulta. Ignorando.', 'glory-ab') . '</div>';
+                            $html .= '<div class="glory-warning">Invalid JSON in query arguments. Ignoring.</div>';
                         }
                     }
                 }

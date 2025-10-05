@@ -34,11 +34,11 @@ class GloryContentRenderRegistrar
             fusion_builder_map(
                 fusion_builder_frontend_data(
                     'FusionSC_GloryContentRender',
-                    [ 'name' => __('Glory Content Render','glory-ab'), 'shortcode' => 'glory_content_render', 'icon' => 'fusiona-blog', 'params' => $params ]
+                    [ 'name' => 'Glory Content Render', 'shortcode' => 'glory_content_render', 'icon' => 'fusiona-blog', 'params' => $params ]
                 )
             );
         } else {
-            fusion_builder_map([ 'name' => __('Glory Content Render','glory-ab'), 'shortcode' => 'glory_content_render', 'icon' => 'fusiona-blog', 'params' => $params ]);
+            fusion_builder_map([ 'name' => 'Glory Content Render', 'shortcode' => 'glory_content_render', 'icon' => 'fusiona-blog', 'params' => $params ]);
         }
     }
 }
