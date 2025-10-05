@@ -238,8 +238,10 @@ class ContentRender
                 $clasesExtras .= ' posicion-' . $indiceGlobal;
                 $clasesExtras .= ($indiceGlobal % 2 === 0) ? ' par' : ' impar';
                 $currentItemClass = trim($itemClass . $clasesExtras);
+                self::setCurrentOption('indiceItem', $indiceGlobal);
                 call_user_func($config['plantillaCallback'], get_post(), $currentItemClass);
             }
+            self::setCurrentOption('indiceItem', null);
             echo '</div>';
 
             if ($is_ajax_pagination) {
@@ -319,5 +321,15 @@ class ContentRender
     public static function getCurrentOption(string $key, $default = null)
     {
         return array_key_exists($key, self::$currentConfig) ? self::$currentConfig[$key] : $default;
+    }
+
+    public static function setCurrentOption(string $key, $value): void
+    {
+        if ($value === null) {
+            unset(self::$currentConfig[$key]);
+            return;
+        }
+
+        self::$currentConfig[$key] = $value;
     }
 }

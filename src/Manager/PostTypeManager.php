@@ -258,4 +258,13 @@ class PostTypeManager
         self::procesarTiposEntrada();
         flush_rewrite_rules();
     }
+
+    /**
+     * Devuelve las definiciones registradas (aún si no han sido registradas en WP).
+     * @return array<string,array{argumentos:array,singular:?string,plural:?string,metaDefault:array}>
+     */
+    public static function getDefined(): array
+    {
+        return self::$postTypes;
+    }
 }

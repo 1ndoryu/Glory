@@ -73,7 +73,22 @@ class PostRelationHandler
         foreach ($taxonomies as $taxonomia) {
             if (isset($meta[$taxonomia])) {
                 $termNames = is_array($meta[$taxonomia]) ? $meta[$taxonomia] : array_map('trim', explode(',', $meta[$taxonomia]));
-                wp_set_object_terms($this->postId, $termNames, $taxonomia, false);
+                // Asegurar que existan términos; si no existen, crearlos
+                $termIds = [];
+                foreach ($termNames as $name) {
+                    $term = get_term_by('name', $name, $taxonomia);
+                    if (!$term) {
+                        $created = wp_insert_term($name, $taxonomia);
+                        if (!is_wp_error($created) && isset($created['term_id'])) {
+                            $termIds[] = (int) $created['term_id'];
+                        }
+                    } else {
+                        $termIds[] = (int) $term->term_id;
+                    }
+                }
+                if (!empty($termIds)) {
+                    wp_set_object_terms($this->postId, $termIds, $taxonomia, false);
+                }
             }
         }
     }

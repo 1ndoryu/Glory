@@ -11,6 +11,7 @@ use Glory\Integration\Avada\Options\FieldsBuilder;
 use Glory\Integration\Avada\Options\Sync;
 use Glory\Integration\Avada\Options\Logger;
 use Glory\Integration\Avada\Options\Registrar;
+use Glory\Integration\Avada\Options\CptSingles;
 
 /**
  * Puente para mostrar opciones de Glory (OpcionManager) dentro del panel de Avada
@@ -39,6 +40,8 @@ class AvadaOptionsBridge
     public static function register(): void
     {
         Registrar::register();
+        // Forzar 100% width en singles de CPTs propios cuando su opción esté activa
+        add_filter('fusion_is_hundred_percent_template', [self::class, 'forceHundredPercentForCpt'], 99, 2);
     }
 
     /**
@@ -90,17 +93,21 @@ class AvadaOptionsBridge
         $fields = FieldsBuilder::buildFields();
         if (empty($fields)) {
             self::log('injectGlorySection:no_fields');
-            return $sections;
+            // Aunque no haya campos Glory, aún podemos inyectar secciones por CPT.
+            // Continuamos sin retornar.
         }
 
+        // Sección raíz Glory con subsecciones
         $sections['glory'] = [
             'label'    => esc_html__('Glory', 'glory-ab'),
             'id'       => 'glory',
             'priority' => 28,
             'icon'     => 'fusiona-code',
-            // Mantener claves de subsecciones para que el template use subSectionId string, no numéricos.
             'fields'   => is_array($fields) ? $fields : [],
         ];
+
+        // Inyectar secciones por CPT al mismo nivel que las secciones nativas de Avada
+        $sections = CptSingles::injectCptSections($sections);
 
         self::log('injectGlorySection:done', ['fields_count' => is_array($fields) ? count($fields) : 0]);
         return $sections;
@@ -141,6 +148,9 @@ class AvadaOptionsBridge
             }, 10, 1);
             self::log('bootstrapOptionFilters:registered', ['id' => $optionId]);
         }
+
+        // Registrar filtros para opciones dinámicas de CPT (glory_{pt}_single_*)
+        CptSingles::registerFilters();
     }
 
     /**
@@ -334,6 +344,40 @@ class AvadaOptionsBridge
     public static function filterMergeGloryValuesIntoAvadaOptions($value)
     {
         return Sync::filterMergeGloryValuesIntoAvadaOptions($value);
+    }
+
+    /**
+     * Si el CPT actual tiene activa la opción global "100% Width Page", forzar el layout a 100%.
+     *
+     * @param bool        $value   Valor actual del filtro.
+     * @param int|false   $page_id ID de página si Avada lo pasó.
+     */
+    public static function forceHundredPercentForCpt($value, $page_id = false)
+    {
+        try {
+            if ($value) {
+                return $value;
+            }
+            $pid = is_numeric($page_id) ? (int) $page_id : 0;
+            if ($pid <= 0 && function_exists('fusion_library')) {
+                $pid = (int) fusion_library()->get_page_id();
+            }
+            if ($pid <= 0) {
+                return $value;
+            }
+            $pt = get_post_type($pid);
+            if (!is_string($pt) || $pt === '' || in_array($pt, ['post','product','avada_portfolio'], true)) {
+                return $value;
+            }
+            $optId = 'glory_' . sanitize_key($pt) . '_single_width_100';
+            $on = get_option($optId, 0);
+            if ((string) $on === '1' || (int) $on === 1) {
+                return true;
+            }
+        } catch (\Throwable $t) {
+            // noop
+        }
+        return $value;
     }
 
     private static function log(string $message, array $context = []): void

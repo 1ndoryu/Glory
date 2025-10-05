@@ -24,7 +24,10 @@ class AssetsUtility
         self::registerAssetPath('tema', 'App/assets/images');
         // Alias dedicado a la carpeta de colores solicitada para portafolio
         self::registerAssetPath('colors', 'Glory/assets/images/colors');
+        // Alias para logos de marcas
+        self::registerAssetPath('logos', 'Glory/assets/images/logos');
         self::$isInitialized = true;
+        add_action('admin_init', [AssetsUtility::class, 'importTemaAssets']);
     }
 
 
@@ -119,6 +122,47 @@ class AssetsUtility
     }
 
 
+    /**
+     * Lista todas las imágenes disponibles para un alias dado, retornando solo los nombres de archivo (basename).
+     * Ordena alfabéticamente para obtener una selección determinística.
+     *
+     * @param string $alias
+     * @param array $extensiones
+     * @return array<string>
+     */
+    public static function listImagesForAlias(
+        string $alias,
+        array $extensiones = ['jpg','jpeg','png','gif','webp','svg']
+    ): array {
+        if (!self::$isInitialized) self::init();
+
+        if (!isset(self::$assetPaths[$alias])) {
+            GloryLogger::error("AssetsUtility: Alias '{$alias}' no registrado para listado de imágenes.");
+            return [];
+        }
+
+        $directorioImagenes = trailingslashit(get_template_directory() . '/' . self::$assetPaths[$alias]);
+        $archivos = [];
+        foreach ($extensiones as $ext) {
+            $glob = glob($directorioImagenes . '*.' . $ext, GLOB_NOSORT);
+            if (is_array($glob)) {
+                foreach ($glob as $ruta) {
+                    if (is_file($ruta)) {
+                        $archivos[] = basename($ruta);
+                    }
+                }
+            }
+        }
+
+        if (empty($archivos)) {
+            return [];
+        }
+
+        sort($archivos, SORT_NATURAL | SORT_FLAG_CASE);
+        return array_values($archivos);
+    }
+
+
     public static function imagen(string $assetReference, array $atributos = []): void
     {
         if (!self::$isInitialized) self::init();
@@ -194,7 +238,8 @@ class AssetsUtility
         }
 
         list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-        $rutaAssetRelativa = self::resolveAssetPath($alias, $nombreArchivo);
+        $rutaAssetRelativaSolicitada = self::resolveAssetPath($alias, $nombreArchivo);
+        $rutaAssetRelativa = $rutaAssetRelativaSolicitada;
 
         if (!$rutaAssetRelativa) {
             set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
@@ -204,8 +249,23 @@ class AssetsUtility
         $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
 
         if (!file_exists($rutaAssetCompleta)) {
+            // Fallback: elegir otra imagen del mismo alias si la solicitada no existe.
+            if (isset(self::$assetPaths[$alias])) {
+                $dirAlias = trailingslashit(get_template_directory() . '/' . self::$assetPaths[$alias]);
+                $alt = glob($dirAlias . '*.{jpg,jpeg,png,gif,webp}', GLOB_BRACE) ?: [];
+                if (!empty($alt)) {
+                    // Selección determinística según el nombre solicitado
+                    $idx = abs(crc32($nombreArchivo)) % count($alt);
+                    $fallbackFile = $alt[$idx];
+                    $nombreArchivo = basename($fallbackFile);
+                    $rutaAssetRelativa = self::resolveAssetPath($alias, $nombreArchivo) ?: $rutaAssetRelativaSolicitada;
+                    $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
+                }
+            }
+        if (!file_exists($rutaAssetCompleta)) {
             set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
             return null;
+            }
         }
 
         // Búsqueda ampliada: primero por nuestro meta, y como respaldo por nombre de archivo en _wp_attached_file
@@ -229,6 +289,11 @@ class AssetsUtility
                     'value'   => $nombreArchivoBase,
                     'compare' => 'LIKE'
                 ],
+                [
+                    'key'     => '_glory_asset_requested',
+                    'value'   => $rutaAssetRelativaSolicitada,
+                    'compare' => '='
+                ],
             ],
         ];
         $query = new \WP_Query($args);
@@ -236,9 +301,68 @@ class AssetsUtility
         if ($query->have_posts()) {
             $id = (int) $query->posts[0];
 
-            // Asegurar que quede marcado con nuestro meta para evitar futuras búsquedas duplicadas
+            // Verificar que el archivo físico exista; si no, intentar reparar manteniendo el mismo adjunto
+            $rutaAdjunta = get_attached_file($id);
+            if (empty($rutaAdjunta) || !file_exists($rutaAdjunta)) {
+                require_once(ABSPATH . 'wp-admin/includes/file.php');
+                require_once(ABSPATH . 'wp-admin/includes/image.php');
+                require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+                $archivoTemporal = wp_tempnam($nombreArchivo);
+                @copy($rutaAssetCompleta, $archivoTemporal);
+
+                $subida = wp_handle_sideload([
+                    'name'     => basename($nombreArchivo),
+                    'tmp_name' => $archivoTemporal,
+                    'error'    => 0,
+                    'size'     => @filesize($rutaAssetCompleta) ?: 0,
+                ], ['test_form' => false]);
+
+                if (!isset($subida['error']) && isset($subida['file'])) {
+                    // Actualizar el archivo asociado al mismo adjunto
+                    if (function_exists('update_attached_file')) {
+                        update_attached_file($id, $subida['file']);
+                    }
+                    $meta = wp_generate_attachment_metadata($id, $subida['file']);
+                    wp_update_attachment_metadata($id, $meta);
+                    update_post_meta($id, '_glory_asset_source', $rutaAssetRelativa);
+                    update_post_meta($id, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
+                } else {
+                    // Si la reparación falla, importar como nuevo adjunto y devolver su ID
+                    $nuevoId = null;
+                    $datosArchivo = [
+                        'name'     => basename($nombreArchivo),
+                        'tmp_name' => $archivoTemporal,
+                        'error'    => 0,
+                        'size'     => @filesize($rutaAssetCompleta) ?: 0,
+                    ];
+                    $subida2 = wp_handle_sideload($datosArchivo, ['test_form' => false]);
+                    if (!isset($subida2['error']) && isset($subida2['file'])) {
+                        $nuevoId = wp_insert_attachment([
+                            'guid'           => $subida2['url'],
+                            'post_mime_type' => $subida2['type'],
+                            'post_title'     => preg_replace('/\.[^.]+$/', '', basename($subida2['file'])),
+                            'post_content'   => '',
+                            'post_status'    => 'inherit'
+                        ], $subida2['file']);
+                        if (!is_wp_error($nuevoId)) {
+                            $meta2 = wp_generate_attachment_metadata($nuevoId, $subida2['file']);
+                            wp_update_attachment_metadata($nuevoId, $meta2);
+                            update_post_meta($nuevoId, '_glory_asset_source', $rutaAssetRelativa);
+                            update_post_meta($nuevoId, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
+                            set_transient($cacheKey, (int) $nuevoId, HOUR_IN_SECONDS);
+                            return (int) $nuevoId;
+                        }
+                    }
+                }
+            }
+
+            // Asegurar metas de trazabilidad
             if (!metadata_exists('post', $id, '_glory_asset_source')) {
                 update_post_meta($id, '_glory_asset_source', $rutaAssetRelativa);
+            }
+            if (!metadata_exists('post', $id, '_glory_asset_requested')) {
+                update_post_meta($id, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
             }
 
             set_transient($cacheKey, $id, HOUR_IN_SECONDS);
@@ -290,10 +414,42 @@ class AssetsUtility
         $metadatosAdjunto = wp_generate_attachment_metadata($idAdjunto, $subida['file']);
         wp_update_attachment_metadata($idAdjunto, $metadatosAdjunto);
         update_post_meta($idAdjunto, '_glory_asset_source', $rutaAssetRelativa);
+        update_post_meta($idAdjunto, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
 
         GloryLogger::info("AssetsUtility: El asset '{$nombreArchivo}' ha sido importado a la Biblioteca de Medios.", ['attachment_id' => $idAdjunto]);
         set_transient($cacheKey, $idAdjunto, HOUR_IN_SECONDS);
 
         return $idAdjunto;
+    }
+
+    public static function importTemaAssets(): void
+    {
+        self::importAllFromAlias('tema');
+    }
+
+    private static function importAllFromAlias(string $alias): void
+    {
+        if (!isset(self::$assetPaths[$alias])) {
+            return;
+        }
+        $dir = get_template_directory() . '/' . self::$assetPaths[$alias] . '/';
+        if (!is_dir($dir)) {
+            return;
+        }
+        $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        foreach ($extensions as $ext) {
+            $files = glob($dir . '*.' . $ext);
+            if (!is_array($files)) {
+                continue;
+            }
+            foreach ($files as $file) {
+                if (!is_file($file)) {
+                    continue;
+                }
+                $basename = basename($file);
+                $assetRef = $alias . '::' . $basename;
+                self::get_attachment_id_from_asset($assetRef);
+            }
+        }
     }
 }

@@ -32,6 +32,10 @@ class AvadaIntegration
         if (class_exists(AvadaResponsiveTypographyIntegration::class)) {
             AvadaResponsiveTypographyIntegration::register();
         }
+        // Habilitar Avada Builder para todos los CPT públicos automáticamente.
+        if (class_exists(AvadaBuilderCptSupport::class)) {
+            AvadaBuilderCptSupport::register();
+        }
         if ( ! function_exists('add_action') ) {
             return;
         }
@@ -49,6 +53,10 @@ class AvadaIntegration
         if (class_exists($gloryImgRegistrar) && method_exists($gloryImgRegistrar, 'registerElement')) {
             $gloryImgRegistrar::registerElement();
         }
+        $gloryGalleryRegistrar = '\\Glory\\Integration\\Avada\\Elements\\GloryGallery\\GloryGalleryRegistrar';
+        if (class_exists($gloryGalleryRegistrar) && method_exists($gloryGalleryRegistrar, 'registerElement')) {
+            $gloryGalleryRegistrar::registerElement();
+        }
     }
 
     public static function ensureShortcode(): void
@@ -60,6 +68,10 @@ class AvadaIntegration
         $gloryImgRegistrar = '\\Glory\\Integration\\Avada\\Elements\\GloryImage\\GloryImageRegistrar';
         if (class_exists($gloryImgRegistrar) && method_exists($gloryImgRegistrar, 'ensureShortcode')) {
             $gloryImgRegistrar::ensureShortcode();
+        }
+        $gloryGalleryRegistrar = '\\Glory\\Integration\\Avada\\Elements\\GloryGallery\\GloryGalleryRegistrar';
+        if (class_exists($gloryGalleryRegistrar) && method_exists($gloryGalleryRegistrar, 'ensureShortcode')) {
+            $gloryGalleryRegistrar::ensureShortcode();
         }
     }
 

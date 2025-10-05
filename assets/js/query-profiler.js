@@ -5,6 +5,46 @@
   var data = window.GloryQueryProfilerData || null;
   if (!data || !data.enabled) return;
 
+  function detectFusionBuilderFallback() {
+    try {
+      if (window.location && typeof window.location.search === 'string' && window.location.search.indexOf('fb-edit') !== -1) {
+        return true;
+      }
+    } catch (e) {}
+
+    try {
+      if (window.self !== window.top) {
+        if (window.top.location && typeof window.top.location.search === 'string' && window.top.location.search.indexOf('fb-edit') !== -1) {
+          return true;
+        }
+        if (window.parent && window.parent.document && window.parent.document.querySelector('.fusion-builder-live-toolbar')) {
+          return true;
+        }
+      }
+    } catch (e) {}
+
+    try {
+      if (document.querySelector('.fusion-builder-live-toolbar')) {
+        return true;
+      }
+    } catch (e) {}
+
+    return false;
+  }
+
+  var fusionBuilderActive = false;
+  if (typeof window.isFusionBuilderActive === 'function') {
+    fusionBuilderActive = window.isFusionBuilderActive();
+  } else if (typeof window.FUSION_BUILDER_ACTIVE !== 'undefined') {
+    fusionBuilderActive = !!window.FUSION_BUILDER_ACTIVE;
+  } else {
+    fusionBuilderActive = detectFusionBuilderFallback();
+  }
+
+  if (fusionBuilderActive) {
+    return;
+  }
+
   function createPanel() {
     if (document.getElementById('glory-query-profiler')) return;
 

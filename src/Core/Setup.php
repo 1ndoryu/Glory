@@ -15,6 +15,7 @@ use Glory\Services\LicenseManager;
 use Glory\Core\GloryLogger;
 
 use Glory\Admin\OpcionPanelController;
+use Glory\Admin\DatabaseExportController;
 use Glory\Handler\FormHandler;
 use Glory\Admin\SyncController;
 use Glory\Admin\TaxonomyMetaManager;
@@ -126,6 +127,11 @@ class Setup
 
         if (GloryFeatures::isActive('opcionManagerSync') !== false) {
             (new OpcionPanelController())->registerHooks();
+        }
+
+        // Panel de exportación de base de datos
+        if (GloryFeatures::isActive('databaseExporter') !== false) {
+            (new DatabaseExportController())->registerHooks();
         }
     }
 }

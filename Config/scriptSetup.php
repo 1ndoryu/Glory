@@ -49,6 +49,15 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
         'nonce'              => wp_create_nonce('globalNonce'),
         'nombreUsuario'      => is_user_logged_in() ? wp_get_current_user()->display_name : '',
         'username'           => is_user_logged_in() ? wp_get_current_user()->user_login : '',
+        
+        // Configuración específica de Avada (agnóstico en el JS)
+        'criticalScriptKeywords' => Compatibility::avadaActivo() ? [
+            'formCreatorConfig',
+            'fusion_form',
+            'fusionAppConfig',
+            'avadaVars',
+            'avadaMenuVars'
+        ] : [],
     ];
 
     // Permite al tema modificar fácilmente esta configuración
@@ -61,7 +70,7 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
         'glory-gloryajaxnav',
         '/Glory/assets/js/genericAjax/gloryAjaxNav.js',
         [
-            'deps'      => ['jquery'],
+            'deps'      => ['jquery', 'fusionBuilderDetect'],
             'in_footer' => true,
             'localize'  => [
                 'nombreObjeto' => 'gloryNavConfig',
@@ -69,6 +78,57 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
             ]
         ]
     );
+
+    // Hook agnóstico para Fusion Builder: configurar hooks después de localizar datos
+    if (Compatibility::avadaActivo()) {
+        add_action('wp_footer', function() {
+            ?>
+            <script>
+            (function(){
+                // Extender configuración de Glory Nav con hooks específicos de Fusion Builder
+                if (window.gloryNavConfig) {
+                    // Hook para abortar inicialización si Fusion Builder está activo
+                    window.gloryNavConfig.shouldAbortInit = function() {
+                        return window.isFusionBuilderActive && window.isFusionBuilderActive();
+                    };
+                    
+                    // Hook para saltar AJAX en enlaces de Fusion Builder
+                    window.gloryNavConfig.shouldSkipAjax = function(url, linkElement) {
+                        // Si estamos en modo Fusion Builder, saltar AJAX
+                        if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
+                            return true;
+                        }
+                        // Si el enlace apunta a Fusion Builder, saltar AJAX
+                        try {
+                            const testUrl = new URL(url, window.location.origin);
+                            if (testUrl.searchParams.has('fb-edit')) {
+                                return true;
+                            }
+                        } catch (e) {
+                            // ignore parsing errors
+                        }
+                        // Devolver undefined para continuar con lógica por defecto
+                        return undefined;
+                    };
+                }
+            })();
+            </script>
+            <?php
+        }, 5); // Prioridad 5 para que se ejecute antes que el script principal
+    }
+
+    // Bridge para re-inicializar Avada Forms después de navegación AJAX
+    if (Compatibility::avadaActivo()) {
+        AssetManager::define(
+            'script',
+            'glory-avada-form-bridge',
+            '/Glory/assets/js/avada-form-bridge.js',
+            [
+                'deps'      => ['jquery', 'glory-gloryajaxnav'],
+                'in_footer' => true,
+            ]
+        );
+    }
 }
 
 AssetManager::defineFolder(
@@ -87,6 +147,7 @@ AssetManager::defineFolder(
         'disableMenuClicksInFusionBuilder.js',
         'fusionBuilderDetect.js',
         'gloryAjaxNav.js',
+        'avada-form-bridge.js',
         'gloryForm.js',
         'gloryBusqueda.js',
         'gloryAjax.js',
@@ -107,6 +168,28 @@ AssetManager::defineFolder(
         'gloryContentActions.js',
         // Excluir el perfilador para definirlo de forma controlada abajo
         'query-profiler.js'
+    ]
+);
+
+AssetManager::define(
+    'script',
+    'glory-glory-toggle',
+    '/Glory/assets/js/glory-toggle.js',
+    [
+        'deps'      => [],
+        'in_footer' => true,
+        'area'      => 'frontend',
+    ]
+);
+
+AssetManager::define(
+    'script',
+    'glory-horizontal-drag',
+    '/Glory/assets/js/glory-horizontal-drag.js',
+    [
+        'deps'      => [],
+        'in_footer' => true,
+        'area'      => 'frontend',
     ]
 );
 
@@ -415,7 +498,7 @@ AssetManager::define(
     'glory-query-profiler',
     '/Glory/assets/js/query-profiler.js',
     [
-        'deps'      => ['jquery'],
+        'deps'      => ['jquery', 'fusionBuilderDetect'],
         'in_footer' => true,
         'area'      => 'both',
         'dev_mode'  => true,

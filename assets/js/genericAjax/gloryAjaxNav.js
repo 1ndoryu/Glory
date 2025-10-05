@@ -16,7 +16,16 @@
             '\\.(pdf|zip|rar|jpg|jpeg|png|gif|webp|mp3|mp4|xml|txt|docx|xlsx)$' // Common file extensions
         ],
         ignoreUrlParams: ['s', 'nocache'], // Query params that prevent caching
-        noAjaxClass: 'noAjax' // Class name to manually disable AJAX on links/containers
+        noAjaxClass: 'noAjax', // Class name to manually disable AJAX on links/containers
+        
+        // Agnostic configuration: Keywords to identify critical inline scripts to extract/execute
+        criticalScriptKeywords: [], // Array of strings to search for in inline scripts (e.g., ['appConfig', 'siteVars'])
+        
+        // Agnostic hook: Custom function to determine if AJAX should be skipped
+        shouldSkipAjax: null, // function(url: string, linkElement: HTMLAnchorElement): boolean
+        
+        // Agnostic hook: Custom function to check if initialization should abort
+        shouldAbortInit: null // function(): boolean
     };
 
     // Merge defaults with user-provided config (prefer a specific object to avoid collisions)
@@ -63,24 +72,215 @@
     }
 
     /**
+     * Ejecuta los <script> embebidos dentro de un contenedor HTML ya parseado.
+     * Necesario porque innerHTML no ejecuta scripts por defecto.
+     * @param {Element} containerEl
+     */
+    function executeInlineScriptsFromElement(containerEl) {
+        if (!containerEl) return;
+        const scripts = containerEl.querySelectorAll('script');
+        scripts.forEach((oldScript) => {
+            const newScript = document.createElement('script');
+            // Copiar todos los atributos tal cual
+            for (let i = 0; i < oldScript.attributes.length; i++) {
+                const attr = oldScript.attributes[i];
+                newScript.setAttribute(attr.name, attr.value);
+            }
+            // Si es inline, copiar su contenido
+            if (!oldScript.src) {
+                newScript.textContent = oldScript.textContent || '';
+            }
+            // Insertar en el documento para ejecutar
+            (document.body || document.documentElement).appendChild(newScript);
+            // Opcional: remover después para no ensuciar el DOM
+            // setTimeout(() => newScript.parentNode && newScript.parentNode.removeChild(newScript), 0);
+        });
+    }
+
+    /**
+     * Ejecuta scripts a partir de un string HTML (usado para contenido cacheado).
+     * @param {string} htmlString
+     */
+    function executeInlineScriptsFromHTML(htmlString) {
+        if (!htmlString) return;
+        const tmp = document.createElement('div');
+        tmp.innerHTML = htmlString;
+        executeInlineScriptsFromElement(tmp);
+    }
+
+    /**
+     * Extrae y opcionalmente ejecuta inline scripts críticos del documento
+     * Busca scripts que contengan palabras clave configuradas en criticalScriptKeywords.
+     * @param {Document} doc - Documento parseado
+     * @param {boolean} executeNow - Si true, ejecuta los scripts inmediatamente
+     * @returns {Array} - Array de códigos de scripts encontrados
+     */
+    function extractAndExecuteHeadScripts(doc, executeNow = false) {
+        const scriptCodes = [];
+        
+        // Si no hay keywords configuradas, no extraer nada
+        if (!config.criticalScriptKeywords || !config.criticalScriptKeywords.length) {
+            return scriptCodes;
+        }
+        
+        try {
+            // Buscar en head Y body (algunos CMS ponen scripts inline en cualquier lugar)
+            const containers = [
+                doc.head || doc.getElementsByTagName('head')[0],
+                doc.body || doc.getElementsByTagName('body')[0]
+            ];
+            
+            containers.forEach(container => {
+                if (!container) return;
+                
+                // Buscar scripts inline (sin src)
+                const scripts = container.querySelectorAll('script:not([src])');
+                
+                scripts.forEach((oldScript) => {
+                    const code = oldScript.textContent || '';
+                    if (!code || code.length < 10) return; // Ignorar scripts vacíos o muy cortos
+                    
+                    // Detectar scripts críticos basándose en keywords configuradas
+                    const isCriticalScript = config.criticalScriptKeywords.some(keyword => 
+                        code.indexOf(keyword) !== -1
+                    );
+                    
+                    if (isCriticalScript) {
+                        // Evitar duplicados
+                        if (!scriptCodes.includes(code)) {
+                            scriptCodes.push(code);
+                            gloryLog(`Found critical script in ${container.tagName}: ${code.substring(0, 80).replace(/\n/g, ' ')}...`);
+                            
+                            if (executeNow) {
+                                const ns = document.createElement('script');
+                                ns.textContent = code;
+                                ns.setAttribute('data-glory-injected', 'config');
+                                ns.setAttribute('data-glory-source', container.tagName.toLowerCase());
+                                (document.head || document.body || document.documentElement).appendChild(ns);
+                            }
+                        }
+                    }
+                });
+            });
+            
+            if (scriptCodes.length > 0) {
+                if (executeNow) {
+                    gloryLog(`✓ Executed ${scriptCodes.length} critical config scripts`);
+                } else {
+                    gloryLog(`✓ Extracted ${scriptCodes.length} critical config scripts for caching`);
+                }
+            } else {
+                gloryLog(`⚠ No critical config scripts found in document`);
+            }
+        } catch(_e) {
+            gloryLog('Error extracting config scripts:', _e);
+        }
+        
+        return scriptCodes;
+    }
+
+    /**
+     * Normaliza URL absoluta para comparación.
+     */
+    function toAbsoluteUrl(url) {
+        try { return new URL(url, window.location.origin).href; } catch(_e){ return url; }
+    }
+
+    /**
+     * Comprueba si un <script src> ya está presente en el documento.
+     */
+    function isScriptLoaded(src) {
+        const abs = toAbsoluteUrl(src);
+        const nodes = document.querySelectorAll('script[src]');
+        for (let i=0;i<nodes.length;i++) {
+            if (toAbsoluteUrl(nodes[i].getAttribute('src')) === abs) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Comprueba si un <link rel="stylesheet"> ya está presente en el documento.
+     */
+    function isStylesheetLoaded(href) {
+        const abs = toAbsoluteUrl(href);
+        const links = document.querySelectorAll('link[rel="stylesheet"][href]');
+        for (let i=0;i<links.length;i++) {
+            if (toAbsoluteUrl(links[i].getAttribute('href')) === abs) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Carga scripts/estilos externos del documento respuesta que aún no existan.
+     * Devuelve una promesa que resuelve cuando los scripts añadidos terminan de cargar.
+     */
+    function loadExternalAssetsFromDoc(doc) {
+        return new Promise((resolve) => {
+            try {
+                const head = document.head || document.getElementsByTagName('head')[0];
+                const body = document.body || document.documentElement;
+
+                // Estilos primero (no bloquean)
+                const newLinks = [];
+                doc.querySelectorAll('link[rel="stylesheet"][href]').forEach((lnk) => {
+                    const href = lnk.getAttribute('href');
+                    if (!href || isStylesheetLoaded(href)) return;
+                    const nl = document.createElement('link');
+                    nl.rel = 'stylesheet';
+                    nl.href = toAbsoluteUrl(href);
+                    head.appendChild(nl);
+                    newLinks.push(nl);
+                });
+
+                // Scripts externos, preservar orden de aparición
+                const scripts = Array.prototype.slice.call(doc.querySelectorAll('script[src]'));
+                const toLoad = scripts.filter(s => s.getAttribute('src') && !isScriptLoaded(s.getAttribute('src')));
+                if (!toLoad.length) {
+                    resolve();
+                    return;
+                }
+                // Carga secuencial para mantener orden y dependencias
+                const loadSequential = (index) => {
+                    if (index >= toLoad.length) { resolve(); return; }
+                    const oldScript = toLoad[index];
+                    const ns = document.createElement('script');
+                    for (let i=0;i<oldScript.attributes.length;i++) {
+                        const attr = oldScript.attributes[i];
+                        if (attr.name === 'src') continue;
+                        ns.setAttribute(attr.name, attr.value);
+                    }
+                    ns.src = toAbsoluteUrl(oldScript.getAttribute('src'));
+                    ns.onload = () => loadSequential(index + 1);
+                    ns.onerror = () => loadSequential(index + 1);
+                    (body || document.documentElement).appendChild(ns);
+                };
+                loadSequential(0);
+            } catch(_e) {
+                resolve();
+            }
+        });
+    }
+
+    // Nota: La re-inicialización de librerías específicas (Avada u otras)
+    // debe realizarse fuera de este archivo para mantenerlo agnóstico.
+    // Escuchar 'gloryRecarga' en scripts puente dedicados.
+
+    /**
      * Checks if a URL should be handled by standard browser navigation.
      * @param {string | undefined} url - The URL to check.
      * @param {HTMLAnchorElement} linkElement - The clicked link element.
      * @returns {boolean} - True to skip AJAX, false to use AJAX.
      */
     function skipAjax(url, linkElement) {
-        // Si estamos en modo Fusion Builder o el enlace apunta a ese modo, saltar AJAX completamente
-        if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
-            return true;
-        }
-        try {
-            const testUrl = new URL(url, window.location.origin);
-            if (testUrl.searchParams.has('fb-edit')) {
-                return true;
+        // Agnostic hook: Allow external logic to override skip decision
+        if (typeof config.shouldSkipAjax === 'function') {
+            const customDecision = config.shouldSkipAjax(url, linkElement);
+            if (customDecision === true || customDecision === false) {
+                return customDecision;
             }
-        } catch (e) {
-            // ignore parsing errors
+            // If hook returns undefined/null, continue with default logic
         }
+        
         if (!url) return true;
         const currentOrigin = window.location.origin;
         const urlObject = new URL(url, currentOrigin); // Handles relative URLs correctly
@@ -162,13 +362,36 @@
         // Use cache if available and caching is enabled/allowed for this URL
         if (pageCache[url] && shouldCache(url)) {
             gloryLog(`Loading from cache: ${url}`);
-            contentElement.innerHTML = pageCache[url];
+            contentElement.innerHTML = pageCache[url].content || pageCache[url];
             if (pushState) {
                 history.pushState({url: url}, '', url);
             }
             // Restablecer posición de scroll
             resetScrollPosition();
-            triggerPageReady(); // Re-init scripts for cached content
+            
+            // Ejecutar scripts de configuración del head si están cacheados
+            if (pageCache[url].headScripts) {
+                gloryLog('Executing cached head scripts...');
+                pageCache[url].headScripts.forEach((scriptCode) => {
+                    try {
+                        const ns = document.createElement('script');
+                        ns.textContent = scriptCode;
+                        ns.setAttribute('data-glory-cached', 'head-config');
+                        (document.head || document.body).appendChild(ns);
+                    } catch(_e) {}
+                });
+            }
+            
+            // Ejecutar scripts embebidos (los <script> del contenido cacheado)
+            const cachedContent = pageCache[url].content || pageCache[url];
+            executeInlineScriptsFromHTML(cachedContent);
+            
+            // Pequeño delay antes de disparar el evento
+            setTimeout(() => {
+                gloryLog('Triggering gloryRecarga from cache...');
+                // Disparar evento para que otros scripts (agnóstico)
+                triggerPageReady();
+            }, 50);
             return;
         }
 
@@ -210,10 +433,16 @@
                 contentElement.innerHTML = newContent.innerHTML;
                 if (newTitle) document.title = newTitle.textContent;
 
-                // Cache if applicable
+                // Extraer scripts del head ANTES de procesarlos (para cache y ejecución)
+                const headScripts = extractAndExecuteHeadScripts(doc, false);
+                
+                // Cache if applicable - guardar tanto contenido como scripts del head
                 if (shouldCache(url)) {
-                    pageCache[url] = newContent.innerHTML;
-                    gloryLog(`Cached: ${url}`);
+                    pageCache[url] = {
+                        content: newContent.innerHTML,
+                        headScripts: headScripts
+                    };
+                    gloryLog(`Cached: ${url} (with ${headScripts.length} head scripts)`);
                 }
 
                 // Update History
@@ -237,8 +466,40 @@
                     }, 150); // Delay before fade out
                 }
 
-                // Trigger re-initialization for dynamically loaded content
-                triggerPageReady();
+                // PASO 1: Ejecutar scripts inline de configuración del <head>
+                // (p.ej. formCreatorConfig, fusionAppConfig) ANTES de cargar scripts externos
+                //gloryLog('Step 1: Executing inline head config scripts...');
+                if (headScripts && headScripts.length > 0) {
+                    headScripts.forEach((scriptCode) => {
+                        try {
+                            const ns = document.createElement('script');
+                            ns.textContent = scriptCode;
+                            ns.setAttribute('data-glory-executed', 'head-config');
+                            (document.head || document.body).appendChild(ns);
+                        } catch(_e) {
+                            //gloryLog('Error executing cached head script:', _e);
+                        }
+                    });
+                    //gloryLog(`Executed ${headScripts.length} head scripts from extraction`);
+                }
+
+                // PASO 2: Cargar assets externos adicionales (scripts/estilos) y esperar a que terminen
+                //gloryLog('Step 2: Loading external assets...');
+                loadExternalAssetsFromDoc(doc).then(() => {
+                    //gloryLog('Step 2: External assets loaded');
+                    
+                    // PASO 3: Ejecutar scripts embebidos presentes en el nuevo contenido
+                    //gloryLog('Step 3: Executing inline content scripts...');
+                    executeInlineScriptsFromElement(newContent);
+                    
+                    // PASO 4: Pequeño delay para asegurar que todo esté inicializado
+                    // antes de disparar el evento gloryRecarga
+                    setTimeout(() => {
+                        //gloryLog('Step 4: Triggering gloryRecarga event...');
+                        // Trigger re-initialization for dynamically loaded content (agnóstico)
+                        triggerPageReady();
+                    }, 50);
+                });
             })
             .catch(error => {
                 console.error('AJAX Load Error:', error);
@@ -345,12 +606,9 @@
     window.gloryAjaxNavInitialized = true;
 
     document.addEventListener('DOMContentLoaded', () => {
-        // Comprobación extra por si el parámetro ?fb-edit se añade *después* de que este
-        // script se haya ejecutado inicialmente (por ejemplo, cuando Fusion Builder
-        // actualiza la URL con history.replaceState()). Si detectamos "fb-edit" en
-        // este punto, abortamos completamente la inicialización.
-        if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
-            gloryLog('Glory AJAX Nav detenido en DOMContentLoaded por Fusion Builder');
+        // Double-check abort condition after DOM is ready (in case conditions change)
+        if (typeof config.shouldAbortInit === 'function' && config.shouldAbortInit()) {
+            gloryLog('Glory AJAX Nav aborted in DOMContentLoaded by shouldAbortInit hook');
             return;
         }
 
@@ -364,7 +622,13 @@
         if (config.cacheEnabled) {
             const initialUrl = window.location.href;
             if (shouldCache(initialUrl) && contentElement.innerHTML) {
-                pageCache[initialUrl] = contentElement.innerHTML;
+                // Extraer scripts del head de la página inicial (sin ejecutar, ya están en el documento)
+                const initialHeadScripts = extractAndExecuteHeadScripts(document, false);
+                pageCache[initialUrl] = {
+                    content: contentElement.innerHTML,
+                    headScripts: initialHeadScripts
+                };
+                gloryLog(`Initial page cached: ${initialUrl} (with ${initialHeadScripts.length} head scripts)`);
                 // Use replaceState for the initial load so it doesn't create a redundant history entry
                 history.replaceState({url: initialUrl}, '', initialUrl);
             }

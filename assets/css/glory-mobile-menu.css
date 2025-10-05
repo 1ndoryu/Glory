@@ -1,0 +1,267 @@
+/* GLORY MOBILE MENU STYLES */
+/* Compatible con Avada Header nativo y Fusion Builder Menu */
+
+/* --- VARIABLES Y ESTILOS BASE --- */
+body.mobile-menu-design-glory,
+.mobile-mode-glory {
+    --color-black: #000;
+    --color-greyDark: #1d1e20;
+    --color-greyLight: #efefef;
+    --color-greyLighter: #f8f8f8;
+    --color-offBlack: #0f1012;
+    --color-white: #fff;
+}
+
+/* --- BOTÓN HAMBURGUESA --- */
+body.mobile-menu-design-glory .burger,
+.mobile-mode-glory .glory-menu-burger {
+    align-items: center;
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    height: 4.9rem;
+    justify-content: center;
+    position: relative;
+    row-gap: .8rem;
+    transition: background-color .3s, color .2s;
+    width: 4.9rem;
+    z-index: 1003;
+    background-color: rgba(120, 120, 120, 0.1);
+    color: var(--color-offBlack);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+}
+
+body.mobile-menu-design-glory .burger span {
+    background-color: currentColor;
+    display: block;
+    height: 1px;
+    position: relative;
+    top: 0;
+    transition: transform .3s, top .3s;
+    width: 1.9rem;
+}
+
+body.mobile-menu-design-glory.glory-menu-open .burger {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: none;
+}
+
+body.mobile-menu-design-glory.glory-menu-open .burger span:first-child {
+    top: 4.5px;
+    transform: rotate(45deg);
+}
+
+body.mobile-menu-design-glory.glory-menu-open .burger span:nth-child(2) {
+    top: -4.5px;
+    transform: rotate(-45deg);
+}
+
+/* --- ESTILOS DE COLOR ADAPTATIVOS --- */
+body.mobile-menu-design-glory .burger {
+    color: #333333; /* Color por defecto para fondos claros */
+    transition: color 0.4s ease;
+}
+
+body.mobile-menu-design-glory.has-dark-background .burger {
+    color: #ffffff; /* Color para fondos oscuros */
+}
+
+/* — Evitar que el burger se ponga con colores extraños cuando el menú está abierto — */
+body.mobile-menu-design-glory.glory-menu-open .burger {
+    color: #333 !important;
+}
+
+/* --- BACKGROUND OVERLAY --- */
+.glory-mobile-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    border: none;
+    cursor: pointer;
+    z-index: 1001;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.4s, visibility 0.4s;
+    pointer-events: none;
+}
+
+body.mobile-menu-design-glory.glory-menu-open .glory-mobile-background {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: all;
+}
+
+/* --- MENÚ DE NAVEGACIÓN MÓVIL --- */
+body.mobile-menu-design-glory .fusion-mobile-nav-holder {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: rgba(248, 248, 248, 0.7);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    padding: 10rem 5.1282051282vw 2rem;
+    display: none;
+    flex-direction: column;
+    z-index: 1002;
+    visibility: hidden;
+    transform: translateY(-100%);
+    opacity: 0;
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.mobile-menu-design-glory.glory-menu-open .fusion-mobile-nav-holder {
+    display: flex;
+    visibility: visible;
+    transform: translateY(0);
+    opacity: 1;
+}
+
+/* --- TÍTULO DE NAVEGACIÓN --- */
+body.mobile-menu-design-glory .fusion-mobile-nav-holder::before {
+    content: "Menú";
+    color: #333;
+    font-size: 1.8rem;
+    font-weight: 350;
+    text-align: center;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid #e0e0e0;
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(0.33, 1, 0.68, 1) 0.2s;
+}
+
+body.mobile-menu-design-glory.glory-menu-open .fusion-mobile-nav-holder::before {
+    opacity: 1;
+}
+
+/* --- LISTA DE MENÚ --- */
+body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu {
+    margin-top: 3rem;
+    padding: 0;
+    list-style: none;
+    text-align: left;
+    counter-reset: list-item;
+}
+
+body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu > li {
+    font-size: 2.5rem;
+    font-weight: 350;
+    line-height: 1.2;
+    padding: 0.6rem 0;
+    opacity: 0;
+    display: flex;
+    gap: 4rem;
+    align-items: center;
+    transition: opacity 0.6s cubic-bezier(0.33, 1, 0.68, 1);
+    border-bottom: none;
+}
+
+body.mobile-menu-design-glory.glory-menu-open .fusion-mobile-nav-holder .fusion-mobile-menu > li {
+    opacity: 1;
+}
+
+/* Stagger effect para los items del menú */
+body.mobile-menu-design-glory.glory-menu-open .fusion-mobile-nav-holder .fusion-mobile-menu > li:nth-child(1) {
+    transition-delay: 0.25s;
+}
+body.mobile-menu-design-glory.glory-menu-open .fusion-mobile-nav-holder .fusion-mobile-menu > li:nth-child(2) {
+    transition-delay: 0.30s;
+}
+body.mobile-menu-design-glory.glory-menu-open .fusion-mobile-nav-holder .fusion-mobile-menu > li:nth-child(3) {
+    transition-delay: 0.35s;
+}
+body.mobile-menu-design-glory.glory-menu-open .fusion-mobile-nav-holder .fusion-mobile-menu > li:nth-child(4) {
+    transition-delay: 0.40s;
+}
+body.mobile-menu-design-glory.glory-menu-open .fusion-mobile-nav-holder .fusion-mobile-menu > li:nth-child(5) {
+    transition-delay: 0.45s;
+}
+body.mobile-menu-design-glory.glory-menu-open .fusion-mobile-nav-holder .fusion-mobile-menu > li:nth-child(6) {
+    transition-delay: 0.50s;
+}
+
+body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu > li::before {
+    content: "0" counter(list-item);
+    counter-increment: list-item;
+    font-size: 1.2rem;
+    font-weight: 350;
+    color: #999;
+    flex-shrink: 0;
+}
+
+body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu > li > a {
+    color: #333;
+    text-decoration: none;
+    transition: color 0.2s;
+    flex: 1;
+}
+
+body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu > li > a:hover {
+    color: #000;
+}
+
+/* --- SUBMENÚS --- */
+body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu li.menu-item-has-children > .fusion-open-submenu {
+    display: none;
+}
+
+body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu li ul {
+    position: static;
+    display: none;
+    margin-top: 1rem;
+    padding-left: 2rem;
+    background: transparent;
+    box-shadow: none;
+}
+
+body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu li ul li {
+    font-size: 1.8rem;
+    padding: 0.4rem 0;
+}
+
+body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu li ul li::before {
+    content: "—";
+    margin-right: 1rem;
+    color: #999;
+}
+
+/* --- PREVENIR SCROLL DEL BODY CUANDO EL MENÚ ESTÁ ABIERTO --- */
+body.mobile-menu-design-glory.glory-menu-open {
+    overflow: hidden;
+}
+
+/* --- AJUSTES RESPONSIVOS --- */
+@media only screen and (max-width: 640px) {
+    body.mobile-menu-design-glory .fusion-mobile-nav-holder {
+        padding: 8rem 5.1282051282vw 2rem;
+    }
+    
+    body.mobile-menu-design-glory .fusion-mobile-nav-holder .fusion-mobile-menu > li {
+        font-size: 2rem;
+        gap: 2rem;
+    }
+}
+
+/* --- COMPATIBILIDAD CON AVADA --- */
+body.mobile-menu-design-glory .fusion-mobile-menu-icons {
+    position: fixed;
+    top: 3rem;
+    right: 5.1282051282vw;
+    z-index: 1003;
+}
+
+/* Ajustar posición del logo en móvil para que no interfiera con el botón */
+body.mobile-menu-design-glory .fusion-logo {
+    z-index: 1000;
+}
+

@@ -1,0 +1,332 @@
+/**
+ * Glory Export Panel Styles
+ * Estilos para el panel de exportación de base de datos
+ */
+
+.glory-export-wrap {
+    max-width: 1400px;
+    margin: 20px 20px 20px 0;
+}
+
+.glory-export-wrap h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.glory-export-wrap h1 .dashicons {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+}
+
+.glory-export-container {
+    margin-top: 20px;
+}
+
+/* Cards */
+.glory-export-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.glory-export-card h2,
+.glory-export-card h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+}
+
+.glory-export-card h2 .dashicons,
+.glory-export-card h3 .dashicons {
+    color: #2271b1;
+}
+
+/* Form Fields */
+.glory-export-field-group {
+    margin-bottom: 25px;
+}
+
+.glory-export-field-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.glory-export-field-group .required {
+    color: #d63638;
+}
+
+.glory-export-field-group input[type="text"],
+.glory-export-field-group input[type="url"] {
+    width: 100%;
+    max-width: 600px;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.glory-readonly-input {
+    background-color: #f6f7f7;
+    color: #646970;
+    cursor: not-allowed;
+}
+
+.glory-export-field-group .description {
+    margin-top: 5px;
+    font-size: 13px;
+    color: #646970;
+}
+
+.glory-export-field-group input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* Info Box */
+.glory-export-info-box {
+    background: #f0f6fc;
+    border: 1px solid #c3ddf4;
+    border-radius: 4px;
+    padding: 15px 20px;
+    margin: 20px 0;
+}
+
+.glory-export-info-box h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #2271b1;
+}
+
+.glory-export-info-box ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style: none;
+}
+
+.glory-export-info-box li {
+    margin-bottom: 5px;
+    font-size: 13px;
+}
+
+.glory-export-info-box code {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-size: 12px;
+}
+
+/* Submit Button */
+.glory-export-submit {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #dcdcde;
+}
+
+.glory-export-submit .button-hero {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    height: auto;
+    font-size: 15px;
+}
+
+.glory-export-submit .button-hero:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Instructions Panel */
+.glory-export-instructions ol {
+    padding-left: 25px;
+}
+
+.glory-export-instructions li {
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.glory-export-instructions li strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #1d2327;
+}
+
+.glory-export-warning {
+    background: #fcf9e8;
+    border: 1px solid #f0e68c;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 20px;
+    display: flex;
+    align-items: start;
+    gap: 10px;
+}
+
+.glory-export-warning .dashicons {
+    color: #dba617;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+/* Export List */
+.glory-export-list {
+    margin-top: 30px;
+}
+
+.glory-export-list h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    margin-bottom: 15px;
+}
+
+.glory-export-list .wp-list-table {
+    margin-top: 15px;
+}
+
+.glory-export-list .wp-list-table td {
+    vertical-align: middle;
+}
+
+.glory-export-list .wp-list-table code {
+    background: #f6f7f7;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.glory-export-list .button-small {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 5px;
+    font-size: 12px;
+    padding: 4px 10px;
+    height: auto;
+    line-height: 1.4;
+}
+
+.glory-export-list .button-small .dashicons {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+}
+
+.glory-export-list form {
+    display: inline-block;
+}
+
+.glory-export-list .description {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Success/Error Messages */
+.notice.settings-error {
+    margin: 20px 0;
+}
+
+.notice.settings-error p {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notice.settings-error a.button {
+    margin-left: 10px;
+    text-decoration: none;
+}
+
+/* Loading State */
+.glory-export-form.loading {
+    position: relative;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.glory-export-form.loading::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .glory-export-wrap {
+        margin: 20px 10px;
+    }
+
+    .glory-export-card {
+        padding: 15px;
+    }
+
+    .glory-export-field-group input[type="text"],
+    .glory-export-field-group input[type="url"] {
+        max-width: 100%;
+    }
+
+    .glory-export-submit .button-hero {
+        width: 100%;
+        justify-content: center;
+        padding: 15px;
+    }
+
+    .glory-export-list .wp-list-table {
+        font-size: 13px;
+    }
+
+    .glory-export-list .button-small {
+        display: block;
+        margin-bottom: 5px;
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.glory-export-card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.glory-export-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.glory-export-list {
+    animation: fadeIn 0.3s ease-out 0.2s both;
+}
+

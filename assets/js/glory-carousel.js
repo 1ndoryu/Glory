@@ -11,6 +11,7 @@
 		var offset = 0;
 		var lastTimestamp = null;
 		var rafId = 0;
+		var running = false;
 
 		rootEl.style.willChange = 'transform';
 		rootEl.style.animation = 'none';
@@ -23,34 +24,23 @@
 
 		var gap = readGap();
 
-		// Asegurar que el contenido llena el ancho visible (y uno extra) para evitar huecos
-		(function ensureFilled(){
+		function measureContentWidth(){
 			var children = rootEl.children;
-			if (!children || !children.length) return;
-			// Medir ancho actual del contenido
-			var contentWidth = 0;
+			if (!children || !children.length) return 0;
+			var w = 0;
 			for (var i=0;i<children.length;i++){
-				contentWidth += children[i].offsetWidth + gap;
+				w += children[i].offsetWidth + gap;
 			}
-			var firstEl = children[0];
-			var firstW = firstEl ? (firstEl.offsetWidth + gap) : 0;
-			// Necesitamos al menos viewport + ancho de un ítem para que el bucle sea fluido
-			var needed = rootEl.clientWidth + firstW;
-			// Clonar en bloques de originales hasta llenar
-			var originals = Array.prototype.slice.call(children);
-			var safety = 0;
-			while (contentWidth < needed && safety < 4){
-				for (var j=0;j<originals.length && contentWidth < needed; j++){
-					var ref = originals[j];
-					var w = ref.offsetWidth + gap;
-					var clone = ref.cloneNode(true);
-					clone.setAttribute('data-glory-clone','1');
-					rootEl.appendChild(clone);
-					contentWidth += w;
-				}
-				safety++;
-			}
-		})();
+			return w;
+		}
+
+		function hasEnoughWidthForLoop(){
+			var first = rootEl.firstElementChild;
+			var firstW = first ? (first.offsetWidth + gap) : 0;
+			var contentW = measureContentWidth();
+			// Arranca si el contenido es más ancho que el contenedor (sin exigir + primer ítem)
+			return (contentW - rootEl.clientWidth) > 1 && firstW > 0;
+		}
 
 		function loop(ts){
 			if (!lastTimestamp) lastTimestamp = ts;
@@ -70,6 +60,25 @@
 
 			rootEl.style.transform = 'translateX(' + offset + 'px)';
 			rafId = requestAnimationFrame(loop);
+		}
+
+		function startLoopIfPossible(){
+			if (running) return;
+			if (!hasEnoughWidthForLoop()) return;
+			running = true;
+			offset = 0;
+			lastTimestamp = null;
+			rafId = requestAnimationFrame(loop);
+		}
+
+		function stopLoop(){
+			if (!running) return;
+			running = false;
+			rafId && cancelAnimationFrame(rafId);
+			rafId = 0;
+			rootEl.style.transform = '';
+			offset = 0;
+			lastTimestamp = null;
 		}
 
 		// Hover por item: añadir/quitar .is-hover en el item específico
@@ -98,24 +107,32 @@
 		rootEl.addEventListener('mouseover', onOver);
 		rootEl.addEventListener('mouseout', onOut);
 
-		// Recalcular gap al redimensionar
-		var onResize = function(){ gap = readGap(); };
+		// Recalcular gap al redimensionar y gestionar inicio/parada del loop
+		var onResize = function(){
+			gap = readGap();
+			if (!hasEnoughWidthForLoop()) {
+				stopLoop();
+			} else {
+				startLoopIfPossible();
+			}
+		};
 		window.addEventListener('resize', onResize);
+		// Reintentos tras el primer paint y tras posibles cargas de imagen
+		var retryId1 = setTimeout(startLoopIfPossible, 250);
+		var retryId2 = setTimeout(startLoopIfPossible, 1000);
+		var onImgLoad = function(){ startLoopIfPossible(); };
+		rootEl.addEventListener('load', onImgLoad, true);
 
 		rootEl.dataset.circular = 'true';
-		rafId = requestAnimationFrame(loop);
+		startLoopIfPossible();
 
-		instanceState.set(rootEl, { rafId: rafId, onResize: onResize, onOver: onOver, onOut: onOut });
+		instanceState.set(rootEl, { rafId: rafId, onResize: onResize, onOver: onOver, onOut: onOut, onImgLoad: onImgLoad, retryId1: retryId1, retryId2: retryId2 });
 
 		// Reinicio suave en eventos personalizados
 		document.addEventListener('gloryRecarga', function(){
 			if (rootEl){
-				rootEl.dataset.circular = '';
-				rootEl.style.transform = '';
-				lastTimestamp = null;
-				offset = 0;
-				rafId && cancelAnimationFrame(rafId);
-				rafId = requestAnimationFrame(loop);
+				stopLoop();
+				startLoopIfPossible();
 			}
 		});
 	}
@@ -128,6 +145,9 @@
 			if (state.onResize) window.removeEventListener('resize', state.onResize);
 			if (state.onOver) rootEl.removeEventListener('mouseover', state.onOver);
 			if (state.onOut) rootEl.removeEventListener('mouseout', state.onOut);
+			if (state.onImgLoad) rootEl.removeEventListener('load', state.onImgLoad, true);
+			if (state.retryId1) clearTimeout(state.retryId1);
+			if (state.retryId2) clearTimeout(state.retryId2);
 			instanceState.delete(rootEl);
 		}
 		rootEl.dataset.circular = '';

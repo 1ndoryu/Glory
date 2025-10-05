@@ -9,7 +9,14 @@ namespace Glory\Utility;
  */
 class TemplateRegistry
 {
-    /** @var array<string, array{label:string, callable:callable, applies_to:array}> */
+    /**
+     * @var array<string, array{
+     *     label:string,
+     *     callable:callable,
+     *     applies_to:array,
+     *     supports:array
+     * }>
+     */
     protected static $templates = [];
 
     /**
@@ -19,13 +26,15 @@ class TemplateRegistry
      * @param string   $label
      * @param callable $callable Firma recomendada: callable(\WP_Post $post, string $itemClass): void
      * @param string[] $appliesTo Lista de post types a los que aplica (vacío = aplica a todos)
+     * @param array<string,mixed> $supports
      */
-    public static function register(string $id, string $label, callable $callable, array $appliesTo = []): void
+    public static function register(string $id, string $label, callable $callable, array $appliesTo = [], array $supports = []): void
     {
         self::$templates[$id] = [
             'label'      => $label,
             'callable'   => $callable,
             'applies_to' => $appliesTo,
+            'supports'   => $supports,
         ];
     }
 
@@ -52,6 +61,14 @@ class TemplateRegistry
     public static function get(string $id): ?callable
     {
         return isset(self::$templates[$id]) ? self::$templates[$id]['callable'] : null;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public static function supports(string $id): array
+    {
+        return isset(self::$templates[$id]) ? (array) self::$templates[$id]['supports'] : [];
     }
 
     /**

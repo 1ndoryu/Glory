@@ -44,4 +44,21 @@
     // Útil cuando solo interesa conocer el estado al inicio y no se requiere reevaluar.
     global.FUSION_BUILDER_ACTIVE = isFusionBuilderActive();
 
+    // Permitir refrescar manualmente el flag desde otros scripts si fuera necesario.
+    global.refreshFusionBuilderFlag = function() {
+        try {
+            global.FUSION_BUILDER_ACTIVE = isFusionBuilderActive();
+        } catch (e) {}
+        return global.FUSION_BUILDER_ACTIVE;
+    };
+
+    // Reevaluar al cargar el DOM, útil cuando el toolbar o el parámetro llegan tarde.
+    if (global.document && global.document.addEventListener) {
+        global.document.addEventListener('DOMContentLoaded', function () {
+            try {
+                global.FUSION_BUILDER_ACTIVE = isFusionBuilderActive();
+            } catch (e) {}
+        });
+    }
+
 })(window); 

@@ -81,14 +81,23 @@ class PostSyncHandler
             return true;
         }
 
-        // Compara metadatos
-        foreach (($definition['metaEntrada'] ?? []) as $key => $value) {
-            if (get_post_meta($postDb->ID, $key, true) != $value) return true;
+        // Compara metadatos (excluyendo claves que pertenecen a taxonomías)
+        $taxonomies = get_object_taxonomies($postDb->post_type);
+        $metaEntrada = $definition['metaEntrada'] ?? [];
+        foreach ($metaEntrada as $key => $value) {
+            if (in_array($key, $taxonomies, true)) {
+                // Es una taxonomía; su asignación se maneja en relaciones, no como meta
+                continue;
+            }
+            if (get_post_meta($postDb->ID, $key, true) != $value) {
+                return true;
+            }
         }
 
         // Verifica si la imagen destacada está asignada.
         if (!empty($definition['imagenDestacadaAsset'])) {
             $currentThumbId = get_post_thumbnail_id($postDb->ID);
+            // En modo DEV puede haber cambios frecuentes; no forzar reimportación si ya hay una imagen
             if (empty($currentThumbId)) {
                 return true; // No hay imagen asignada pero la definición sí la exige.
             }
