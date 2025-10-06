@@ -44,7 +44,7 @@ class TemplateRegistry
      * @param string|null $postType
      * @return array<string, string>
      */
-    public static function options(string $postType = null): array
+    public static function options(?string $postType = null): array
     {
         $opts = [];
         foreach (self::$templates as $id => $def) {
