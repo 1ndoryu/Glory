@@ -3,6 +3,7 @@
 namespace Glory\Integration\Avada;
 
 use Glory\Core\GloryFeatures;
+use Glory\Integration\Compatibility;
 
 class AvadaIntegration
 {
@@ -15,7 +16,15 @@ class AvadaIntegration
         // Remueve la pestaña/sección "Portfolio" del panel de opciones globales de Avada.
         add_filter('avada_options_sections', [self::class, 'filterRemovePortfolioSection']);
 
+        add_action('admin_menu', function() {
+            if (class_exists(Compatibility::class) && method_exists(Compatibility::class, 'avadaActivo') && Compatibility::avadaActivo()) {
+                // Remueve el menú/página de opciones de Glory si existe.
+                remove_menu_page('glory-opciones');
+            }
+        }, 100);
+
         // Inyecta la sección "Glory" y puentea lectura/escritura con Avada Options.
+        # Nota de wandorius: esto parece necesitar ejecuptarse after_setup_theme' para que pueda funcionar, en caso de que falle, habrá que integrarlo en un archivo de carga temprana. 
         if (class_exists(AvadaOptionsBridge::class)) {
             AvadaOptionsBridge::register();
         }
