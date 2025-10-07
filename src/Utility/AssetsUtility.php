@@ -71,6 +71,44 @@ class AssetsUtility
         return file_exists($rutaLocal);
     }
 
+    /**
+     * Busca un adjunto existente que corresponda a un asset dado, sin importar/crear nada.
+     * Retorna null si no hay un adjunto válido o si el archivo físico del adjunto no existe.
+     */
+    public static function findExistingAttachmentIdForAsset(string $assetReference): ?int
+    {
+        if (!self::$isInitialized) self::init();
+        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
+        $rutaRelativaSolicitada = self::resolveAssetPath($alias, $nombreArchivo);
+        if (!$rutaRelativaSolicitada) {
+            return null;
+        }
+
+        $nombreArchivoBase = basename($rutaRelativaSolicitada);
+        $args = [
+            'post_type'      => 'attachment',
+            'post_status'    => 'inherit',
+            'posts_per_page' => 1,
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+            'meta_query'     => [
+                'relation' => 'OR',
+                [ 'key' => '_glory_asset_source',    'value' => $rutaRelativaSolicitada, 'compare' => '=' ],
+                [ 'key' => '_glory_asset_requested', 'value' => $rutaRelativaSolicitada, 'compare' => '=' ],
+                [ 'key' => '_wp_attached_file',      'value' => $nombreArchivoBase,      'compare' => 'LIKE' ],
+            ],
+        ];
+        $q = new \WP_Query($args);
+        if ($q->have_posts()) {
+            $id = (int) $q->posts[0];
+            $file = get_attached_file($id);
+            if ($file && file_exists($file)) {
+                return $id;
+            }
+        }
+        return null;
+    }
+
 
     public static function getRandomDefaultImageName(string $alias = 'glory'): ?string
     {

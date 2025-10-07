@@ -102,9 +102,12 @@ class PostSyncHandler
         // Verifica si la imagen destacada está asignada.
         if (!empty($definition['imagenDestacadaAsset'])) {
             $currentThumbId = get_post_thumbnail_id($postDb->ID);
-            // En modo DEV puede haber cambios frecuentes; no forzar reimportación si ya hay una imagen
             if (empty($currentThumbId)) {
-                return true; // No hay imagen asignada pero la definición sí la exige.
+                // Solo marcar que necesita update si existe un adjunto válido para el asset
+                $aid = \Glory\Utility\AssetsUtility::findExistingAttachmentIdForAsset((string) $definition['imagenDestacadaAsset']);
+                if ($aid) {
+                    return true;
+                }
             }
         }
 
