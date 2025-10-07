@@ -53,6 +53,14 @@ class MediaIntegrityService
         if ($assetRef) {
             $aid = AssetsUtility::get_attachment_id_from_asset($assetRef);
             if ($aid) {
+                // Asegurar que GUID apunte a URL válida (por si el adjunto existía con GUID roto)
+                $file = get_attached_file($aid);
+                if ($file && file_exists($file)) {
+                    $uploads = wp_get_upload_dir();
+                    $rel = ltrim(str_replace(trailingslashit($uploads['basedir']), '', $file), '/\\');
+                    $url  = trailingslashit($uploads['baseurl']) . str_replace(DIRECTORY_SEPARATOR, '/', $rel);
+                    wp_update_post(['ID' => $aid, 'guid' => $url]);
+                }
                 set_post_thumbnail($postId, $aid);
                 return;
             }
@@ -140,6 +148,14 @@ class MediaIntegrityService
             }
 
             if ($newId) {
+                // Actualizar GUID por si acaso
+                $file = get_attached_file($newId);
+                if ($file && file_exists($file)) {
+                    $uploads = wp_get_upload_dir();
+                    $rel = ltrim(str_replace(trailingslashit($uploads['basedir']), '', $file), '/\\');
+                    $url  = trailingslashit($uploads['baseurl']) . str_replace(DIRECTORY_SEPARATOR, '/', $rel);
+                    wp_update_post(['ID' => (int) $newId, 'guid' => $url]);
+                }
                 $repaired[] = (int) $newId;
                 $changed = true;
                 wp_update_post(['ID' => (int) $newId, 'post_parent' => $postId]);

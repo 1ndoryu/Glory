@@ -328,6 +328,13 @@ class AssetsUtility
                     wp_update_attachment_metadata($id, $meta);
                     update_post_meta($id, '_glory_asset_source', $rutaAssetRelativa);
                     update_post_meta($id, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
+                    // MUY IMPORTANTE: actualizar GUID a la nueva URL física
+                    if (isset($subida['url'])) {
+                        wp_update_post([
+                            'ID'   => $id,
+                            'guid' => $subida['url'],
+                        ]);
+                    }
                 } else {
                     // Si la reparación falla, importar como nuevo adjunto y devolver su ID
                     $nuevoId = null;
