@@ -16,6 +16,7 @@ class PostSyncHandler
     private const META_CLAVE_EDITADO_MANUALMENTE = '_glory_default_content_edited';
 
     private PostRelationHandler $relationHandler;
+    private MediaIntegrityService $mediaIntegrity;
 
     /**
      * Crea un nuevo post a partir de su definición.
@@ -32,6 +33,8 @@ class PostSyncHandler
 
         $this->relationHandler = new PostRelationHandler($postId);
         $this->relationHandler->setRelations($definition);
+        $this->mediaIntegrity = new MediaIntegrityService();
+        $this->mediaIntegrity->repairPostMedia($postId, $definition);
 
         GloryLogger::info("PostSyncHandler: Post '{$definition['slugDefault']}' (ID: {$postId}) creado.");
         return $postId;
@@ -54,6 +57,8 @@ class PostSyncHandler
 
         $this->relationHandler = new PostRelationHandler($postId);
         $this->relationHandler->setRelations($definition);
+        $this->mediaIntegrity = new MediaIntegrityService();
+        $this->mediaIntegrity->repairPostMedia($postId, $definition);
 
         if ($isForced) {
             $this->cleanupMeta($postId, $definition);
