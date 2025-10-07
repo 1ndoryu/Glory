@@ -42,8 +42,12 @@ class MediaIntegrityService
             $assetRef = $this->guessAssetRefFromBasename($basename) ?: $assetRef;
         }
 
-        if (!$assetRef && is_string($fallbackAssetRef) && $fallbackAssetRef !== '') {
-            $assetRef = $fallbackAssetRef;
+        if (!$assetRef) {
+            if (is_string($fallbackAssetRef) && $fallbackAssetRef !== '') {
+                $assetRef = $fallbackAssetRef;
+            } else {
+                $assetRef = $this->chooseFallbackAssetForPost($postId);
+            }
         }
 
         if ($assetRef) {
@@ -82,6 +86,22 @@ class MediaIntegrityService
                     update_post_meta($postId, $metaKey, $newIds);
                     foreach ($newIds as $aid) {
                         wp_update_post(['ID' => $aid, 'post_parent' => $postId]);
+                    }
+                }
+            } else {
+                // Generar una galería mínima de 3 imágenes por defecto
+                $fallbacks = $this->chooseFallbackGalleryForPost($postId, 3);
+                if (!empty($fallbacks)) {
+                    $newIds = [];
+                    foreach ($fallbacks as $asset) {
+                        $aid = AssetsUtility::get_attachment_id_from_asset((string) $asset);
+                        if ($aid) { $newIds[] = (int) $aid; }
+                    }
+                    if (!empty($newIds)) {
+                        update_post_meta($postId, $metaKey, $newIds);
+                        foreach ($newIds as $aid) {
+                            wp_update_post(['ID' => $aid, 'post_parent' => $postId]);
+                        }
                     }
                 }
             }
@@ -149,6 +169,43 @@ class MediaIntegrityService
             }
         }
         return null;
+    }
+
+    private function chooseFallbackAssetForPost(int $postId): string
+    {
+        // Usar imágenes default*. del alias 'glory' si existen, si no, una del alias 'colors'
+        $candidates = ['default.jpg','default1.jpg','default2.jpg','default3.jpg','default4.jpg'];
+        $pool = [];
+        foreach ($candidates as $name) {
+            $ref = 'glory::' . $name;
+            $url = AssetsUtility::imagenUrl($ref);
+            if (is_string($url) && $url !== '') { $pool[] = $ref; }
+        }
+        if (empty($pool)) {
+            // caer a una selección determinística de 'colors'
+            $colorList = \Glory\Utility\AssetsUtility::listImagesForAlias('colors');
+            if (is_array($colorList) && !empty($colorList)) {
+                $idx = abs(crc32((string) $postId)) % count($colorList);
+                return 'colors::' . $colorList[$idx];
+            }
+            return 'glory::default.jpg';
+        }
+        $idx = abs(crc32((string) $postId)) % count($pool);
+        return $pool[$idx];
+    }
+
+    private function chooseFallbackGalleryForPost(int $postId, int $count): array
+    {
+        $colorList = \Glory\Utility\AssetsUtility::listImagesForAlias('colors');
+        if (!is_array($colorList) || empty($colorList)) { return []; }
+        $result = [];
+        $total = count($colorList);
+        $seed = abs(crc32('gallery|' . (string) $postId));
+        for ($i = 0; $i < $count; $i++) {
+            $idx = ($seed + $i * 13) % $total; // step pseudo-primo
+            $result[] = 'colors::' . $colorList[$idx];
+        }
+        return array_values(array_unique($result));
     }
 }
 

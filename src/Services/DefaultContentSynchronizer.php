@@ -52,6 +52,9 @@ class DefaultContentSynchronizer
             $this->eliminarPostsObsoletosParaTipo($postType, $config);
         }
 
+        // Pasada global de integridad de medios post-sincronización
+        $this->repairMediaIntegrityForAll();
+
         $this->isProcessing = false;
     }
 
@@ -73,6 +76,8 @@ class DefaultContentSynchronizer
                 }
             }
         }
+        // Pasada global de integridad de medios tras restablecer
+        $this->repairMediaIntegrityForAll();
         $this->isProcessing = false;
     }
 
@@ -136,6 +141,35 @@ class DefaultContentSynchronizer
                 if (!wp_delete_post($postId, true)) {
                     GloryLogger::error("DCS: FALLÓ al eliminar post obsoleto ID {$postId}.");
                 }
+            }
+        }
+    }
+
+    private function repairMediaIntegrityForAll(): void
+    {
+        $svc = new \Glory\Services\Sync\MediaIntegrityService();
+        $allTypes = array_keys(DefaultContentRegistry::getDefiniciones());
+        foreach ($allTypes as $pt) {
+            if (!post_type_exists($pt)) continue;
+            $posts = get_posts([
+                'post_type' => $pt,
+                'posts_per_page' => -1,
+                'fields' => 'ids',
+                'post_status' => 'any',
+            ]);
+            foreach ($posts as $pid) {
+                // Intentar encontrar la definición para aportar mejores fallbacks
+                $def = null;
+                $defs = DefaultContentRegistry::getDefiniciones();
+                if (isset($defs[$pt]['definicionesPost'])) {
+                    foreach ($defs[$pt]['definicionesPost'] as $d) {
+                        if (isset($d['slugDefault']) && get_post_field('post_name', $pid) === trim($d['slugDefault'])) {
+                            $def = $d;
+                            break;
+                        }
+                    }
+                }
+                $svc->repairPostMedia((int) $pid, is_array($def) ? $def : []);
             }
         }
     }
