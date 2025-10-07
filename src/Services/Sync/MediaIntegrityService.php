@@ -21,7 +21,11 @@ class MediaIntegrityService
         $thumbId = (int) get_post_thumbnail_id($postId);
         if ($thumbId <= 0) {
             if (is_string($fallbackAssetRef) && $fallbackAssetRef !== '') {
-                $aid = AssetsUtility::get_attachment_id_from_asset($fallbackAssetRef);
+                // No intentar importar si el asset no existe en el tema
+                if (!AssetsUtility::assetExists($fallbackAssetRef)) {
+                    return;
+                }
+                $aid = AssetsUtility::get_attachment_id_from_asset($fallbackAssetRef, false);
                 if ($aid) {
                     set_post_thumbnail($postId, $aid);
                 }
@@ -52,7 +56,11 @@ class MediaIntegrityService
         }
 
         if ($assetRef) {
-            $aid = AssetsUtility::get_attachment_id_from_asset($assetRef);
+            // Validar existencia física del asset antes de reimportar
+            if (!AssetsUtility::assetExists($assetRef)) {
+                return;
+            }
+            $aid = AssetsUtility::get_attachment_id_from_asset($assetRef, false);
             if ($aid) {
                 // Asegurar que GUID apunte a URL válida (por si el adjunto existía con GUID roto)
                 $file = get_attached_file($aid);
@@ -71,7 +79,10 @@ class MediaIntegrityService
         if ($brokenBasename !== '') {
             $ref = $this->guessAssetRefFromBasename($brokenBasename);
             if ($ref) {
-                $aid = AssetsUtility::get_attachment_id_from_asset($ref);
+                if (!AssetsUtility::assetExists($ref)) {
+                    return;
+                }
+                $aid = AssetsUtility::get_attachment_id_from_asset($ref, false);
                 if ($aid) {
                     set_post_thumbnail($postId, $aid);
                     return;

@@ -56,6 +56,22 @@ class AssetsUtility
     }
 
 
+    /**
+     * Verifica si un asset referido existe físicamente en el tema.
+     */
+    public static function assetExists(string $assetReference): bool
+    {
+        if (!self::$isInitialized) self::init();
+        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
+        $rutaRelativa = self::resolveAssetPath($alias, $nombreArchivo);
+        if (!$rutaRelativa) {
+            return false;
+        }
+        $rutaLocal = get_template_directory() . '/' . $rutaRelativa;
+        return file_exists($rutaLocal);
+    }
+
+
     public static function getRandomDefaultImageName(string $alias = 'glory'): ?string
     {
         if (!self::$isInitialized) {
@@ -226,7 +242,7 @@ class AssetsUtility
     }
 
 
-    public static function get_attachment_id_from_asset(string $assetReference): ?int
+    public static function get_attachment_id_from_asset(string $assetReference, bool $allowAliasFallback = true): ?int
     {
         if (!self::$isInitialized) self::init();
 
@@ -249,12 +265,10 @@ class AssetsUtility
         $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
 
         if (!file_exists($rutaAssetCompleta)) {
-            // Fallback: elegir otra imagen del mismo alias si la solicitada no existe.
-            if (isset(self::$assetPaths[$alias])) {
+            if ($allowAliasFallback && isset(self::$assetPaths[$alias])) {
                 $dirAlias = trailingslashit(get_template_directory() . '/' . self::$assetPaths[$alias]);
                 $alt = glob($dirAlias . '*.{jpg,jpeg,png,gif,webp}', GLOB_BRACE) ?: [];
                 if (!empty($alt)) {
-                    // Selección determinística según el nombre solicitado
                     $idx = abs(crc32($nombreArchivo)) % count($alt);
                     $fallbackFile = $alt[$idx];
                     $nombreArchivo = basename($fallbackFile);
@@ -262,9 +276,9 @@ class AssetsUtility
                     $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
                 }
             }
-        if (!file_exists($rutaAssetCompleta)) {
-            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
-            return null;
+            if (!file_exists($rutaAssetCompleta)) {
+                set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
+                return null;
             }
         }
 

@@ -35,7 +35,12 @@ class PostRelationHandler
         $assetReference = $this->resolveFeaturedImageAsset($definicion);
 
         if ($assetReference) {
-            $attachmentId = AssetsUtility::get_attachment_id_from_asset($assetReference);
+            // Validación: no importar si el asset físico no existe en el tema.
+            if (!AssetsUtility::assetExists($assetReference)) {
+                GloryLogger::warning("RelationHandler: Asset inexistente '{$assetReference}' para post ID {$this->postId}; se omite asignación de destacada.");
+                return;
+            }
+            $attachmentId = AssetsUtility::get_attachment_id_from_asset($assetReference, false);
             if ($attachmentId) {
                 set_post_thumbnail($this->postId, $attachmentId);
             } else {
