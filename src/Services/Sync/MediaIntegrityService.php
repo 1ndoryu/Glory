@@ -36,8 +36,13 @@ class MediaIntegrityService
                     }
                 }
             }
-            // Intentar asignar un fallback determinístico con ventana anti-reintento
-            $this->assignFallbackFeaturedImageIfAllowed($postId);
+            // Intentar asignar un fallback determinístico (preferir el alias original) con ventana anti-reintento
+            $preferredAlias = null;
+            if (is_string($fallbackAssetRef) && $fallbackAssetRef !== '') {
+                $parts = AssetsUtility::parseAssetReference($fallbackAssetRef);
+                $preferredAlias = $parts[0] ?? null;
+            }
+            $this->assignFallbackFeaturedImageIfAllowed($postId, $preferredAlias);
             return;
         }
 
@@ -95,8 +100,8 @@ class MediaIntegrityService
                 }
             }
 
-        // Agotar opciones: intentar fallback con ventana anti-reintento
-        $this->assignFallbackFeaturedImageIfAllowed($postId);
+        // Agotar opciones: intentar fallback con ventana anti-reintento (sin alias preferido)
+        $this->assignFallbackFeaturedImageIfAllowed($postId, null);
         }
     }
 
@@ -197,41 +202,51 @@ class MediaIntegrityService
 
     private function guessAssetRefFromBasename(string $basename): ?string
     {
-        $aliases = ['glory', 'tema', 'elements', 'colors', 'logos'];
+        // Probar primero en 'colors'
+        $aliases = ['colors', 'glory', 'tema', 'elements', 'logos'];
         foreach ($aliases as $alias) {
             $ref = $alias . '::' . $basename;
-            $maybe = AssetsUtility::imagenUrl($ref);
-            if (is_string($maybe) && $maybe !== '') {
+            if (AssetsUtility::assetExists($ref)) {
                 return $ref;
             }
         }
         return null;
     }
 
-    private function chooseFallbackAssetForPost(int $postId): string
+    private function chooseFallbackAssetForPost(int $postId, ?string $preferredAlias = null): string
     {
-        // Usar imágenes default*. del alias 'glory' si existen, si no, una del alias 'colors'
+        // 1) Intentar en el alias preferido (si se definió uno en la definición original)
+        if (is_string($preferredAlias) && $preferredAlias !== '') {
+            $list = \Glory\Utility\AssetsUtility::listImagesForAlias($preferredAlias);
+            if (is_array($list) && !empty($list)) {
+                $idx = abs(crc32((string) $postId)) % count($list);
+                return $preferredAlias . '::' . $list[$idx];
+            }
+        }
+
+        // 2) Intentar en 'colors'
+        $colorList = \Glory\Utility\AssetsUtility::listImagesForAlias('colors');
+        if (is_array($colorList) && !empty($colorList)) {
+            $idx = abs(crc32((string) $postId)) % count($colorList);
+            return 'colors::' . $colorList[$idx];
+        }
+
+        // 3) Intentar defaults de 'glory'
         $candidates = ['default.jpg','default1.jpg','default2.jpg','default3.jpg','default4.jpg'];
         $pool = [];
         foreach ($candidates as $name) {
             $ref = 'glory::' . $name;
-            $url = AssetsUtility::imagenUrl($ref);
-            if (is_string($url) && $url !== '') { $pool[] = $ref; }
+            if (AssetsUtility::assetExists($ref)) { $pool[] = $ref; }
         }
-        if (empty($pool)) {
-            // caer a una selección determinística de 'colors'
-            $colorList = \Glory\Utility\AssetsUtility::listImagesForAlias('colors');
-            if (is_array($colorList) && !empty($colorList)) {
-                $idx = abs(crc32((string) $postId)) % count($colorList);
-                return 'colors::' . $colorList[$idx];
-            }
-            return 'glory::default.jpg';
+        if (!empty($pool)) {
+            $idx = abs(crc32((string) $postId)) % count($pool);
+            return $pool[$idx];
         }
-        $idx = abs(crc32((string) $postId)) % count($pool);
-        return $pool[$idx];
+
+        return 'glory::default.jpg';
     }
 
-    private function assignFallbackFeaturedImageIfAllowed(int $postId): void
+    private function assignFallbackFeaturedImageIfAllowed(int $postId, ?string $preferredAlias = null): void
     {
         $last = (int) get_post_meta($postId, self::META_FALLBACK_LAST_ATTEMPT, true);
         $now  = time();
@@ -240,7 +255,7 @@ class MediaIntegrityService
             return; // dentro de ventana, no reintentar
         }
 
-        $ref = $this->chooseFallbackAssetForPost($postId);
+        $ref = $this->chooseFallbackAssetForPost($postId, $preferredAlias);
         if (!is_string($ref) || $ref === '' || !AssetsUtility::assetExists($ref)) {
             update_post_meta($postId, self::META_FALLBACK_LAST_ATTEMPT, $now);
             update_post_meta($postId, self::META_FALLBACK_STATUS, 'fail');

@@ -269,7 +269,7 @@ class AssetsUtility
         
         $rutaLocal = get_template_directory() . '/' . $rutaRelativa;
         if (!file_exists($rutaLocal)) {
-            GloryLogger::warning("AssetsUtility: El archivo de asset '{$rutaRelativa}' no fue encontrado.");
+            // Evitar ruido en logs; el check de existencia se hace aguas arriba donde importe
             return null;
         }
 
@@ -434,6 +434,13 @@ class AssetsUtility
             return null;
         }
 
+        // Cachear fallo de importación para evitar reintentos ruidosos
+        $importAttemptKey = 'glory_asset_import_attempt_' . md5($assetReference);
+        $lastAttempt = get_transient($importAttemptKey);
+        if ($lastAttempt !== false) {
+            return null;
+        }
+
         require_once(ABSPATH . 'wp-admin/includes/file.php');
         require_once(ABSPATH . 'wp-admin/includes/image.php');
         require_once(ABSPATH . 'wp-admin/includes/media.php');
@@ -452,6 +459,7 @@ class AssetsUtility
 
         if (isset($subida['error'])) {
             GloryLogger::error("AssetsUtility: Error al subir el asset '{$nombreArchivo}'.", ['error' => $subida['error']]);
+            set_transient($importAttemptKey, 'fail', DAY_IN_SECONDS);
             if (file_exists($archivoTemporal)) @unlink($archivoTemporal);
             set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
             return null;
@@ -467,6 +475,7 @@ class AssetsUtility
 
         if (is_wp_error($idAdjunto)) {
             GloryLogger::error("AssetsUtility: Error al insertar el adjunto '{$nombreArchivo}'.", ['error' => $idAdjunto->get_error_message()]);
+            set_transient($importAttemptKey, 'fail', DAY_IN_SECONDS);
             set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
             return null;
         }
