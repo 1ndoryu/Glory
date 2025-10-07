@@ -311,12 +311,13 @@ class AssetsUtility
                 $archivoTemporal = wp_tempnam($nombreArchivo);
                 @copy($rutaAssetCompleta, $archivoTemporal);
 
-                $subida = wp_handle_sideload([
+                $datosArchivo = [
                     'name'     => basename($nombreArchivo),
                     'tmp_name' => $archivoTemporal,
                     'error'    => 0,
                     'size'     => @filesize($rutaAssetCompleta) ?: 0,
-                ], ['test_form' => false]);
+                ];
+                $subida = wp_handle_sideload($datosArchivo, ['test_form' => false]);
 
                 if (!isset($subida['error']) && isset($subida['file'])) {
                     // Actualizar el archivo asociado al mismo adjunto
