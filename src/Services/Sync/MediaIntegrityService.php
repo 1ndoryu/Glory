@@ -2,10 +2,16 @@
 
 namespace Glory\Services\Sync;
 
+use Glory\Core\GloryLogger;
 use Glory\Utility\AssetsUtility;
 
 class MediaIntegrityService
 {
+    private const META_FALLBACK_LAST_ATTEMPT = '_glory_featured_fallback_last_attempt';
+    private const META_FALLBACK_ASSET       = '_glory_featured_fallback_asset';
+    private const META_FALLBACK_STATUS      = '_glory_featured_fallback_status'; // success|fail
+    private const FALLBACK_COOLDOWN_SECONDS = 86400; // 24h
+
     /**
      * Verifica y repara imágenes de un post (miniatura y galería gestionada) si faltan archivos.
      */
@@ -22,14 +28,16 @@ class MediaIntegrityService
         if ($thumbId <= 0) {
             if (is_string($fallbackAssetRef) && $fallbackAssetRef !== '') {
                 // No importar; solo usar adjunto existente válido
-                if (!AssetsUtility::assetExists($fallbackAssetRef)) {
-                    return;
-                }
-                $aid = AssetsUtility::findExistingAttachmentIdForAsset($fallbackAssetRef);
-                if ($aid) {
-                    set_post_thumbnail($postId, $aid);
+                if (AssetsUtility::assetExists($fallbackAssetRef)) {
+                    $aid = AssetsUtility::findExistingAttachmentIdForAsset($fallbackAssetRef);
+                    if ($aid) {
+                        set_post_thumbnail($postId, $aid);
+                        return;
+                    }
                 }
             }
+            // Intentar asignar un fallback determinístico con ventana anti-reintento
+            $this->assignFallbackFeaturedImageIfAllowed($postId);
             return;
         }
 
@@ -57,21 +65,20 @@ class MediaIntegrityService
 
         if ($assetRef) {
             // No reimportar si falta en uploads; solo usar adjunto válido
-            if (!AssetsUtility::assetExists($assetRef)) {
-                return;
-            }
-            $aid = AssetsUtility::findExistingAttachmentIdForAsset($assetRef);
-            if ($aid) {
-                // Asegurar que GUID apunte a URL válida (por si el adjunto existía con GUID roto)
-                $file = get_attached_file($aid);
-                if ($file && file_exists($file)) {
-                    $uploads = wp_get_upload_dir();
-                    $rel = ltrim(str_replace(trailingslashit($uploads['basedir']), '', $file), '/\\');
-                    $url  = trailingslashit($uploads['baseurl']) . str_replace(DIRECTORY_SEPARATOR, '/', $rel);
-                    wp_update_post(['ID' => $aid, 'guid' => $url]);
+            if (AssetsUtility::assetExists($assetRef)) {
+                $aid = AssetsUtility::findExistingAttachmentIdForAsset($assetRef);
+                if ($aid) {
+                    // Asegurar que GUID apunte a URL válida (por si el adjunto existía con GUID roto)
+                    $file = get_attached_file($aid);
+                    if ($file && file_exists($file)) {
+                        $uploads = wp_get_upload_dir();
+                        $rel = ltrim(str_replace(trailingslashit($uploads['basedir']), '', $file), '/\\');
+                        $url  = trailingslashit($uploads['baseurl']) . str_replace(DIRECTORY_SEPARATOR, '/', $rel);
+                        wp_update_post(['ID' => $aid, 'guid' => $url]);
+                    }
+                    set_post_thumbnail($postId, $aid);
+                    return;
                 }
-                set_post_thumbnail($postId, $aid);
-                return;
             }
         }
 
@@ -79,15 +86,17 @@ class MediaIntegrityService
         if ($brokenBasename !== '') {
             $ref = $this->guessAssetRefFromBasename($brokenBasename);
             if ($ref) {
-                if (!AssetsUtility::assetExists($ref)) {
-                    return;
-                }
-                $aid = AssetsUtility::findExistingAttachmentIdForAsset($ref);
-                if ($aid) {
-                    set_post_thumbnail($postId, $aid);
-                    return;
+                if (AssetsUtility::assetExists($ref)) {
+                    $aid = AssetsUtility::findExistingAttachmentIdForAsset($ref);
+                    if ($aid) {
+                        set_post_thumbnail($postId, $aid);
+                        return;
+                    }
                 }
             }
+
+        // Agotar opciones: intentar fallback con ventana anti-reintento
+        $this->assignFallbackFeaturedImageIfAllowed($postId);
         }
     }
 
@@ -220,6 +229,38 @@ class MediaIntegrityService
         }
         $idx = abs(crc32((string) $postId)) % count($pool);
         return $pool[$idx];
+    }
+
+    private function assignFallbackFeaturedImageIfAllowed(int $postId): void
+    {
+        $last = (int) get_post_meta($postId, self::META_FALLBACK_LAST_ATTEMPT, true);
+        $now  = time();
+        $cooldown = defined('DAY_IN_SECONDS') ? (int) constant('DAY_IN_SECONDS') : self::FALLBACK_COOLDOWN_SECONDS;
+        if ($last && ($now - $last) < $cooldown) {
+            return; // dentro de ventana, no reintentar
+        }
+
+        $ref = $this->chooseFallbackAssetForPost($postId);
+        if (!is_string($ref) || $ref === '' || !AssetsUtility::assetExists($ref)) {
+            update_post_meta($postId, self::META_FALLBACK_LAST_ATTEMPT, $now);
+            update_post_meta($postId, self::META_FALLBACK_STATUS, 'fail');
+            return;
+        }
+
+        // Importar explícitamente el fallback (permitido en admin)
+        $aid = AssetsUtility::get_attachment_id_from_asset($ref, false);
+        if ($aid) {
+            set_post_thumbnail($postId, $aid);
+            update_post_meta($postId, self::META_FALLBACK_LAST_ATTEMPT, $now);
+            update_post_meta($postId, self::META_FALLBACK_ASSET, $ref);
+            update_post_meta($postId, self::META_FALLBACK_STATUS, 'success');
+            GloryLogger::info("MediaIntegrity: Fallback de destacada asignado '{$ref}' para post {$postId}.");
+        } else {
+            update_post_meta($postId, self::META_FALLBACK_LAST_ATTEMPT, $now);
+            update_post_meta($postId, self::META_FALLBACK_ASSET, $ref);
+            update_post_meta($postId, self::META_FALLBACK_STATUS, 'fail');
+            GloryLogger::warning("MediaIntegrity: Fallback de destacada falló para post {$postId} con '{$ref}'.");
+        }
     }
 
     private function chooseFallbackGalleryForPost(int $postId, int $count): array
