@@ -40,18 +40,13 @@ class PostRelationHandler
                 GloryLogger::warning("RelationHandler: Asset inexistente '{$assetReference}' para post ID {$this->postId}; se omite asignación de destacada.");
                 return;
             }
-            // Primero, intentar adjunto existente sin crear/importar
-            $attachmentId = AssetsUtility::findExistingAttachmentIdForAsset($assetReference);
+            // Importar el asset si no existe como adjunto
+            $attachmentId = AssetsUtility::get_attachment_id_from_asset($assetReference);
             if (!$attachmentId) {
-                // No reimportar: respetar que el archivo pueda faltar en uploads
-                GloryLogger::warning("RelationHandler: No hay adjunto válido para '{$assetReference}' en post ID {$this->postId}; no se importa.");
+                GloryLogger::warning("RelationHandler: No se pudo obtener/importar el asset '{$assetReference}' para post ID {$this->postId}.");
                 return;
             }
-            if ($attachmentId) {
-                set_post_thumbnail($this->postId, $attachmentId);
-            } else {
-                GloryLogger::warning("RelationHandler: No se pudo obtener/importar la imagen destacada '{$assetReference}' para el post ID {$this->postId}.");
-            }
+            set_post_thumbnail($this->postId, $attachmentId);
         } else {
             delete_post_thumbnail($this->postId);
         }
