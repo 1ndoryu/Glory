@@ -202,6 +202,8 @@ final class AssetManager
 
     private static function enqueueForArea(string $currentArea): void
     {
+        // (Logs temporales eliminados)
+
         foreach (self::$assets as $tipo => $assetsPorTipo) {
             foreach ($assetsPorTipo as $handle => $config) {
                 if ($config['area'] !== 'both' && $config['area'] !== $currentArea) {
@@ -247,6 +249,8 @@ final class AssetManager
                 }
 
                 $rutaAsset = $config['ruta'];
+
+                // (Logs temporales eliminados)
 
                 // Soporte para URLs externas (CDN). Si la ruta es absoluta http(s) o protocol-relative, la usamos tal cual.
                 $isExternal = (bool) preg_match('#^https?://#i', $rutaAsset) || strpos($rutaAsset, '//') === 0;

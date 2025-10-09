@@ -49,7 +49,7 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
         'nonce'              => wp_create_nonce('globalNonce'),
         'nombreUsuario'      => is_user_logged_in() ? wp_get_current_user()->display_name : '',
         'username'           => is_user_logged_in() ? wp_get_current_user()->user_login : '',
-        
+
         // Configuración específica de Avada (agnóstico en el JS)
         'criticalScriptKeywords' => Compatibility::avadaActivo() ? [
             'formCreatorConfig',
@@ -65,12 +65,18 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
         $glory_nav_config = apply_filters('glory/nav_config', $glory_nav_config);
     }
 
+    // Dependencias condicionales: fusionBuilderDetect solo si Avada está activo
+    $glory_nav_deps = ['jquery'];
+    if (Compatibility::avadaActivo()) {
+        $glory_nav_deps[] = 'fusionBuilderDetect';
+    }
+
     AssetManager::define(
         'script',
         'glory-gloryajaxnav',
         '/Glory/assets/js/genericAjax/gloryAjaxNav.js',
         [
-            'deps'      => ['jquery', 'fusionBuilderDetect'],
+            'deps'      => $glory_nav_deps,
             'in_footer' => true,
             'localize'  => [
                 'nombreObjeto' => 'gloryNavConfig',
@@ -81,39 +87,39 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
 
     // Hook agnóstico para Fusion Builder: configurar hooks después de localizar datos
     if (Compatibility::avadaActivo()) {
-        add_action('wp_footer', function() {
-            ?>
+        add_action('wp_footer', function () {
+?>
             <script>
-            (function(){
-                // Extender configuración de Glory Nav con hooks específicos de Fusion Builder
-                if (window.gloryNavConfig) {
-                    // Hook para abortar inicialización si Fusion Builder está activo
-                    window.gloryNavConfig.shouldAbortInit = function() {
-                        return window.isFusionBuilderActive && window.isFusionBuilderActive();
-                    };
-                    
-                    // Hook para saltar AJAX en enlaces de Fusion Builder
-                    window.gloryNavConfig.shouldSkipAjax = function(url, linkElement) {
-                        // Si estamos en modo Fusion Builder, saltar AJAX
-                        if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
-                            return true;
-                        }
-                        // Si el enlace apunta a Fusion Builder, saltar AJAX
-                        try {
-                            const testUrl = new URL(url, window.location.origin);
-                            if (testUrl.searchParams.has('fb-edit')) {
+                (function() {
+                    // Extender configuración de Glory Nav con hooks específicos de Fusion Builder
+                    if (window.gloryNavConfig) {
+                        // Hook para abortar inicialización si Fusion Builder está activo
+                        window.gloryNavConfig.shouldAbortInit = function() {
+                            return window.isFusionBuilderActive && window.isFusionBuilderActive();
+                        };
+
+                        // Hook para saltar AJAX en enlaces de Fusion Builder
+                        window.gloryNavConfig.shouldSkipAjax = function(url, linkElement) {
+                            // Si estamos en modo Fusion Builder, saltar AJAX
+                            if (window.isFusionBuilderActive && window.isFusionBuilderActive()) {
                                 return true;
                             }
-                        } catch (e) {
-                            // ignore parsing errors
-                        }
-                        // Devolver undefined para continuar con lógica por defecto
-                        return undefined;
-                    };
-                }
-            })();
+                            // Si el enlace apunta a Fusion Builder, saltar AJAX
+                            try {
+                                const testUrl = new URL(url, window.location.origin);
+                                if (testUrl.searchParams.has('fb-edit')) {
+                                    return true;
+                                }
+                            } catch (e) {
+                                // ignore parsing errors
+                            }
+                            // Devolver undefined para continuar con lógica por defecto
+                            return undefined;
+                        };
+                    }
+                })();
             </script>
-            <?php
+<?php
         }, 5); // Prioridad 5 para que se ejecute antes que el script principal
     }
 
@@ -147,7 +153,11 @@ AssetManager::defineFolder(
         'disableMenuClicksInFusionBuilder.js',
         'fusionBuilderDetect.js',
         'gloryAjaxNav.js',
+        // Mover assets de integración de Avada a carpeta específica y cargarlos solo cuando la integración esté activada
         'avada-form-bridge.js',
+        'glory-carousel.js',
+        'glory-horizontal-drag.js',
+        'glory-toggle.js',
         'gloryForm.js',
         'gloryBusqueda.js',
         'gloryAjax.js',
@@ -171,27 +181,32 @@ AssetManager::defineFolder(
     ]
 );
 
-AssetManager::define(
-    'script',
-    'glory-glory-toggle',
-    '/Glory/assets/js/glory-toggle.js',
-    [
-        'deps'      => [],
-        'in_footer' => true,
-        'area'      => 'frontend',
-    ]
-);
+// Estos scripts pertenecen a la integración con Avada y se registran solo si la integración está activa.
+if (GloryFeatures::isActive('avadaIntegration') !== false) {
+    AssetManager::define(
+        'script',
+        'glory-glory-toggle',
+        '/Glory/assets/js/integration/Avada/glory-toggle.js',
+        [
+            'deps'      => [],
+            'in_footer' => true,
+            'area'      => 'frontend',
+            'feature'   => 'avadaIntegration'
+        ]
+    );
 
-AssetManager::define(
-    'script',
-    'glory-horizontal-drag',
-    '/Glory/assets/js/glory-horizontal-drag.js',
-    [
-        'deps'      => [],
-        'in_footer' => true,
-        'area'      => 'frontend',
-    ]
-);
+    AssetManager::define(
+        'script',
+        'glory-horizontal-drag',
+        '/Glory/assets/js/integration/Avada/glory-horizontal-drag.js',
+        [
+            'deps'      => [],
+            'in_footer' => true,
+            'area'      => 'frontend',
+            'feature'   => 'avadaIntegration'
+        ]
+    );
+}
 
 // Registrar Highlight.js (CDN) y un controlador para cambio de tema y highlight
 AssetManager::define(
@@ -218,6 +233,33 @@ AssetManager::define(
         'feature'   => 'highlight'
     ]
 );
+
+// Assets específicos de Avada: registramos el bridge y el carousel solo si la integración está activa
+if (GloryFeatures::isActive('avadaIntegration') !== false) {
+    AssetManager::define(
+        'script',
+        'glory-avada-form-bridge',
+        '/Glory/assets/js/integration/Avada/avada-form-bridge.js',
+        [
+            'deps'      => ['jquery'],
+            'in_footer' => true,
+            'area'      => 'frontend',
+            'feature'   => 'avadaIntegration'
+        ]
+    );
+
+    AssetManager::define(
+        'script',
+        'glory-glory-carousel',
+        '/Glory/assets/js/integration/Avada/glory-carousel.js',
+        [
+            'deps'      => [],
+            'in_footer' => true,
+            'area'      => 'frontend',
+            'feature'   => 'avadaIntegration'
+        ]
+    );
+}
 
 // Registrar GSAP desde CDN como asset opcional controlado por feature 'gsap'
 AssetManager::define(
@@ -416,13 +458,13 @@ AssetManager::define(
     ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'frontend', 'feature' => 'gloryBusqueda']
 );
 
-    // Servicio: Realtime (polling por AJAX)
-    AssetManager::define(
-        'script',
-        'glory-gloryrealtime',
-        '/Glory/assets/js/Services/gloryRealtime.js',
-        ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryRealtime']
-    );
+// Servicio: Realtime (polling por AJAX)
+AssetManager::define(
+    'script',
+    'glory-gloryrealtime',
+    '/Glory/assets/js/Services/gloryRealtime.js',
+    ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryRealtime']
+);
 
 // Carga de todos los estilos CSS de la carpeta /assets/css/
 // Excluir archivos de administración para que no se encolen en el front
@@ -489,16 +531,21 @@ AssetManager::define(
     [
         'media'   => 'all',
         'area'    => 'both',
-        'dev_mode'=> true,
+        'dev_mode' => true,
     ]
 );
+
+$query_profiler_deps = ['jquery'];
+if (Compatibility::avadaActivo()) {
+    $query_profiler_deps[] = 'fusionBuilderDetect';
+}
 
 AssetManager::define(
     'script',
     'glory-query-profiler',
     '/Glory/assets/js/query-profiler.js',
     [
-        'deps'      => ['jquery', 'fusionBuilderDetect'],
+        'deps'      => $query_profiler_deps,
         'in_footer' => true,
         'area'      => 'both',
         'dev_mode'  => true,
