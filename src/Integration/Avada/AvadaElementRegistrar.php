@@ -24,6 +24,10 @@ class AvadaElementRegistrar
         if ( class_exists($gloryGalleryRegistrar) ) {
             $gloryGalleryRegistrar::register();
         }
+        $glorySplitRegistrar = '\\Glory\\Integration\\Avada\\Elements\\GlorySplitContent\\GlorySplitContentRegistrar';
+        if ( class_exists($glorySplitRegistrar) ) {
+            $glorySplitRegistrar::register();
+        }
         // Asegura registro de shortcodes en frontend
         add_action('init', [self::class, 'registerShortcodes']);
     }
@@ -37,6 +41,14 @@ class AvadaElementRegistrar
             require_once $childPath;
         } elseif ( is_readable($elementPath) ) {
             require_once $elementPath;
+        }
+        // Asegurar shortcode de Split Content
+        $splitPath = get_template_directory() . '/Glory/src/Integration/Avada/Elements/GlorySplitContent/FusionSC_GlorySplitContent.php';
+        $splitChild = get_stylesheet_directory() . '/Glory/src/Integration/Avada/Elements/GlorySplitContent/FusionSC_GlorySplitContent.php';
+        if ( is_readable($splitChild) ) {
+            require_once $splitChild;
+        } elseif ( is_readable($splitPath) ) {
+            require_once $splitPath;
         }
     }
 }

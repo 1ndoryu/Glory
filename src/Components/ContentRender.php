@@ -332,4 +332,22 @@ class ContentRender
 
         self::$currentConfig[$key] = $value;
     }
+
+    /**
+     * Plantilla mínima que imprime el contenido completo del post.
+     * No imprime el título ni la imagen para usos tipo "detalle".
+     *
+     * @param \WP_Post $post
+     * @param string $itemClass
+     */
+    public static function fullContentTemplate(\WP_Post $post, string $itemClass): void
+    {
+        ?>
+        <div id="post-<?php echo $post->ID; ?>" class="<?php echo esc_attr($itemClass); ?>">
+            <div class="entry-content">
+                <?php echo apply_filters('the_content', get_post_field('post_content', $post)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+            </div>
+        </div>
+        <?php
+    }
 }
