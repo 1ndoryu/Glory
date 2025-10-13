@@ -83,6 +83,13 @@ class PostSyncHandler
             $postDb->post_status !== ($definition['estado'] ?? 'publish') ||
             $postDb->post_excerpt !== ($definition['extracto'] ?? '')
         ) {
+            \Glory\Core\GloryLogger::info('NeedsUpdate: cambio en campos principales', [
+                'ID' => (int) $postDb->ID,
+                'title_changed' => $postDb->post_title !== ($definition['titulo'] ?? ''),
+                'content_changed' => $postDb->post_content !== ($definition['contenido'] ?? ''),
+                'status_changed' => $postDb->post_status !== ($definition['estado'] ?? 'publish'),
+                'excerpt_changed' => $postDb->post_excerpt !== ($definition['extracto'] ?? ''),
+            ]);
             return true;
         }
 
@@ -95,6 +102,11 @@ class PostSyncHandler
                 continue;
             }
             if (get_post_meta($postDb->ID, $key, true) != $value) {
+                \Glory\Core\GloryLogger::info('NeedsUpdate: diferencia en meta', [
+                    'ID' => (int) $postDb->ID,
+                    'meta_key' => (string) $key,
+                    'db_value' => (string) get_post_meta($postDb->ID, $key, true),
+                ]);
                 return true;
             }
         }
@@ -106,6 +118,10 @@ class PostSyncHandler
                 // Solo marcar que necesita update si existe un adjunto válido para el asset
                 $aid = \Glory\Utility\AssetsUtility::findExistingAttachmentIdForAsset((string) $definition['imagenDestacadaAsset']);
                 if ($aid) {
+                    \Glory\Core\GloryLogger::info('NeedsUpdate: falta imagen destacada asignada', [
+                        'ID' => (int) $postDb->ID,
+                        'asset' => (string) $definition['imagenDestacadaAsset'],
+                    ]);
                     return true;
                 }
             }

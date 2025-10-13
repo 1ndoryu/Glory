@@ -216,6 +216,56 @@ class AssetsUtility
         return array_values($archivos);
     }
 
+    /**
+     * Lista imágenes para un alias filtrando por tamaño mínimo en bytes.
+     * Si no hay suficientes, retorna sin filtrar.
+     *
+     * @param string $alias
+     * @param int $minBytes
+     * @param array $extensiones
+     * @return array<string>
+     */
+    public static function listImagesForAliasWithMinSize(
+        string $alias,
+        int $minBytes = 0,
+        array $extensiones = ['jpg','jpeg','png','gif','webp']
+    ): array {
+        $lista = self::listImagesForAlias($alias, $extensiones);
+        if (empty($lista) || $minBytes <= 0) {
+            return $lista;
+        }
+        $dir = trailingslashit(get_template_directory() . '/' . (self::$assetPaths[$alias] ?? ''));
+        $filtradas = [];
+        foreach ($lista as $nombre) {
+            $ruta = $dir . $nombre;
+            if (is_file($ruta)) {
+                $size = (int) @filesize($ruta);
+                if ($size >= $minBytes) {
+                    $filtradas[] = $nombre;
+                }
+            }
+        }
+        return !empty($filtradas) ? $filtradas : $lista;
+    }
+
+    /**
+     * Selecciona N imágenes aleatorias del alias con filtro de tamaño mínimo opcional.
+     * Retorna basenames.
+     */
+    public static function pickRandomImages(
+        string $alias,
+        int $cantidad,
+        int $minBytes = 0,
+        array $extensiones = ['jpg','jpeg','png','gif','webp']
+    ): array {
+        $pool = $minBytes > 0
+            ? self::listImagesForAliasWithMinSize($alias, $minBytes, $extensiones)
+            : self::listImagesForAlias($alias, $extensiones);
+        if (empty($pool)) return [];
+        shuffle($pool);
+        return array_slice($pool, 0, max(0, $cantidad));
+    }
+
 
     public static function imagen(string $assetReference, array $atributos = []): void
     {

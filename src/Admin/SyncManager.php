@@ -40,8 +40,21 @@ class SyncManager
      */
     public function performAutomaticSyncIfDevMode(): void
     {
-        if (AssetManager::isGlobalDevMode()) {
-            // GloryLogger::info('Modo DEV activado: Ejecutando sincronización automática.');
+        $devMode = AssetManager::isGlobalDevMode();
+        $wpDebug = (defined('WP_DEBUG') && WP_DEBUG);
+        // GloryLogger::info('SyncManager: Estado de desarrollo', [
+        //     'globalDevMode' => $devMode ? 'on' : 'off',
+        //     'wpDebug' => $wpDebug ? 'on' : 'off',
+        // ]);
+
+        // Limitar auto-sync al área de administración
+        if (!is_admin()) {
+            // GloryLogger::info('SyncManager: DEV activado, omitiendo auto-sync en frontend.');
+            return;
+        }
+
+        if ($devMode) {
+            // GloryLogger::info('SyncManager: Modo DEV activado, ejecutando sincronización automática.');
             $this->runFullSync();
         }
     }

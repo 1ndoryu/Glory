@@ -1,0 +1,367 @@
+/* Panel lateral GBN (minimal, theme-aware) */
+#gbn-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 360px;
+    max-width: 90vw;
+    height: 100vh;
+    background: var(--bg, #ffffff);
+    color: var(--text, #111111);
+    z-index: 99999;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.1);
+    transform: translateX(100%);
+    transition: transform 0.2s ease;
+    border-left: 1px solid var(--border-color, #e6e6e6);
+    border-radius: 0;
+}
+
+#gbn-panel.is-open {
+    transform: translateX(0);
+}
+
+#gbn-panel .gbn-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color, #e6e6e6);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+#gbn-panel .gbn-body {
+    padding: 16px;
+    overflow: auto;
+    height: calc(100% - 50px - 40px);
+    padding-bottom: 40px;
+}
+
+/* Footer dentro del panel */
+#gbn-panel .gbn-footer {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border-color, #e6e6e6);
+    background: var(--bg, #ffffff);
+}
+
+#gbn-panel .gbn-footer #gbn-save {
+    background: #111111;
+    color: #ffffff;
+    border: none;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+/* Botón flotante de edición */
+.gbn-floating-edit {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: unset;
+    color: var(--text, #111111);
+    border: unset;
+    padding: 6px 10px;
+    border-radius: 0;
+    font-size: 12px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    display: flex;
+    align-items: center;
+    align-content: center;
+}
+.glory-split:hover > .gbn-floating-edit {
+    opacity: 0.85;
+}
+
+.gbn-floating-edit:hover {
+    opacity: 1;
+}
+
+/* Contenedor principal */
+.glory-split {
+    position: relative;
+}
+
+/* Cursor en los títulos de la lista para arrastrar */
+.gbn-open .glory-split__titles .glory-split__title {
+    cursor: grab;
+}
+.gbn-open .glory-split__titles .glory-split__title:active {
+    cursor: grabbing;
+}
+
+/* Cursor y arrastre cuando está abierto */
+.gbn-open .glory-content-item.is-drag {
+    cursor: grabbing;
+}
+
+/* Controles del panel */
+.gbn-control {
+    margin-bottom: 16px;
+}
+
+.gbn-select-search-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.gbn-select-search {
+    padding: 6px 10px;
+    border: none;
+    font-size: 12px;
+}
+.gbn-select {
+    padding: 6px 8px;
+    border: 1px solid var(--border-color, #e6e6e6);
+}
+
+.gbn-control label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text, #111111);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Inputs, selects, textareas - estilo minimalista con borde inferior */
+.gbn-control input[type='range'],
+.gbn-control input[type='text'],
+.gbn-control input[type='number'],
+.gbn-control select,
+.gbn-control textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-color, #e6e6e6);
+    padding: 8px 0;
+    font-size: 12px;
+    color: var(--text, #111111);
+    outline: none;
+    transition: border-color 0.2s ease;
+    border-radius: 0px;
+    height: 40px;
+}
+
+.gbn-control input[type='range']:focus,
+.gbn-control input[type='text']:focus,
+.gbn-control input[type='number']:focus,
+.gbn-control select:focus,
+.gbn-control textarea:focus {
+    border-bottom-color: var(--text, #111111);
+}
+
+/* Placeholder styling */
+.gbn-control input[type='text']::placeholder,
+.gbn-control input[type='number']::placeholder,
+.gbn-control textarea::placeholder,
+.gbn-select-search::placeholder,
+.gbn-select-display::placeholder {
+    opacity: 0.5;
+}
+
+/* Color picker */
+.gbn-control input[type='color'] {
+    width: 50px;
+    height: 32px;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    background: transparent;
+}
+
+/* Radio buttons (reemplazo para toggles) */
+.gbn-control .radio-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.gbn-control .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text, #111111);
+}
+
+.gbn-control .radio-group input[type='radio'] {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+}
+
+/* Range slider con valor (inspirado en FormBuilder) */
+.gbn-control .range-container {
+    position: relative;
+}
+
+.gbn-control .range-value {
+    position: absolute;
+    right: 0;
+    top: -20px;
+    font-size: 12px;
+    color: var(--muted, #6b6b6b);
+    font-weight: 500;
+}
+
+/* Navegación de pestañas */
+.gbn-tabs-nav {
+    display: flex;
+    border-bottom: 1px solid var(--border-color, #e6e6e6);
+    margin-bottom: 16px;
+}
+
+.gbn-tab-btn {
+    flex: 1;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    color: var(--muted, #6b6b6b);
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.gbn-tab-btn.active {
+    color: var(--text, #111111);
+    border-bottom-color: var(--text, #111111);
+}
+
+.gbn-tab-btn:hover:not(.active) {
+    color: var(--text, #111111);
+    opacity: 0.8;
+}
+
+/* Select styling adicional */
+.gbn-control select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    padding-right: 32px;
+    border-radius: 0px;
+    font-size: 12px;
+    height: 40px;
+}
+
+.gbn-control select option {
+    color: var(--text, #111111);
+    background: var(--bg, #ffffff);
+    padding: 8px;
+}
+
+/* Select personalizado con buscador interno */
+.gbn-select-custom {
+    position: relative;
+}
+.gbn-select-display {
+    width: 100%;
+    text-align: left;
+    padding: 12px 0px;
+    border: unset;
+    border-bottom: 1px solid var(--border-color, #e6e6e6);
+    background: transparent;
+    cursor: pointer;
+}
+.gbn-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg, #fff);
+    border: 1px solid var(--border-color, #e6e6e6);
+    max-height: 260px;
+    overflow: auto;
+    z-index: 100000;
+    display: none;
+}
+.gbn-select-custom.is-open .gbn-select-dropdown {
+    display: block;
+}
+.gbn-select-search {
+    width: 100%;
+    padding: 6px 10px !important;
+    border: none !important;
+    border-bottom: none !important;
+    outline: none;
+}
+.gbn-select-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+}
+.gbn-select-option {
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.gbn-select-option:hover {
+    background: #f5f5f5;
+}
+.gbn-select-option.is-selected {
+    background: #efefef;
+}
+
+/* Range slider styling (inspirado en FormBuilder) */
+.gbn-control input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+}
+
+.gbn-control input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 0;
+    background: var(--text, #111111);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.gbn-control input[type='range']::-moz-range-thumb {
+    height: 16px;
+    width: 16px;
+    border-radius: 0;
+    background: var(--text, #111111);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.gbn-control input[type='range']::-webkit-slider-track {
+    height: 2px;
+    background: var(--border-color, #e6e6e6);
+    border-radius: 0;
+}
+
+.gbn-control input[type='range']::-moz-range-track {
+    height: 2px;
+    background: var(--border-color, #e6e6e6);
+    border-radius: 0;
+    border: none;
+}
+
+button#gbn-close {
+    border: unset;
+    background: unset;
+    cursor: pointer;
+    padding: 5px;
+}

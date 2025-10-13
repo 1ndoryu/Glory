@@ -39,6 +39,18 @@ OpcionManager::register('glory_query_profiler_logs_activado', [
     'hideInProd'    => true,
 ]);
 
+// Perfilador de Rendimiento (Performance Profiler). Por defecto inactivo. Mide tiempos de carga de componentes Glory.
+OpcionManager::register('glory_performance_profiler_activado', [
+    'valorDefault'  => false,
+    'tipo'          => 'toggle',
+    'etiqueta'      => 'Activar Performance Profiler',
+    'descripcion'   => 'Mide y registra los tiempos de carga de cada componente de Glory para identificar cuellos de botella.',
+    'seccion'       => 'debug',
+    'etiquetaSeccion' => 'Depuración',
+    'featureKey'    => 'performanceProfiler',
+    'hideInProd'    => true,
+]);
+
 /*
  * jules refactor: proxima tarea, crear un sistema de registro de funcionalidades centralizado.
  *
@@ -350,4 +362,35 @@ OpcionManager::register('glory_post_thumbnails_activado', [
     'seccion'         => 'general',
     'etiquetaSeccion' => 'General',
     'featureKey'      => 'postThumbnails'
+]);
+
+// --- Glory Builder Native (GBN) y CPT glory_link ---
+OpcionManager::register('glory_gbn_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar Glory Builder Native (GBN)',
+    'descripcion'     => 'Activa la capa de edición nativa minimalista del framework.',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'gbn'
+]);
+
+OpcionManager::register('glory_gbn_split_content_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'GBN para GlorySplitContent',
+    'descripcion'     => 'Habilita controles GBN (edición/orden) sobre GlorySplitContent.',
+    'seccion'         => 'componentes',
+    'etiquetaSeccion' => 'Componentes',
+    'featureKey'      => 'gbnSplitContent'
+]);
+
+OpcionManager::register('glory_glory_link_cpt_activado', [
+    'valorDefault'    => true,
+    'tipo'            => 'toggle',
+    'etiqueta'        => 'Activar CPT glory_link',
+    'descripcion'     => 'Registra el post type "glory_link" para enlaces externos usados por componentes.',
+    'seccion'         => 'core',
+    'etiquetaSeccion' => 'Core',
+    'featureKey'      => 'gloryLinkCpt'
 ]);

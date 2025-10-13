@@ -12,6 +12,7 @@ use Glory\Manager\PageManager;
 use Glory\Manager\PostTypeManager;
 use Glory\Integration\IntegrationsManager;
 use Glory\Services\LicenseManager;
+use Glory\Services\PerformanceProfiler;
 use Glory\Core\GloryLogger;
 
 use Glory\Admin\OpcionPanelController;
@@ -31,9 +32,18 @@ class Setup
 {
     public function __construct()
     {
+        // Inicializar profiler de rendimiento (si está activo)
+        PerformanceProfiler::init();
+
+        PerformanceProfiler::start('Setup.constructor', 'core');
+
         // Inicializar logger solo si la feature no está desactivada
         if (GloryFeatures::isActive('gloryLogger') !== false) {
-            GloryLogger::init();
+            PerformanceProfiler::medirFuncion(
+                fn() => GloryLogger::init(),
+                'GloryLogger.init',
+                'logger'
+            );
         }
 
         // Verificación de licencia (controlada por feature)
@@ -44,37 +54,69 @@ class Setup
         // Formularios (FormHandler) - el propio constructor también checa la feature,
         // pero evitamos instanciarlo si la feature está desactivada.
         if (GloryFeatures::isActive('gloryForm') !== false) {
-            new FormHandler();
+            PerformanceProfiler::medirFuncion(
+                fn() => new FormHandler(),
+                'FormHandler.constructor',
+                'handler'
+            );
         }
 
         if (GloryFeatures::isActive('paginacion') !== false) {
-            new PaginationAjaxHandler();
+            PerformanceProfiler::medirFuncion(
+                fn() => new PaginationAjaxHandler(),
+                'PaginationAjaxHandler.constructor',
+                'handler'
+            );
         }
 
         if (GloryFeatures::isActive('gloryBusqueda') !== false) {
-            new BusquedaAjaxHandler();
+            PerformanceProfiler::medirFuncion(
+                fn() => new BusquedaAjaxHandler(),
+                'BusquedaAjaxHandler.constructor',
+                'handler'
+            );
         }
 
         if (GloryFeatures::isActive('gloryRealtime') !== false) {
-            new RealtimeAjaxHandler();
+            PerformanceProfiler::medirFuncion(
+                fn() => new RealtimeAjaxHandler(),
+                'RealtimeAjaxHandler.constructor',
+                'handler'
+            );
         }
 
         // Acciones agnósticas de contenido (eliminar, etc.)
         if (GloryFeatures::isActive('contentActions') !== false) {
-            new ContentActionAjaxHandler();
+            PerformanceProfiler::medirFuncion(
+                fn() => new ContentActionAjaxHandler(),
+                'ContentActionAjaxHandler.constructor',
+                'handler'
+            );
         }
 
         // Opciones y assets
         if (GloryFeatures::isActive('opcionManagerSync') !== false) {
-            OpcionManager::init();
+            PerformanceProfiler::medirFuncion(
+                fn() => OpcionManager::init(),
+                'OpcionManager.init',
+                'manager'
+            );
         }
 
         if (GloryFeatures::isActive('assetManager') !== false) {
-            AssetsUtility::init();
+            PerformanceProfiler::medirFuncion(
+                fn() => AssetsUtility::init(),
+                'AssetsUtility.init',
+                'utility'
+            );
         }
 
         if (GloryFeatures::isActive('cssCritico') !== false) {
-            GestorCssCritico::init();
+            PerformanceProfiler::medirFuncion(
+                fn() => GestorCssCritico::init(),
+                'GestorCssCritico.init',
+                'service'
+            );
         }
 
         // Créditos (cron programable)
@@ -84,54 +126,108 @@ class Setup
 
         // Registro/registro de managers principales (condicionales para control de rendimiento)
         if (GloryFeatures::isActive('assetManager') !== false) {
-            AssetManager::register();
+            PerformanceProfiler::medirFuncion(
+                fn() => AssetManager::register(),
+                'AssetManager.register',
+                'manager'
+            );
         }
 
         if (GloryFeatures::isActive('pageManager') !== false) {
-            PageManager::register();
-            AdminPageManager::register();
+            PerformanceProfiler::medirFuncion(
+                fn() => PageManager::register(),
+                'PageManager.register',
+                'manager'
+            );
+            PerformanceProfiler::medirFuncion(
+                fn() => AdminPageManager::register(),
+                'AdminPageManager.register',
+                'manager'
+            );
         }
 
         if (GloryFeatures::isActive('menu') !== false) {
-            MenuManager::register();
+            PerformanceProfiler::medirFuncion(
+                fn() => MenuManager::register(),
+                'MenuManager.register',
+                'manager'
+            );
         }
 
         if (GloryFeatures::isActive('postTypeManager') !== false) {
-            PostTypeManager::register();
+            PerformanceProfiler::medirFuncion(
+                fn() => PostTypeManager::register(),
+                'PostTypeManager.register',
+                'manager'
+            );
         }
 
         // Contenido por defecto (sincronización y hooks relacionados)
         if (GloryFeatures::isActive('defaultContentManager') !== false) {
-            DefaultContentManager::register();
+            PerformanceProfiler::medirFuncion(
+                fn() => DefaultContentManager::register(),
+                'DefaultContentManager.register',
+                'manager'
+            );
         }
 
         if (GloryFeatures::isActive('syncManager') !== false) {
-            (new SyncController())->register();
+            PerformanceProfiler::medirFuncion(
+                fn() => (new SyncController())->register(),
+                'SyncController.register',
+                'controller'
+            );
         }
 
         if (GloryFeatures::isActive('taxonomyMetaManager') !== false) {
-            (new TaxonomyMetaManager())->register();
+            PerformanceProfiler::medirFuncion(
+                fn() => (new TaxonomyMetaManager())->register(),
+                'TaxonomyMetaManager.register',
+                'manager'
+            );
         }
 
         if (GloryFeatures::isActive('logoRenderer') !== false) {
-            LogoRenderer::register_shortcode();
+            PerformanceProfiler::medirFuncion(
+                fn() => LogoRenderer::register_shortcode(),
+                'LogoRenderer.register_shortcode',
+                'renderer'
+            );
         }
 
         if (GloryFeatures::isActive('integrationsManager') !== false) {
-            (new IntegrationsManager())->register();
+            PerformanceProfiler::medirFuncion(
+                fn() => (new IntegrationsManager())->register(),
+                'IntegrationsManager.register',
+                'integration'
+            );
             // Registrar integraciones específicas (Elementor)
             if (class_exists('Elementor\\Plugin')) {
-                \Glory\Integration\Elementor\ElementorIntegration::register();
+                PerformanceProfiler::medirFuncion(
+                    fn() => \Glory\Integration\Elementor\ElementorIntegration::register(),
+                    'ElementorIntegration.register',
+                    'integration'
+                );
             }
         }
 
         if (GloryFeatures::isActive('opcionManagerSync') !== false) {
-            (new OpcionPanelController())->registerHooks();
+            PerformanceProfiler::medirFuncion(
+                fn() => (new OpcionPanelController())->registerHooks(),
+                'OpcionPanelController.registerHooks',
+                'controller'
+            );
         }
 
         // Panel de exportación de base de datos
         if (GloryFeatures::isActive('databaseExporter') !== false) {
-            (new DatabaseExportController())->registerHooks();
+            PerformanceProfiler::medirFuncion(
+                fn() => (new DatabaseExportController())->registerHooks(),
+                'DatabaseExportController.registerHooks',
+                'controller'
+            );
         }
+
+        PerformanceProfiler::end('Setup.constructor');
     }
 }

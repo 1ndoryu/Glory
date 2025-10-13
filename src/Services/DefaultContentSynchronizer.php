@@ -120,11 +120,24 @@ class DefaultContentSynchronizer
         $isEdited = $this->repository->haSidoEditadoManualmente($post->ID);
 
         if ($updateMode === 'force') {
+            GloryLogger::info('DCS: Actualización forzada', [
+                'ID' => (int) $post->ID,
+                'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
+            ]);
             $this->postHandler->update($post->ID, $definition, true);
         } elseif ($updateMode === 'smart' && !$isEdited) {
             if ($this->postHandler->needsUpdate($post, $definition)) {
+                GloryLogger::info('DCS: Actualización por smart-compare', [
+                    'ID' => (int) $post->ID,
+                    'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
+                ]);
                 $this->postHandler->update($post->ID, $definition, false);
             }
+        } elseif ($isEdited) {
+            GloryLogger::info('DCS: Saltado por edición manual', [
+                'ID' => (int) $post->ID,
+                'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
+            ]);
         }
     }
 

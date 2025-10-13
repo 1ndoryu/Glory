@@ -39,6 +39,86 @@ class DefaultContentManager
     }
 
     /**
+     * Helper para construir definiciones de posts de ejemplo.
+     * - $titles: array de títulos (slugs se derivan como kebab-case con prefijo)
+     * - $paragraphs: array de párrafos (se seleccionan 4 aleatorios)
+     * - $options: ['aliasImagenes'=>'colors','minBytes'=>103424]
+     */
+    public static function buildSamplePosts(array $titles, array $paragraphs, array $options = []): array
+    {
+        $alias = isset($options['aliasImagenes']) ? (string) $options['aliasImagenes'] : 'colors';
+        $minBytes = isset($options['minBytes']) ? (int) $options['minBytes'] : 0;
+
+        $pool = \Glory\Utility\AssetsUtility::listImagesForAliasWithMinSize($alias, $minBytes);
+        if (empty($pool)) {
+            $pool = \Glory\Utility\AssetsUtility::listImagesForAlias($alias);
+        }
+
+        $defs = [];
+        $idx = 0;
+        foreach ($titles as $title) {
+            $idx++;
+            $slug = 'sample-' . trim(strtolower(preg_replace('/[^a-z0-9]+/i', '-', (string) $title)), '-');
+
+            // Selección determinista de imágenes internas y destacada basada en el slug
+            $internas = [];
+            $featured = null;
+            if (!empty($pool)) {
+                // Ordenar el pool por un peso determinista usando crc32(slug|nombre)
+                $weights = [];
+                foreach ($pool as $imgName) {
+                    $weights[$imgName] = crc32($slug . '|' . $imgName);
+                }
+                asort($weights);
+                $ordered = array_keys($weights);
+                $internas = array_slice($ordered, 0, max(1, min(2, count($ordered))));
+                $featured = $ordered[abs(crc32($slug . '|featured')) % count($ordered)] ?? null;
+            }
+
+            // Selección determinista de 4 párrafos
+            $contentParts = [];
+            $totalP = count($paragraphs);
+            $pickIdxs = [];
+            if ($totalP >= 1) {
+                $need = min(4, $totalP);
+                for ($i = 0; $i < $need; $i++) {
+                    $candidate = (abs(crc32($slug . '|p|' . (string) $i)) + $i * 7) % $totalP;
+                    // Asegurar unicidad avanzando circularmente
+                    $guard = 0;
+                    while (in_array($candidate, $pickIdxs, true) && $guard < $totalP) {
+                        $candidate = ($candidate + 1) % $totalP;
+                        $guard++;
+                    }
+                    $pickIdxs[] = $candidate;
+                }
+            }
+
+            $insertadas = 0;
+            foreach ($pickIdxs as $k) {
+                $contentParts[] = '<p>' . esc_html((string) $paragraphs[$k]) . '</p>';
+                if ($insertadas < count($internas)) {
+                    $img = $internas[$insertadas];
+                    $url = \Glory\Utility\AssetsUtility::imagenUrl($alias . '::' . $img);
+                    if (is_string($url) && $url !== '') {
+                        $contentParts[] = '<figure class="alignnone"><img src="' . esc_url($url) . '" alt="sample image ' . esc_attr((string) $idx) . '"></figure>';
+                        $insertadas++;
+                    }
+                }
+            }
+
+            $defs[] = [
+                'slugDefault' => $slug,
+                'titulo'      => (string) $title,
+                'contenido'   => implode('', $contentParts),
+                'estado'      => 'publish',
+                'extracto'    => 'Sample reflections on color, form, and contemporary art.',
+                'imagenDestacadaAsset' => $featured ? ($alias . '::' . $featured) : '',
+            ];
+        }
+        return $defs;
+    }
+
+    /**
      * Instancia el sincronizador, ejecuta la sincronización y registra los hooks
      * para la detección de ediciones manuales.
      * Este método es el callback para el hook 'init'.
