@@ -72,7 +72,7 @@ class DefaultContentSynchronizer
                 $post = $this->repository->findPorSlug($postType, $slugDefault);
                 if ($post) {
                     $this->postHandler->update($post->ID, $definition, true);
-                    GloryLogger::info("DCS: Post '{$slugDefault}' (ID: {$post->ID}) restablecido a default.");
+                    // GloryLogger::info("DCS: Post '{$slugDefault}' (ID: {$post->ID}) restablecido a default.");
                 }
             }
         }
@@ -120,24 +120,24 @@ class DefaultContentSynchronizer
         $isEdited = $this->repository->haSidoEditadoManualmente($post->ID);
 
         if ($updateMode === 'force') {
-            GloryLogger::info('DCS: Actualización forzada', [
-                'ID' => (int) $post->ID,
-                'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
-            ]);
+            // GloryLogger::info('DCS: Actualización forzada', [
+            //     'ID' => (int) $post->ID,
+            //     'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
+            // ]);
             $this->postHandler->update($post->ID, $definition, true);
         } elseif ($updateMode === 'smart' && !$isEdited) {
             if ($this->postHandler->needsUpdate($post, $definition)) {
-                GloryLogger::info('DCS: Actualización por smart-compare', [
-                    'ID' => (int) $post->ID,
-                    'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
-                ]);
+                // GloryLogger::info('DCS: Actualización por smart-compare', [
+                //     'ID' => (int) $post->ID,
+                //     'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
+                // ]);
                 $this->postHandler->update($post->ID, $definition, false);
             }
         } elseif ($isEdited) {
-            GloryLogger::info('DCS: Saltado por edición manual', [
-                'ID' => (int) $post->ID,
-                'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
-            ]);
+            // GloryLogger::info('DCS: Saltado por edición manual', [
+            //     'ID' => (int) $post->ID,
+            //     'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
+            // ]);
         }
     }
 
@@ -152,7 +152,7 @@ class DefaultContentSynchronizer
         foreach ($obsoleteIds as $postId) {
             if (!$this->repository->haSidoEditadoManualmente($postId)) {
                 if (!wp_delete_post($postId, true)) {
-                    GloryLogger::error("DCS: FALLÓ al eliminar post obsoleto ID {$postId}.");
+                    // GloryLogger::error("DCS: FALLÓ al eliminar post obsoleto ID {$postId}.");
                 }
             }
         }

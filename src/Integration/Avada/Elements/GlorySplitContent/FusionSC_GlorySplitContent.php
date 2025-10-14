@@ -66,6 +66,24 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                 'content_padding_bottom'  => '10px',
                 'content_padding_left'    => '10px',
                 'content_padding_right'   => '10px',
+                // Título de página
+                'page_title_enabled'       => 'no',
+                'page_title_text'          => '',
+                'page_title_position'      => 'top',
+                'page_title_font_family'   => '',
+                'page_title_font_variant'  => '',
+                'page_title_font_size'     => '',
+                'page_title_color'         => '',
+                'page_title_alignment'     => 'left',
+                // Opciones de títulos de posts
+                'post_title_position'      => 'above',
+                'post_title_alignment'     => 'left',
+                // Mostrar icono en títulos que son enlaces
+                'post_title_link_icon'     => 'yes',
+                // Opciones de links
+                'show_links'              => 'yes',
+                // Opciones de headers
+                'show_headers'            => 'yes',
             ];
         }
 
@@ -73,6 +91,9 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
         {
             $this->defaults = self::get_element_defaults();
             $this->args     = FusionBuilder::set_shortcode_defaults($this->defaults, $args, 'glory_split_content');
+            // if (defined('WP_DEBUG') && WP_DEBUG) {
+            //     error_log('[GLORY][Split] args iniciales: ' . wp_json_encode($this->args));
+            // }
             // Normalizar alias provenientes de versiones anteriores del mapeo de Avada
             $alias = [
                 'publicaciones_por_pagina' => 'number_of_posts',
@@ -134,6 +155,9 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
             if (!empty($gbnData['opts'])) {
                 // fusionar opciones (override no destructivo)
                 $this->args = array_merge($this->args, $gbnData['opts']);
+                // if (defined('WP_DEBUG') && WP_DEBUG) {
+                //     error_log('[GLORY][Split] merge opts GBN');
+                // }
             }
             // En modo preview, los valores entrantes deben tener prioridad sobre los guardados
             if (!empty($rawArgs['__gbn_preview']) && $rawArgs['__gbn_preview'] === 'yes') {
@@ -159,6 +183,126 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                     $argumentosConsulta['orderby'] = 'post__in';
                 }
 
+                // Manejar links y headers según las opciones
+                $showLinks = (string) ($this->args['show_links'] ?? 'yes') === 'yes';
+                $showHeaders = (string) ($this->args['show_headers'] ?? 'yes') === 'yes';
+
+                // Paso temprano: asegurar que el post_type incluya glory_link/glory_header si están habilitados
+                $ptArg = $argumentosConsulta['post_type'] ?? $postType;
+                if (is_string($ptArg)) { $ptArg = [$ptArg]; }
+                if ($showLinks) { $ptArg[] = 'glory_link'; }
+                if ($showHeaders) { $ptArg[] = 'glory_header'; }
+                $argumentosConsulta['post_type'] = array_values(array_unique(array_map('sanitize_key', $ptArg)));
+                // error_log('[GLORY][Split] tipos iniciales: ' . implode(',', (array) $argumentosConsulta['post_type']));
+
+                if ($showLinks || $showHeaders) {
+                    $postTypesToAdd = [];
+                    if ($showLinks) { $postTypesToAdd[] = 'glory_link'; }
+                    if ($showHeaders) { $postTypesToAdd[] = 'glory_header'; }
+
+                    if (!empty($postTypesToAdd)) {
+                        // 1) Asegurar que el post_type incluya los tipos adicionales para consultas genéricas
+                        if (!isset($argumentosConsulta['post_type'])) {
+                            $argumentosConsulta['post_type'] = array_merge([$postType], $postTypesToAdd);
+                        } elseif (is_string($argumentosConsulta['post_type'])) {
+                            $argumentosConsulta['post_type'] = array_merge([$argumentosConsulta['post_type']], $postTypesToAdd);
+                        } elseif (is_array($argumentosConsulta['post_type'])) {
+                            $argumentosConsulta['post_type'] = array_values(array_unique(array_merge($argumentosConsulta['post_type'], $postTypesToAdd)));
+                        }
+
+                        // 2) Garantizar presencia de links y headers cuando NO hay orden explícito (GBN) o cuando el orden está vacío
+                        $hasGbnOrder = !empty($gbnData['order']) && is_array($gbnData['order']);
+                        $shouldIncludeExtras = !$hasGbnOrder || empty($argumentosConsulta['post__in']);
+
+                        // Si hay orden GBN, verificar si ya incluye headers/links
+                        if ($hasGbnOrder && !empty($argumentosConsulta['post__in'])) {
+                            $existingIds = $argumentosConsulta['post__in'];
+                            $hasHeadersInOrder = false;
+                            $hasLinksInOrder = false;
+
+                            foreach ($existingIds as $id) {
+                                $idPostType = get_post_type($id);
+                                if ($idPostType === 'glory_header') { $hasHeadersInOrder = true; }
+                                if ($idPostType === 'glory_link')   { $hasLinksInOrder = true; }
+                            }
+
+                            // Si el orden no incluye headers pero show_headers está activado, incluirlos
+                            if ($showHeaders && !$hasHeadersInOrder) {
+                                $shouldIncludeExtras = true;
+                            }
+                            // Si el orden no incluye links pero show_links está activado, incluirlos
+                            if ($showLinks && !$hasLinksInOrder) {
+                                $shouldIncludeExtras = true;
+                            }
+                        }
+
+                        // SIEMPRE intentar incluir links/headers si las flags están en yes, aunque exista un orden GBN
+                            try {
+                                // Incluir links si show_links está activado
+                            if ($showLinks) {
+                                    $linkIds = get_posts([
+                                        'post_type'      => 'glory_link',
+                                        'post_status'    => 'publish',
+                                        'posts_per_page' => 50,
+                                        'orderby'        => 'menu_order',
+                                        'order'          => 'ASC',
+                                        'fields'         => 'ids',
+                                        'suppress_filters' => true,
+                                    ]);
+                                } else {
+                                    $linkIds = [];
+                                }
+
+                                // Incluir headers si show_headers está activado
+                            if ($showHeaders) {
+                                    $headerIds = get_posts([
+                                        'post_type'      => 'glory_header',
+                                        'post_status'    => 'publish',
+                                        'posts_per_page' => 50,
+                                        'orderby'        => 'menu_order',
+                                        'order'          => 'ASC',
+                                        'fields'         => 'ids',
+                                        'suppress_filters' => true,
+                                    ]);
+                                } else {
+                                    $headerIds = [];
+                                }
+
+                                $allIds = array_merge($linkIds, $headerIds);
+                            // if (defined('WP_DEBUG') && WP_DEBUG) {
+                            //     error_log('[GLORY][Split] linkIds=' . count((array)$linkIds) . ' headerIds=' . count((array)$headerIds));
+                            // }
+                                if (is_array($allIds) && !empty($allIds)) {
+                                    $currentOrder = [];
+                                    if (isset($argumentosConsulta['post__in']) && is_array($argumentosConsulta['post__in'])) {
+                                        $currentOrder = array_map('absint', $argumentosConsulta['post__in']);
+                                    }
+                                if (!empty($currentOrder)) {
+                                    // Respetar orden guardado; sólo agregar extras faltantes AL FINAL
+                                    $missingExtras = array_values(array_diff(array_map('absint', $allIds), $currentOrder));
+                                    if (!empty($missingExtras)) {
+                                        $nuevoOrden = array_values(array_unique(array_merge($currentOrder, $missingExtras)));
+                                        $argumentosConsulta['post__in'] = $nuevoOrden;
+                                        $argumentosConsulta['orderby']  = 'post__in';
+                                        // Asegurar que el post_type incluya los extras cuando se usa post__in
+                                        $existingPt = $argumentosConsulta['post_type'] ?? $postType;
+                                        if (is_string($existingPt)) { $existingPt = [$existingPt]; }
+                                        $argumentosConsulta['post_type'] = array_values(array_unique(array_merge(['post'], $existingPt, $postTypesToAdd)));
+                                        // if (defined('WP_DEBUG') && WP_DEBUG) {
+                                        //     error_log('[GLORY][Split] post__in completado con extras: ' . count($nuevoOrden) . ' tipos=' . implode(',', (array)$argumentosConsulta['post_type']));
+                                        // }
+                                    }
+                                } else {
+                                    // No hay orden guardado -> NO forzar post__in (para no excluir posts); sólo asegurar post_type ya incluye extras
+                                    }
+                                }
+                            } catch (\Throwable $e) {}
+                    }
+                }
+
+                // if (defined('WP_DEBUG') && WP_DEBUG) {
+                //     error_log('[GLORY][Split] argumentosConsulta final: ' . wp_json_encode($argumentosConsulta));
+                // }
                 \Glory\Components\ContentRender::print($postType, [
                     // Respetar publicaciones_por_pagina si es > 0, incluso con scroll habilitado
                     'publicacionesPorPagina' => ($ppp > 0 ? $ppp : ($listScroll ? -1 : $ppp)),
@@ -168,6 +312,8 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                     'plantillaCallback'      => ['\\Glory\\Integration\\Avada\\Elements\\GlorySplitContent\\GlorySplitContentTemplate', 'titleItem'],
                     'argumentosConsulta'     => $argumentosConsulta,
                     'forzarSinCache'         => true,
+                    // Opciones consumidas por la plantilla de títulos
+                    'post_title_link_icon'   => (string) ($this->args['post_title_link_icon'] ?? 'yes'),
                 ]);
             } catch (\Throwable $t) {
             }
@@ -182,27 +328,66 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                 . (!empty($gbnData['schema']) ? ' data-gbn-schema="' . esc_attr(wp_json_encode($gbnData['schema'])) . '"' : '')
                 . (!empty($gbnData['config']) ? ' data-gbn-config="' . esc_attr(wp_json_encode($gbnData['config'])) . '"' : '')
                 . '>';
+            // Generar título de página si está habilitado
+            $pageTitleHtml = '';
+            $pageTitleEnabled = (string) ($this->args['page_title_enabled'] ?? 'no') === 'yes';
+            if ($pageTitleEnabled && !empty($this->args['page_title_text'])) {
+                $pageTitleHtml = '<h1 class="glory-split__page-title"><a href="' . esc_url(home_url()) . '">' . esc_html($this->args['page_title_text']) . '</a></h1>';
+            }
+
+            // Insertar título de página dentro de la lista para que tenga el mismo padding
+            $pageTitlePosition = (string) ($this->args['page_title_position'] ?? 'top');
+            if ($pageTitleEnabled && $pageTitleHtml !== '') {
+                // Buscar el contenedor de la lista y insertar el título dentro
+                if ($pageTitlePosition === 'top') {
+                    // Insertar al inicio de la lista
+                    $titlesHtml = preg_replace(
+                        '/(<div[^>]*class="[^"]*glory-content-list[^"]*"[^>]*>)/',
+                        '$1' . $pageTitleHtml,
+                        $titlesHtml,
+                        1
+                    );
+                } elseif ($pageTitlePosition === 'bottom') {
+                    // Insertar al final de la lista (antes del cierre del div)
+                    $titlesHtml = preg_replace(
+                        '/(<\/div>\s*)$/s',
+                        $pageTitleHtml . '$1',
+                        $titlesHtml,
+                        1
+                    );
+                }
+            }
+
+            // Construir panel de títulos
             $html .= '<div class="glory-split__panel glory-split__titles">' . $titlesHtml . '</div>';
             // Precarga de contenido del primer ítem si auto_open_first_item = yes
             $preloadContent = '';
             $autoOpen = (string) ($this->args['auto_open_first_item'] ?? 'no') === 'yes';
             if ($autoOpen) {
-                // Repetir consulta mínima para obtener el primer post mostrado
+                // Repetir consulta para obtener posts y encontrar el primero que no sea glory_link
                 try {
                     $argsConsulta = $argumentosConsulta;
-                    // Respetar el order si viene por GBN
-                    $argsConsulta['posts_per_page'] = 1;
+                    // Obtener más posts para poder saltar los links
+                    $argsConsulta['posts_per_page'] = $ppp > 0 ? $ppp : 50; // Usar el límite configurado o 50 como máximo
                     $argsConsulta['ignore_sticky_posts'] = true;
                     $argsConsulta = array_merge([
                         'post_type' => $postType,
                     ], $argsConsulta);
                     $q = new \WP_Query($argsConsulta);
                     if ($q && $q->have_posts()) {
-                        $q->the_post();
-                        ob_start();
-                        // Usar plantilla de contenido completo
-                        \Glory\Components\ContentRender::fullContentTemplate(get_post(), 'glory-split__content-item');
-                        $preloadContent = ob_get_clean();
+                        // Buscar el primer post que no sea glory_link
+                        $foundNonLinkPost = false;
+                        while ($q->have_posts() && !$foundNonLinkPost) {
+                            $q->the_post();
+                            $ptActual = get_post_type();
+                            if ($ptActual !== 'glory_link' && $ptActual !== 'glory_header') {
+                                ob_start();
+                                // Usar plantilla de contenido completo
+                                \Glory\Components\ContentRender::fullContentTemplate(get_post(), 'glory-split__content-item');
+                                $preloadContent = ob_get_clean();
+                                $foundNonLinkPost = true;
+                            }
+                        }
                     }
                     wp_reset_postdata();
                 } catch (\Throwable $e) {
@@ -266,8 +451,18 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
             $content_padding_bottom = (string) ($a['content_padding_bottom'] ?? '10px');
             $content_padding_left   = (string) ($a['content_padding_left'] ?? '10px');
             $content_padding_right  = (string) ($a['content_padding_right'] ?? '10px');
+            // Título de página
+            $page_title_enabled     = (string) ($a['page_title_enabled'] ?? 'no') === 'yes';
+            $page_title_position    = (string) ($a['page_title_position'] ?? 'top');
+            $page_title_alignment   = (string) ($a['page_title_alignment'] ?? 'left');
+            $page_title_ff          = (string) ($a['page_title_font_family'] ?? '');
+            $page_title_variant     = (string) ($a['page_title_font_variant'] ?? '');
+            $page_title_fs          = (string) ($a['page_title_font_size'] ?? '');
+            $page_title_color       = (string) ($a['page_title_color'] ?? '');
+            // Opciones de títulos de posts
+            $post_title_alignment   = (string) ($a['post_title_alignment'] ?? 'left');
 
-            $css  = $root . '{display:flex;gap:24px;align-items:stretch;width:100%;height:' . $container_height . ';padding:' . $padding_top . ' ' . $padding_right . ' ' . $padding_bottom . ' ' . $padding_left . ';}';
+            $css  = $root . '{display:flex;gap:24px;align-items:stretch;width:100%;max-width:100%;height:' . $container_height . ';box-sizing:border-box;overflow-x:hidden;padding:' . $padding_top . ' ' . $padding_right . ' ' . $padding_bottom . ' ' . $padding_left . ';}';
             $css .= $root . ' .glory-split__titles{flex:0 0 ' . $panel_width . ';min-width:200px;}';
             $css .= $root . ' .glory-split__content{flex:1 1 auto;min-width:0;}';
             $css .= $root . ' .glory-split__titles, ' . $root . ' .glory-split__content{height:100%;}';
@@ -284,7 +479,8 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                 $css .= $list . '::-webkit-scrollbar-thumb:hover{background:#a8a8a8;}';
             }
             $css .= $item . '{margin:0;}';
-            $css .= $root . ' .glory-split__title{display:block;width:100%;text-align:left;background:transparent;border:0;padding:0;margin:0;cursor:pointer;}';
+            $css .= $root . ' .glory-split__title{display:block;width:100%;text-align:' . $post_title_alignment . ';background:transparent;border:0;padding:0;margin:0;cursor:pointer;}';
+            $css .= $root . ' .glory-split__title--header{font-weight:bold;}';
             $css .= $title . '{display:inline-block;}';
             if ($titles_color !== '') {
                 $css .= $title . '{color:' . $titles_color . ';}';
@@ -298,8 +494,37 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
             if ($titles_ls !== '') { $css .= $title . '{letter-spacing:' . $titles_ls . ';}'; }
             if ($titles_tt !== '') { $css .= $title . '{text-transform:' . $titles_tt . ';}'; }
 
+            // Título de página
+            if ($page_title_enabled) {
+                $pageTitleSelector = $root . ' .glory-split__page-title';
+                $css .= $pageTitleSelector . '{display:block;width:100%;text-align:' . $page_title_alignment . ';margin:0;}';
+                // Estilos para el enlace dentro del título de página
+                $css .= $pageTitleSelector . ' a{text-decoration:none;color:inherit;display:block;}';
+                $css .= $pageTitleSelector . ' a:hover{text-decoration:none;color:inherit;}';
+                if ($page_title_color !== '') {
+                    $css .= $pageTitleSelector . '{color:' . $page_title_color . ';}';
+                    $css .= $pageTitleSelector . ' a{color:' . $page_title_color . ';}';
+                }
+                if ($page_title_ff !== '') {
+                    $css .= $pageTitleSelector . '{font-family:' . (false !== strpos($page_title_ff, ' ') ? '"' . $page_title_ff . '"' : $page_title_ff) . ';}';
+                }
+                if ($page_title_variant !== '') { $css .= $pageTitleSelector . '{' . \Glory\Support\CSS\Typography::variantToCss($page_title_variant) . '}'; }
+                // Si page_title_fs tiene valor específico, úsalo; si no, usa el mismo que los títulos de posts
+                $effective_page_fs = $page_title_fs !== '' ? $page_title_fs : $titles_fs;
+                if ($effective_page_fs !== '') { $css .= $pageTitleSelector . '{font-size:' . $effective_page_fs . ';}'; }
+            }
+
             // Contenido
-            $css .= $content . '{padding:' . $content_padding_top . ' ' . $content_padding_right . ' ' . $content_padding_bottom . ' ' . $content_padding_left . ';}';
+            $css .= $content . '{padding:' . $content_padding_top . ' ' . $content_padding_right . ' ' . $content_padding_bottom . ' ' . $content_padding_left . ';max-width:100%;box-sizing:border-box;overflow-x:auto;word-break:break-word;overflow-wrap:anywhere;}';
+            $css .= $content . ' img,' . $content . ' video,' . $content . ' iframe{max-width:100%;height:auto;}';
+            $css .= $content . ' table{display:block;max-width:100%;overflow-x:auto;}';
+            $css .= $content . ' pre{white-space:pre;overflow-x:auto;max-width:100%;}';
+            // Neutralizar márgenes negativos y anchos expandidos comunes de Avada dentro del panel
+            $css .= $content . ' .fusion-row{margin-left:0!important;margin-right:0!important;max-width:100%;}';
+            $css .= $content . ' .fusion-fullwidth{margin-left:0!important;margin-right:0!important;max-width:100%;width:100%!important;}';
+            $css .= $content . ' .fusion-builder-row{margin-left:0!important;margin-right:0!important;max-width:100%;width:100%!important;}';
+            $css .= $content . ' .alignfull,' . $content . ' .alignwide{margin-left:0!important;margin-right:0!important;width:100%!important;max-width:100%!important;}';
+            $css .= $content . ' .fullwidth-box{margin-left:0!important;margin-right:0!important;max-width:100%;}';
             if ($content_scroll_enabled) {
                 $css .= $content . '{overflow-y:auto;scroll-behavior:smooth;}';
                 $css .= $content . '::-webkit-scrollbar{width:6px;}';
@@ -337,12 +562,14 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
             $js .= 'fetch(ajax,{method:"POST",body:fd,credentials:"same-origin"}).then(function(r){return r.json();}).then(function(res){if(!res||!res.success){throw new Error("Error");}cache[id]=res.data||"";content.innerHTML=cache[id];setActive(item);var s=item?item.getAttribute("data-post-slug"):null;updateHash(s);}).catch(function(e){content.innerHTML="<p>Error al cargar contenido.</p>";});}
 ';
             $js .= 'function setActive(item){root.querySelectorAll(".glory-split__item.is-active").forEach(function(el){el.classList.remove("is-active")});if(item){item.classList.add("is-active");}}';
-            $js .= 'root.addEventListener("click",function(e){var btn=e.target.closest(".glory-split__item .glory-split__title");if(!btn||!root.contains(btn))return;var item=btn.closest(".glory-split__item");if(!item)return;var id=item.getAttribute("data-post-id");if(!id){return;}e.preventDefault();load(id,item);});';
+            $js .= 'root.addEventListener("click",function(e){var btn=e.target.closest(".glory-split__item .glory-split__title");if(!btn||!root.contains(btn))return;var item=btn.closest(".glory-split__item");if(!item)return;var url=item.getAttribute("data-post-url");var id=item.getAttribute("data-post-id");if(url){window.open(url,"_blank");return;}if(id){e.preventDefault();load(id,item);}else{e.preventDefault();}});';
+            // Preparar hash al inicio y priorizarlo sobre auto-open
+            $js .= 'var hashSlug=(location.hash||"").replace(/^#/ ,"");';
             if ($autoOpenFirst) {
-                $js .= 'var first=root.querySelector(".glory-split__item .glory-split__title");var content=root.querySelector(' . wp_json_encode('#' . $instanceClass . '-content') . ');if(first&&content&&!content.hasChildNodes()){first.click();}';
+                $js .= 'var content=root.querySelector(' . wp_json_encode('#' . $instanceClass . '-content') . ');var hasTarget=(hashSlug?!!root.querySelector(".glory-split__item[data-post-slug=' . '"+CSS.escape(hashSlug)+"' . ']"):false);if(!hasTarget){var first=root.querySelector(".glory-split__item .glory-split__title");if(first&&content&&!content.hasChildNodes()){first.click();}}';
             }
-            // Apertura automática por hash (#slug)
-            $js .= 'var hashSlug=(location.hash||"").replace(/^#/,"");if(hashSlug){var target=root.querySelector(".glory-split__item[data-post-slug=' . '"+CSS.escape(hashSlug)+"' . ']");if(target){var btn=target.querySelector(".glory-split__title");var id=target.getAttribute("data-post-id");if(btn&&id){btn.click();}}}';
+            // Apertura automática por hash (#slug) y limpiar precarga para evitar parpadeo
+            $js .= 'if(hashSlug){var target=root.querySelector(".glory-split__item[data-post-slug=' . '"+CSS.escape(hashSlug)+"' . ']");if(target){var btn=target.querySelector(".glory-split__title");var id=target.getAttribute("data-post-id");var content=root.querySelector(' . wp_json_encode('#' . $instanceClass . '-content') . ');if(content){content.innerHTML="";}if(btn&&id){btn.click();}}}';
             $js .= '})();</script>';
             return $js;
         }
@@ -382,9 +609,12 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
             foreach ($publicPostTypes as $pt) {
                 $postTypeOptions[$pt->name] = $pt->label;
             }
-            // Agregar glory_link si existe
+            // Agregar glory_link y glory_header si existen
             if (post_type_exists('glory_link')) {
                 $postTypeOptions['glory_link'] = 'Glory Link';
+            }
+            if (post_type_exists('glory_header')) {
+                $postTypeOptions['glory_header'] = 'Glory Header';
             }
 
             // Opciones de tipografía (fuentes: Avada Google/Adobe/Custom + personalizadas Glory)
@@ -498,10 +728,32 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                 'content_padding_bottom' => $args['content_padding_bottom'] ?? '10px',
                 'content_padding_left' => $args['content_padding_left'] ?? '10px',
                 'content_padding_right' => $args['content_padding_right'] ?? '10px',
+                // Título de página
+                'page_title_enabled' => $args['page_title_enabled'] ?? 'no',
+                'page_title_text' => $args['page_title_text'] ?? get_bloginfo('name'),
+                'page_title_position' => $args['page_title_position'] ?? 'top',
+                'page_title_font_family' => $args['page_title_font_family'] ?? '',
+                'page_title_font_variant' => $args['page_title_font_variant'] ?? '',
+                'page_title_font_size' => $args['page_title_font_size'] ?? '',
+                'page_title_color' => $args['page_title_color'] ?? '',
+                'page_title_alignment' => $args['page_title_alignment'] ?? 'left',
+                // Opciones de títulos de posts
+                'post_title_position' => $args['post_title_position'] ?? 'above',
+                'post_title_alignment' => $args['post_title_alignment'] ?? 'left',
+                'post_title_link_icon' => $args['post_title_link_icon'] ?? 'yes',
+                // Opciones de links
+                'show_links' => $args['show_links'] ?? 'yes',
+                // Opciones de headers
+                'show_headers' => $args['show_headers'] ?? 'yes',
             ];
 
             // Fusionar con overrides guardados (los guardados tienen prioridad)
             $config = array_merge($defaults, $opts);
+
+            // Lógica especial para el título de página: si está habilitado y vacío, usar site title
+            if (($config['page_title_enabled'] ?? 'no') === 'yes' && empty($config['page_title_text'])) {
+                $config['page_title_text'] = get_bloginfo('name');
+            }
             $schema = [
                 [
                     'tab' => 'General',
@@ -510,6 +762,8 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                         ['key' => 'number_of_posts', 'type' => 'text', 'label' => 'Number of Posts'],
                         ['key' => 'query_args', 'type' => 'textarea', 'label' => 'Query Arguments (JSON)'],
                         ['key' => 'include_post_ids', 'type' => 'text', 'label' => 'Include Post IDs (CSV)'],
+                        ['key' => 'show_links', 'type' => 'toggle', 'label' => 'Show Links', 'defaultValue' => ($config['show_links'] ?? 'yes')],
+                        ['key' => 'show_headers', 'type' => 'toggle', 'label' => 'Show Headers', 'defaultValue' => ($config['show_headers'] ?? 'yes')],
                         ['key' => 'auto_open_first_item', 'type' => 'toggle', 'label' => 'Auto Open First Item'],
                         ['key' => 'height', 'type' => 'text', 'unit' => '%', 'label' => 'Height'],
                         ['key' => 'padding_top', 'type' => 'text', 'unit' => 'px', 'label' => 'Padding Top'],
@@ -519,8 +773,9 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                     ]
                 ],
                 [
-                    'tab' => 'List',
+                    'tab' => 'Titles & List',
                     'controls' => [
+                        // Opciones de lista
                         ['key' => 'list_direction', 'type' => 'select', 'options' => ['vertical' => 'Vertical', 'horizontal' => 'Horizontal'], 'label' => 'List Direction'],
                         ['key' => 'list_item_spacing', 'type' => 'text', 'unit' => 'px', 'label' => 'List Item Spacing'],
                         ['key' => 'list_panel_width', 'type' => 'range', 'min' => 10, 'max' => 70, 'step' => 1, 'unit' => '%', 'label' => 'List Panel Width'],
@@ -529,18 +784,30 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                         ['key' => 'list_padding_bottom', 'type' => 'text', 'unit' => 'px', 'label' => 'List Padding Bottom'],
                         ['key' => 'list_padding_left', 'type' => 'text', 'unit' => 'px', 'label' => 'List Padding Left'],
                         ['key' => 'list_padding_right', 'type' => 'text', 'unit' => 'px', 'label' => 'List Padding Right'],
+                        // Opciones de títulos de posts
+                        ['key' => 'post_title_position', 'type' => 'select', 'options' => ['above' => 'Above Content', 'below' => 'Below Content'], 'label' => 'Post Title Position'],
+                        ['key' => 'post_title_alignment', 'type' => 'select', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'], 'label' => 'Post Title Alignment'],
+                        ['key' => 'post_title_link_icon', 'type' => 'toggle', 'label' => 'Show Link Icon', 'defaultValue' => ($config['post_title_link_icon'] ?? 'yes')],
+                        ['key' => 'title_font_family', 'type' => 'select', 'options' => $fontFamilies, 'label' => 'Post Title Font Family', 'search' => true],
+                        ['key' => 'title_font_variant', 'type' => 'select', 'options' => $variantOptions, 'label' => 'Post Title Font Variant'],
+                        ['key' => 'title_font_size', 'type' => 'text', 'unit' => 'px', 'label' => 'Post Title Font Size'],
+                        ['key' => 'title_line_height', 'type' => 'text', 'unit' => 'px', 'label' => 'Post Title Line Height'],
+                        ['key' => 'title_letter_spacing', 'type' => 'text', 'unit' => 'px', 'label' => 'Post Title Letter Spacing'],
+                        ['key' => 'title_text_transform', 'type' => 'select', 'options' => $transformOptions, 'label' => 'Post Title Text Transform'],
+                        ['key' => 'title_color', 'type' => 'color', 'label' => 'Post Title Color'],
                     ]
                 ],
                 [
-                    'tab' => 'Titles',
+                    'tab' => 'Page Title',
                     'controls' => [
-                        ['key' => 'title_font_family', 'type' => 'select', 'options' => $fontFamilies, 'label' => 'Title Font Family', 'search' => true],
-                        ['key' => 'title_font_variant', 'type' => 'select', 'options' => $variantOptions, 'label' => 'Title Font Variant'],
-                        ['key' => 'title_font_size', 'type' => 'text', 'unit' => 'px', 'label' => 'Title Font Size'],
-                        ['key' => 'title_line_height', 'type' => 'text', 'unit' => 'px', 'label' => 'Title Line Height'],
-                        ['key' => 'title_letter_spacing', 'type' => 'text', 'unit' => 'px', 'label' => 'Title Letter Spacing'],
-                        ['key' => 'title_text_transform', 'type' => 'select', 'options' => $transformOptions, 'label' => 'Title Text Transform'],
-                        ['key' => 'title_color', 'type' => 'color', 'label' => 'Title Color'],
+                        ['key' => 'page_title_enabled', 'type' => 'select', 'options' => ['no' => 'No', 'yes' => 'Yes'], 'label' => 'Enable Page Title'],
+                        ['key' => 'page_title_text', 'type' => 'text', 'label' => 'Page Title Text', 'conditional' => 'page_title_enabled:yes'],
+                        ['key' => 'page_title_position', 'type' => 'select', 'options' => ['top' => 'Top of Titles', 'bottom' => 'Bottom of Titles'], 'label' => 'Page Title Position', 'conditional' => 'page_title_enabled:yes'],
+                        ['key' => 'page_title_alignment', 'type' => 'select', 'options' => ['left' => 'Left', 'center' => 'Center', 'right' => 'Right'], 'label' => 'Page Title Alignment', 'conditional' => 'page_title_enabled:yes'],
+                        ['key' => 'page_title_font_family', 'type' => 'select', 'options' => $fontFamilies, 'label' => 'Page Title Font Family', 'search' => true, 'conditional' => 'page_title_enabled:yes'],
+                        ['key' => 'page_title_font_variant', 'type' => 'select', 'options' => $variantOptions, 'label' => 'Page Title Font Variant', 'conditional' => 'page_title_enabled:yes'],
+                        ['key' => 'page_title_font_size', 'type' => 'text', 'unit' => 'px', 'label' => 'Page Title Font Size', 'conditional' => 'page_title_enabled:yes'],
+                        ['key' => 'page_title_color', 'type' => 'color', 'label' => 'Page Title Color', 'conditional' => 'page_title_enabled:yes'],
                     ]
                 ],
                 [

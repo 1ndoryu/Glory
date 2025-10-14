@@ -1,4 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap');
+
 /* Panel lateral GBN (minimal, theme-aware) */
+:root {
+    --bg: #ffffff;
+    --text: #111111;
+    --border-color: #e6e6e6;
+    --muted: #6b6b6b;
+    --primary-bg: #292929;
+    --primary-text: #ffffff;
+    --overlay-bg: rgba(0, 0, 0, 0.2);
+    --hover-bg: #f5f5f5;
+    --selected-bg: #efefef;
+    --font-family: 'Source Sans 3', sans-serif;
+}
+
 #gbn-panel {
     position: fixed;
     top: 0;
@@ -14,6 +29,13 @@
     transition: transform 0.2s ease;
     border-left: 1px solid var(--border-color, #e6e6e6);
     border-radius: 0;
+    font-family: var(--font-family);
+}
+
+/* Aplicar fuente Source Sans 3 a todos los elementos del panel GBN */
+#gbn-panel,
+#gbn-panel * {
+    font-family: var(--font-family);
 }
 
 #gbn-panel.is-open {
@@ -51,14 +73,6 @@
     background: var(--bg, #ffffff);
 }
 
-#gbn-panel .gbn-footer #gbn-save {
-    background: #111111;
-    color: #ffffff;
-    border: none;
-    padding: 8px 12px;
-    cursor: pointer;
-}
-
 /* Botón flotante de edición */
 .gbn-floating-edit {
     position: absolute;
@@ -67,15 +81,20 @@
     background: unset;
     color: var(--text, #111111);
     border: unset;
-    padding: 6px 10px;
+    padding: 0;
+    width: 24px;
+    height: 24px;
     border-radius: 0;
-    font-size: 12px;
     cursor: pointer;
     opacity: 0;
     transition: opacity 0.2s ease;
     display: flex;
     align-items: center;
     align-content: center;
+    justify-content: center;
+    line-height: 0;
+    z-index: 3;
+    pointer-events: auto;
 }
 .glory-split:hover > .gbn-floating-edit {
     opacity: 0.85;
@@ -85,11 +104,137 @@
     opacity: 1;
 }
 
+/* Ajustar tamaño del ícono del botón flotante para no aumentar altura */
+.gbn-floating-edit svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+}
+
+/* Botón flotante de ajustes (engranaje) */
+.gbn-floating-settings {
+    position: absolute;
+    top: 8px;
+    right: 36px; /* separarlo del botón editar */
+    background: unset;
+    color: var(--text, #111111);
+    border: unset;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    border-radius: 0;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    z-index: 3;
+    pointer-events: auto;
+}
+.glory-split:hover > .gbn-floating-settings {
+    opacity: 0.85;
+}
+.gbn-floating-settings:hover {
+    opacity: 1;
+}
+
 /* Contenedor principal */
 .glory-split {
     position: relative;
 }
 
+.glory-split,
+.glory-split * {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+}
+
+/* Layout en la lista de títulos: título + acciones en una fila */
+.glory-split__titles .glory-content-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+}
+.glory-split__titles .glory-content-item .glory-split__title {
+    flex: 1 1 auto;
+    width: auto; /* evitar cubrir acciones */
+    position: relative;
+    z-index: 1;
+}
+
+/* Acciones inline en cada título */
+.gbn-title-actions {
+    display: inline-flex;
+    gap: 6px;
+    margin-left: 8px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    vertical-align: middle;
+    position: relative;
+    z-index: 2; /* sobre el título */
+    align-items: center;
+}
+.glory-split__item:hover .gbn-title-actions {
+    opacity: 0.85;
+}
+.gbn-title-actions button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--text, #111111);
+    line-height: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.gbn-title-actions button:hover {
+    opacity: 1;
+}
+.gbn-title-actions svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+}
+
+/* Modal mínimo para acciones rápidas */
+#gbn-mini-modal {
+    display: none;
+}
+#gbn-mini-modal.is-open {
+    display: block;
+}
+#gbn-mini-modal .gbn-mini-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-bg);
+    z-index: 100000;
+}
+#gbn-mini-modal .gbn-mini-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    max-width: 90vw;
+    background: var(--bg);
+    color: var(--text);
+    z-index: 100001;
+    border: 1px solid var(--border-color);
+}
+#gbn-mini-modal .gbn-mini-body {
+    padding: 16px;
+}
+#gbn-mini-modal .gbn-mini-actions {
+    padding: 10px 16px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border-color);
+}
 /* Cursor en los títulos de la lista para arrastrar */
 .gbn-open .glory-split__titles .glory-split__title {
     cursor: grab;
@@ -135,6 +280,7 @@
 .gbn-control input[type='range'],
 .gbn-control input[type='text'],
 .gbn-control input[type='number'],
+.gbn-control input[type='url'],
 .gbn-control select,
 .gbn-control textarea {
     width: 100%;
@@ -153,6 +299,7 @@
 .gbn-control input[type='range']:focus,
 .gbn-control input[type='text']:focus,
 .gbn-control input[type='number']:focus,
+.gbn-control input[type='url']:focus,
 .gbn-control select:focus,
 .gbn-control textarea:focus {
     border-bottom-color: var(--text, #111111);
@@ -161,6 +308,7 @@
 /* Placeholder styling */
 .gbn-control input[type='text']::placeholder,
 .gbn-control input[type='number']::placeholder,
+.gbn-control input[type='url']::placeholder,
 .gbn-control textarea::placeholder,
 .gbn-select-search::placeholder,
 .gbn-select-display::placeholder {
@@ -365,3 +513,56 @@ button#gbn-close {
     cursor: pointer;
     padding: 5px;
 }
+
+.gbn-mini-body span {
+    font-size: 13px;
+}
+
+/* Aplicar fuente Source Sans 3 a los modales */
+#gbn-mini-modal,
+#gbn-mini-modal * {
+    font-family: var(--font-family);
+    font-size: 12px;
+}
+
+/* Clase común para botones primarios */
+.gbn-btn {
+    background: var(--primary-bg);
+    color: var(--primary-text);
+    border: none;
+    padding: 6px 15px;
+    cursor: pointer;
+    font-family: var(--font-family);
+    border-radius: 50px;
+    font-size: 12px;
+}
+
+/* Utilidades (evitar estilos inline desde JS) */
+.u-pointer-auto {
+    pointer-events: auto;
+}
+.is-hidden {
+    display: none !important;
+}
+.gbn-mini-content {
+    max-width: 400px;
+}
+.gbn-mini-title {
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+.gbn-mini-padded {
+    padding: 10px;
+}
+
+/* Estilos para headers (encabezados de sección) */
+.glory-split__item--header .glory-split__title--header {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+/* Icono al final del título (solo para enlaces): inline, opacidad reducida, no ocupa varias líneas */
+.glory-split__title-text{display:inline}
+.glory-split__title-icon{display:inline-block;vertical-align:middle;opacity:0.8;margin-left:6px;line-height:1;width:16px;height:16px;white-space:nowrap}
+.glory-split__title-icon svg{display:block;width:16px;height:16px}

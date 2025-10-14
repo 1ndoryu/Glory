@@ -40,6 +40,7 @@ class GbnManager
         wp_localize_script('glory-gbn', 'gloryGbnCfg', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('glory_gbn_nonce'),
+            'siteTitle' => get_bloginfo('name'),
         ]);
     }
 
