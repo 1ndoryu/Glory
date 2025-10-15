@@ -367,34 +367,47 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
             $preloadContent = '';
             $autoOpen = (string) ($this->args['auto_open_first_item'] ?? 'no') === 'yes';
             if ($autoOpen) {
-                // Repetir consulta para obtener posts y encontrar el primero que no sea glory_link
-                try {
-                    $argsConsulta = $argumentosConsulta;
-                    // Obtener más posts para poder saltar los links
-                    $argsConsulta['posts_per_page'] = $ppp > 0 ? $ppp : 50; // Usar el límite configurado o 50 como máximo
-                    $argsConsulta['ignore_sticky_posts'] = true;
-                    $argsConsulta = array_merge([
-                        'post_type' => $postType,
-                    ], $argsConsulta);
-                    $q = new \WP_Query($argsConsulta);
-                    if ($q && $q->have_posts()) {
-                        // Buscar el primer post que no sea glory_link
-                        $foundNonLinkPost = false;
-                        while ($q->have_posts() && !$foundNonLinkPost) {
-                            $q->the_post();
-                            $ptActual = get_post_type();
-                            if ($ptActual !== 'glory_link' && $ptActual !== 'glory_header') {
-                                ob_start();
-                                // Usar plantilla de contenido completo
-                                \Glory\Components\ContentRender::fullContentTemplate(get_post(), 'glory-split__content-item');
-                                $preloadContent = ob_get_clean();
-                                $foundNonLinkPost = true;
-                            }
+                // Intentar abrir el primero según idsPreferidos (ignorando links/headers)
+                $targetId = null;
+                if (!empty($idsPreferidos)) {
+                    foreach ($idsPreferidos as $pid) {
+                        $tipoPid = get_post_type($pid);
+                        if ($tipoPid && $tipoPid !== 'glory_link' && $tipoPid !== 'glory_header' && get_post_status($pid) === 'publish') {
+                            $targetId = (int) $pid;
+                            break;
                         }
                     }
-                    wp_reset_postdata();
-                } catch (\Throwable $e) {
-                    $preloadContent = '';
+                }
+                // Fallback: primero de la consulta que no sea link/header
+                if ($targetId === null) {
+                    try {
+                        $argsConsulta = $argumentosConsulta;
+                        $argsConsulta['posts_per_page'] = $ppp > 0 ? $ppp : 50;
+                        $argsConsulta['ignore_sticky_posts'] = true;
+                        $argsConsulta = array_merge([
+                            'post_type' => $argumentosConsulta['post_type'] ?? $postType,
+                        ], $argsConsulta);
+                        $q = new \WP_Query($argsConsulta);
+                        if ($q && $q->have_posts()) {
+                            while ($q->have_posts()) {
+                                $q->the_post();
+                                $ptActual = get_post_type();
+                                if ($ptActual !== 'glory_link' && $ptActual !== 'glory_header') {
+                                    $targetId = (int) get_the_ID();
+                                    break;
+                                }
+                            }
+                        }
+                        wp_reset_postdata();
+                    } catch (\Throwable $e) {}
+                }
+                if ($targetId) {
+                    $postObj = get_post($targetId);
+                    if ($postObj) {
+                        ob_start();
+                        \Glory\Components\ContentRender::fullContentTemplate($postObj, 'glory-split__content-item');
+                        $preloadContent = ob_get_clean();
+                    }
                 }
             }
             $html .= '<div class="glory-split__panel glory-split__content" id="' . esc_attr($instanceClass) . '-content">' . $preloadContent . '</div>';
