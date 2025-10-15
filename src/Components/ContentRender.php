@@ -130,6 +130,8 @@ class ContentRender
             'submenu'              => false,  // habilita data-submenu-enabled
             'eventoAccion'         => 'dblclick', // click | dblclick | longpress
             'selectorItem'         => '[id^="post-"]', // selector CSS para identificar el item clicado
+            // Orden preferido (IDs que deben aparecer primero, en este orden)
+            'idsPreferidos'        => [],
         ];
         $config = wp_parse_args($opciones, $defaults);
 
@@ -311,6 +313,37 @@ class ContentRender
             }
             // Exponer config actual a las plantillas
             self::$currentConfig = $config;
+
+            // Reordenar resultados priorizando idsPreferidos sin excluir nuevos posts
+            $preferredIds = array_values(array_filter(array_map('absint', (array) ($config['idsPreferidos'] ?? []))));
+            if (!empty($preferredIds) && is_array($query->posts) && !empty($query->posts)) {
+                $byId = [];
+                foreach ($query->posts as $p) {
+                    if (is_object($p) && isset($p->ID)) {
+                        $byId[(int) $p->ID] = $p;
+                    }
+                }
+                $ordered = [];
+                $added = [];
+                foreach ($preferredIds as $pid) {
+                    if (isset($byId[$pid])) {
+                        $ordered[] = $byId[$pid];
+                        $added[$pid] = true;
+                    }
+                }
+                foreach ($query->posts as $p) {
+                    $pid = (is_object($p) && isset($p->ID)) ? (int) $p->ID : 0;
+                    if ($pid && empty($added[$pid])) {
+                        $ordered[] = $p;
+                        $added[$pid] = true;
+                    }
+                }
+                if (!empty($ordered)) {
+                    $query->posts = $ordered;
+                    $query->post_count = count($ordered);
+                    $query->rewind_posts();
+                }
+            }
 
             echo '<div class="' . esc_attr($contenedorClass) . '"'
                 . ' data-post-type="' . esc_attr($postType) . '"'

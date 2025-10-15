@@ -177,10 +177,12 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
             ob_start();
             try {
                 $listScroll = (string) ($this->args['list_scroll_enabled'] ?? 'yes') === 'yes';
-                // Aplicar orden guardado por GBN si existe
+                // Aplicar orden guardado por GBN si existe, como preferencia de orden
+                $idsPreferidos = [];
                 if (!empty($gbnData['order']) && is_array($gbnData['order'])) {
-                    $argumentosConsulta['post__in'] = array_map('absint', $gbnData['order']);
-                    $argumentosConsulta['orderby'] = 'post__in';
+                    $idsPreferidos = array_values(array_map('absint', $gbnData['order']));
+                    // No restringimos la consulta con post__in para permitir que entren posts nuevos
+                    // El reordenamiento ocurrirá en ContentRender
                 }
 
                 // Manejar links y headers según las opciones
@@ -311,6 +313,7 @@ if (! class_exists('FusionSC_GlorySplitContent') && class_exists('Fusion_Element
                     'paginacion'             => false,
                     'plantillaCallback'      => ['\\Glory\\Integration\\Avada\\Elements\\GlorySplitContent\\GlorySplitContentTemplate', 'titleItem'],
                     'argumentosConsulta'     => $argumentosConsulta,
+                    'idsPreferidos'          => $idsPreferidos,
                     'forzarSinCache'         => true,
                     // Opciones consumidas por la plantilla de títulos
                     'post_title_link_icon'   => (string) ($this->args['post_title_link_icon'] ?? 'yes'),
