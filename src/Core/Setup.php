@@ -25,6 +25,7 @@ use Glory\Handler\PaginationAjaxHandler;
 use Glory\Handler\BusquedaAjaxHandler;
 use Glory\Handler\RealtimeAjaxHandler;
 use Glory\Components\LogoRenderer;
+use Glory\Components\ContentRender;
 use Glory\Services\GestorCssCritico;
 use Glory\Handler\ContentActionAjaxHandler;
 
@@ -227,6 +228,13 @@ class Setup
                 'controller'
             );
         }
+
+        // Inicializar hooks de limpieza de caché para ContentRender
+        PerformanceProfiler::medirFuncion(
+            fn() => ContentRender::initHooks(),
+            'ContentRender.initHooks',
+            'component'
+        );
 
         PerformanceProfiler::end('Setup.constructor');
     }

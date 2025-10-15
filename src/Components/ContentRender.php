@@ -10,6 +10,101 @@ class ContentRender
 {
     /** @var array<string,mixed> */
     private static $currentConfig = [];
+    /** @var bool */
+    private static $hooksRegistered = false;
+
+    /**
+     * Inicializa los hooks para limpieza de caché
+     */
+    public static function initHooks(): void
+    {
+        if (self::$hooksRegistered) {
+            return;
+        }
+
+        add_action('save_post', [self::class, 'clearCacheOnPostChange'], 10, 1);
+        add_action('delete_post', [self::class, 'clearCacheOnPostChange'], 10, 1);
+        add_action('wp_trash_post', [self::class, 'clearCacheOnPostChange'], 10, 1);
+        add_action('untrash_post', [self::class, 'clearCacheOnPostChange'], 10, 1);
+
+        self::$hooksRegistered = true;
+    }
+
+    /**
+     * Limpia la caché de ContentRender cuando se modifica un post
+     */
+    public static function clearCacheOnPostChange(int $postId): void
+    {
+        if (wp_is_post_revision($postId)) {
+            return;
+        }
+
+        $post = get_post($postId);
+        if (!$post) {
+            return;
+        }
+
+        $postType = $post->post_type;
+
+        // Limpiar todas las caches relacionadas con este tipo de post
+        self::clearCacheForPostType($postType);
+
+        // También limpiar caches generales que podrían contener este post
+        self::clearAllContentCaches();
+    }
+
+    /**
+     * Limpia todas las caches de ContentRender para un tipo de post específico
+     */
+    public static function clearCacheForPostType(string $postType): void
+    {
+        global $wpdb;
+
+        $prefix = '_transient_glory_content_';
+        $timeout_prefix = '_transient_timeout_glory_content_';
+
+        // Escapar el prefijo para evitar SQL injection
+        $escaped_prefix = $wpdb->esc_like($prefix . '%');
+        $escaped_timeout_prefix = $wpdb->esc_like($timeout_prefix . '%');
+
+        // Eliminar transients relacionados con ContentRender
+        $sql = $wpdb->prepare(
+            "DELETE FROM {$wpdb->options}
+             WHERE (option_name LIKE %s OR option_name LIKE %s)
+             AND option_name LIKE %s",
+            $escaped_prefix,
+            $escaped_timeout_prefix,
+            '%' . $wpdb->esc_like($postType) . '%'
+        );
+
+        $wpdb->query($sql);
+    }
+
+    /**
+     * Limpia todas las caches de ContentRender
+     */
+    public static function clearAllContentCaches(): void
+    {
+        global $wpdb;
+
+        $prefix = '_transient_glory_content_';
+        $timeout_prefix = '_transient_timeout_glory_content_';
+
+        // Escapar los prefijos
+        $escaped_prefix = $wpdb->esc_like($prefix . '%');
+        $escaped_timeout_prefix = $wpdb->esc_like($timeout_prefix . '%');
+
+        // Eliminar todos los transients de ContentRender
+        $sql = $wpdb->prepare(
+            "DELETE FROM {$wpdb->options}
+             WHERE option_name LIKE %s OR option_name LIKE %s",
+            $escaped_prefix,
+            $escaped_timeout_prefix
+        );
+
+        $wpdb->query($sql);
+    }
+
     /**
      * Imprime una lista de contenidos con opción de caché.
      *
