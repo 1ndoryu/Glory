@@ -82,6 +82,9 @@ class HeaderRenderer
                                     'theme_location' => 'main_navigation',
                                     'container'      => false,
                                     'menu_id'        => esc_attr($idMenu),
+                                    'menu_class'     => 'menu menu-level-1',
+                                    'depth'          => 3,
+                                    'walker'         => new \Glory\Components\MenuWalker(),
                                 ]);
                             }
                             ?>
