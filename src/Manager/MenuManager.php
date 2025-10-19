@@ -7,6 +7,9 @@ use Glory\Core\GloryFeatures;
 class MenuManager
 {
     private const UBICACION_MENU_PRINCIPAL = 'main_navigation';
+    private const RUTA_MENU_CODIGO = '/App/Content/menu.php';
+
+    private static bool $asegurado = false;
 
 
     public static function register(): void
@@ -30,6 +33,9 @@ class MenuManager
 
     public static function asegurarMenuPrincipal(): void
     {
+        if (self::$asegurado === true) {
+            return;
+        }
         // 1) Determinar/crear el menú objetivo
         $menuName = __('Main Menu', 'glory');
         $menuId = null;
@@ -44,6 +50,19 @@ class MenuManager
         if (!$menuId) {
             $menuId = self::getOrCreateMenuId($menuName);
             if (!$menuId) {
+                self::$asegurado = true;
+                return;
+            }
+        }
+
+        // Prioridad: en modo desarrollo usar la definición de código
+        if (self::esModoDesarrollo()) {
+            $definicion = self::cargarDefinicionMenuDesdeCodigo();
+            if (is_array($definicion) && !empty($definicion)) {
+                self::reconstruirMenuDesdeCodigo($menuId, $definicion);
+                update_term_meta($menuId, 'glory_seeded_from_code', 1);
+                self::asignarUbicacion($menuId);
+                self::$asegurado = true;
                 return;
             }
         }
@@ -68,6 +87,7 @@ class MenuManager
         // 4) Marcar como sembrado y asignar a la ubicación
         update_term_meta($menuId, 'glory_seeded', 1);
         self::asignarUbicacion($menuId);
+        self::$asegurado = true;
     }
 
     /**
@@ -315,5 +335,143 @@ class MenuManager
         }
         $ubicaciones[self::UBICACION_MENU_PRINCIPAL] = $menuId;
         set_theme_mod('nav_menu_locations', $ubicaciones);
+    }
+
+    // ==========================
+    // Soporte de menú definido por código (modo dev)
+    // ==========================
+
+    private static function esModoDesarrollo(): bool
+    {
+        // Usar constante LOCAL definida en App/Config/environment.php
+        return defined('LOCAL') && LOCAL === true;
+    }
+
+    /**
+     * Carga la definición del menú desde App/Content/menu.php.
+     * Debe devolver un array de items con estructura:
+     * [ [ 'title' => string, 'url' => string, 'children' => [] ], ... ]
+     */
+    private static function cargarDefinicionMenuDesdeCodigo(): ?array
+    {
+        $ruta = get_template_directory() . self::RUTA_MENU_CODIGO;
+        if (!file_exists($ruta)) {
+            return null;
+        }
+
+        $menu = require $ruta;
+        if (!is_array($menu)) {
+            return null;
+        }
+
+        // Normalizar estructura: asegurar claves y tipos
+        $normalizado = [];
+        foreach ($menu as $item) {
+            $titulo = (string) ($item['title'] ?? '');
+            $url = (string) ($item['url'] ?? '#');
+            $children = $item['children'] ?? [];
+            if ($titulo === '') {
+                continue;
+            }
+            if (!is_array($children)) {
+                $children = [];
+            }
+            $normalizado[] = [
+                'title' => $titulo,
+                'url' => $url,
+                'children' => self::normalizarChildren($children),
+            ];
+        }
+        return $normalizado;
+    }
+
+    private static function normalizarChildren(array $children): array
+    {
+        $out = [];
+        foreach ($children as $child) {
+            $titulo = (string) ($child['title'] ?? '');
+            $url = (string) ($child['url'] ?? '#');
+            $grandChildren = $child['children'] ?? [];
+            if ($titulo === '') {
+                continue;
+            }
+            if (!is_array($grandChildren)) {
+                $grandChildren = [];
+            }
+            $out[] = [
+                'title' => $titulo,
+                'url' => $url,
+                'children' => self::normalizarChildren($grandChildren),
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Reconstruye el menú completo (elimina ítems actuales y crea los del código, con jerarquía).
+     */
+    private static function reconstruirMenuDesdeCodigo(int $menuId, array $definicion): void
+    {
+        // Eliminar todos los ítems actuales del menú
+        $existentes = wp_get_nav_menu_items($menuId);
+        if (is_array($existentes)) {
+            foreach ($existentes as $item) {
+                wp_delete_post((int) $item->ID, true);
+            }
+        }
+
+        // Crear recursivamente los ítems
+        foreach ($definicion as $item) {
+            $parentId = self::crearItemMenu($menuId, 0, $item['title'], $item['url']);
+            if ($parentId && !empty($item['children'])) {
+                self::crearHijosRecursivo($menuId, $parentId, $item['children']);
+            }
+        }
+    }
+
+    private static function crearHijosRecursivo(int $menuId, int $parentItemId, array $children): void
+    {
+        foreach ($children as $child) {
+            $childId = self::crearItemMenu($menuId, $parentItemId, (string) $child['title'], (string) $child['url']);
+            if ($childId && !empty($child['children'])) {
+                self::crearHijosRecursivo($menuId, $childId, $child['children']);
+            }
+        }
+    }
+
+    /**
+     * Crea un ítem en el menú y devuelve el ID del post creado (item de menú).
+     */
+    private static function crearItemMenu(int $menuId, int $parentItemId, string $title, string $url): ?int
+    {
+        $args = [
+            'menu-item-type'        => 'custom',
+            'menu-item-object'      => 'custom',
+            'menu-item-title'       => $title,
+            'menu-item-attr-title'  => $title,
+            'menu-item-url'         => self::resolverUrl($url),
+            'menu-item-status'      => 'publish',
+        ];
+        if ($parentItemId > 0) {
+            $args['menu-item-parent-id'] = $parentItemId;
+        }
+        $itemId = wp_update_nav_menu_item($menuId, 0, $args);
+        if (is_wp_error($itemId)) {
+            return null;
+        }
+        return (int) $itemId;
+    }
+
+    private static function resolverUrl(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '' || $url === '#') {
+            return '#';
+        }
+        // Si empieza con '/', construir absoluta con home_url
+        if (strpos($url, '/') === 0) {
+            return home_url($url);
+        }
+        return $url;
     }
 }
