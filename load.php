@@ -45,4 +45,8 @@ if (is_readable($themeOptionsFile)) {
     require_once $themeOptionsFile;
 }
 
-new Setup();
+// Evitar doble bootstrap del framework
+if (!defined('GLORY_BOOTED')) {
+    define('GLORY_BOOTED', true);
+    new Setup();
+}

@@ -41,6 +41,17 @@ class PerformanceProfiler
     private static bool $initialized = false;
 
     /**
+     * Inicio de petición para medir tiempo total (wall time).
+     */
+    private static float $requestStart = 0.0;
+
+    /**
+     * Tiempos de inicio de peticiones HTTP por clave URL|METHOD (pila para múltiples llamadas).
+     * @var array<string, float[]>
+     */
+    private static array $httpStarts = [];
+
+    /**
      * Inicializa el profiler si está activo.
      */
     public static function init(): void
@@ -54,12 +65,33 @@ class PerformanceProfiler
         // Solo activo en desarrollo o si está explícitamente habilitado
         self::$isActive = GloryFeatures::isActive('performanceProfiler', 'glory_performance_profiler_activo', false);
 
+        // No perfilar en AJAX/REST/CRON para reducir ruido y falsos positivos de dobles cargas
+        if (defined('DOING_AJAX') && DOING_AJAX) {
+            self::$isActive = false;
+        }
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            self::$isActive = false;
+        }
+        if (defined('DOING_CRON') && DOING_CRON) {
+            self::$isActive = false;
+        }
+
         if (!self::$isActive) {
             return;
         }
 
+        // Marcar inicio de petición (mejor esfuerzo)
+        self::$requestStart = isset($_SERVER['REQUEST_TIME_FLOAT']) ? (float) $_SERVER['REQUEST_TIME_FLOAT'] : microtime(true);
+
         // Registrar hook para mostrar resumen final
         add_action('shutdown', [self::class, 'mostrarResumenFinal'], 999);
+
+        // Log de wall time total justo antes del resumen
+        add_action('shutdown', [self::class, 'logWallTime'], 998);
+
+        // Instrumentación de HTTP API para detectar bloqueos (p. ej. wp-cron loopback)
+        add_filter('pre_http_request', [self::class, 'httpRequestStart'], 10, 3);
+        add_filter('http_response', [self::class, 'httpRequestEnd'], 10, 3);
     }
 
     /**
@@ -206,6 +238,49 @@ class PerformanceProfiler
         });
 
         return $mediciones;
+    }
+
+    /**
+     * Loguea el tiempo total de la petición.
+     */
+    public static function logWallTime(): void
+    {
+        $duracion = microtime(true) - (self::$requestStart ?: microtime(true));
+        $memoriaMB = number_format(memory_get_peak_usage(true) / 1024 / 1024, 2);
+        error_log(sprintf('[Glory Profiler] TOTAL REQUEST | %0.6fs | %s MB', $duracion, $memoriaMB));
+    }
+
+    /**
+     * Marca inicio de una petición HTTP (no corta la petición).
+     * Debe devolver false para no interceptar la solicitud.
+     */
+    public static function httpRequestStart($pre, array $args, string $url)
+    {
+        $method = strtoupper($args['method'] ?? 'GET');
+        $key = $url . '|' . $method;
+        self::$httpStarts[$key] = self::$httpStarts[$key] ?? [];
+        self::$httpStarts[$key][] = microtime(true);
+        return $pre; // no interceptar
+    }
+
+    /**
+     * Marca fin de una petición HTTP y registra su duración.
+     */
+    public static function httpRequestEnd($response, array $args, string $url)
+    {
+        $method = strtoupper($args['method'] ?? 'GET');
+        $key = $url . '|' . $method;
+        $start = null;
+        if (isset(self::$httpStarts[$key]) && !empty(self::$httpStarts[$key])) {
+            $start = array_pop(self::$httpStarts[$key]);
+        }
+        if ($start !== null) {
+            $duracion = microtime(true) - $start;
+            $code = is_array($response) && isset($response['response']['code']) ? (int) $response['response']['code'] : 0;
+            $timeout = $args['timeout'] ?? '';
+            error_log(sprintf('[Glory Profiler][HTTP] %s %s | %0.6fs | code=%s | timeout=%s', $method, $url, $duracion, $code, $timeout));
+        }
+        return $response;
     }
 
     /**
