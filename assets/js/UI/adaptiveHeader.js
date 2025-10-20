@@ -160,14 +160,23 @@ function gloryMenu() {
     const navTitle = navMenu.querySelector('.navTitle');
     const navItems = navMenu.querySelectorAll('ul > li');
 
+    const isMobile = window.matchMedia('(max-width: 999px)').matches;
     let isMenuOpen = false;
 
-    gsap.set(navMenu, {yPercent: -100, autoAlpha: 0});
+    if (isMobile) {
+        gsap.set(navMenu, {yPercent: -100, autoAlpha: 0});
+    } else {
+        // En escritorio evitamos transforms/opacidad inline para que backdrop-filter funcione
+        navMenu.style.removeProperty('transform');
+        navMenu.style.removeProperty('opacity');
+        header.classList.remove('open');
+        document.body.classList.remove('menu-open');
+    }
 
     const openMenu = () => {
         if (isMenuOpen) return;
         isMenuOpen = true;
-
+        if (!isMobile) return; // solo móvil
         document.body.classList.add('menu-open');
         header.classList.add('open');
 
@@ -204,7 +213,7 @@ function gloryMenu() {
     const closeMenu = () => {
         if (!isMenuOpen) return;
         isMenuOpen = false;
-
+        if (!isMobile) return; // solo móvil
         const tl = gsap.timeline({
             onComplete: () => {
                 header.classList.remove('open');
@@ -230,17 +239,19 @@ function gloryMenu() {
         );
     };
 
-    burger.addEventListener('click', () => {
-        isMenuOpen ? closeMenu() : openMenu();
-    });
+    if (isMobile) {
+        burger.addEventListener('click', () => {
+            isMenuOpen ? closeMenu() : openMenu();
+        });
 
-    background.addEventListener('click', closeMenu);
+        background.addEventListener('click', closeMenu);
 
-    window.addEventListener('keyup', e => {
-        if (e.key === 'Escape') {
-            closeMenu();
-        }
-    });
+        window.addEventListener('keyup', e => {
+            if (e.key === 'Escape') {
+                closeMenu();
+            }
+        });
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
