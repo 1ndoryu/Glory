@@ -251,6 +251,34 @@ function gloryMenu() {
                 closeMenu();
             }
         });
+
+        // Comportamiento móvil: togglear submenús con tap y evitar navegación en padre
+        const topLevelItems = navMenu.querySelectorAll('ul.menu > li.menu-item-has-children');
+        topLevelItems.forEach(li => {
+            const link = li.querySelector(':scope > a');
+            const submenu = li.querySelector(':scope > ul.sub-menu');
+            if (!submenu) return;
+
+            // Asegurar cerrado por defecto en móvil
+            li.classList.remove('open');
+
+            if (link) {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // Toggle del submenú
+                    if (li.classList.contains('open')) {
+                        li.classList.remove('open');
+                    } else {
+                        // cerrar otros abiertos
+                        topLevelItems.forEach(otro => {
+                            if (otro !== li) otro.classList.remove('open');
+                        });
+                        li.classList.add('open');
+                    }
+                });
+            }
+        });
     }
 }
 
