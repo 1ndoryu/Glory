@@ -28,8 +28,12 @@
         setupContainer: function(container) {
             var isDown = false;
             var startX;
+            var startY;
             var scrollLeft;
             var originalPaddingRight = 0;
+            var didDrag = false;
+            var suppressClickUntil = 0;
+            var DRAG_THRESHOLD = 5;
 
             // Detectar el scroller real (el primero que desborde horizontalmente)
             var scroller = container;
@@ -101,10 +105,10 @@
             var spacer = appendTarget.querySelector(':scope > .' + SPACER_CLASS);
 
             function computeSpacerWidth() {
-                // Espacio discreto: 10% del ancho visible, con límites moderados
-                var proposed = Math.round(container.clientWidth * 0.10);
+                // Espacio más discreto: 4% del ancho visible, límites reducidos
+                var proposed = Math.round(container.clientWidth * 0.04);
                 if (!isFinite(proposed) || proposed < 0) proposed = 0;
-                return Math.max(80, Math.min(160, proposed));
+                return Math.max(32, Math.min(80, proposed));
             }
 
             function ensureSpacer() {
@@ -208,22 +212,47 @@
 
             ensureAbsoluteSpacer();
 
+            // Evitar drag nativo de imágenes/enlaces dentro del scroller
+            scroller.addEventListener('dragstart', function(e) { e.preventDefault(); }, true);
+            try {
+                var imgs = scroller.querySelectorAll('img');
+                imgs.forEach(function(img) {
+                    if (!img.hasAttribute('draggable')) {
+                        img.setAttribute('draggable', 'false');
+                    }
+                    img.addEventListener('dragstart', function(ev) { ev.preventDefault(); }, true);
+                });
+            } catch(_e) {}
+
+            // Suprimir click si acaba de haber un drag
+            scroller.addEventListener('click', function(e) {
+                if (Date.now() < suppressClickUntil) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }, true);
+
             scroller.addEventListener('mousedown', function(e) {
                 isDown = true;
                 scroller.classList.add('glory-dragging');
                 startX = e.pageX;
+                startY = e.pageY;
                 scrollLeft = scroller.scrollLeft;
+                didDrag = false;
 
                 var moveHandler = function(ev) {
                     if (!isDown) return;
                     ev.preventDefault();
                     var currentX = ev.pageX;
                     var deltaX = startX - currentX;
+                    if (Math.abs(deltaX) > DRAG_THRESHOLD) { didDrag = true; }
                     scroller.scrollLeft = scrollLeft + deltaX;
                 };
                 var upHandler = function() {
                 isDown = false;
                     scroller.classList.remove('glory-dragging');
+                    if (didDrag) { suppressClickUntil = Date.now() + 250; }
+                    didDrag = false;
                     window.removeEventListener('mousemove', moveHandler, true);
                     window.removeEventListener('mouseup', upHandler, true);
                 };
@@ -233,11 +262,15 @@
 
             // Soporte para touch (móviles/tablets)
             var touchStartX = 0;
+            var touchStartY = 0;
             var touchScrollLeft = 0;
+            var touchDidDrag = false;
 
             scroller.addEventListener('touchstart', function(e) {
                 touchStartX = e.touches[0].pageX;
+                touchStartY = e.touches[0].pageY;
                 touchScrollLeft = scroller.scrollLeft;
+                touchDidDrag = false;
             });
 
             scroller.addEventListener('touchmove', function(e) {
@@ -257,11 +290,14 @@
                     ev.preventDefault();
                     var touchX = ev.touches[0].pageX;
                     var deltaX = touchStartX - touchX;
+                    if (Math.abs(deltaX) > DRAG_THRESHOLD) { touchDidDrag = true; }
                     var walk = deltaX * 2;
                     scroller.scrollLeft = touchScrollLeft + walk;
                 };
                 var touchEndHandler = function() {
                 touchStartX = 0;
+                    if (touchDidDrag) { suppressClickUntil = Date.now() + 250; }
+                    touchDidDrag = false;
                     window.removeEventListener('touchmove', touchMoveHandler, true);
                     window.removeEventListener('touchend', touchEndHandler, true);
                 };

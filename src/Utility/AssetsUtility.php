@@ -56,19 +56,73 @@ class AssetsUtility
     }
 
 
+	/**
+	 * Intenta resolver la ruta relativa REAL del asset dentro del alias, aceptando:
+	 * - Referencias sin extensión (probará varias extensiones comunes)
+	 * - Diferencias de mayúsculas/minúsculas en el nombre del archivo
+	 * Retorna la ruta relativa con el nombre de archivo real si existe; de lo contrario null.
+	 */
+	private static function resolveActualRelativeAssetPath(string $alias, string $nombreArchivo): ?string
+	{
+		if (!isset(self::$assetPaths[$alias])) {
+			return null;
+		}
+		$dirRel = self::$assetPaths[$alias];
+		$baseDir = trailingslashit(get_template_directory() . '/' . $dirRel);
+		$basenameSolicitado = basename($nombreArchivo);
+		$extensiones = ['svg', 'png', 'jpg', 'jpeg', 'webp', 'gif'];
+
+		// 1) Si viene con extensión exacta y coincide con el sistema de archivos
+		$directCandidate = $baseDir . $basenameSolicitado;
+		if (is_file($directCandidate)) {
+			return $dirRel . '/' . $basenameSolicitado;
+		}
+
+		$basenameLower = strtolower($basenameSolicitado);
+		$poseeExtension = (strpos($basenameSolicitado, '.') !== false);
+
+		// 2) Búsqueda insensible a mayúsculas/minúsculas
+		if ($poseeExtension) {
+			// Comparar por basename completo (con extensión)
+			foreach ($extensiones as $ext) {
+				$glob = glob($baseDir . '*.' . $ext, GLOB_NOSORT) ?: [];
+				foreach ($glob as $ruta) {
+					if (strtolower(basename($ruta)) === $basenameLower) {
+						return $dirRel . '/' . basename($ruta);
+					}
+				}
+			}
+			return null;
+		}
+
+		// 3) Sin extensión: buscar por nombre (filename) y preferir orden de extensiones
+		$needle = strtolower(pathinfo($basenameSolicitado, PATHINFO_FILENAME));
+		foreach ($extensiones as $ext) {
+			$glob = glob($baseDir . '*.' . $ext, GLOB_NOSORT) ?: [];
+			foreach ($glob as $ruta) {
+				if (strtolower(pathinfo($ruta, PATHINFO_FILENAME)) === $needle) {
+					return $dirRel . '/' . basename($ruta);
+				}
+			}
+		}
+
+		return null;
+	}
+
+
     /**
      * Verifica si un asset referido existe físicamente en el tema.
      */
     public static function assetExists(string $assetReference): bool
     {
         if (!self::$isInitialized) self::init();
-        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-        $rutaRelativa = self::resolveAssetPath($alias, $nombreArchivo);
-        if (!$rutaRelativa) {
-            return false;
-        }
-        $rutaLocal = get_template_directory() . '/' . $rutaRelativa;
-        return file_exists($rutaLocal);
+		list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
+		$rutaRelativa = self::resolveActualRelativeAssetPath($alias, $nombreArchivo);
+		if (!$rutaRelativa) {
+			return false;
+		}
+		$rutaLocal = get_template_directory() . '/' . $rutaRelativa;
+		return is_file($rutaLocal);
     }
 
     /**
@@ -341,18 +395,20 @@ class AssetsUtility
             return $cachedId === 'null' ? null : (int)$cachedId;
         }
 
-        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-        $rutaAssetRelativaSolicitada = self::resolveAssetPath($alias, $nombreArchivo);
-        $rutaAssetRelativa = $rutaAssetRelativaSolicitada;
+		list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
+		$rutaAssetRelativaSolicitada = self::resolveAssetPath($alias, $nombreArchivo);
+		// Intentar resolver a un archivo real (permitiendo nombres sin extensión o con distinto case)
+		$resolved = self::resolveActualRelativeAssetPath($alias, $nombreArchivo);
+		$rutaAssetRelativa = $resolved ?: $rutaAssetRelativaSolicitada;
 
         if (!$rutaAssetRelativa) {
             set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
             return null;
         }
 
-        $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
+		$rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
 
-        if (!file_exists($rutaAssetCompleta)) {
+		if (!file_exists($rutaAssetCompleta)) {
             if ($allowAliasFallback && isset(self::$assetPaths[$alias])) {
                 $dirAlias = trailingslashit(get_template_directory() . '/' . self::$assetPaths[$alias]);
                 $alt = glob($dirAlias . '*.{jpg,jpeg,png,gif,webp}', GLOB_BRACE) ?: [];

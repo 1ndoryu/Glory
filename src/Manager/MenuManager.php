@@ -21,7 +21,7 @@ class MenuManager
         }
 
         add_action('after_setup_theme', [self::class, 'registrarUbicacionesMenu']);
-        add_action('after_setup_theme', [self::class, 'asegurarMenuPrincipal'], 20);
+        add_action('after_setup_theme', [self::class, 'asegurarMenus'], 20);
 
         // Marcar menú como desincronizado cuando el usuario lo edita desde el admin
         add_action('wp_update_nav_menu', [self::class, 'onMenuUpdated'], 10, 2);
@@ -32,87 +32,81 @@ class MenuManager
 
     public static function registrarUbicacionesMenu(): void
     {
+        // Registrar siempre el principal
         register_nav_menu(self::UBICACION_MENU_PRINCIPAL, __('Main Navigation', 'glory'));
+
+        // En modo desarrollo, registrar dinámicamente ubicaciones adicionales definidas en código
+        $def = self::cargarDefinicionMenusDesdeCodigo();
+        if (is_array($def)) {
+            foreach (array_keys($def) as $location) {
+                if ($location === self::UBICACION_MENU_PRINCIPAL) {
+                    continue;
+                }
+                $label = self::labelParaUbicacion($location);
+                register_nav_menu($location, $label);
+            }
+        }
     }
 
 
-    public static function asegurarMenuPrincipal(): void
+    public static function asegurarMenus(): void
     {
         if (self::$asegurado === true) {
             return;
         }
-        // 1) Determinar/crear el menú objetivo
-        $menuName = __('Main Menu', 'glory');
-        $menuId = null;
 
-        if (has_nav_menu(self::UBICACION_MENU_PRINCIPAL)) {
-            $locations = get_nav_menu_locations();
-            if (isset($locations[self::UBICACION_MENU_PRINCIPAL])) {
-                $menuId = (int) $locations[self::UBICACION_MENU_PRINCIPAL];
-            }
+        // Mapa de ubicacion => items[]
+        $defMenus = self::cargarDefinicionMenusDesdeCodigo();
+
+        // Asegurar al menos el menú principal aunque no haya definición
+        $locations = get_nav_menu_locations();
+        $menuPrincipalId = null;
+        if (isset($locations[self::UBICACION_MENU_PRINCIPAL])) {
+            $menuPrincipalId = (int) $locations[self::UBICACION_MENU_PRINCIPAL];
+        }
+        if (!$menuPrincipalId) {
+            $menuPrincipalId = self::getOrCreateMenuId(__('Main Menu', 'glory'));
+        }
+        if (!$menuPrincipalId) {
+            self::$asegurado = true;
+            return;
         }
 
-        if (!$menuId) {
-            $menuId = self::getOrCreateMenuId($menuName);
-            if (!$menuId) {
-                self::$asegurado = true;
-                return;
+        // Si hay definición en modo dev, asegurar TODOS los menús definidos
+        if (self::esModoDesarrollo() && is_array($defMenus) && !empty($defMenus)) {
+            foreach ($defMenus as $location => $items) {
+                self::asegurarMenuDesdeDefinicion($location, $items);
             }
+            self::$asegurado = true;
+            return;
         }
 
-        // Evitar carreras concurrentes entre múltiples requests
-        $lockKey = 'glory_menu_lock_' . $menuId;
+        // Sin definición: preservar comportamiento legacy para el principal
+        $lockKey = 'glory_menu_lock_' . $menuPrincipalId;
         if (get_transient($lockKey)) {
             return;
         }
-        set_transient($lockKey, 1, 15); // TTL corto
-
+        set_transient($lockKey, 1, 15);
         try {
-            // Si el menú fue desincronizado manualmente por el usuario, no tocar
-            if (self::estaDesincronizado($menuId)) {
-                self::asignarUbicacion($menuId);
+            if (self::estaDesincronizado($menuPrincipalId)) {
+                self::asignarUbicacion(self::UBICACION_MENU_PRINCIPAL, $menuPrincipalId);
                 self::$asegurado = true;
                 return;
             }
-
-            // Prioridad: en modo desarrollo usar la definición de código, salvo desync
-            if (self::esModoDesarrollo()) {
-                $definicion = self::cargarDefinicionMenuDesdeCodigo();
-                if (is_array($definicion) && !empty($definicion)) {
-                    $hashActual = self::hashDefinicion($definicion);
-                    $hashPrevio = (string) get_term_meta($menuId, 'glory_code_hash', true);
-                    if ($hashActual !== '' && $hashActual !== $hashPrevio) {
-                        self::reconstruirMenuDesdeCodigo($menuId, $definicion);
-                        update_term_meta($menuId, 'glory_code_hash', $hashActual);
-                        update_term_meta($menuId, 'glory_seeded_from_code', 1);
-                    }
-                    self::asignarUbicacion($menuId);
-                    self::$asegurado = true;
-                    return;
-                }
-            }
-
-            // 2) Comprobar si el menú contiene elementos no-placeholder (personalizado)
-            $menuItems = wp_get_nav_menu_items($menuId);
+            $menuItems = wp_get_nav_menu_items($menuPrincipalId);
             if (!is_array($menuItems)) {
                 $menuItems = [];
             }
-
             $hasNonPlaceholders = self::tieneItemsNoPlaceholders($menuItems);
             if ($hasNonPlaceholders) {
-                // Marcar como personalizado y no tocar más (desync permanente hasta reinicio manual)
-                update_term_meta($menuId, 'glory_customized', 1);
-                update_term_meta($menuId, 'glory_menu_desync', 1);
-                self::asignarUbicacion($menuId);
+                update_term_meta($menuPrincipalId, 'glory_customized', 1);
+                update_term_meta($menuPrincipalId, 'glory_menu_desync', 1);
+                self::asignarUbicacion(self::UBICACION_MENU_PRINCIPAL, $menuPrincipalId);
                 return;
             }
-
-            // 3) Normalizar placeholders (evitar duplicados, crear faltantes, ordenar)
-            self::normalizarPlaceholders($menuId, $menuItems);
-
-            // 4) Marcar como sembrado y asignar a la ubicación
-            update_term_meta($menuId, 'glory_seeded', 1);
-            self::asignarUbicacion($menuId);
+            self::normalizarPlaceholders($menuPrincipalId, $menuItems);
+            update_term_meta($menuPrincipalId, 'glory_seeded', 1);
+            self::asignarUbicacion(self::UBICACION_MENU_PRINCIPAL, $menuPrincipalId);
             self::$asegurado = true;
         } finally {
             delete_transient($lockKey);
@@ -356,13 +350,13 @@ class MenuManager
         return $normalized !== '' ? $normalized : '/';
     }
 
-    private static function asignarUbicacion(int $menuId): void
+    private static function asignarUbicacion(string $location, int $menuId): void
     {
         $ubicaciones = get_theme_mod('nav_menu_locations');
         if (!is_array($ubicaciones)) {
             $ubicaciones = [];
         }
-        $ubicaciones[self::UBICACION_MENU_PRINCIPAL] = $menuId;
+        $ubicaciones[$location] = $menuId;
         set_theme_mod('nav_menu_locations', $ubicaciones);
     }
 
@@ -427,21 +421,50 @@ class MenuManager
      * Debe devolver un array de items con estructura:
      * [ [ 'title' => string, 'url' => string, 'children' => [] ], ... ]
      */
-    private static function cargarDefinicionMenuDesdeCodigo(): ?array
+    private static function cargarDefinicionMenusDesdeCodigo(): ?array
     {
         $ruta = get_template_directory() . self::RUTA_MENU_CODIGO;
         if (!file_exists($ruta)) {
             return null;
         }
-
         $menu = require $ruta;
         if (!is_array($menu)) {
             return null;
         }
 
-        // Normalizar estructura: asegurar claves y tipos
+        // Detectar si es array numérico (definición única) o asociativo (múltiples menús)
+        $isNumeric = array_keys($menu) === range(0, count($menu) - 1);
+        if ($isNumeric) {
+            $items = self::normalizarListaItems($menu);
+            $map = [ self::UBICACION_MENU_PRINCIPAL => $items ];
+        } else {
+            $map = [];
+            foreach ($menu as $location => $items) {
+                if (!is_array($items)) {
+                    continue;
+                }
+                $map[(string) $location] = self::normalizarListaItems($items);
+            }
+        }
+
+        // Si no se definieron explícitamente, derivar menús de marcas y productos a partir del principal
+        if (isset($map[self::UBICACION_MENU_PRINCIPAL])) {
+            $principal = $map[self::UBICACION_MENU_PRINCIPAL];
+            if (!isset($map['brands_navigation'])) {
+                $map['brands_navigation'] = self::extraerChildrenPorTitulo($principal, 'Marcas');
+            }
+            if (!isset($map['products_navigation'])) {
+                $map['products_navigation'] = self::extraerChildrenPorTitulo($principal, 'Productos');
+            }
+        }
+
+        return $map;
+    }
+
+    private static function normalizarListaItems(array $items): array
+    {
         $normalizado = [];
-        foreach ($menu as $item) {
+        foreach ($items as $item) {
             $titulo = (string) ($item['title'] ?? '');
             $url = (string) ($item['url'] ?? '#');
             $children = $item['children'] ?? [];
@@ -458,6 +481,78 @@ class MenuManager
             ];
         }
         return $normalizado;
+    }
+
+    private static function extraerChildrenPorTitulo(array $lista, string $tituloSeccion): array
+    {
+        $needle = strtolower(trim($tituloSeccion));
+        foreach ($lista as $item) {
+            $t = strtolower(trim((string) ($item['title'] ?? '')));
+            if ($t === $needle) {
+                $children = $item['children'] ?? [];
+                $salida = [];
+                if (is_array($children)) {
+                    foreach ($children as $child) {
+                        $ct = (string) ($child['title'] ?? '');
+                        $cu = (string) ($child['url'] ?? '#');
+                        if ($ct !== '') {
+                            $salida[] = [ 'title' => $ct, 'url' => $cu, 'children' => [] ];
+                        }
+                    }
+                }
+                return $salida;
+            }
+        }
+        return [];
+    }
+
+    private static function labelParaUbicacion(string $location): string
+    {
+        if ($location === self::UBICACION_MENU_PRINCIPAL) {
+            return __('Main Navigation', 'glory');
+        }
+        $label = str_replace(['_', '-'], ' ', $location);
+        $label = ucwords($label);
+        return $label;
+    }
+
+    private static function asegurarMenuDesdeDefinicion(string $location, array $definicion): void
+    {
+        $menuName = self::labelParaUbicacion($location);
+        $menuId = null;
+
+        $locations = get_nav_menu_locations();
+        if (isset($locations[$location])) {
+            $menuId = (int) $locations[$location];
+        }
+        if (!$menuId) {
+            $menuId = self::getOrCreateMenuId($menuName);
+            if (!$menuId) {
+                return;
+            }
+        }
+
+        $lockKey = 'glory_menu_lock_' . $menuId;
+        if (get_transient($lockKey)) {
+            return;
+        }
+        set_transient($lockKey, 1, 15);
+        try {
+            if (self::estaDesincronizado($menuId)) {
+                self::asignarUbicacion($location, $menuId);
+                return;
+            }
+            $hashActual = self::hashDefinicion($definicion);
+            $hashPrevio = (string) get_term_meta($menuId, 'glory_code_hash', true);
+            if ($hashActual !== '' && $hashActual !== $hashPrevio) {
+                self::reconstruirMenuDesdeCodigo($menuId, $definicion);
+                update_term_meta($menuId, 'glory_code_hash', $hashActual);
+                update_term_meta($menuId, 'glory_seeded_from_code', 1);
+            }
+            self::asignarUbicacion($location, $menuId);
+        } finally {
+            delete_transient($lockKey);
+        }
     }
 
     private static function normalizarChildren(array $children): array
