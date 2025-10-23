@@ -28,6 +28,8 @@ use Glory\Components\LogoRenderer;
 use Glory\Components\ContentRender;
 use Glory\Services\GestorCssCritico;
 use Glory\Handler\ContentActionAjaxHandler;
+use Glory\Admin\PageContentModeMetabox;
+use Glory\Admin\SeoMetabox;
 
 class Setup
 {
@@ -144,6 +146,18 @@ class Setup
                 fn() => AdminPageManager::register(),
                 'AdminPageManager.register',
                 'manager'
+            );
+            // Registrar metabox de modo de contenido
+            PerformanceProfiler::medirFuncion(
+                fn() => (new PageContentModeMetabox())->registerHooks(),
+                'PageContentModeMetabox.registerHooks',
+                'admin'
+            );
+            // Registrar metabox SEO reutilizable
+            PerformanceProfiler::medirFuncion(
+                fn() => (new SeoMetabox())->registerHooks(),
+                'SeoMetabox.registerHooks',
+                'admin'
             );
         }
 

@@ -125,6 +125,11 @@ class SyncManager
             GloryLogger::info('Restablecimiento a default forzado por el usuario desde la barra de admin.');
             $sync = new DefaultContentSynchronizer();
             $sync->restablecer();
+            // Reaplicar definiciones de páginas y SEO por defecto
+            if (\Glory\Core\GloryFeatures::isActive('pageManager') !== false) {
+                PageManager::procesarPaginasDefinidas();
+                PageManager::reconciliarPaginasGestionadas();
+            }
             $redirect_url = add_query_arg('glory_sync_notice', 'reset_success', $redirect_url);
 
         } elseif ($action === 'clear_cache') {
