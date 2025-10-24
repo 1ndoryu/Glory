@@ -327,7 +327,21 @@ class PageManager
         }
         $html = (string) ob_get_clean();
         $GLOBALS['gloryCopyContext'] = $prev;
-        return $html;
+        return self::limpiarHtmlCopiado($html);
+    }
+
+    private static function limpiarHtmlCopiado(string $html): string
+    {
+        // Quitar espacios en blanco al inicio/fin, incluidas líneas en blanco finales
+        $salida = trim($html);
+
+        // Eliminar párrafos o saltos de línea vacíos al final: <p><br></p>, <p>&nbsp;</p> o <br>
+        $patronFinalVacio = '/(?:<p[^>]*>\s*(?:<br\s*\/?>|&nbsp;|\s)*<\/p>\s*|<br\s*\/?>\s*)$/i';
+        while (preg_match($patronFinalVacio, $salida) === 1) {
+            $salida = (string) preg_replace($patronFinalVacio, '', $salida);
+        }
+
+        return $salida;
     }
 
     public static function reconciliarPaginasGestionadas(): void

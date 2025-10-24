@@ -84,14 +84,8 @@ class PageContentModeMetabox
             $slug = get_post_field('post_name', $postId);
             $handler = is_string($slug) ? PageManager::getHandlerPorSlug($slug) : null;
             if ($handler && function_exists($handler)) {
-                ob_start();
-                try {
-                    call_user_func($handler);
-                } catch (\Throwable $e) {
-                    ob_end_clean();
-                    return;
-                }
-                $html = ob_get_clean();
+                // Usar la misma rutina central que PageManager (incluye limpieza de <br> finales)
+                $html = PageManager::renderHandlerParaCopiar($handler);
                 if (is_string($html) && $html !== '') {
                     remove_action('save_post_page', [$this, 'save'], 10); // evitar loop
                     wp_update_post([

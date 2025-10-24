@@ -40,19 +40,19 @@
 
 .glory-panel-nav .nav-tab.nav-tab-active,
 .glory-panel-nav .nav-tab:hover {
-    background-color: #fff;
-    border-right-color: #fff;
+    background-color: rgba(255, 255, 255, 0.08);
+    border-right-color: transparent;
     box-shadow: none;
-    color: white;
+    color: #ffffff;
     opacity: 1;
 }
 
 .glory-panel-nav .nav-tab.nav-tab-active {
-    font-weight: 600;
-    border-right: 1px solid #fff;
+    font-weight: 700;
+    border-right: none;
     position: relative;
     z-index: 1;
-    color: white !important;
+    color: #ffffff !important;
 }
 
 /* Contenedor del contenido de las pestañas */
@@ -120,7 +120,7 @@ h2.titleSubSection {
     max-width: 50rem;
 }
 
-/* Estilos para el campo de imagen */
+/* Estilos para el campo de imagen - legacy */
 .glory-image-uploader .image-preview {
     width: 15rem;
     height: 15rem;
@@ -145,6 +145,48 @@ h2.titleSubSection {
 .glory-image-uploader .actions button {
     margin-right: 5px;
 }
+
+/* Estilos modernos del campo de imagen (FormBuilder::campoImagen) */
+.glory-image-uploader .previewContenedor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 18rem;
+}
+.glory-image-uploader .previewImagen {
+    width: 15rem;
+    height: 15rem;
+    border: 0.1rem dashed #ccd0d4;
+    background-color: #f6f7f7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    position: relative;
+}
+.glory-image-uploader .previewImagen img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+}
+.glory-image-uploader .previewImagen .image-preview-placeholder {
+    color: #a0a5aa;
+    font-size: 1.3rem;
+    text-align: center;
+}
+.glory-image-uploader .previewRemover {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 4px;
+    cursor: pointer;
+}
+.glory-image-uploader .previewRemover.oculto { display: none; }
+.glory-image-uploader .oculto { display: none; }
 
 /* Botones de acción del formulario */
 .glory-panel-content .submit {

@@ -40,10 +40,11 @@ jQuery(document).ready(function ($) {
     function inicializarImageUploader() {
         var mediaUploader;
 
-        $('body').on('click', '.glory-upload-image-button', function (e) {
-            e.preventDefault();
-            var button = $(this);
-            var uploaderContainer = button.closest('.glory-image-uploader');
+        function abrirMedia(uploaderContainer) {
+            if (typeof wp === 'undefined' || !wp.media) {
+                console.error('wp.media no está disponible en este contexto');
+                return;
+            }
 
             if (mediaUploader) {
                 mediaUploader.open();
@@ -52,34 +53,70 @@ jQuery(document).ready(function ($) {
 
             mediaUploader = wp.media.frames.file_frame = wp.media({
                 title: 'Seleccionar una Imagen',
-                button: {
-                    text: 'Usar esta imagen'
-                },
+                button: { text: 'Usar esta imagen' },
                 multiple: false
             });
 
             mediaUploader.on('select', function () {
                 var attachment = mediaUploader.state().get('selection').first().toJSON();
-                var previewUrl = attachment.sizes.thumbnail ? attachment.sizes.thumbnail.url : attachment.url;
+                var previewUrl = (attachment.sizes && attachment.sizes.thumbnail) ? attachment.sizes.thumbnail.url : attachment.url;
 
+                // Guardar ID
                 uploaderContainer.find('.glory-image-id').val(attachment.id);
-                uploaderContainer.find('.image-preview').html('<img src="' + previewUrl + '" alt="Previsualización">');
-                uploaderContainer.find('.glory-remove-image-button').show();
+
+                // Actualizar preview (compatibilidad con ambas estructuras)
+                var $previewModern = uploaderContainer.find('.previewImagen');
+                if ($previewModern.length) {
+                    $previewModern.html('<img src="' + previewUrl + '" alt="Previsualización">');
+                    uploaderContainer.find('.previewRemover').removeClass('oculto').show();
+                    $previewModern.find('.image-preview-placeholder').addClass('oculto');
+                }
+
+                var $previewLegacy = uploaderContainer.find('.image-preview');
+                if ($previewLegacy.length) {
+                    $previewLegacy.html('<img src="' + previewUrl + '" alt="Previsualización">');
+                    uploaderContainer.find('.glory-remove-image-button').show();
+                }
             });
 
             mediaUploader.open();
-        });
+        }
 
-        $('body').on('click', '.glory-remove-image-button', function (e) {
-            e.preventDefault();
-            var button = $(this);
-            var uploaderContainer = button.closest('.glory-image-uploader');
+        // Disparadores para abrir el selector: botón legacy y clic en la preview moderna
+        $('body')
+            .on('click', '.glory-upload-image-button', function (e) {
+                e.preventDefault();
+                abrirMedia($(this).closest('.glory-image-uploader'));
+            })
+            .on('click', '.glory-image-uploader .previewImagen', function (e) {
+                e.preventDefault();
+                abrirMedia($(this).closest('.glory-image-uploader'));
+            })
+            .on('click', '.glory-image-uploader .image-preview', function (e) {
+                e.preventDefault();
+                abrirMedia($(this).closest('.glory-image-uploader'));
+            });
 
-            uploaderContainer.find('.glory-image-id').val('');
-            var placeholderText = uploaderContainer.find('.image-preview').data('placeholder');
-            uploaderContainer.find('.image-preview').html('<span class="image-preview-placeholder">' + placeholderText + '</span>');
-            button.hide();
-        });
+        // Eliminar imagen: compatibilidad moderna y legacy
+        $('body')
+            .on('click', '.glory-remove-image-button', function (e) {
+                e.preventDefault();
+                var uploaderContainer = $(this).closest('.glory-image-uploader');
+                uploaderContainer.find('.glory-image-id').val('');
+                var $preview = uploaderContainer.find('.image-preview');
+                var placeholderText = $preview.data('placeholder') || 'Haz clic para subir una imagen';
+                $preview.html('<span class="image-preview-placeholder">' + placeholderText + '</span>');
+                $(this).hide();
+            })
+            .on('click', '.glory-image-uploader .previewRemover', function (e) {
+                e.preventDefault();
+                var uploaderContainer = $(this).closest('.glory-image-uploader');
+                uploaderContainer.find('.glory-image-id').val('');
+                var $preview = uploaderContainer.find('.previewImagen');
+                var placeholderText = $preview.data('placeholder') || 'Haz clic para subir una imagen';
+                $preview.html('<span class="image-preview-placeholder">' + placeholderText + '</span>');
+                $(this).addClass('oculto').hide();
+            });
     }
 
     // --- INICIO: CÓDIGO AÑADIDO ---

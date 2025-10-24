@@ -47,15 +47,18 @@ class SyncManager
         //     'wpDebug' => $wpDebug ? 'on' : 'off',
         // ]);
 
-        // Limitar auto-sync al área de administración
-        if (!is_admin()) {
-            // GloryLogger::info('SyncManager: DEV activado, omitiendo auto-sync en frontend.');
+        if (!$devMode) return;
+
+        // En admin: sincronización completa (opciones, páginas, default content)
+        if (is_admin()) {
+            $this->runFullSync();
             return;
         }
 
-        if ($devMode) {
-            // GloryLogger::info('SyncManager: Modo DEV activado, ejecutando sincronización automática.');
-            $this->runFullSync();
+        // En frontend (modo DEV): sincronizar únicamente páginas gestionadas (ligero)
+        if (\Glory\Core\GloryFeatures::isActive('pageManager') !== false) {
+            PageManager::procesarPaginasDefinidas();
+            PageManager::reconciliarPaginasGestionadas();
         }
     }
 
@@ -129,6 +132,8 @@ class SyncManager
             if (\Glory\Core\GloryFeatures::isActive('pageManager') !== false) {
                 PageManager::procesarPaginasDefinidas();
                 PageManager::reconciliarPaginasGestionadas();
+                // Restaurar el HTML del código en todas las páginas gestionadas en modo editor
+                $this->resyncAllManagedPagesHtml();
             }
             $redirect_url = add_query_arg('glory_sync_notice', 'reset_success', $redirect_url);
 
@@ -143,6 +148,54 @@ class SyncManager
 
         wp_safe_redirect($redirect_url);
         exit;
+    }
+
+    private function resyncAllManagedPagesHtml(): void
+    {
+        // Buscar todas las páginas gestionadas por Glory
+        $pages = get_posts([
+            'post_type'      => 'page',
+            'post_status'    => 'any',
+            'posts_per_page' => -1,
+            'meta_key'       => '_page_manager_managed',
+            'meta_value'     => true,
+        ]);
+
+        if (empty($pages)) {
+            return;
+        }
+
+        foreach ($pages as $page) {
+            $postId = (int) $page->ID;
+            $modo = (string) get_post_meta($postId, '_glory_content_mode', true);
+            $slug = (string) get_post_field('post_name', $postId);
+            if ($slug === '') {
+                continue;
+            }
+            $handler = PageManager::getHandlerPorSlug($slug);
+            if (!$handler || !function_exists($handler)) {
+                continue;
+            }
+
+            // Asegurar que quedan en modo 'editor' para mantener sincronización automática posterior
+            if ($modo !== 'editor') {
+                update_post_meta($postId, '_glory_content_mode', 'editor');
+            }
+
+            // Obtener HTML limpio desde el handler utilizando la misma rutina que PageManager
+            $html = PageManager::renderHandlerParaCopiar($handler);
+            if (!is_string($html) || $html === '') {
+                continue;
+            }
+
+            // Actualizar contenido y hash normalizado para futuras comparaciones
+            wp_update_post([
+                'ID' => $postId,
+                'post_content' => $html,
+            ]);
+            $normalized = preg_replace('/\s+/', ' ', trim((string) $html));
+            update_post_meta($postId, '_glory_content_hash', hash('sha256', (string) $normalized));
+        }
     }
 
     private function clearAllCaches(): void

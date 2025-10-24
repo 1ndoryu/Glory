@@ -72,7 +72,9 @@ class DefaultContentSynchronizer
                 $post = $this->repository->findPorSlug($postType, $slugDefault);
                 if ($post) {
                     $this->postHandler->update($post->ID, $definition, true);
-                    // GloryLogger::info("DCS: Post '{$slugDefault}' (ID: {$post->ID}) restablecido a default.");
+                    // Restablecer sincronización automática: modo 'editor' y limpiar flag de edición manual
+                    update_post_meta($post->ID, '_glory_content_mode', 'editor');
+                    delete_post_meta($post->ID, self::META_CLAVE_EDITADO_MANUALMENTE);
                 }
             }
         }

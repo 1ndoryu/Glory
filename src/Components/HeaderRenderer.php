@@ -95,7 +95,9 @@ class HeaderRenderer
                             <span></span>
                         </button>
 
-                        <?php echo ThemeToggle::render(); ?>
+                        <?php
+                        // echo ThemeToggle::render();
+                        ?>
                     <?php endif; ?>
                 </div>
 
