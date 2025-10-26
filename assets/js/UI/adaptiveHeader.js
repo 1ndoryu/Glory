@@ -167,8 +167,8 @@ function gloryMenu() {
         gsap.set(navMenu, {yPercent: -100, autoAlpha: 0});
     } else {
         // En escritorio evitamos transforms/opacidad inline para que backdrop-filter funcione
-        navMenu.style.removeProperty('transform');
-        navMenu.style.removeProperty('opacity');
+        //navMenu.style.removeProperty('transform');
+        //navMenu.style.removeProperty('opacity');
         header.classList.remove('open');
         document.body.classList.remove('menu-open');
     }

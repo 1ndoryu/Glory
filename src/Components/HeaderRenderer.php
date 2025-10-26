@@ -3,8 +3,8 @@
 namespace Glory\Components;
 
 use Glory\Integration\Compatibility;
-use Glory\Utility\AssetsUtility;
 use Glory\Core\GloryFeatures;
+use Glory\Components\LogoRenderer;
 
 class HeaderRenderer
 {
@@ -32,44 +32,7 @@ class HeaderRenderer
 
                     <?php if ($logoModo !== 'none') : ?>
                         <div class="siteMenuLogo">
-                            <?php
-                            if ($logoModo === 'text') {
-                            ?>
-                                <a href="<?php echo esc_url(home_url('/')); ?>" rel="home"><?php echo esc_html($textoLogo); ?></a>
-                            <?php
-                            } else {
-                                if (Compatibility::avadaActivo() && $logoModo === 'default') {
-                                    if (function_exists('the_custom_logo') && has_custom_logo()) {
-                                        the_custom_logo();
-                                    } elseif (function_exists('fusion_get_theme_option')) {
-                                        $logo = fusion_get_theme_option('sticky_header_logo', 'url');
-                                        if ($logo) {
-                                            echo '<a href="' . esc_url(home_url('/')) . '" rel="home">';
-                                            echo '<img src="' . esc_url($logo) . '" alt="' . esc_attr(get_bloginfo('name')) . '">';
-                                            echo '</a>';
-                                        } else {
-                                            echo '<a href="' . esc_url(home_url('/')) . '" rel="home">' . get_bloginfo('name') . '</a>';
-                                        }
-                                    } else {
-                                        echo '<a href="' . esc_url(home_url('/')) . '" rel="home">' . get_bloginfo('name') . '</a>';
-                                    }
-                                } elseif (!Compatibility::avadaActivo() && $logoModo === 'image') {
-                                    if ($logoImageId && $image_url = wp_get_attachment_image_url($logoImageId, 'full')) {
-                                        echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($image_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
-                                    } else {
-                                        $default_logo_url = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
-                                        echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
-                                    }
-                                } else {
-                                    if (function_exists('the_custom_logo') && has_custom_logo()) {
-                                        the_custom_logo();
-                                    } else {
-                                        $default_logo_url = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
-                                        echo '<a href="' . esc_url(home_url('/')) . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . esc_attr(get_bloginfo('name')) . '"></a>';
-                                    }
-                                }
-                            }
-                            ?>
+                            <?php echo LogoRenderer::get_html(); ?>
                         </div>
 
 
