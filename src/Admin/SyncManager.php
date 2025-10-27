@@ -135,6 +135,8 @@ class SyncManager
                 PageManager::reconciliarPaginasGestionadas();
                 // Restaurar el HTML del código en todas las páginas gestionadas en modo editor
                 $this->resyncAllManagedPagesHtml();
+                // Restablecer metadatos SEO (título, descripción, canónica, FAQ, breadcrumb) a los valores por defecto
+                $this->resyncAllManagedPagesSeoDefaults();
             }
             // Restablecer menús desde el código
             MenuManager::restablecerMenusDesdeCodigo();
@@ -160,8 +162,12 @@ class SyncManager
             'post_type'      => 'page',
             'post_status'    => 'any',
             'posts_per_page' => -1,
-            'meta_key'       => '_page_manager_managed',
-            'meta_value'     => true,
+            'meta_query'     => [
+                [
+                    'key'     => '_page_manager_managed',
+                    'compare' => 'EXISTS',
+                ],
+            ],
         ]);
 
         if (empty($pages)) {
@@ -198,6 +204,67 @@ class SyncManager
             ]);
             $normalized = preg_replace('/\s+/', ' ', trim((string) $html));
             update_post_meta($postId, '_glory_content_hash', hash('sha256', (string) $normalized));
+        }
+    }
+
+    private function resyncAllManagedPagesSeoDefaults(): void
+    {
+        // Buscar todas las páginas gestionadas por Glory
+        $pages = get_posts([
+            'post_type'      => 'page',
+            'post_status'    => 'any',
+            'posts_per_page' => -1,
+            'meta_key'       => '_page_manager_managed',
+            'meta_value'     => true,
+        ]);
+
+        if (empty($pages)) {
+            \Glory\Core\GloryLogger::warning('SyncManager: No se encontraron páginas gestionadas para restablecer SEO.');
+            return;
+        }
+
+        foreach ($pages as $page) {
+            $postId = (int) $page->ID;
+            $slug = (string) get_post_field('post_name', $postId);
+            if ($slug === '') { continue; }
+
+            $def = PageManager::getDefaultSeoForSlug($slug);
+            if (!is_array($def) || empty($def)) {
+                // Si no hay definición por defecto, limpiar a valores vacíos seguros
+                update_post_meta($postId, '_glory_seo_title', '');
+                update_post_meta($postId, '_glory_seo_desc', '');
+                update_post_meta($postId, '_glory_seo_canonical', '');
+                update_post_meta($postId, '_glory_seo_faq', wp_json_encode([], JSON_UNESCAPED_UNICODE));
+                update_post_meta($postId, '_glory_seo_breadcrumb', wp_json_encode([], JSON_UNESCAPED_UNICODE));
+                \Glory\Core\GloryLogger::info('SyncManager: SEO default vacío para slug, metadatos limpiados.', [ 'slug' => $slug, 'postId' => $postId ]);
+                continue;
+            }
+
+            $title = isset($def['title']) ? (string) $def['title'] : '';
+            $desc = isset($def['desc']) ? (string) $def['desc'] : '';
+            $canonical = isset($def['canonical']) ? (string) $def['canonical'] : '';
+            if ($canonical !== '' && substr($canonical, -1) !== '/') { $canonical .= '/'; }
+            $faq = isset($def['faq']) && is_array($def['faq']) ? $def['faq'] : [];
+            $bc = isset($def['breadcrumb']) && is_array($def['breadcrumb']) ? $def['breadcrumb'] : [];
+
+            // Borrar cualquier metadato previo duplicado y reinsertar limpio
+            delete_post_meta($postId, '_glory_seo_title');
+            delete_post_meta($postId, '_glory_seo_desc');
+            delete_post_meta($postId, '_glory_seo_canonical');
+            delete_post_meta($postId, '_glory_seo_faq');
+            delete_post_meta($postId, '_glory_seo_breadcrumb');
+
+            add_post_meta($postId, '_glory_seo_title', $title);
+            add_post_meta($postId, '_glory_seo_desc', $desc);
+            add_post_meta($postId, '_glory_seo_canonical', $canonical);
+            add_post_meta($postId, '_glory_seo_faq', wp_json_encode($faq, JSON_UNESCAPED_UNICODE));
+            add_post_meta($postId, '_glory_seo_breadcrumb', wp_json_encode($bc, JSON_UNESCAPED_UNICODE));
+            \Glory\Core\GloryLogger::info('SyncManager: SEO restablecido a default.', [
+                'slug' => $slug,
+                'postId' => $postId,
+                'faqCount' => is_array($faq) ? count($faq) : 0,
+                'bcCount' => is_array($bc) ? count($bc) : 0,
+            ]);
         }
     }
 

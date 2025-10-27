@@ -176,6 +176,9 @@ AssetManager::defineFolder(
         'gloryDateRange.js',
         'gloryThemeToggle.js',
         'gloryContentActions.js',
+        // Excluir componentes que deben respetar sus features
+        'gloryCalendario.js',
+        'masonryRowMajor.js',
         // Excluir el perfilador para definirlo de forma controlada abajo
         'query-profiler.js'
     ]
@@ -309,7 +312,7 @@ AssetManager::define(
     'script',
     'glory-content-actions',
     '/Glory/assets/js/UI/gloryContentActions.js',
-    ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryAjax']
+    ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'both', 'feature' => 'contentActions']
 );
 
 // Componente: Pestañas
@@ -516,7 +519,7 @@ AssetManager::define(
         'deps'      => [],
         'in_footer' => true,
         'area'      => 'both',
-        'feature'   => 'gloryAjax',
+        'feature'   => 'gloryRealtime',
     ]
 );
 
@@ -532,6 +535,7 @@ AssetManager::define(
         'media'   => 'all',
         'area'    => 'both',
         'dev_mode' => true,
+        'feature' => 'queryProfiler',
     ]
 );
 
@@ -549,5 +553,6 @@ AssetManager::define(
         'in_footer' => true,
         'area'      => 'both',
         'dev_mode'  => true,
+        'feature'   => 'queryProfiler',
     ]
 );

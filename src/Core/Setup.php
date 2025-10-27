@@ -234,14 +234,6 @@ class Setup
             );
         }
 
-        // Panel de exportación de base de datos
-        if (GloryFeatures::isActive('databaseExporter') !== false) {
-            PerformanceProfiler::medirFuncion(
-                fn() => (new DatabaseExportController())->registerHooks(),
-                'DatabaseExportController.registerHooks',
-                'controller'
-            );
-        }
 
         // Inicializar hooks de limpieza de caché para ContentRender
         PerformanceProfiler::medirFuncion(

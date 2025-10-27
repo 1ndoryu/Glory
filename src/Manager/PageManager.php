@@ -279,6 +279,16 @@ class PageManager
         return self::$paginasDefinidas[$slug] ?? null;
     }
 
+    /**
+     * Devuelve la configuración SEO por defecto para un slug si existe.
+     */
+    public static function getDefaultSeoForSlug(string $slug): array
+    {
+        return isset(self::$defaultSeoMap[$slug]) && is_array(self::$defaultSeoMap[$slug])
+            ? self::$defaultSeoMap[$slug]
+            : [];
+    }
+
     private static function _sincronizarEditorSiNoEditado(int $postId, array $defPagina): void
     {
         if (empty($defPagina['funcion'])) {

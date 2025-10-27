@@ -36,6 +36,22 @@ class SeoMetabox
         $faqJson = (string) get_post_meta($post->ID, self::META_FAQ, true);
         $bcJson = (string) get_post_meta($post->ID, self::META_BREADCRUMB, true);
 
+        // Resolver slug y defaults del mapa para usar como fallback por campo
+        $slug = (string) get_post_field('post_name', $post->ID);
+        $def = $slug !== '' ? \Glory\Manager\PageManager::getDefaultSeoForSlug($slug) : [];
+        if ($title === '' && isset($def['title'])) { $title = (string) $def['title']; }
+        if ($desc === '' && isset($def['desc'])) { $desc = (string) $def['desc']; }
+        if ($canonical === '' && isset($def['canonical'])) {
+            $canonical = (string) $def['canonical'];
+            if ($canonical !== '' && substr($canonical, -1) !== '/') { $canonical .= '/'; }
+        }
+        if ($faqJson === '' && !empty($def['faq']) && is_array($def['faq'])) {
+            $faqJson = wp_json_encode($def['faq'], JSON_UNESCAPED_UNICODE);
+        }
+        if ($bcJson === '' && !empty($def['breadcrumb']) && is_array($def['breadcrumb'])) {
+            $bcJson = wp_json_encode($def['breadcrumb'], JSON_UNESCAPED_UNICODE);
+        }
+
         wp_nonce_field('glory_seo_save', 'glory_seo_nonce');
 
         echo '<div style="display:grid;gap:12px;">';
@@ -46,6 +62,9 @@ class SeoMetabox
         echo '<hr><strong>FAQ (JSON-LD)</strong>';
         echo '<div id="glory_faq_wrap">';
         $faqArr = $this->decodeJson($faqJson);
+        if (empty($faqArr) && !empty($def['faq']) && is_array($def['faq'])) {
+            $faqArr = $def['faq'];
+        }
         // Normalizar posibles cadenas con literales unicode tipo u00f3
         foreach ($faqArr as &$item) {
             if (isset($item['q'])) { $item['q'] = $this->normalizeUnicodeLiterals((string) $item['q']); }
@@ -68,6 +87,9 @@ class SeoMetabox
         echo '<hr><strong>Breadcrumb (JSON-LD)</strong>';
         echo '<div id="glory_bc_wrap">';
         $bcArr = $this->decodeJson($bcJson);
+        if (empty($bcArr) && !empty($def['breadcrumb']) && is_array($def['breadcrumb'])) {
+            $bcArr = $def['breadcrumb'];
+        }
         foreach ($bcArr as &$bcItem) {
             if (isset($bcItem['name'])) { $bcItem['name'] = $this->normalizeUnicodeLiterals((string) $bcItem['name']); }
         }
@@ -81,6 +103,15 @@ class SeoMetabox
             echo '<input type="url" name="glory_bc[' . $i . '][url]" value="' . esc_attr($url) . '" placeholder="https://..." style="width:49%">';
             echo '<button type="button" class="button glory-del" data-target="bc" style="margin-top:6px;display:block">Eliminar</button>';
             echo '</div>';
+        }
+        // Log diagnóstico de recuentos
+        if (class_exists('Glory\\Core\\GloryLogger')) {
+            \Glory\Core\GloryLogger::info('SeoMetabox: render datos cargados', [
+                'postId' => $post->ID,
+                'slug' => $slug,
+                'faqCount' => is_array($faqArr) ? count($faqArr) : 0,
+                'bcCount' => is_array($bcArr) ? count($bcArr) : 0,
+            ]);
         }
         echo '</div>';
         echo '<button type="button" class="button" id="glory_add_bc">Añadir breadcrumb</button>';
@@ -136,6 +167,9 @@ JS
         $title = isset($_POST['glory_seo_title']) ? wp_strip_all_tags((string) $_POST['glory_seo_title']) : '';
         $desc = isset($_POST['glory_seo_desc']) ? sanitize_text_field((string) $_POST['glory_seo_desc']) : '';
         $canonical = isset($_POST['glory_seo_canonical']) ? esc_url_raw((string) $_POST['glory_seo_canonical']) : '';
+        if ($canonical !== '' && substr($canonical, -1) !== '/') {
+            $canonical .= '/';
+        }
 
         update_post_meta($postId, self::META_TITLE, $title);
         update_post_meta($postId, self::META_DESC, $desc);
