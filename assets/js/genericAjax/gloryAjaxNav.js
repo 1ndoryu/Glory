@@ -21,6 +21,18 @@
         // Agnostic configuration: Keywords to identify critical inline scripts to extract/execute
         criticalScriptKeywords: [], // Array of strings to search for in inline scripts (e.g., ['appConfig', 'siteVars'])
         
+        // Agnostic SEO sync (optional): If enabled, sync selected head tags from fetched doc
+        syncHeadSeo: false,
+        headSeoConfig: {
+            canonicalSelector: 'link[rel="canonical"]',
+            metaSelectors: ['meta[name="description"]'],
+            jsonLdSelectors: [] // e.g. ['script[type="application/ld+json"][data-glory-seo="1"]']
+        },
+
+        // Inline script execution controls (agnóstico)
+        skipInlineScriptTypes: ['application/ld+json'],
+        skipInlineScriptSelectors: [], // e.g. ['script[data-skip-exec="1"]']
+        
         // Agnostic hook: Custom function to determine if AJAX should be skipped
         shouldSkipAjax: null, // function(url: string, linkElement: HTMLAnchorElement): boolean
         
@@ -76,24 +88,46 @@
      * Necesario porque innerHTML no ejecuta scripts por defecto.
      * @param {Element} containerEl
      */
+    function shouldSkipInlineScript(node) {
+        try {
+            if (!node) return true;
+            const type = (node.getAttribute('type') || '').toLowerCase();
+            if (type && Array.isArray(config.skipInlineScriptTypes) && config.skipInlineScriptTypes.includes(type)) {
+                return true;
+            }
+            if (Array.isArray(config.skipInlineScriptSelectors) && config.skipInlineScriptSelectors.length) {
+                for (let i = 0; i < config.skipInlineScriptSelectors.length; i++) {
+                    const sel = config.skipInlineScriptSelectors[i];
+                    if (sel && node.matches && node.matches(sel)) return true;
+                }
+            }
+            return false;
+        } catch(_e) {
+            return false;
+        }
+    }
+
     function executeInlineScriptsFromElement(containerEl) {
         if (!containerEl) return;
-        const scripts = containerEl.querySelectorAll('script');
+        const scripts = Array.prototype.slice.call(containerEl.querySelectorAll('script'));
         scripts.forEach((oldScript) => {
+            // Saltar scripts según tipo/selector (p.ej. application/ld+json)
+            if (shouldSkipInlineScript(oldScript)) return;
+
             const newScript = document.createElement('script');
-            // Copiar todos los atributos tal cual
             for (let i = 0; i < oldScript.attributes.length; i++) {
                 const attr = oldScript.attributes[i];
                 newScript.setAttribute(attr.name, attr.value);
             }
-            // Si es inline, copiar su contenido
             if (!oldScript.src) {
                 newScript.textContent = oldScript.textContent || '';
             }
-            // Insertar en el documento para ejecutar
-            (document.body || document.documentElement).appendChild(newScript);
-            // Opcional: remover después para no ensuciar el DOM
-            // setTimeout(() => newScript.parentNode && newScript.parentNode.removeChild(newScript), 0);
+            // Si el contenedor está conectado al DOM, reemplazar in-place; si no, anexar al body
+            if (containerEl.isConnected && oldScript.parentNode) {
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            } else {
+                (document.body || document.documentElement).appendChild(newScript);
+            }
         });
     }
 
@@ -340,6 +374,83 @@
     }
 
     /**
+     * Sincroniza etiquetas SEO en <head> de forma agnóstica según selectores configurados.
+     * No asume estructura específica del proyecto.
+     * @param {Document} doc - Documento parseado de la respuesta
+     */
+    function syncHeadSeo(doc) {
+        try {
+            if (!config.syncHeadSeo || !doc) return;
+            const head = document.head || document.getElementsByTagName('head')[0];
+            const cfg = config.headSeoConfig || {};
+
+            // Canonical
+            if (cfg.canonicalSelector) {
+                const newCanonical = doc.querySelector(cfg.canonicalSelector);
+                if (newCanonical) {
+                    let currentCanonical = head.querySelector('link[rel="canonical"]');
+                    if (!currentCanonical) {
+                        currentCanonical = document.createElement('link');
+                        currentCanonical.setAttribute('rel', 'canonical');
+                        head.appendChild(currentCanonical);
+                    }
+                    const href = newCanonical.getAttribute('href') || '';
+                    if (href) currentCanonical.setAttribute('href', href);
+                }
+            }
+
+            // Meta tags (e.g., description)
+            if (Array.isArray(cfg.metaSelectors)) {
+                cfg.metaSelectors.forEach((sel) => {
+                    if (!sel) return;
+                    const newMeta = doc.querySelector(sel);
+                    if (!newMeta) return;
+                    // Intentar localizar meta equivalente por name o el selector exacto
+                    const name = newMeta.getAttribute('name');
+                    let currentMeta = null;
+                    if (name) {
+                        currentMeta = head.querySelector(`meta[name="${name}"]`);
+                    }
+                    if (!currentMeta) {
+                        currentMeta = head.querySelector(sel);
+                    }
+                    if (!currentMeta) {
+                        currentMeta = document.createElement('meta');
+                        if (name) currentMeta.setAttribute('name', name);
+                        head.appendChild(currentMeta);
+                    }
+                    // Copiar atributo content si existe
+                    const content = newMeta.getAttribute('content');
+                    if (content !== null) currentMeta.setAttribute('content', content);
+                });
+            }
+
+            // JSON-LD (opcional, controlado por selectores)
+            if (Array.isArray(cfg.jsonLdSelectors)) {
+                cfg.jsonLdSelectors.forEach((sel) => {
+                    if (!sel) return;
+                    const newJson = doc.querySelector(sel);
+                    if (!newJson) return;
+                    // Eliminar existentes que coincidan con el selector para evitar duplicados
+                    head.querySelectorAll(sel).forEach((n) => n.parentNode && n.parentNode.removeChild(n));
+                    const clone = document.createElement('script');
+                    clone.type = 'application/ld+json';
+                    // Copiar atributos no críticos si hubiera
+                    for (let i = 0; i < newJson.attributes.length; i++) {
+                        const attr = newJson.attributes[i];
+                        if (attr.name === 'type') continue;
+                        clone.setAttribute(attr.name, attr.value);
+                    }
+                    clone.textContent = newJson.textContent || '';
+                    head.appendChild(clone);
+                });
+            }
+        } catch(_e) {
+            // Silencioso por ser agnóstico
+        }
+    }
+
+    /**
      * Loads page content via fetch, parses, replaces content, and triggers re-initialization.
      * @param {string} url - The URL to load.
      * @param {boolean} pushState - Whether to push the URL to browser history.
@@ -432,6 +543,9 @@
                 // Replace content & title
                 contentElement.innerHTML = newContent.innerHTML;
                 if (newTitle) document.title = newTitle.textContent;
+
+                // Opcional: sincronizar <head> SEO de la respuesta (agnóstico por config)
+                syncHeadSeo(doc);
 
                 // Extraer scripts del head ANTES de procesarlos (para cache y ejecución)
                 const headScripts = extractAndExecuteHeadScripts(doc, false);

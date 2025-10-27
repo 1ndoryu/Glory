@@ -58,6 +58,15 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
             'avadaVars',
             'avadaMenuVars'
         ] : [],
+
+        // Sincronización agnóstica de SEO en navegación AJAX
+        'syncHeadSeo' => true,
+        'headSeoConfig' => [
+            'canonicalSelector' => 'link[rel="canonical"]',
+            'metaSelectors'     => ['meta[name="description"]'],
+            // Reemplazar solo el JSON-LD generado por el tema (marcado con data-glory-seo)
+            'jsonLdSelectors'   => ['script[type="application/ld+json"][data-glory-seo="1"]'],
+        ],
     ];
 
     // Permite al tema modificar fácilmente esta configuración
