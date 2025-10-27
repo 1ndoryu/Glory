@@ -516,6 +516,47 @@ class MenuManager
         return $label;
     }
 
+    /**
+     * Restablece todos los menús definidos por código, ignorando estados de desincronización.
+     * Se usa para el botón "Restablecer a Default" y tareas de mantenimiento.
+     */
+    public static function restablecerMenusDesdeCodigo(): void
+    {
+        $map = self::cargarDefinicionMenusDesdeCodigo();
+        if (!is_array($map) || empty($map)) {
+            $map = [ self::UBICACION_MENU_PRINCIPAL => self::obtenerSeedPorDefecto() ];
+        }
+
+        foreach ($map as $location => $items) {
+            if (!is_array($items)) {
+                $items = [];
+            }
+
+            $menuName = self::labelParaUbicacion((string) $location);
+            $menuId = self::getOrCreateMenuId($menuName);
+            if (!$menuId) {
+                continue;
+            }
+
+            self::reconstruirMenuDesdeCodigo($menuId, $items);
+
+            $hashActual = self::hashDefinicion($items);
+            if ($hashActual !== '') {
+                update_term_meta($menuId, 'glory_code_hash', $hashActual);
+            } else {
+                delete_term_meta($menuId, 'glory_code_hash');
+            }
+
+            // Limpiar flags de desincronización y marcar como seed desde código
+            delete_term_meta($menuId, 'glory_menu_desync');
+            delete_term_meta($menuId, 'glory_customized');
+            update_term_meta($menuId, 'glory_seeded_from_code', 1);
+            update_term_meta($menuId, 'glory_seeded', 1);
+
+            self::asignarUbicacion((string) $location, $menuId);
+        }
+    }
+
     private static function asegurarMenuDesdeDefinicion(string $location, array $definicion): void
     {
         $menuName = self::labelParaUbicacion($location);
@@ -538,7 +579,8 @@ class MenuManager
         }
         set_transient($lockKey, 1, 15);
         try {
-            if (self::estaDesincronizado($menuId)) {
+            // En modo dev, ignorar el estado de desincronización para permitir aplicar cambios de código
+            if (!self::esModoDesarrollo() && self::estaDesincronizado($menuId)) {
                 self::asignarUbicacion($location, $menuId);
                 return;
             }

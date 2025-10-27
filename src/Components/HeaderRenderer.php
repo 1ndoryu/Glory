@@ -62,10 +62,11 @@ class HeaderRenderer
                         // echo ThemeToggle::render();
                         ?>
                     <?php endif; ?>
+                    <button class="background" aria-label="Close menu"></button>
                 </div>
 
 
-                <button class="background" aria-label="Close menu"></button>
+                
 
             </header>
         <?php endif; ?>

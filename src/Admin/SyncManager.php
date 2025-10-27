@@ -7,6 +7,7 @@ use Glory\Services\DefaultContentSynchronizer;
 use Glory\Manager\OpcionManager;
 use Glory\Manager\PageManager;
 use Glory\Manager\AssetManager;
+use Glory\Manager\MenuManager;
 
 class SyncManager
 {
@@ -135,6 +136,8 @@ class SyncManager
                 // Restaurar el HTML del código en todas las páginas gestionadas en modo editor
                 $this->resyncAllManagedPagesHtml();
             }
+            // Restablecer menús desde el código
+            MenuManager::restablecerMenusDesdeCodigo();
             $redirect_url = add_query_arg('glory_sync_notice', 'reset_success', $redirect_url);
 
         } elseif ($action === 'clear_cache') {
