@@ -205,31 +205,35 @@ class GestorCssCritico
         ]);
 
         // Sub: Limpiar caché
+        $hrefClear = admin_url('admin-ajax.php?action=glory_limpiar_css_critico');
         $admin_bar->add_node([
             'id'     => 'glory-critical-css-clear',
             'parent' => 'glory-critical-css',
             'title'  => __('Limpiar caché CSS crítico', 'glory'),
-            'href'   => '#',
+            'href'   => $hrefClear,
             'meta'   => ['onclick' => 'gloryLimpiarCssCritico(event)']
         ]);
 
         // Sub: Generar esta página (oculto en admin)
         if (!is_admin()) {
+            $currentUrl = home_url(add_query_arg([], $_SERVER['REQUEST_URI'] ?? '/'));
+            $hrefGenerate = admin_url('admin-ajax.php?action=glory_generar_css_critico&url=' . rawurlencode($currentUrl));
             $admin_bar->add_node([
                 'id'     => 'glory-critical-css-generate-current',
                 'parent' => 'glory-critical-css',
                 'title'  => __('Generar (esta página)', 'glory'),
-                'href'   => '#',
+                'href'   => $hrefGenerate,
                 'meta'   => ['onclick' => 'gloryGenerarCssCritico(event)']
             ]);
         }
 
         // Sub: Generar todas (background)
+        $hrefAll = admin_url('admin-ajax.php?action=glory_generar_css_critico_all');
         $admin_bar->add_node([
             'id'     => 'glory-critical-css-generate-all',
             'parent' => 'glory-critical-css',
             'title'  => __('Generar para todas (background)', 'glory'),
-            'href'   => '#',
+            'href'   => $hrefAll,
             'meta'   => ['onclick' => 'gloryGenerarCssCriticoAll(event)']
         ]);
 
@@ -267,26 +271,26 @@ class GestorCssCritico
                 event && event.preventDefault && event.preventDefault();
                 if (!confirm('<?php _e("¿Estás seguro de que quieres limpiar toda la caché de CSS crítico?", "glory"); ?>')) { return; }
                 postAjax({ action: 'glory_limpiar_css_critico' }).then(function(response){
-                    alert(response && response.data ? response.data : 'Listo');
-                });
+                        alert(response && response.data ? response.data : 'Listo');
+                    });
             };
             w.gloryGenerarCssCritico = function(event){
                 event && event.preventDefault && event.preventDefault();
                 var url = w.location && w.location.href ? w.location.href : '';
                 postAjax({ action: 'glory_generar_css_critico', url: url }).then(function(response){
-                    if (response && response.success) {
-                        alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
-                    } else {
-                        alert('No se pudo generar CSS crítico.');
-                    }
-                });
+                        if (response && response.success) {
+                            alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
+                        } else {
+                            alert('No se pudo generar CSS crítico.');
+                        }
+                    });
             };
             w.gloryGenerarCssCriticoAll = function(event){
                 event && event.preventDefault && event.preventDefault();
                 if (!confirm('<?php _e("¿Programar generación para todas las páginas? Se ejecutará en background.", "glory"); ?>')) { return; }
                 postAjax({ action: 'glory_generar_css_critico_all' }).then(function(response){
-                    alert(response && response.success ? 'Programado en background' : 'No se pudo programar');
-                });
+                        alert(response && response.success ? 'Programado en background' : 'No se pudo programar');
+                    });
             };
         })(window);
         </script>
@@ -307,7 +311,7 @@ class GestorCssCritico
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('No autorizado', 'glory'));
         }
-        $url = isset($_POST['url']) && is_string($_POST['url']) ? esc_url_raw($_POST['url']) : '';
+        $url = isset($_REQUEST['url']) && is_string($_REQUEST['url']) ? esc_url_raw($_REQUEST['url']) : '';
         if (!$url) {
             $url = wp_get_referer() ?: home_url('/');
         }
