@@ -176,6 +176,7 @@ final class AssetManager
             return $tag;
         }
 
+        GloryLogger::info('AssetManager: marcando estilo async', ['handle' => $handle]);
         $fallback = '<noscript>' . $tag . '</noscript>';
         $tag = str_replace("media='all'", "media='print' onload=\"this.media='all'; this.onload=null;\"", $tag);
 
@@ -261,6 +262,7 @@ final class AssetManager
                     if ($tipo === self::ASSET_TYPE_SCRIPT) {
                         wp_enqueue_script($handle);
                     } else {
+                        GloryLogger::info('AssetManager: enqueue estilo (registrado)', ['handle' => $handle]);
                         wp_enqueue_style($handle);
                     }
                     continue;
@@ -307,6 +309,7 @@ final class AssetManager
                     wp_enqueue_script($handle);
                 } else {
                     wp_register_style($handle, $url, $config['deps'], $version, $config['media']);
+                    GloryLogger::info('AssetManager: enqueue estilo', ['handle' => $handle, 'url' => $url]);
                     wp_enqueue_style($handle);
                 }
             }
