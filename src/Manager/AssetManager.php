@@ -158,8 +158,11 @@ final class AssetManager
 
     public static function imprimirCssCritico(): void
     {
-        if (self::$cssCritico) {
-            GloryLogger::info('AssetManager: imprimiendo CSS crítico en <head>', ['bytes' => strlen((string) self::$cssCritico)]);
+        GloryLogger::info('AssetManager: hook wp_head -> imprimirCssCritico', [
+            'has' => self::$cssCritico ? 1 : 0,
+            'bytes' => self::$cssCritico ? strlen((string) self::$cssCritico) : 0
+        ]);
+        if (!empty(self::$cssCritico)) {
             echo '<style id="glory-css-critico">' . self::$cssCritico . '</style>';
         }
     }
