@@ -9,6 +9,13 @@
         mainScrollSelector: '#main', // Element to scroll to top (fallback to window)
         loadingBarSelector: '#loadingBar', // Loading indicator element (optional)
         cacheEnabled: true, // Enable/disable caching mechanism
+        prefetchOnHover: true, // Prefetch en hover/mousedown
+        prefetchDelayMs: 50, // Pequeño retraso para evitar spam
+        prefetchInViewport: false, // Quicklink-like: prefetch enlaces visibles
+        prefetchMaxEntries: 24, // Límite de URLs prefetch cacheadas por sesión
+        requestTimeoutMs: 10000, // Timeout para fetch de navegación
+        optimizeImages: true, // Forzar loading=lazy en imágenes nuevas
+        allowAsyncExternalScripts: true, // Permitir paralelizar scripts marcados async
         ignoreUrlPatterns: [
             // Array of regex patterns to skip AJAX for
             '/wp-admin',
@@ -43,6 +50,11 @@
     // Merge defaults with user-provided config (prefer a specific object to avoid collisions)
     const runtimeConfig = (window.gloryNavConfig || window.dataGlobal || {});
     const config = {...defaults, ...runtimeConfig};
+    const compiledIgnorePatterns = Array.isArray(config.ignoreUrlPatterns)
+        ? config.ignoreUrlPatterns.map((p) => {
+            try { return new RegExp(p, 'i'); } catch(_e) { return null; }
+        }).filter(Boolean)
+        : [];
 
     // Helper de logging: activo solo si `window.gloryDebug` es truthy
     const gloryLog = (...args) => { if (typeof window !== 'undefined' && window.gloryDebug) console.log(...args); };
@@ -66,6 +78,17 @@
     }
 
     const pageCache = {};
+    const prefetchEnCurso = new Set();
+    const headScriptsEjecutados = new Set();
+    let currentFetchController = null;
+
+    function hashCodigo(cadena) {
+        try {
+            let h = 5381; let i = cadena.length;
+            while (i) { h = (h * 33) ^ cadena.charCodeAt(--i); }
+            return (h >>> 0).toString(36);
+        } catch(_e) { return String(cadena && cadena.length || 0); }
+    }
 
     /**
      * Dispatches an event after content is loaded for other scripts to listen to.
@@ -326,7 +349,7 @@
 
         // 2. Check against configured path patterns
         const pathAndQuery = urlObject.pathname + urlObject.search;
-        if (config.ignoreUrlPatterns.some(pattern => new RegExp(pattern, 'i').test(pathAndQuery))) {
+        if (compiledIgnorePatterns.some(re => re.test(pathAndQuery))) {
             return true;
         }
 
@@ -484,11 +507,14 @@
             if (pageCache[url].headScripts) {
                 gloryLog('Executing cached head scripts...');
                 pageCache[url].headScripts.forEach((scriptCode) => {
+                    const k = hashCodigo(scriptCode);
+                    if (headScriptsEjecutados.has(k)) return;
                     try {
                         const ns = document.createElement('script');
                         ns.textContent = scriptCode;
                         ns.setAttribute('data-glory-cached', 'head-config');
                         (document.head || document.body).appendChild(ns);
+                        headScriptsEjecutados.add(k);
                     } catch(_e) {}
                 });
             }
@@ -519,7 +545,16 @@
         contentElement.style.transition = 'opacity 0.3s ease';
         contentElement.style.opacity = '0.5';
 
-        fetch(url)
+        // Cancelar navegación previa en curso, si la hay
+        try { if (currentFetchController) { currentFetchController.abort(); } } catch(_e) {}
+        currentFetchController = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+        const signal = currentFetchController ? currentFetchController.signal : undefined;
+        let timeoutId = null;
+        if (signal && typeof config.requestTimeoutMs === 'number' && config.requestTimeoutMs > 0) {
+            timeoutId = setTimeout(() => { try { currentFetchController.abort(); } catch(_e) {} }, config.requestTimeoutMs);
+        }
+
+        fetch(url, { signal })
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 const contentType = response.headers.get('content-type');
@@ -529,6 +564,7 @@
                 return response.text();
             })
             .then(html => {
+                if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 const newContent = doc.querySelector(config.contentSelector);
@@ -540,8 +576,10 @@
                     return;
                 }
 
-                // Replace content & title
-                contentElement.innerHTML = newContent.innerHTML;
+                // Replace content & title usando adopción de nodos (evita reparsear strings)
+                const frag = document.createDocumentFragment();
+                while (newContent.firstChild) { frag.appendChild(newContent.firstChild); }
+                contentElement.replaceChildren(frag);
                 if (newTitle) document.title = newTitle.textContent;
 
                 // Opcional: sincronizar <head> SEO de la respuesta (agnóstico por config)
@@ -553,7 +591,7 @@
                 // Cache if applicable - guardar tanto contenido como scripts del head
                 if (shouldCache(url)) {
                     pageCache[url] = {
-                        content: newContent.innerHTML,
+                        content: contentElement.innerHTML,
                         headScripts: headScripts
                     };
                     gloryLog(`Cached: ${url} (with ${headScripts.length} head scripts)`);
@@ -585,26 +623,33 @@
                 //gloryLog('Step 1: Executing inline head config scripts...');
                 if (headScripts && headScripts.length > 0) {
                     headScripts.forEach((scriptCode) => {
+                        const k = hashCodigo(scriptCode);
+                        if (headScriptsEjecutados.has(k)) return;
                         try {
                             const ns = document.createElement('script');
                             ns.textContent = scriptCode;
                             ns.setAttribute('data-glory-executed', 'head-config');
                             (document.head || document.body).appendChild(ns);
-                        } catch(_e) {
-                            //gloryLog('Error executing cached head script:', _e);
-                        }
+                            headScriptsEjecutados.add(k);
+                        } catch(_e) {}
                     });
-                    //gloryLog(`Executed ${headScripts.length} head scripts from extraction`);
                 }
 
                 // PASO 2: Cargar assets externos adicionales (scripts/estilos) y esperar a que terminen
-                //gloryLog('Step 2: Loading external assets...');
                 loadExternalAssetsFromDoc(doc).then(() => {
                     //gloryLog('Step 2: External assets loaded');
                     
                     // PASO 3: Ejecutar scripts embebidos presentes en el nuevo contenido
-                    //gloryLog('Step 3: Executing inline content scripts...');
-                    executeInlineScriptsFromElement(newContent);
+                    executeInlineScriptsFromElement(contentElement);
+
+                    // Optimizar imágenes: forzar lazy si procede
+                    try {
+                        if (config.optimizeImages) {
+                            contentElement.querySelectorAll('img:not([loading]), img[loading="auto"]').forEach((img) => {
+                                if (!img.hasAttribute('data-eager')) { img.setAttribute('loading', 'lazy'); }
+                            });
+                        }
+                    } catch(_e) {}
                     
                     // PASO 4: Pequeño delay para asegurar que todo esté inicializado
                     // antes de disparar el evento gloryRecarga
@@ -616,6 +661,12 @@
                 });
             })
             .catch(error => {
+                if (timeoutId) { clearTimeout(timeoutId); timeoutId = null; }
+                // Si la petición fue abortada por nueva navegación, no hacer fallback completo
+                if (error && (error.name === 'AbortError' || /abort/i.test(String(error)))) {
+                    gloryLog('AJAX Load aborted');
+                    return;
+                }
                 console.error('AJAX Load Error:', error);
                 if (loadingBar) {
                     // Hide loading bar on error
@@ -627,6 +678,43 @@
                 contentElement.style.opacity = '1'; // Restore content visibility
                 window.location.href = url; // Fallback to normal navigation on any error
             });
+    }
+
+    // Prefetch controlado (agnóstico)
+    function prefetch(url) {
+        try {
+            if (!url || !config.prefetchOnHover) return;
+            if (pageCache[url] && shouldCache(url)) return;
+            if (prefetchEnCurso.has(url)) return;
+
+            // Respetar reglas de skipAjax
+            const pl = document.createElement('a'); pl.href = url;
+            if (skipAjax(url, pl)) return;
+
+            prefetchEnCurso.add(url);
+            setTimeout(() => {
+                fetch(url)
+                    .then(r => {
+                        if (!r.ok) throw new Error('prefetch ' + r.status);
+                        const ct = r.headers.get('content-type');
+                        if (!ct || !ct.includes('text/html')) throw new Error('nohtml');
+                        return r.text();
+                    })
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const nc = doc.querySelector(config.contentSelector);
+                        if (!nc) return;
+                        const hs = extractAndExecuteHeadScripts(doc, false);
+                        if (shouldCache(url)) {
+                            pageCache[url] = { content: nc.innerHTML, headScripts: hs };
+                            gloryLog('Prefetched and cached:', url);
+                        }
+                    })
+                    .catch(() => {})
+                    .finally(() => { prefetchEnCurso.delete(url); });
+            }, Math.max(0, Number(config.prefetchDelayMs) || 0));
+        } catch(_e) {}
     }
 
     /**
@@ -678,6 +766,13 @@
         // If we reach here, handle with AJAX
         e.preventDefault();
         e.stopImmediatePropagation(); // Optional: Prevent other handlers
+
+        // Evitar recarga si es la misma URL exacta sin hash
+        try {
+            const dest = new URL(linkElement.href, window.location.origin).href;
+            const cur = new URL(window.location.href, window.location.origin).href;
+            if (dest === cur) { return; }
+        } catch(_e) {}
 
         const delay = linkElement.dataset.ajaxDelay ? parseInt(linkElement.dataset.ajaxDelay, 10) : 0;
 
@@ -752,10 +847,140 @@
         document.body.addEventListener('click', handleClick);
         window.addEventListener('popstate', handlePopState);
 
+        // Prefetch en hover/mousedown/focus
+        if (config.prefetchOnHover) {
+            const onHover = (ev) => {
+                const a = ev.target && ev.target.closest && ev.target.closest('a');
+                if (!a || !a.href) return;
+                prefetch(a.href);
+            };
+            document.body.addEventListener('mouseover', onHover, { passive: true });
+            document.body.addEventListener('mousedown', onHover, { passive: true });
+            document.body.addEventListener('focusin', onHover, { passive: true });
+        }
+
+        // Prefetch por visibilidad (Quicklink-like)
+        if (config.prefetchInViewport && 'IntersectionObserver' in window) {
+            try {
+                const seen = new WeakSet();
+                const obs = new IntersectionObserver((entries) => {
+                    for (let i = 0; i < entries.length; i++) {
+                        const it = entries[i];
+                        if (!it.isIntersecting) continue;
+                        const a = it.target;
+                        if (seen.has(a)) continue;
+                        seen.add(a);
+                        if (!a.href) continue;
+                        prefetch(a.href);
+                    }
+                }, { rootMargin: '200px' });
+
+                const limit = Math.max(1, Number(config.prefetchMaxEntries) || 24);
+                let count = 0;
+                document.querySelectorAll('a[href]')
+                    .forEach((a) => {
+                        if (count >= limit) return;
+                        try {
+                            const u = new URL(a.href, window.location.origin);
+                            if (u.origin !== window.location.origin) return;
+                            obs.observe(a);
+                            count++;
+                        } catch(_e) {}
+                    });
+            } catch(_e) {}
+        }
+
         // Trigger initializers for the first page load
         // Use requestAnimationFrame to ensure layout is stable before firing
         requestAnimationFrame(triggerPageReady);
 
         gloryLog('Glory AJAX Navigation Initialized with config:', config);
     });
+
+    // Extiende carga de assets externos: permitir async paralelo si el script remoto lo marca
+    const _origLoadExternalAssetsFromDoc = loadExternalAssetsFromDoc;
+    function loadExternalAssetsFromDoc(doc) {
+        return new Promise((resolveOuter) => {
+            try {
+                const head = document.head || document.getElementsByTagName('head')[0];
+                const body = document.body || document.documentElement;
+
+                // Estilos
+                doc.querySelectorAll('link[rel="stylesheet"][href]').forEach((lnk) => {
+                    const href = lnk.getAttribute('href');
+                    if (!href || isStylesheetLoaded(href)) return;
+                    const nl = document.createElement('link');
+                    nl.rel = 'stylesheet';
+                    nl.href = toAbsoluteUrl(href);
+                    head.appendChild(nl);
+                });
+
+                // Scripts externos
+                const scripts = Array.prototype.slice.call(doc.querySelectorAll('script[src]'));
+                const toLoad = scripts.filter(s => s.getAttribute('src') && !isScriptLoaded(s.getAttribute('src')));
+                if (!toLoad.length) { resolveOuter(); return; }
+
+                if (!config.allowAsyncExternalScripts) {
+                    // Mantener comportamiento original secuencial
+                    const seq = (i) => { if (i >= toLoad.length) return resolveOuter();
+                        const oldScript = toLoad[i];
+                        const ns = document.createElement('script');
+                        for (let j=0;j<oldScript.attributes.length;j++) {
+                            const attr = oldScript.attributes[j];
+                            if (attr.name === 'src') continue;
+                            ns.setAttribute(attr.name, attr.value);
+                        }
+                        ns.src = toAbsoluteUrl(oldScript.getAttribute('src'));
+                        ns.onload = () => seq(i+1);
+                        ns.onerror = () => seq(i+1);
+                        (body || document.documentElement).appendChild(ns);
+                    };
+                    return seq(0);
+                }
+
+                const asyncAllowed = [];
+                const sequential = [];
+                toLoad.forEach((oldScript) => {
+                    if (oldScript.hasAttribute('data-glory-async') || oldScript.getAttribute('async') === '' ) {
+                        asyncAllowed.push(oldScript);
+                    } else {
+                        sequential.push(oldScript);
+                    }
+                });
+
+                let remaining = asyncAllowed.length;
+                const done = () => {
+                    const seq = (i) => { if (i >= sequential.length) return resolveOuter();
+                        const oldScript = sequential[i];
+                        const ns = document.createElement('script');
+                        for (let j=0;j<oldScript.attributes.length;j++) {
+                            const attr = oldScript.attributes[j];
+                            if (attr.name === 'src') continue;
+                            ns.setAttribute(attr.name, attr.value);
+                        }
+                        ns.src = toAbsoluteUrl(oldScript.getAttribute('src'));
+                        ns.onload = () => seq(i+1);
+                        ns.onerror = () => seq(i+1);
+                        (body || document.documentElement).appendChild(ns);
+                    };
+                    seq(0);
+                };
+
+                if (!asyncAllowed.length) { return done(); }
+
+                asyncAllowed.forEach((oldScript) => {
+                    const ns = document.createElement('script');
+                    for (let j=0;j<oldScript.attributes.length;j++) {
+                        const attr = oldScript.attributes[j];
+                        if (attr.name === 'src') continue;
+                        ns.setAttribute(attr.name, attr.value);
+                    }
+                    ns.async = true;
+                    ns.src = toAbsoluteUrl(oldScript.getAttribute('src'));
+                    ns.onload = ns.onerror = () => { remaining--; if (remaining === 0) done(); };
+                    (body || document.documentElement).appendChild(ns);
+                });
+            } catch(_e) { resolveOuter(); }
+        });
+    }
 })();
