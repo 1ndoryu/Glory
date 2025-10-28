@@ -181,6 +181,9 @@ class GestorCssCritico
             'meta'   => ['onclick' => 'gloryGenerarCssCriticoAll(event)']
         ]);
 
+        // Imprimir helpers JS tanto en head como en footer para garantizar disponibilidad temprana
+        add_action('admin_head', [self::class, 'imprimirScriptsAdminBar']);
+        add_action('wp_head', [self::class, 'imprimirScriptsAdminBar']);
         add_action('admin_footer', [self::class, 'imprimirScriptsAdminBar']);
         add_action('wp_footer', [self::class, 'imprimirScriptsAdminBar']);
     }
@@ -190,33 +193,39 @@ class GestorCssCritico
         if (!current_user_can('manage_options')) return;
         ?>
         <script>
-        function gloryLimpiarCssCritico(event) {
-            event.preventDefault();
-            if (!confirm('<?php _e("¿Estás seguro de que quieres limpiar toda la caché de CSS crítico?", "glory"); ?>')) {
-                return;
-            }
-            jQuery.post(ajaxurl, { action: 'glory_limpiar_css_critico' }, function(response) {
-                alert(response && response.data ? response.data : 'Listo');
-            });
-        }
-        function gloryGenerarCssCritico(event) {
-            event.preventDefault();
-            var url = window.location.href;
-            jQuery.post(ajaxurl, { action: 'glory_generar_css_critico', url: url }, function(response) {
-                if (response && response.success) {
-                    alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
-                } else {
-                    alert('No se pudo generar CSS crítico.');
+        (function(w){
+            w.gloryLimpiarCssCritico = function(event){
+                event && event.preventDefault && event.preventDefault();
+                if (!confirm('<?php _e("¿Estás seguro de que quieres limpiar toda la caché de CSS crítico?", "glory"); ?>')) { return; }
+                if (w.jQuery) {
+                    w.jQuery.post(ajaxurl, { action: 'glory_limpiar_css_critico' }, function(response){
+                        alert(response && response.data ? response.data : 'Listo');
+                    });
                 }
-            });
-        }
-        function gloryGenerarCssCriticoAll(event) {
-            event.preventDefault();
-            if (!confirm('<?php _e("¿Programar generación para todas las páginas? Se ejecutará en background.", "glory"); ?>')) { return; }
-            jQuery.post(ajaxurl, { action: 'glory_generar_css_critico_all' }, function(response) {
-                alert(response && response.success ? 'Programado en background' : 'No se pudo programar');
-            });
-        }
+            };
+            w.gloryGenerarCssCritico = function(event){
+                event && event.preventDefault && event.preventDefault();
+                var url = w.location && w.location.href ? w.location.href : '';
+                if (w.jQuery) {
+                    w.jQuery.post(ajaxurl, { action: 'glory_generar_css_critico', url: url }, function(response){
+                        if (response && response.success) {
+                            alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
+                        } else {
+                            alert('No se pudo generar CSS crítico.');
+                        }
+                    });
+                }
+            };
+            w.gloryGenerarCssCriticoAll = function(event){
+                event && event.preventDefault && event.preventDefault();
+                if (!confirm('<?php _e("¿Programar generación para todas las páginas? Se ejecutará en background.", "glory"); ?>')) { return; }
+                if (w.jQuery) {
+                    w.jQuery.post(ajaxurl, { action: 'glory_generar_css_critico_all' }, function(response){
+                        alert(response && response.success ? 'Programado en background' : 'No se pudo programar');
+                    });
+                }
+            };
+        })(window);
         </script>
         <?php
     }
