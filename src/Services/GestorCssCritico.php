@@ -226,6 +226,20 @@ class GestorCssCritico
         return self::PREFIJO_CLAVE_CACHE . 'url_' . md5($url);
     }
 
+    // APIs públicas para herramientas (CLI, admin) --------------------------------------
+    public static function guardarCssParaUrl(string $url, string $css, ?int $expiracion = null): void
+    {
+        $exp = $expiracion ?? self::EXPIRACION_CACHE;
+        set_transient(self::getClaveCacheParaUrl($url), $css, $exp);
+    }
+    public static function guardarCssParaPost(int $postId, string $css, ?int $expiracion = null): void
+    {
+        if ($postId > 0) {
+            $exp = $expiracion ?? self::EXPIRACION_CACHE;
+            set_transient(self::getClaveCache($postId), $css, $exp);
+        }
+    }
+
     private static function getClaveCache(int $postId): string
     {
         return self::PREFIJO_CLAVE_CACHE . $postId;
