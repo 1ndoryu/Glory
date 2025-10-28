@@ -159,6 +159,7 @@ final class AssetManager
     public static function imprimirCssCritico(): void
     {
         if (self::$cssCritico) {
+            GloryLogger::info('AssetManager: imprimiendo CSS crítico en <head>', ['bytes' => strlen((string) self::$cssCritico)]);
             echo '<style id="glory-css-critico">' . self::$cssCritico . '</style>';
         }
     }
@@ -188,6 +189,9 @@ final class AssetManager
         if (self::$cssCritico) {
             add_action('wp_head', [self::class, 'imprimirCssCritico'], 1);
             add_filter('style_loader_tag', [self::class, 'hacerEstilosAsincronos'], 999, 2);
+            GloryLogger::info('AssetManager: CSS crítico activo; estilos pasarán a async');
+        } else {
+            GloryLogger::info('AssetManager: sin CSS crítico para esta vista');
         }
 
         self::enqueueForArea('frontend');

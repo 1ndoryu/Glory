@@ -30,39 +30,55 @@ class GestorCssCritico
         // Si la feature ha sido desactivada explícitamente o la opción en BD la desactiva,
         // no generar CSS crítico. Usar isActive para combinar override por código + opción en BD.
         if (GloryFeatures::isActive('cssCritico', 'glory_css_critico_activado') === false) {
+            GloryLogger::info('CssCritico: desactivado por GloryFeatures');
             return null;
         }
 
         if (!OpcionManager::get('glory_css_critico_activado')) {
+            GloryLogger::info('CssCritico: desactivado por opción BD (glory_css_critico_activado)');
             return null;
         }
 
         if (is_admin()) {
+            GloryLogger::info('CssCritico: no se aplica en admin');
             return null;
         }
 
         // Determinar clave de cache: por post (singular) o por URL (home/otros)
         $cssCacheado = null;
         $currentUrl = home_url(add_query_arg([], $_SERVER['REQUEST_URI'] ?? '/'));
+        GloryLogger::info('CssCritico: resolviendo para URL actual', ['url' => $currentUrl]);
 
         if (is_singular()) {
             $postId = get_queried_object_id();
             if ($postId) {
                 $claveCache = self::getClaveCache($postId);
                 $cssCacheado = get_transient($claveCache);
-                if ($cssCacheado) { return $cssCacheado; }
+                if ($cssCacheado) {
+                    GloryLogger::info('CssCritico: cache HIT por postId', ['postId' => $postId, 'bytes' => strlen((string)$cssCacheado)]);
+                    return $cssCacheado;
+                }
+                GloryLogger::info('CssCritico: cache MISS por postId', ['postId' => $postId]);
             }
         } else {
             $claveCacheUrl = self::getClaveCacheParaUrl($currentUrl);
             $cssCacheado = get_transient($claveCacheUrl);
-            if ($cssCacheado) { return $cssCacheado; }
+            if ($cssCacheado) {
+                GloryLogger::info('CssCritico: cache HIT por URL exacta', ['bytes' => strlen((string)$cssCacheado)]);
+                return $cssCacheado;
+            }
+            GloryLogger::info('CssCritico: cache MISS por URL exacta');
 
             // Fallbacks de URL para evitar misses por query params o variaciones menores
             // 1) Sin el parámetro noAjax (si viene en la URL)
             if (isset($_GET['noAjax']) && $_GET['noAjax'] === '1') {
                 $urlSinNoAjax = remove_query_arg('noAjax', $currentUrl);
                 $cssCacheado = get_transient(self::getClaveCacheParaUrl($urlSinNoAjax));
-                if ($cssCacheado) { return $cssCacheado; }
+                if ($cssCacheado) {
+                    GloryLogger::info('CssCritico: cache HIT sin noAjax', ['bytes' => strlen((string)$cssCacheado)]);
+                    return $cssCacheado;
+                }
+                GloryLogger::info('CssCritico: cache MISS sin noAjax');
             }
 
             // 2) Sin ningún query param (canónica por path)
@@ -70,19 +86,28 @@ class GestorCssCritico
             $urlSinQuery = home_url($path);
             if ($urlSinQuery !== $currentUrl) {
                 $cssCacheado = get_transient(self::getClaveCacheParaUrl($urlSinQuery));
-                if ($cssCacheado) { return $cssCacheado; }
+                if ($cssCacheado) {
+                    GloryLogger::info('CssCritico: cache HIT por URL sin query', ['bytes' => strlen((string)$cssCacheado)]);
+                    return $cssCacheado;
+                }
+                GloryLogger::info('CssCritico: cache MISS por URL sin query');
             }
 
             // 3) Home canónica (por seguridad)
             if (is_front_page() || is_home()) {
                 $homeCanonica = home_url('/');
                 $cssCacheado = get_transient(self::getClaveCacheParaUrl($homeCanonica));
-                if ($cssCacheado) { return $cssCacheado; }
+                if ($cssCacheado) {
+                    GloryLogger::info('CssCritico: cache HIT home canónica', ['bytes' => strlen((string)$cssCacheado)]);
+                    return $cssCacheado;
+                }
+                GloryLogger::info('CssCritico: cache MISS home canónica');
             }
         }
 
         // Respetar modo: solo generar automáticamente si la opción está activa
         if (!OpcionManager::get('glory_css_critico_auto')) {
+            GloryLogger::info('CssCritico: auto OFF, no se agenda generación');
             return null;
         }
 
@@ -92,9 +117,11 @@ class GestorCssCritico
             set_transient($lockKey, 1, 5 * MINUTE_IN_SECONDS);
             if (!wp_next_scheduled('glory_generate_critical_css_event', [$currentUrl])) {
                 wp_schedule_single_event(time() + 5, 'glory_generate_critical_css_event', [$currentUrl]);
+                GloryLogger::info('CssCritico: generación programada por WP-Cron', ['url' => $currentUrl]);
             }
         }
 
+        GloryLogger::info('CssCritico: no hay CSS cacheado aún');
         return null;
     }
 
@@ -278,6 +305,7 @@ class GestorCssCritico
             wp_send_json_error(__('No se pudo generar CSS crítico.', 'glory'));
         }
         set_transient(self::getClaveCacheParaUrl($url), $css, self::EXPIRACION_CACHE);
+        GloryLogger::info('CssCritico: generado por AJAX y guardado', ['url' => $url, 'bytes' => strlen($css)]);
         wp_send_json_success(['message' => __('CSS crítico generado', 'glory'), 'bytes' => strlen($css)]);
     }
 
@@ -335,7 +363,9 @@ class GestorCssCritico
         $css = self::generarParaUrl($url);
         if ($css) {
             set_transient(self::getClaveCacheParaUrl($url), $css, self::EXPIRACION_CACHE);
+            GloryLogger::info('CssCritico: cron guardó CSS crítico', ['url' => $url, 'bytes' => strlen($css)]);
         }
+        GloryLogger::info('CssCritico: cron limpieza de lock');
         delete_transient(self::getLockKey($url));
     }
 
