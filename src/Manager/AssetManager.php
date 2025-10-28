@@ -158,10 +158,12 @@ final class AssetManager
 
     public static function imprimirCssCritico(): void
     {
-        GloryLogger::info('AssetManager: hook wp_head -> imprimirCssCritico', [
-            'has' => self::$cssCritico ? 1 : 0,
-            'bytes' => self::$cssCritico ? strlen((string) self::$cssCritico) : 0
-        ]);
+        // Inicialización perezosa: si aún no está calculado, obtenerlo ahora
+        if (self::$cssCritico === null && \Glory\Core\GloryFeatures::isActive('cssCritico', 'glory_css_critico_activado') !== false) {
+            self::$cssCritico = \Glory\Services\GestorCssCritico::getParaPaginaActual();
+        }
+        $bytes = self::$cssCritico ? strlen((string) self::$cssCritico) : 0;
+        GloryLogger::info('AssetManager: hook wp_head -> imprimirCssCritico', [ 'has' => self::$cssCritico ? 1 : 0, 'bytes' => $bytes ]);
         if (!empty(self::$cssCritico)) {
             echo '<style id="glory-css-critico">' . self::$cssCritico . '</style>';
         }
