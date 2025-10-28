@@ -17,6 +17,28 @@ class LocalCriticalCss
         $node = $_ENV['GLORY_CRITICAL_CSS_NODE'] ?? getenv('GLORY_CRITICAL_CSS_NODE') ?: 'node';
         $cssDir = $themeDir . '/App/Assets/css';
 
+        // Añadir parámetro para congelar la navegación/JS dinámico durante la generación
+        // evitando cambios de URL que rompen Penthouse (PAGE_UNLOADED_DURING_EXECUTION).
+        try {
+            $parsed = wp_parse_url($url);
+            $query = [];
+            if (!empty($parsed['query'])) {
+                parse_str($parsed['query'], $query);
+            }
+            if (!isset($query['noAjax'])) {
+                $query['noAjax'] = '1';
+                $scheme   = $parsed['scheme'] ?? 'https';
+                $host     = $parsed['host'] ?? '';
+                $port     = isset($parsed['port']) ? (':' . $parsed['port']) : '';
+                $path     = $parsed['path'] ?? '/';
+                $newQuery = http_build_query($query, '', '&');
+                $frag     = isset($parsed['fragment']) ? ('#' . $parsed['fragment']) : '';
+                $url      = $scheme . '://' . $host . $port . $path . ($newQuery ? ('?' . $newQuery) : '') . $frag;
+            }
+        } catch (\Throwable $e) {
+            // Si algo falla, continuar con la URL original
+        }
+
         $cmd = escapeshellcmd($node)
             . ' ' . escapeshellarg($script)
             . ' --url ' . escapeshellarg($url)

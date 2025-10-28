@@ -50,6 +50,22 @@ function collectCssString(cssDir) {
     console.error('Missing --url');
     process.exit(2);
   }
+  // Asegurar que la URL tenga el flag noAjax=1 para congelar navegación/JS dinámico
+  function ensureNoAjaxParam(u){
+    try {
+      const uo = new URL(u);
+      if (!uo.searchParams.has('noAjax')) {
+        uo.searchParams.set('noAjax','1');
+      }
+      return uo.toString();
+    } catch(_e){
+      // Fallback para URLs relativas
+      if (u.indexOf('?') === -1) return u + '?noAjax=1';
+      if (/([?&])noAjax=/.test(u)) return u;
+      return u + '&noAjax=1';
+    }
+  }
+  const targetUrl = ensureNoAjaxParam(url);
   const realCssDir = cssDir
     ? path.resolve(process.cwd(), cssDir)
     : path.resolve(__dirname, '../../..', 'App/Assets/css');
@@ -65,7 +81,7 @@ function collectCssString(cssDir) {
 
   try {
     const critical = await penthouse({
-      url,
+      url: targetUrl,
       cssString,
       width,
       height,

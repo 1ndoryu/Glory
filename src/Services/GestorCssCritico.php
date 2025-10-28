@@ -21,6 +21,8 @@ class GestorCssCritico
         add_action('wp_ajax_glory_generar_css_critico', [self::class, 'manejarAjaxGenerarCritico']);
         add_action('wp_ajax_glory_generar_css_critico_all', [self::class, 'manejarAjaxGenerarCriticoAll']);
         add_action('glory_generate_critical_css_event', [self::class, 'cronGenerarCss'], 10, 1);
+        // Si está presente ?noAjax=1, inyectar bandera global para desactivar navegación AJAX
+        add_action('wp_head', [self::class, 'imprimirBanderaNoAjax'], 0);
     }
 
     public static function getParaPaginaActual(): ?string
@@ -343,6 +345,27 @@ class GestorCssCritico
             printf('<tr><td><a href="%s" target="_blank">%s</a></td><td>%s</td><td>%s</td></tr>', esc_url($it['url']), esc_html($it['label']), $ok ? 'Generado' : 'Pendiente', $ok ? $size . ' bytes' : '-');
         }
         echo '</tbody></table>';
+    }
+
+    public static function imprimirBanderaNoAjax(): void
+    {
+        if (is_admin()) return;
+        $noAjax = isset($_GET['noAjax']) && (string) $_GET['noAjax'] === '1';
+        if (!$noAjax) return;
+        ?>
+        <script>
+        (function(w){
+            // Bandera global para cualquier script que necesite detectar modo congelado
+            w.__GLORY_NO_AJAX__ = true;
+            // Config de navegación AJAX de Glory: abortar e inhabilitar
+            var cfg = w.gloryNavConfig || {};
+            cfg.enabled = false;
+            cfg.shouldAbortInit = function(){ return true; };
+            cfg.shouldSkipAjax = function(){ return true; };
+            w.gloryNavConfig = cfg;
+        })(window);
+        </script>
+        <?php
     }
 
     private static function getClaveCache(int $postId): string
