@@ -1,0 +1,17 @@
+{
+  "name": "critical-css",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "csso": "^5.0.5",
+    "penthouse": "^2.3.3",
+    "puppeteer": "^24.26.1"
+  }
+}
