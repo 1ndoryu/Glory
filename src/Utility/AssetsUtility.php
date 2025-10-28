@@ -390,23 +390,28 @@ class AssetsUtility
 
         $cacheKey = 'glory_asset_id_' . md5($assetReference);
         $cachedId = get_transient($cacheKey);
+        GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: start', [ 'ref' => $assetReference, 'cacheHit' => $cachedId !== false ]);
 
         if ($cachedId !== false) {
             return $cachedId === 'null' ? null : (int)$cachedId;
         }
 
-		list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-		$rutaAssetRelativaSolicitada = self::resolveAssetPath($alias, $nombreArchivo);
+        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
+        GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: parsed ref', [ 'alias' => $alias, 'nombre' => $nombreArchivo ]);
+        $rutaAssetRelativaSolicitada = self::resolveAssetPath($alias, $nombreArchivo);
+        GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: requested relative path', [ 'requested' => $rutaAssetRelativaSolicitada ]);
 		// Intentar resolver a un archivo real (permitiendo nombres sin extensión o con distinto case)
 		$resolved = self::resolveActualRelativeAssetPath($alias, $nombreArchivo);
 		$rutaAssetRelativa = $resolved ?: $rutaAssetRelativaSolicitada;
+        GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: resolved relative path', [ 'resolved' => $rutaAssetRelativa, 'resolvedFrom' => $resolved !== null ]);
 
         if (!$rutaAssetRelativa) {
             set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
             return null;
         }
 
-		$rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
+        $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
+        GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: absolute asset path', [ 'absPath' => $rutaAssetCompleta, 'exists' => file_exists($rutaAssetCompleta) ]);
 
 		if (!file_exists($rutaAssetCompleta)) {
             if ($allowAliasFallback && isset(self::$assetPaths[$alias])) {
@@ -418,9 +423,11 @@ class AssetsUtility
                     $nombreArchivo = basename($fallbackFile);
                     $rutaAssetRelativa = self::resolveAssetPath($alias, $nombreArchivo) ?: $rutaAssetRelativaSolicitada;
                     $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
+                    GloryLogger::warning('AssetsUtility:get_attachment_id_from_asset: fallback a otro archivo dentro del alias', [ 'alias' => $alias, 'fallback' => $nombreArchivo, 'absPath' => $rutaAssetCompleta ]);
                 }
             }
             if (!file_exists($rutaAssetCompleta)) {
+                GloryLogger::warning('AssetsUtility:get_attachment_id_from_asset: asset no existe tras fallback', [ 'ref' => $assetReference, 'absPath' => $rutaAssetCompleta ]);
                 set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
                 return null;
             }
@@ -455,6 +462,7 @@ class AssetsUtility
             ],
         ];
         $query = new \WP_Query($args);
+        GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: consulta adjuntos', [ 'ref' => $assetReference, 'found' => (bool) $query->have_posts() ]);
 
         if ($query->have_posts()) {
             $id = (int) $query->posts[0];
@@ -462,6 +470,7 @@ class AssetsUtility
             // Verificar que el archivo físico exista; si no, intentar reparar manteniendo el mismo adjunto
             $rutaAdjunta = get_attached_file($id);
             if (empty($rutaAdjunta) || !file_exists($rutaAdjunta)) {
+                GloryLogger::warning('AssetsUtility:get_attachment_id_from_asset: adjunto con fichero faltante, se intenta reparar', [ 'attachmentId' => $id, 'expectedPath' => $rutaAdjunta, 'assetPath' => $rutaAssetCompleta ]);
                 require_once(ABSPATH . 'wp-admin/includes/file.php');
                 require_once(ABSPATH . 'wp-admin/includes/image.php');
                 require_once(ABSPATH . 'wp-admin/includes/media.php');
@@ -476,6 +485,7 @@ class AssetsUtility
                     'size'     => @filesize($rutaAssetCompleta) ?: 0,
                 ];
                 $subida = wp_handle_sideload($datosArchivo, ['test_form' => false]);
+                GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: resultado sideload para reparación', [ 'attachmentId' => $id, 'result' => isset($subida['error']) ? 'error' : 'ok' ]);
 
                 if (!isset($subida['error']) && isset($subida['file'])) {
                     // Actualizar el archivo asociado al mismo adjunto
@@ -493,6 +503,7 @@ class AssetsUtility
                             'guid' => $subida['url'],
                         ]);
                     }
+                    GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: adjunto reparado exitosamente', [ 'attachmentId' => $id ]);
                 } else {
                     // Si la reparación falla, importar como nuevo adjunto y devolver su ID
                     $nuevoId = null;
@@ -503,6 +514,7 @@ class AssetsUtility
                         'size'     => @filesize($rutaAssetCompleta) ?: 0,
                     ];
                     $subida2 = wp_handle_sideload($datosArchivo, ['test_form' => false]);
+                    GloryLogger::warning('AssetsUtility:get_attachment_id_from_asset: reparación falló, intentando crear nuevo adjunto', []);
                     if (!isset($subida2['error']) && isset($subida2['file'])) {
                         $nuevoId = wp_insert_attachment([
                             'guid'           => $subida2['url'],
@@ -517,6 +529,7 @@ class AssetsUtility
                             update_post_meta($nuevoId, '_glory_asset_source', $rutaAssetRelativa);
                             update_post_meta($nuevoId, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
                             set_transient($cacheKey, (int) $nuevoId, HOUR_IN_SECONDS);
+                            GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: nuevo adjunto creado tras fallo de reparación', [ 'newAttachmentId' => (int) $nuevoId ]);
                             return (int) $nuevoId;
                         }
                     }
@@ -532,11 +545,13 @@ class AssetsUtility
             }
 
             set_transient($cacheKey, $id, HOUR_IN_SECONDS);
+            GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: adjunto encontrado/usable', [ 'attachmentId' => $id ]);
             return $id;
         }
 
         // Permitir importación en frontend si estamos en modo desarrollo
         if (!is_admin() && !AssetManager::isGlobalDevMode()) {
+            GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: saltando import en frontend (no dev mode)', [ 'ref' => $assetReference ]);
             return null;
         }
 
