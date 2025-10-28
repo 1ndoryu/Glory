@@ -380,7 +380,13 @@ class AssetsUtility
         }
 
         $urlBase = get_template_directory_uri() . '/' . $rutaRelativa;
-        $urlFinal = function_exists('jetpack_photon_url') ? jetpack_photon_url($urlBase) : $urlBase;
+        $ext = strtolower((string) pathinfo($rutaRelativa, PATHINFO_EXTENSION));
+        // Evitar Jetpack Photon para SVG (no soportado y puede romper URLs)
+        if ($ext === 'svg') {
+            $urlFinal = $urlBase;
+        } else {
+            $urlFinal = function_exists('jetpack_photon_url') ? jetpack_photon_url($urlBase) : $urlBase;
+        }
 
         return esc_url($urlFinal);
     }
