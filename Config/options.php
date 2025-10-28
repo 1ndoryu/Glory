@@ -15,6 +15,15 @@ OpcionManager::register('glory_css_critico_activado', [
     'featureKey'    => 'cssCritico'
 ]);
 
+OpcionManager::register('glory_css_critico_auto', [
+    'valorDefault'  => false,
+    'tipo'          => 'toggle',
+    'etiqueta'      => 'Generación automática',
+    'descripcion'   => 'Si está activo, se intentará generar CSS crítico automáticamente en la primera visita. Si está inactivo, solo se usará el CSS crítico cacheado y podrás generarlo manualmente desde el admin.',
+    'seccion'       => 'performance',
+    'etiquetaSeccion' => 'Rendimiento',
+]);
+
 OpcionManager::register('glory_critical_css_mode', [
     'valorDefault'  => 'local',
     'tipo'          => 'select',

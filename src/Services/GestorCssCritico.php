@@ -17,6 +17,7 @@ class GestorCssCritico
         add_action('save_post', [self::class, 'limpiarCachePost']);
         add_action('admin_bar_menu', [self::class, 'agregarBotonLimpiarCache'], 100);
         add_action('wp_ajax_glory_limpiar_css_critico', [self::class, 'manejarAjaxLimpiarCache']);
+        add_action('wp_ajax_glory_generar_css_critico', [self::class, 'manejarAjaxGenerarCritico']);
     }
 
     public static function getParaPaginaActual(): ?string
@@ -31,26 +32,40 @@ class GestorCssCritico
             return null;
         }
 
-        if (is_admin() || !is_singular()) {
+        if (is_admin()) {
             return null;
         }
 
-        $postId = get_queried_object_id();
-        if (!$postId) {
+        // Determinar clave de cache: por post (singular) o por URL (home/otros)
+        $cssCacheado = null;
+        $currentUrl = home_url(add_query_arg([], $_SERVER['REQUEST_URI'] ?? '/'));
+
+        if (is_singular()) {
+            $postId = get_queried_object_id();
+            if ($postId) {
+                $claveCache = self::getClaveCache($postId);
+                $cssCacheado = get_transient($claveCache);
+                if ($cssCacheado) { return $cssCacheado; }
+            }
+        } else {
+            $claveCacheUrl = self::getClaveCacheParaUrl($currentUrl);
+            $cssCacheado = get_transient($claveCacheUrl);
+            if ($cssCacheado) { return $cssCacheado; }
+        }
+
+        // Respetar modo: solo generar automáticamente si la opción está activa
+        if (!OpcionManager::get('glory_css_critico_auto')) {
             return null;
         }
 
-        $claveCache = self::getClaveCache($postId);
-        $cssCacheado = get_transient($claveCache);
-
-        if ($cssCacheado) {
-            return $cssCacheado;
-        }
-
-        $cssGenerado = self::generarParaUrl(get_permalink($postId));
-
+        // Auto-generación en primera visita
+        $cssGenerado = self::generarParaUrl($currentUrl);
         if ($cssGenerado) {
-            set_transient($claveCache, $cssGenerado, self::EXPIRACION_CACHE);
+            if (is_singular() && !empty($postId)) {
+                set_transient(self::getClaveCache($postId), $cssGenerado, self::EXPIRACION_CACHE);
+            } else {
+                set_transient(self::getClaveCacheParaUrl($currentUrl), $cssGenerado, self::EXPIRACION_CACHE);
+            }
             return $cssGenerado;
         }
 
@@ -154,9 +169,30 @@ class GestorCssCritico
                     alert(response.data);
                 });
             }
+            function gloryGenerarCssCritico(event) {
+                event.preventDefault();
+                var url = window.location.href;
+                jQuery.post(ajaxurl, { action: 'glory_generar_css_critico', url: url }, function(response) {
+                    if (response && response.success) {
+                        alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
+                    } else {
+                        alert('No se pudo generar CSS crítico.');
+                    }
+                });
+            }
             </script>
             <?php
         });
+
+        // Botón para generar CSS crítico de la URL actual
+        $admin_bar->add_node([
+            'id'    => 'glory-generar-css-critico',
+            'title' => '<span class="ab-icon"></span>' . __('Generar CSS Crítico (esta página)', 'glory'),
+            'href'  => '#',
+            'meta'  => [
+                'onclick' => 'gloryGenerarCssCritico(event)',
+            ],
+        ]);
     }
 
     public static function manejarAjaxLimpiarCache(): void
@@ -166,6 +202,28 @@ class GestorCssCritico
         $sql = "DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_{$prefijo}%' OR option_name LIKE '_transient_timeout_{$prefijo}%'";
         $wpdb->query($sql);
         wp_send_json_success(__('La caché de CSS crítico se ha limpiado correctamente.', 'glory'));
+    }
+
+    public static function manejarAjaxGenerarCritico(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('No autorizado', 'glory'));
+        }
+        $url = isset($_POST['url']) && is_string($_POST['url']) ? esc_url_raw($_POST['url']) : '';
+        if (!$url) {
+            $url = wp_get_referer() ?: home_url('/');
+        }
+        $css = self::generarParaUrl($url);
+        if (!$css) {
+            wp_send_json_error(__('No se pudo generar CSS crítico.', 'glory'));
+        }
+        set_transient(self::getClaveCacheParaUrl($url), $css, self::EXPIRACION_CACHE);
+        wp_send_json_success(['message' => __('CSS crítico generado', 'glory'), 'bytes' => strlen($css)]);
+    }
+
+    private static function getClaveCacheParaUrl(string $url): string
+    {
+        return self::PREFIJO_CLAVE_CACHE . 'url_' . md5($url);
     }
 
     private static function getClaveCache(int $postId): string
