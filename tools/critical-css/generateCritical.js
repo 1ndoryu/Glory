@@ -50,7 +50,9 @@ function collectCssString(cssDir) {
     console.error('Missing --url');
     process.exit(2);
   }
-  const realCssDir = cssDir || path.resolve(process.cwd(), '../../../../App/Assets/css');
+  const realCssDir = cssDir
+    ? path.resolve(process.cwd(), cssDir)
+    : path.resolve(__dirname, '../../..', 'App/Assets/css');
   if (!fs.existsSync(realCssDir)) {
     console.error('CSS directory not found:', realCssDir);
     process.exit(3);
