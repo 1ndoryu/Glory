@@ -5,6 +5,7 @@ namespace Glory\Services;
 use Glory\Core\GloryLogger;
 use Glory\Core\GloryFeatures;
 use Glory\Manager\OpcionManager;
+use Glory\Services\LocalCriticalCss;
 
 class GestorCssCritico
 {
@@ -58,6 +59,14 @@ class GestorCssCritico
 
     private static function generarParaUrl(string $url): ?string
     {
+        // Modo local: usar generador con Penthouse/Puppeteer (sin servicios externos)
+        $modo = OpcionManager::get('glory_critical_css_mode') ?: 'remote';
+        if ($modo === 'local') {
+            $cssLocal = LocalCriticalCss::generate($url);
+            if ($cssLocal) { return $cssLocal; }
+            // Si local falla, continuar con remoto si hubiera
+        }
+
         // Permitir configurar el endpoint por ENV u opción de WP, con fallback al default
         $configEndpoint = $_ENV['GLORY_CRITICAL_CSS_API'] ?? getenv('GLORY_CRITICAL_CSS_API') ?: null;
         if (!$configEndpoint) {

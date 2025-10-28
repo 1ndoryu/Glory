@@ -15,6 +15,28 @@ OpcionManager::register('glory_css_critico_activado', [
     'featureKey'    => 'cssCritico'
 ]);
 
+OpcionManager::register('glory_critical_css_mode', [
+    'valorDefault'  => 'local',
+    'tipo'          => 'select',
+    'etiqueta'      => 'Modo de CSS crítico',
+    'descripcion'   => 'local (Penthouse en tu servidor) o remote (endpoint HTTP configurable).',
+    'opciones'      => [
+        'local'  => 'Local (Puppeteer/Penthouse)',
+        'remote' => 'Remoto (HTTP)'
+    ],
+    'seccion'       => 'performance',
+    'etiquetaSeccion' => 'Rendimiento',
+]);
+
+OpcionManager::register('glory_critical_css_node_path', [
+    'valorDefault'  => 'node',
+    'tipo'          => 'text',
+    'etiqueta'      => 'Ruta binario Node (opcional)',
+    'descripcion'   => 'Si el binario node no está en PATH, indica ruta completa. También puedes usar env GLORY_CRITICAL_CSS_NODE.',
+    'seccion'       => 'performance',
+    'etiquetaSeccion' => 'Rendimiento',
+]);
+
 // Endpoint configurable para la API de CSS crítico (y respaldo)
 OpcionManager::register('glory_critical_css_api_url', [
     'valorDefault'  => 'https://critical-css-api.glorycat.workers.dev/',
