@@ -58,24 +58,51 @@ class GestorCssCritico
 
     private static function generarParaUrl(string $url): ?string
     {
-        $apiUrl = 'https://critical-css-api.glorycat.workers.dev/';
+        // Permitir configurar el endpoint por ENV u opción de WP, con fallback al default
+        $configEndpoint = $_ENV['GLORY_CRITICAL_CSS_API'] ?? getenv('GLORY_CRITICAL_CSS_API') ?: null;
+        if (!$configEndpoint) {
+            $configEndpoint = OpcionManager::get('glory_critical_css_api_url');
+        }
+        $apiUrl = $configEndpoint ?: 'https://critical-css-api.glorycat.workers.dev/';
 
-        $response = wp_remote_post($apiUrl, [
-            'body' => json_encode(['url' => $url]),
+        $payload = json_encode(['url' => $url]);
+        $args = [
+            'body'    => $payload,
             'headers' => ['Content-Type' => 'application/json'],
-            'timeout' => 30,
-        ]);
+            'timeout' => 15,
+        ];
+
+        $response = wp_remote_post($apiUrl, $args);
 
         if (is_wp_error($response)) {
-            GloryLogger::error('Fallo en la petición a la API de CSS crítico.', ['error' => $response->get_error_message()]);
-            return null;
+            GloryLogger::error('Fallo en la petición a la API de CSS crítico.', [
+                'error'   => $response->get_error_message(),
+                'endpoint'=> $apiUrl,
+            ]);
+            // Intentar un endpoint de respaldo si está configurado
+            $backup = OpcionManager::get('glory_critical_css_api_backup_url');
+            if ($backup && filter_var($backup, FILTER_VALIDATE_URL)) {
+                $response = wp_remote_post($backup, $args);
+                if (is_wp_error($response)) {
+                    GloryLogger::error('Fallo también en el endpoint de respaldo de CSS crítico.', [
+                        'error'   => $response->get_error_message(),
+                        'endpoint'=> $backup,
+                    ]);
+                    return null;
+                }
+            } else {
+                return null;
+            }
         }
 
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
         if (wp_remote_retrieve_response_code($response) !== 200 || empty($data['critical_css'])) {
-            GloryLogger::error('La API de CSS crítico devolvió un error.', ['response' => $body]);
+            GloryLogger::error('La API de CSS crítico devolvió un error.', [
+                'response' => $body,
+                'endpoint' => isset($backup) && $backup ? $backup : $apiUrl,
+            ]);
             return null;
         }
 

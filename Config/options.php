@@ -15,6 +15,25 @@ OpcionManager::register('glory_css_critico_activado', [
     'featureKey'    => 'cssCritico'
 ]);
 
+// Endpoint configurable para la API de CSS crítico (y respaldo)
+OpcionManager::register('glory_critical_css_api_url', [
+    'valorDefault'  => 'https://critical-css-api.glorycat.workers.dev/',
+    'tipo'          => 'text',
+    'etiqueta'      => 'Endpoint API CSS crítico',
+    'descripcion'   => 'URL del servicio que devuelve CSS crítico para una URL. Puedes sobreescribir por variable de entorno GLORY_CRITICAL_CSS_API.',
+    'seccion'       => 'performance',
+    'etiquetaSeccion' => 'Rendimiento',
+]);
+
+OpcionManager::register('glory_critical_css_api_backup_url', [
+    'valorDefault'  => '',
+    'tipo'          => 'text',
+    'etiqueta'      => 'Endpoint de respaldo CSS crítico',
+    'descripcion'   => 'URL alternativa si falla el endpoint principal.',
+    'seccion'       => 'performance',
+    'etiquetaSeccion' => 'Rendimiento',
+]);
+
 // Perfilador de Consultas (UI). Por defecto activo en DEV, inactivo en PROD.
 OpcionManager::register('glory_query_profiler_activado', [
     'valorDefault'  => false,
