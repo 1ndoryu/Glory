@@ -56,6 +56,29 @@ class GestorCssCritico
             $claveCacheUrl = self::getClaveCacheParaUrl($currentUrl);
             $cssCacheado = get_transient($claveCacheUrl);
             if ($cssCacheado) { return $cssCacheado; }
+
+            // Fallbacks de URL para evitar misses por query params o variaciones menores
+            // 1) Sin el parámetro noAjax (si viene en la URL)
+            if (isset($_GET['noAjax']) && $_GET['noAjax'] === '1') {
+                $urlSinNoAjax = remove_query_arg('noAjax', $currentUrl);
+                $cssCacheado = get_transient(self::getClaveCacheParaUrl($urlSinNoAjax));
+                if ($cssCacheado) { return $cssCacheado; }
+            }
+
+            // 2) Sin ningún query param (canónica por path)
+            $path = wp_parse_url($currentUrl, PHP_URL_PATH) ?: '/';
+            $urlSinQuery = home_url($path);
+            if ($urlSinQuery !== $currentUrl) {
+                $cssCacheado = get_transient(self::getClaveCacheParaUrl($urlSinQuery));
+                if ($cssCacheado) { return $cssCacheado; }
+            }
+
+            // 3) Home canónica (por seguridad)
+            if (is_front_page() || is_home()) {
+                $homeCanonica = home_url('/');
+                $cssCacheado = get_transient(self::getClaveCacheParaUrl($homeCanonica));
+                if ($cssCacheado) { return $cssCacheado; }
+            }
         }
 
         // Respetar modo: solo generar automáticamente si la opción está activa
