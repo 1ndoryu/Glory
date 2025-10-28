@@ -488,6 +488,8 @@ AssetManager::defineFolder(
     [
         'alert.css',
         'admin-panel.css',
+        'admin-elementor.css',
+        'dateRange.css',
         // Excluir el perfilador para definirlo de forma controlada abajo
         'query-profiler.css',
     ]
