@@ -10,13 +10,16 @@ const penthouse = require('penthouse');
 const csso = require('csso');
 
 function parseArgs(argv) {
-  const args = { url: null, cssDir: null, width: 1300, height: 900 };
+  const args = { url: null, cssDir: null, width: 1300, height: 900, timeout: 120000, renderWait: 800, skipLoadAfter: 25000 };
   for (let i = 2; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--url') { args.url = argv[++i]; continue; }
     if (a === '--cssDir') { args.cssDir = argv[++i]; continue; }
     if (a === '--width') { args.width = parseInt(argv[++i], 10) || args.width; continue; }
     if (a === '--height') { args.height = parseInt(argv[++i], 10) || args.height; continue; }
+    if (a === '--timeout') { args.timeout = parseInt(argv[++i], 10) || args.timeout; continue; }
+    if (a === '--renderWait') { args.renderWait = parseInt(argv[++i], 10) || args.renderWait; continue; }
+    if (a === '--skipLoadAfter') { args.skipLoadAfter = parseInt(argv[++i], 10) || args.skipLoadAfter; continue; }
   }
   return args;
 }
@@ -42,7 +45,7 @@ function collectCssString(cssDir) {
 }
 
 (async () => {
-  const { url, cssDir, width, height } = parseArgs(process.argv);
+  const { url, cssDir, width, height, timeout, renderWait, skipLoadAfter } = parseArgs(process.argv);
   if (!url) {
     console.error('Missing --url');
     process.exit(2);
@@ -64,11 +67,12 @@ function collectCssString(cssDir) {
       cssString,
       width,
       height,
-      timeout: 60000,
+      timeout,
       forceInclude: [],
       keepLargerMediaQueries: true,
-      renderWaitTime: 1000,
-      blockJSRequests: false,
+      renderWaitTime: renderWait,
+      blockJSRequests: true,
+      pageLoadSkipTimeout: skipLoadAfter,
     });
     const min = csso.minify(critical || '').css || '';
     process.stdout.write(min);
