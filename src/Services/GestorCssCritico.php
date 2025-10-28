@@ -246,36 +246,47 @@ class GestorCssCritico
         ?>
         <script>
         (function(w){
+            var AU = <?php echo json_encode(admin_url('admin-ajax.php')); ?>;
+            function postAjax(payload){
+                try {
+                    if (w.fetch) {
+                        var params = new URLSearchParams();
+                        for (var k in payload) { if (Object.prototype.hasOwnProperty.call(payload, k)) params.append(k, payload[k]); }
+                        return fetch(AU, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
+                            .then(function(r){ return r.text(); })
+                            .then(function(t){ try { return JSON.parse(t); } catch(_){ return { success: false, data: t }; } });
+                    }
+                } catch(_e) {}
+                if (w.jQuery && w.jQuery.post) {
+                    return new Promise(function(resolve){ w.jQuery.post(AU, payload, function(resp){ resolve(resp); }); });
+                }
+                alert('AJAX no disponible en este contexto.');
+                return Promise.resolve({ success: false, message: 'AJAX no disponible' });
+            }
             w.gloryLimpiarCssCritico = function(event){
                 event && event.preventDefault && event.preventDefault();
                 if (!confirm('<?php _e("¿Estás seguro de que quieres limpiar toda la caché de CSS crítico?", "glory"); ?>')) { return; }
-                if (w.jQuery) {
-                    w.jQuery.post(ajaxurl, { action: 'glory_limpiar_css_critico' }, function(response){
-                        alert(response && response.data ? response.data : 'Listo');
-                    });
-                }
+                postAjax({ action: 'glory_limpiar_css_critico' }).then(function(response){
+                    alert(response && response.data ? response.data : 'Listo');
+                });
             };
             w.gloryGenerarCssCritico = function(event){
                 event && event.preventDefault && event.preventDefault();
                 var url = w.location && w.location.href ? w.location.href : '';
-                if (w.jQuery) {
-                    w.jQuery.post(ajaxurl, { action: 'glory_generar_css_critico', url: url }, function(response){
-                        if (response && response.success) {
-                            alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
-                        } else {
-                            alert('No se pudo generar CSS crítico.');
-                        }
-                    });
-                }
+                postAjax({ action: 'glory_generar_css_critico', url: url }).then(function(response){
+                    if (response && response.success) {
+                        alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
+                    } else {
+                        alert('No se pudo generar CSS crítico.');
+                    }
+                });
             };
             w.gloryGenerarCssCriticoAll = function(event){
                 event && event.preventDefault && event.preventDefault();
                 if (!confirm('<?php _e("¿Programar generación para todas las páginas? Se ejecutará en background.", "glory"); ?>')) { return; }
-                if (w.jQuery) {
-                    w.jQuery.post(ajaxurl, { action: 'glory_generar_css_critico_all' }, function(response){
-                        alert(response && response.success ? 'Programado en background' : 'No se pudo programar');
-                    });
-                }
+                postAjax({ action: 'glory_generar_css_critico_all' }).then(function(response){
+                    alert(response && response.success ? 'Programado en background' : 'No se pudo programar');
+                });
             };
         })(window);
         </script>
@@ -300,12 +311,20 @@ class GestorCssCritico
         if (!$url) {
             $url = wp_get_referer() ?: home_url('/');
         }
+        GloryLogger::info('CssCritico: AJAX generar solicitado', ['url' => $url]);
         $css = self::generarParaUrl($url);
         if (!$css) {
+            GloryLogger::error('CssCritico: AJAX generar FALLÓ', ['url' => $url]);
             wp_send_json_error(__('No se pudo generar CSS crítico.', 'glory'));
         }
         set_transient(self::getClaveCacheParaUrl($url), $css, self::EXPIRACION_CACHE);
-        GloryLogger::info('CssCritico: generado por AJAX y guardado', ['url' => $url, 'bytes' => strlen($css)]);
+        $pid = function_exists('url_to_postid') ? (int) url_to_postid($url) : 0;
+        if ($pid > 0) {
+            self::guardarCssParaPost($pid, $css);
+            GloryLogger::info('CssCritico: generado por AJAX y guardado también por postId', ['url' => $url, 'postId' => $pid, 'bytes' => strlen($css)]);
+        } else {
+            GloryLogger::info('CssCritico: generado por AJAX y guardado por URL (sin postId)', ['url' => $url, 'bytes' => strlen($css)]);
+        }
         wp_send_json_success(['message' => __('CSS crítico generado', 'glory'), 'bytes' => strlen($css)]);
     }
 
@@ -363,7 +382,13 @@ class GestorCssCritico
         $css = self::generarParaUrl($url);
         if ($css) {
             set_transient(self::getClaveCacheParaUrl($url), $css, self::EXPIRACION_CACHE);
-            GloryLogger::info('CssCritico: cron guardó CSS crítico', ['url' => $url, 'bytes' => strlen($css)]);
+            $pid = function_exists('url_to_postid') ? (int) url_to_postid($url) : 0;
+            if ($pid > 0) {
+                self::guardarCssParaPost($pid, $css);
+                GloryLogger::info('CssCritico: cron guardó CSS crítico (URL y postId)', ['url' => $url, 'postId' => $pid, 'bytes' => strlen($css)]);
+            } else {
+                GloryLogger::info('CssCritico: cron guardó CSS crítico (solo URL)', ['url' => $url, 'bytes' => strlen($css)]);
+            }
         }
         GloryLogger::info('CssCritico: cron limpieza de lock');
         delete_transient(self::getLockKey($url));

@@ -46,6 +46,11 @@ class LocalCriticalCss
             . ' --timeout 60000 --renderWait 800 --skipLoadAfter 20000'
             . ' 2>&1';
 
+        GloryLogger::info('LocalCriticalCss: ejecutando generador', [
+            'node' => $node,
+            'url' => $url,
+        ]);
+
         $output = [];
         $rc = 0;
         @exec($cmd, $output, $rc);
