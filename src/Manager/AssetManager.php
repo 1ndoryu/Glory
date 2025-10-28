@@ -5,6 +5,7 @@ namespace Glory\Manager;
 use Glory\Core\GloryLogger;
 use Glory\Core\GloryFeatures;
 use Glory\Services\GestorCssCritico;
+use Glory\Manager\OpcionManager;
 
 
 final class AssetManager
@@ -193,8 +194,14 @@ final class AssetManager
 
         if (self::$cssCritico) {
             add_action('wp_head', [self::class, 'imprimirCssCritico'], 1);
-            add_filter('style_loader_tag', [self::class, 'hacerEstilosAsincronos'], 999, 2);
-            GloryLogger::info('AssetManager: CSS crítico activo; estilos pasarán a async');
+            // Controlar si el resto de CSS debe ir asíncrono cuando hay crítico
+            $asyncResto = (bool) (OpcionManager::get('glory_css_critico_async_resto') ?: false);
+            if ($asyncResto) {
+                add_filter('style_loader_tag', [self::class, 'hacerEstilosAsincronos'], 999, 2);
+                GloryLogger::info('AssetManager: CSS crítico activo; estilos pasarán a async');
+            } else {
+                GloryLogger::info('AssetManager: CSS crítico activo; estilos se mantienen síncronos (compatibilidad)');
+            }
         } else {
             GloryLogger::info('AssetManager: sin CSS crítico para esta vista');
         }
