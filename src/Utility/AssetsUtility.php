@@ -21,7 +21,8 @@ class AssetsUtility
         }
         self::registerAssetPath('glory', 'Glory/assets/images');
         self::registerAssetPath('elements', 'Glory/assets/images/elements');
-        self::registerAssetPath('tema', 'App/assets/images');
+        // Importante: respetar mayúsculas/minúsculas reales del filesystem (Linux es case-sensitive)
+        self::registerAssetPath('tema', 'App/Assets/images');
         // Alias dedicado a la carpeta de colores solicitada para portafolio
         self::registerAssetPath('colors', 'Glory/assets/images/colors');
         // Alias para logos de marcas
@@ -365,7 +366,8 @@ class AssetsUtility
         if (!self::$isInitialized) self::init();
 
         list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-        $rutaRelativa = self::resolveAssetPath($alias, $nombreArchivo);
+        // Intentar resolver ruta real (case/extension flexible)
+        $rutaRelativa = self::resolveActualRelativeAssetPath($alias, $nombreArchivo) ?: self::resolveAssetPath($alias, $nombreArchivo);
 
         if (!$rutaRelativa) {
             return null;
@@ -390,7 +392,20 @@ class AssetsUtility
 
         $cacheKey = 'glory_asset_id_' . md5($assetReference);
         $cachedId = get_transient($cacheKey);
-        GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: start', [ 'ref' => $assetReference, 'cacheHit' => $cachedId !== false ]);
+        GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: start', [ 'ref' => $assetReference, 'cacheHit' => $cachedId !== false, 'cachedValue' => $cachedId ]);
+        // Si cache tiene 'null', pero el archivo ahora existe, invalidar para reintentar
+        if ($cachedId === 'null') {
+            list($aliasChk, $nombreChk) = self::parseAssetReference($assetReference);
+            $resolvedChk = self::resolveActualRelativeAssetPath($aliasChk, $nombreChk) ?: self::resolveAssetPath($aliasChk, $nombreChk);
+            if ($resolvedChk) {
+                $absChk = get_template_directory() . '/' . $resolvedChk;
+                if (file_exists($absChk)) {
+                    delete_transient($cacheKey);
+                    GloryLogger::info('AssetsUtility:get_attachment_id_from_asset: invalidado cache null porque el archivo existe ahora', [ 'ref' => $assetReference, 'path' => $absChk ]);
+                    $cachedId = false;
+                }
+            }
+        }
 
         if ($cachedId !== false) {
             return $cachedId === 'null' ? null : (int)$cachedId;
