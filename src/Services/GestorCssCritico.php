@@ -16,9 +16,10 @@ class GestorCssCritico
     public static function init(): void
     {
         add_action('save_post', [self::class, 'limpiarCachePost']);
-        add_action('admin_bar_menu', [self::class, 'agregarBotonLimpiarCache'], 100);
+        add_action('admin_bar_menu', [self::class, 'registrarMenuAdminBar'], 100);
         add_action('wp_ajax_glory_limpiar_css_critico', [self::class, 'manejarAjaxLimpiarCache']);
         add_action('wp_ajax_glory_generar_css_critico', [self::class, 'manejarAjaxGenerarCritico']);
+        add_action('wp_ajax_glory_generar_css_critico_all', [self::class, 'manejarAjaxGenerarCriticoAll']);
         add_action('glory_generate_critical_css_event', [self::class, 'cronGenerarCss'], 10, 1);
     }
 
@@ -138,57 +139,86 @@ class GestorCssCritico
         delete_transient($claveCache);
     }
 
-    public static function agregarBotonLimpiarCache(\WP_Admin_Bar $admin_bar): void
+    public static function registrarMenuAdminBar(\WP_Admin_Bar $admin_bar): void
     {
         if (!current_user_can('manage_options')) {
             return;
         }
 
+        // Menú principal
         $admin_bar->add_node([
-            'id'    => 'glory-limpiar-css-critico',
-            'title' => '<span class="ab-icon"></span>' . __('Limpiar Caché de CSS Crítico', 'glory'),
+            'id'    => 'glory-critical-css',
+            'title' => 'CSS crítico',
             'href'  => '#',
-            'meta'  => [
-                'onclick' => 'gloryLimpiarCssCritico(event)',
-            ],
         ]);
 
-        add_action('admin_footer', function() {
-            ?>
-            <script>
-            function gloryLimpiarCssCritico(event) {
-                event.preventDefault();
-                if (!confirm('<?php _e("¿Estás seguro de que quieres limpiar toda la caché de CSS crítico?", "glory"); ?>')) {
-                    return;
+        // Sub: Limpiar caché
+        $admin_bar->add_node([
+            'id'     => 'glory-critical-css-clear',
+            'parent' => 'glory-critical-css',
+            'title'  => __('Limpiar caché CSS crítico', 'glory'),
+            'href'   => '#',
+            'meta'   => ['onclick' => 'gloryLimpiarCssCritico(event)']
+        ]);
+
+        // Sub: Generar esta página (oculto en admin)
+        if (!is_admin()) {
+            $admin_bar->add_node([
+                'id'     => 'glory-critical-css-generate-current',
+                'parent' => 'glory-critical-css',
+                'title'  => __('Generar (esta página)', 'glory'),
+                'href'   => '#',
+                'meta'   => ['onclick' => 'gloryGenerarCssCritico(event)']
+            ]);
+        }
+
+        // Sub: Generar todas (background)
+        $admin_bar->add_node([
+            'id'     => 'glory-critical-css-generate-all',
+            'parent' => 'glory-critical-css',
+            'title'  => __('Generar para todas (background)', 'glory'),
+            'href'   => '#',
+            'meta'   => ['onclick' => 'gloryGenerarCssCriticoAll(event)']
+        ]);
+
+        add_action('admin_footer', [self::class, 'imprimirScriptsAdminBar']);
+        add_action('wp_footer', [self::class, 'imprimirScriptsAdminBar']);
+    }
+
+    public static function imprimirScriptsAdminBar(): void
+    {
+        if (!current_user_can('manage_options')) return;
+        ?>
+        <script>
+        function gloryLimpiarCssCritico(event) {
+            event.preventDefault();
+            if (!confirm('<?php _e("¿Estás seguro de que quieres limpiar toda la caché de CSS crítico?", "glory"); ?>')) {
+                return;
+            }
+            jQuery.post(ajaxurl, { action: 'glory_limpiar_css_critico' }, function(response) {
+                alert(response && response.data ? response.data : 'Listo');
+            });
+        }
+        function gloryGenerarCssCritico(event) {
+            event.preventDefault();
+            var url = window.location.href;
+            jQuery.post(ajaxurl, { action: 'glory_generar_css_critico', url: url }, function(response) {
+                if (response && response.success) {
+                    alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
+                } else {
+                    alert('No se pudo generar CSS crítico.');
                 }
-                jQuery.post(ajaxurl, { action: 'glory_limpiar_css_critico' }, function(response) {
-                    alert(response.data);
-                });
-            }
-            function gloryGenerarCssCritico(event) {
-                event.preventDefault();
-                var url = window.location.href;
-                jQuery.post(ajaxurl, { action: 'glory_generar_css_critico', url: url }, function(response) {
-                    if (response && response.success) {
-                        alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
-                    } else {
-                        alert('No se pudo generar CSS crítico.');
-                    }
-                });
-            }
-            </script>
-            <?php
-        });
-
-        // Botón para generar CSS crítico de la URL actual
-        $admin_bar->add_node([
-            'id'    => 'glory-generar-css-critico',
-            'title' => '<span class="ab-icon"></span>' . __('Generar CSS Crítico (esta página)', 'glory'),
-            'href'  => '#',
-            'meta'  => [
-                'onclick' => 'gloryGenerarCssCritico(event)',
-            ],
-        ]);
+            });
+        }
+        function gloryGenerarCssCriticoAll(event) {
+            event.preventDefault();
+            if (!confirm('<?php _e("¿Programar generación para todas las páginas? Se ejecutará en background.", "glory"); ?>')) { return; }
+            jQuery.post(ajaxurl, { action: 'glory_generar_css_critico_all' }, function(response) {
+                alert(response && response.success ? 'Programado en background' : 'No se pudo programar');
+            });
+        }
+        </script>
+        <?php
     }
 
     public static function manejarAjaxLimpiarCache(): void
@@ -215,6 +245,31 @@ class GestorCssCritico
         }
         set_transient(self::getClaveCacheParaUrl($url), $css, self::EXPIRACION_CACHE);
         wp_send_json_success(['message' => __('CSS crítico generado', 'glory'), 'bytes' => strlen($css)]);
+    }
+
+    public static function manejarAjaxGenerarCriticoAll(): void
+    {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('No autorizado', 'glory'));
+        }
+        $urls = [home_url('/')];
+        $q = new \WP_Query([
+            'post_type'      => ['page','post'],
+            'post_status'    => 'publish',
+            'posts_per_page' => 200,
+            'fields'         => 'ids',
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+        ]);
+        foreach ($q->posts as $pid) { $urls[] = get_permalink($pid); }
+        $when = time() + 5;
+        foreach (array_unique($urls) as $u) {
+            if (!wp_next_scheduled('glory_generate_critical_css_event', [$u])) {
+                wp_schedule_single_event($when, 'glory_generate_critical_css_event', [$u]);
+                $when += 2; // espaciar
+            }
+        }
+        wp_send_json_success('OK');
     }
 
     private static function getClaveCacheParaUrl(string $url): string
@@ -248,6 +303,37 @@ class GestorCssCritico
             set_transient(self::getClaveCacheParaUrl($url), $css, self::EXPIRACION_CACHE);
         }
         delete_transient(self::getLockKey($url));
+    }
+
+    // Render de estado en panel de opciones
+    public static function renderAdminStatus(): void
+    {
+        $items = [];
+        $home = home_url('/');
+        $items[] = ['tipo' => 'url', 'label' => 'Home', 'url' => $home];
+        $q = new \WP_Query([
+            'post_type'      => ['page', 'post'],
+            'post_status'    => 'publish',
+            'posts_per_page' => 200,
+            'fields'         => 'ids',
+            'orderby'        => 'date',
+            'order'          => 'DESC',
+        ]);
+        foreach ($q->posts as $pid) {
+            $items[] = ['tipo' => 'post', 'id' => $pid, 'label' => get_the_title($pid), 'url' => get_permalink($pid)];
+        }
+        echo '<table class="widefat"><thead><tr><th>Página</th><th>Estado</th><th>Tamaño</th></tr></thead><tbody>';
+        foreach ($items as $it) {
+            if ($it['tipo'] === 'url') {
+                $css = get_transient(self::getClaveCacheParaUrl($it['url']));
+            } else {
+                $css = get_transient(self::getClaveCache((int)$it['id']));
+            }
+            $ok = is_string($css) && $css !== '';
+            $size = $ok ? strlen($css) : 0;
+            printf('<tr><td><a href="%s" target="_blank">%s</a></td><td>%s</td><td>%s</td></tr>', esc_url($it['url']), esc_html($it['label']), $ok ? 'Generado' : 'Pendiente', $ok ? $size . ' bytes' : '-');
+        }
+        echo '</tbody></table>';
     }
 
     private static function getClaveCache(int $postId): string

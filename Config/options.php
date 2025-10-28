@@ -65,6 +65,18 @@ OpcionManager::register('glory_critical_css_api_backup_url', [
     'etiquetaSeccion' => 'Rendimiento',
 ]);
 
+// Pestaña de estado de CSS crítico (render personalizado)
+OpcionManager::register('glory_critical_css_status_box', [
+    'valorDefault'  => '',
+    'tipo'          => 'custom',
+    'etiqueta'      => 'Estado de CSS crítico',
+    'descripcion'   => 'Listado de páginas con CSS crítico generado.',
+    'renderCallback'=> [\Glory\Services\GestorCssCritico::class, 'renderAdminStatus'],
+    'seccion'       => 'performance',
+    'etiquetaSeccion' => 'Rendimiento',
+    'subSeccion'    => 'critical_status',
+]);
+
 // Perfilador de Consultas (UI). Por defecto activo en DEV, inactivo en PROD.
 OpcionManager::register('glory_query_profiler_activado', [
     'valorDefault'  => false,

@@ -137,6 +137,15 @@ class PanelRenderer
             case 'textarea':
                 echo FormBuilder::campoTextarea($opcionesCampo);
                 break;
+            case 'custom':
+                if (!empty($config['renderCallback']) && is_callable($config['renderCallback'])) {
+                    echo '<div class="glory-custom-field">';
+                    call_user_func($config['renderCallback']);
+                    echo '</div>';
+                } else {
+                    echo '<p class="description">(Custom block)</p>';
+                }
+                break;
             case 'richText':
                 echo '<label>' . esc_html($config['etiqueta']) . '</label>';
                 wp_editor($config['valorActual'], 'glory-opcion-' . esc_attr($key), ['textarea_name' => $key, 'media_buttons' => false, 'textarea_rows' => 7]);
