@@ -21,6 +21,7 @@ class LocalCriticalCss
             . ' ' . escapeshellarg($script)
             . ' --url ' . escapeshellarg($url)
             . ' --cssDir ' . escapeshellarg($cssDir)
+            . ' --timeout 60000 --renderWait 800 --skipLoadAfter 20000'
             . ' 2>&1';
 
         $output = [];

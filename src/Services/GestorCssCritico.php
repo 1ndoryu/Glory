@@ -11,6 +11,7 @@ class GestorCssCritico
 {
     private const PREFIJO_CLAVE_CACHE = 'glory_css_critico_';
     private const EXPIRACION_CACHE = DAY_IN_SECONDS;
+    private const PREFIJO_LOCK = 'glory_css_critico_lock_';
 
     public static function init(): void
     {
@@ -18,6 +19,7 @@ class GestorCssCritico
         add_action('admin_bar_menu', [self::class, 'agregarBotonLimpiarCache'], 100);
         add_action('wp_ajax_glory_limpiar_css_critico', [self::class, 'manejarAjaxLimpiarCache']);
         add_action('wp_ajax_glory_generar_css_critico', [self::class, 'manejarAjaxGenerarCritico']);
+        add_action('glory_generate_critical_css_event', [self::class, 'cronGenerarCss'], 10, 1);
     }
 
     public static function getParaPaginaActual(): ?string
@@ -58,15 +60,13 @@ class GestorCssCritico
             return null;
         }
 
-        // Auto-generación en primera visita
-        $cssGenerado = self::generarParaUrl($currentUrl);
-        if ($cssGenerado) {
-            if (is_singular() && !empty($postId)) {
-                set_transient(self::getClaveCache($postId), $cssGenerado, self::EXPIRACION_CACHE);
-            } else {
-                set_transient(self::getClaveCacheParaUrl($currentUrl), $cssGenerado, self::EXPIRACION_CACHE);
+        // Auto-generación en background: programar WP-Cron y no bloquear la petición
+        $lockKey = self::getLockKey($currentUrl);
+        if (!get_transient($lockKey)) {
+            set_transient($lockKey, 1, 5 * MINUTE_IN_SECONDS);
+            if (!wp_next_scheduled('glory_generate_critical_css_event', [$currentUrl])) {
+                wp_schedule_single_event(time() + 5, 'glory_generate_critical_css_event', [$currentUrl]);
             }
-            return $cssGenerado;
         }
 
         return null;
@@ -74,20 +74,23 @@ class GestorCssCritico
 
     private static function generarParaUrl(string $url): ?string
     {
-        // Modo local: usar generador con Penthouse/Puppeteer (sin servicios externos)
-        $modo = OpcionManager::get('glory_critical_css_mode') ?: 'remote';
+        $modo = OpcionManager::get('glory_critical_css_mode') ?: 'local';
         if ($modo === 'local') {
-            $cssLocal = LocalCriticalCss::generate($url);
-            if ($cssLocal) { return $cssLocal; }
-            // Si local falla, continuar con remoto si hubiera
+            return LocalCriticalCss::generate($url);
+        }
+        if ($modo !== 'remote') {
+            return null;
         }
 
-        // Permitir configurar el endpoint por ENV u opción de WP, con fallback al default
+        // REMOTO: usar endpoint configurado
         $configEndpoint = $_ENV['GLORY_CRITICAL_CSS_API'] ?? getenv('GLORY_CRITICAL_CSS_API') ?: null;
         if (!$configEndpoint) {
             $configEndpoint = OpcionManager::get('glory_critical_css_api_url');
         }
-        $apiUrl = $configEndpoint ?: 'https://critical-css-api.glorycat.workers.dev/';
+        if (!$configEndpoint) {
+            return null;
+        }
+        $apiUrl = $configEndpoint;
 
         $payload = json_encode(['url' => $url]);
         $args = [
@@ -97,13 +100,11 @@ class GestorCssCritico
         ];
 
         $response = wp_remote_post($apiUrl, $args);
-
         if (is_wp_error($response)) {
             GloryLogger::error('Fallo en la petición a la API de CSS crítico.', [
                 'error'   => $response->get_error_message(),
                 'endpoint'=> $apiUrl,
             ]);
-            // Intentar un endpoint de respaldo si está configurado
             $backup = OpcionManager::get('glory_critical_css_api_backup_url');
             if ($backup && filter_var($backup, FILTER_VALIDATE_URL)) {
                 $response = wp_remote_post($backup, $args);
@@ -121,15 +122,10 @@ class GestorCssCritico
 
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
-
         if (wp_remote_retrieve_response_code($response) !== 200 || empty($data['critical_css'])) {
-            GloryLogger::error('La API de CSS crítico devolvió un error.', [
-                'response' => $body,
-                'endpoint' => isset($backup) && $backup ? $backup : $apiUrl,
-            ]);
+            GloryLogger::error('La API de CSS crítico devolvió un error.', ['response' => $body, 'endpoint' => $apiUrl]);
             return null;
         }
-
         return $data['critical_css'];
     }
 
@@ -238,6 +234,20 @@ class GestorCssCritico
             $exp = $expiracion ?? self::EXPIRACION_CACHE;
             set_transient(self::getClaveCache($postId), $css, $exp);
         }
+    }
+
+    private static function getLockKey(string $url): string
+    {
+        return self::PREFIJO_LOCK . md5($url);
+    }
+
+    public static function cronGenerarCss(string $url): void
+    {
+        $css = self::generarParaUrl($url);
+        if ($css) {
+            set_transient(self::getClaveCacheParaUrl($url), $css, self::EXPIRACION_CACHE);
+        }
+        delete_transient(self::getLockKey($url));
     }
 
     private static function getClaveCache(int $postId): string
