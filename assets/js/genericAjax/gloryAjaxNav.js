@@ -496,7 +496,17 @@
         // Use cache if available and caching is enabled/allowed for this URL
         if (pageCache[url] && shouldCache(url)) {
             gloryLog(`Loading from cache: ${url}`);
-            contentElement.innerHTML = pageCache[url].content || pageCache[url];
+            if (pageCache[url].nodeChildren && pageCache[url].nodeChildren.length) {
+                // Reutilizar nodos previos (imágenes ya cargadas no se vuelven a pedir)
+                try {
+                    contentElement.replaceChildren.apply(contentElement, pageCache[url].nodeChildren);
+                } catch(_e) {
+                    // Fallback si apply falla en algunos navegadores antiguos
+                    contentElement.replaceChildren(...pageCache[url].nodeChildren);
+                }
+            } else {
+                contentElement.innerHTML = pageCache[url].content || pageCache[url];
+            }
             if (pushState) {
                 history.pushState({url: url}, '', url);
             }
@@ -520,8 +530,11 @@
             }
             
             // Ejecutar scripts embebidos (los <script> del contenido cacheado)
-            const cachedContent = pageCache[url].content || pageCache[url];
-            executeInlineScriptsFromHTML(cachedContent);
+            // Solo ejecutar scripts embebidos si no se reutilizaron nodos (evitar dobles ejecuciones)
+            if (!(pageCache[url].nodeChildren && pageCache[url].nodeChildren.length)) {
+                const cachedContent = pageCache[url].content || pageCache[url];
+                executeInlineScriptsFromHTML(cachedContent);
+            }
             
             // Pequeño delay antes de disparar el evento
             setTimeout(() => {
@@ -576,6 +589,10 @@
                     return;
                 }
 
+                // Capturar nodos actuales antes de reemplazar para guardarlos en caché del URL de origen
+                const fromUrl = window.location.href;
+                const previousNodes = Array.prototype.slice.call(contentElement.childNodes);
+
                 // Replace content & title usando adopción de nodos (evita reparsear strings)
                 const frag = document.createDocumentFragment();
                 while (newContent.firstChild) { frag.appendChild(newContent.firstChild); }
@@ -592,10 +609,24 @@
                 if (shouldCache(url)) {
                     pageCache[url] = {
                         content: contentElement.innerHTML,
-                        headScripts: headScripts
+                        headScripts: headScripts,
+                        // Guardamos referencia de nodos actuales (ya insertados) para reuso posterior
+                        nodeChildren: Array.prototype.slice.call(contentElement.childNodes)
                     };
                     gloryLog(`Cached: ${url} (with ${headScripts.length} head scripts)`);
                 }
+
+                // Guardar nodos de la página anterior para reuso si se vuelve a ella
+                try {
+                    if (shouldCache(fromUrl)) {
+                        pageCache[fromUrl] = pageCache[fromUrl] || {};
+                        pageCache[fromUrl].nodeChildren = previousNodes;
+                        // Asegurar tener también la versión string como respaldo
+                        if (!pageCache[fromUrl].content) {
+                            pageCache[fromUrl].content = previousNodes.map(n => n.outerHTML || (n.nodeType === 3 ? n.textContent : '')).join('');
+                        }
+                    }
+                } catch(_e) {}
 
                 // Update History
                 if (pushState) {
