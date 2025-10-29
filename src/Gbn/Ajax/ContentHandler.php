@@ -2,6 +2,8 @@
 
 namespace Glory\Gbn\Ajax;
 
+use Glory\Manager\PageManager;
+
 class ContentHandler
 {
     public static function saveOptions(): void
@@ -185,6 +187,102 @@ class ContentHandler
             wp_send_json_success(['html' => $html, 'gbnId' => $gbnId]);
         }
         wp_send_json_error(['message' => 'Instancia no encontrada']);
+    }
+
+    public static function saveConfig(): void
+    {
+        check_ajax_referer('glory_gbn_nonce', 'nonce');
+        $pageId = isset($_POST['pageId']) ? absint($_POST['pageId']) : 0;
+        $blocksRaw = isset($_POST['blocks']) ? wp_unslash($_POST['blocks']) : '[]';
+        $blocks = json_decode((string) $blocksRaw, true);
+        if (!$pageId || !is_array($blocks)) {
+            wp_send_json_error(['message' => 'Datos inválidos']);
+        }
+        if (!current_user_can('edit_post', $pageId)) {
+            wp_send_json_error(['message' => 'Sin permisos']);
+        }
+
+        $configById = [];
+        $stylesById = [];
+
+        foreach ($blocks as $b) {
+            if (!is_array($b)) { continue; }
+            $id = isset($b['id']) ? sanitize_text_field((string) $b['id']) : '';
+            if ($id === '') { continue; }
+            $role = isset($b['role']) ? sanitize_key((string) $b['role']) : 'block';
+            $order = isset($b['order']) ? absint($b['order']) : 0;
+            $children = isset($b['children']) && is_array($b['children']) ? $b['children'] : [];
+
+            $config = [];
+            if (isset($b['config']) && is_array($b['config'])) {
+                $config = self::sanitizeMixedArray($b['config']);
+            }
+
+            $styles = [];
+            if (isset($b['styles']) && is_array($b['styles'])) {
+                $styles = self::sanitizeCssMap($b['styles']);
+            }
+
+            $configById[$id] = [
+                'role' => $role,
+                'order' => $order,
+                'config' => $config,
+                'children' => $children,
+            ];
+            if (!empty($styles)) {
+                $stylesById[$id] = $styles;
+            }
+        }
+
+        update_post_meta($pageId, 'gbn_config', $configById);
+        update_post_meta($pageId, 'gbn_styles', $stylesById);
+
+        $mode = method_exists(PageManager::class, 'getModoContenidoParaPagina')
+            ? PageManager::getModoContenidoParaPagina($pageId)
+            : 'code';
+
+        // Modo 'editor': en futuras iteraciones se volcará HTML regenerado a post_content
+        // Respetar 'code': no tocar el contenido
+
+        wp_send_json_success([
+            'ok' => true,
+            'saved' => [
+                'config' => count($configById),
+                'styles' => count($stylesById),
+            ],
+            'mode' => $mode,
+        ]);
+    }
+
+    private static function sanitizeMixedArray(array $input): array
+    {
+        $out = [];
+        foreach ($input as $k => $v) {
+            $key = is_string($k) ? sanitize_key($k) : $k;
+            if (is_array($v)) {
+                $out[$key] = self::sanitizeMixedArray($v);
+            } elseif (is_bool($v) || is_int($v) || is_float($v)) {
+                $out[$key] = $v;
+            } elseif ($v === null) {
+                $out[$key] = null;
+            } else {
+                $out[$key] = sanitize_text_field((string) $v);
+            }
+        }
+        return $out;
+    }
+
+    private static function sanitizeCssMap(array $styles): array
+    {
+        $out = [];
+        foreach ($styles as $prop => $val) {
+            if (!is_string($prop)) { continue; }
+            $propKey = preg_replace('/[^a-zA-Z0-9\-]/', '', (string) $prop);
+            if ($propKey === '') { continue; }
+            if ($val === null || $val === '') { continue; }
+            $out[$propKey] = is_string($val) ? wp_kses_post($val) : sanitize_text_field((string) $val);
+        }
+        return $out;
     }
 
     private static function attrsToString(array $attrs): string

@@ -117,7 +117,7 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 - [x] Reordenar los botones flotantes (`Open GBN`, `Config tema`, `Config página`, `Restaurar`) para que vivan bajo el panel y respeten el modo activo.
 
 ### Etapa 3 · Persistencia y sincronización
-- [ ] Implementar el dispatcher AJAX (`glory_gbn_guardar_config`) que reciba la estructura de bloques, valide permisos y escriba los metadatos `gbn_config`/`gbn_styles` por página.
+- [x] Implementar el dispatcher AJAX (`gbn_save_config`) que reciba la estructura de bloques, valide permisos y escriba los metadatos `gbn_config`/`gbn_styles` por página.
 - [ ] Integrar la lectura/escritura con `PageManager`: respetar `content_mode = code`, actualizar `post_content` sólo cuando el modo sea `editor` y mantener el hash `_glory_content_hash` para detectar ediciones manuales.
 - [ ] Definir el flujo de restauración que recupere el markup baseline, limpie metadatos y vuelva a sincronizar `data-gbnConfig` con la versión guardada o la del tema.
 

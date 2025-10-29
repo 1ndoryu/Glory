@@ -8,6 +8,7 @@ class Registrar
     {
         add_action('wp_ajax_gbn_save_order', [OrderHandler::class, 'saveOrder']);
         add_action('wp_ajax_gbn_save_options', [ContentHandler::class, 'saveOptions']);
+        add_action('wp_ajax_gbn_save_config', [ContentHandler::class, 'saveConfig']);
         add_action('wp_ajax_gbn_preview_block', [ContentHandler::class, 'previewBlock']);
         add_action('wp_ajax_gbn_get_page_settings', [PageSettingsHandler::class, 'getPageSettings']);
         add_action('wp_ajax_gbn_save_page_settings', [PageSettingsHandler::class, 'savePageSettings']);

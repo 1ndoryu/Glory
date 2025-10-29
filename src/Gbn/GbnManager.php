@@ -95,9 +95,13 @@ class GbnManager
                 'file' => '/js/services/content.js',
                 'deps' => ['glory-gbn-style'],
             ],
+            'glory-gbn-persistence' => [
+                'file' => '/js/services/persistence.js',
+                'deps' => ['glory-gbn-services'],
+            ],
             'glory-gbn-ui-panel-fields' => [
                 'file' => '/js/ui/panel-fields.js',
-                'deps' => ['glory-gbn-services'],
+                'deps' => ['glory-gbn-persistence'],
             ],
             'glory-gbn-ui-panel' => [
                 'file' => '/js/ui/panel.js',
@@ -125,7 +129,7 @@ class GbnManager
             );
         }
 
-        wp_localize_script('glory-gbn', 'gloryGbnCfg', [
+        $localizedData = [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('glory_gbn_nonce'),
             'siteTitle' => get_bloginfo('name'),
@@ -137,7 +141,11 @@ class GbnManager
             'roles' => RoleConfig::all(),
             'containers' => ContainerRegistry::all(),
             'devMode' => self::shouldBustVersion(),
-        ]);
+        ];
+        // Asegurar que la config esté disponible antes de cualquier script consumidor
+        wp_localize_script('glory-gbn-core', 'gloryGbnCfg', $localizedData);
+        // Mantener compatibilidad: también localizamos en el script final
+        wp_localize_script('glory-gbn', 'gloryGbnCfg', $localizedData);
     }
 
     public static function injectEditButtons(): void

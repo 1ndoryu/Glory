@@ -53,6 +53,19 @@
         panelTitle = panelRoot.querySelector('.gbn-header-title');
         panelFooter = panelRoot.querySelector('.gbn-footer-primary');
         panelNotice = panelRoot.querySelector('.gbn-footer-status');
+        if (panelFooter && !panelFooter.__gbnBound) {
+            panelFooter.__gbnBound = true;
+            panelFooter.disabled = false;
+            panelFooter.textContent = 'Guardar';
+            panelFooter.addEventListener('click', function (event) {
+                event.preventDefault();
+                if (!Gbn.persistence || typeof Gbn.persistence.savePageConfig !== 'function') { return; }
+                setPanelStatus('Guardando...');
+                Gbn.persistence.savePageConfig().then(function (res) {
+                    flashPanelStatus(res && res.success ? 'Guardado' : 'Error al guardar');
+                }).catch(function () { flashPanelStatus('Error al guardar'); });
+            });
+        }
         renderPlaceholder();
         if (!listenersBound) {
             listenersBound = true;
