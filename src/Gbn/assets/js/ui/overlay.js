@@ -5,15 +5,113 @@
     var utils = Gbn.utils;
     var state = Gbn.state;
 
+    var panelRoot = null;
+    var panelBody = null;
+    var panelTitle = null;
+    var panelFooter = null;
+    var activeBlock = null;
+    var listenersBound = false;
+
+    function renderPlaceholder(message) {
+        if (!panelBody) { return; }
+        var text = message || 'Selecciona un bloque para configurar.';
+        panelBody.innerHTML = '<div class="gbn-panel-empty">' + text + '</div>';
+    }
+
+    function ensurePanelMounted() {
+        if (panelRoot) { return panelRoot; }
+
+        panelRoot = document.getElementById('gbn-panel');
+        if (!panelRoot) {
+            panelRoot = document.createElement('aside');
+            panelRoot.id = 'gbn-panel';
+            panelRoot.setAttribute('aria-hidden', 'true');
+            panelRoot.innerHTML = ''
+                + '<header class="gbn-header">'
+                + '  <span class="gbn-header-title">GBN Panel</span>'
+                + '  <button type="button" class="gbn-header-close" data-gbn-action="close-panel" aria-label="Close panel">×</button>'
+                + '</header>'
+                + '<div class="gbn-body"></div>'
+                + '<footer class="gbn-footer">'
+                + '  <button type="button" class="gbn-footer-primary" disabled>Guardar</button>'
+                + '</footer>';
+            document.body.appendChild(panelRoot);
+        }
+
+        panelBody = panelRoot.querySelector('.gbn-body');
+        panelTitle = panelRoot.querySelector('.gbn-header-title');
+        panelFooter = panelRoot.querySelector('.gbn-footer-primary');
+
+        renderPlaceholder();
+
+        if (!listenersBound) {
+            listenersBound = true;
+            var closeBtn = panelRoot.querySelector('[data-gbn-action="close-panel"]');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    panel.close();
+                });
+            }
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && panel.isOpen()) {
+                    panel.close();
+                }
+            });
+        }
+
+        return panelRoot;
+    }
+
     var panel = {
+        init: function () {
+            ensurePanelMounted();
+        },
+        isOpen: function () {
+            return !!(panelRoot && panelRoot.classList.contains('is-open'));
+        },
         open: function (block) {
-            utils.debug('Open config panel (stub)', block ? block.id : null);
+            ensurePanelMounted();
+            activeBlock = block || null;
+            if (panelRoot) {
+                panelRoot.classList.add('is-open');
+                panelRoot.setAttribute('aria-hidden', 'false');
+            }
+            var title = 'GBN Panel';
+            if (block) {
+                title = block.meta && block.meta.label
+                    ? block.meta.label
+                    : (block.role ? 'Configuración: ' + block.role : 'Configuración');
+            }
+            if (panelTitle) {
+                panelTitle.textContent = title;
+            }
+            if (!panelBody) {
+                return;
+            }
+            if (!block) {
+                renderPlaceholder();
+                return;
+            }
+            panelBody.innerHTML = ''
+                + '<div class="gbn-panel-block-summary">'
+                + '  <p class="gbn-panel-block-id">ID: <code>' + block.id + '</code></p>'
+                + '  <p class="gbn-panel-block-role">Rol: <strong>' + (block.role || 'block') + '</strong></p>'
+                + '</div>'
+                + '<div class="gbn-panel-coming-soon">El panel interactivo estará disponible en la siguiente fase.</div>';
+            if (panelFooter) {
+                panelFooter.disabled = true;
+            }
+            utils.debug('Panel abierto', block ? block.id : null);
         },
         close: function () {
-            utils.debug('Close config panel (stub)');
-        },
-        init: function () {
-            utils.debug('Init config panel (stub)');
+            if (panelRoot) {
+                panelRoot.classList.remove('is-open');
+                panelRoot.setAttribute('aria-hidden', 'true');
+            }
+            activeBlock = null;
+            renderPlaceholder();
+            utils.debug('Panel cerrado');
         }
     };
 
@@ -64,6 +162,41 @@
         var cfg = {};
         var toggleBtn = null;
         var wrapper = null;
+        var mainNode = null;
+        var mainPaddingCaptured = false;
+        var mainPaddingValue = '';
+
+        function ensureMainNode() {
+            if (!mainNode) {
+                mainNode = document.querySelector('main');
+            }
+            return mainNode;
+        }
+
+        function adjustMainPadding() {
+            var node = ensureMainNode();
+            if (!node) {
+                return;
+            }
+            if (active) {
+                if (!mainPaddingCaptured) {
+                    mainPaddingCaptured = true;
+                    mainPaddingValue = node.style.paddingTop || '';
+                }
+                node.style.paddingTop = '100px';
+                node.classList.add('gbn-main-offset');
+            } else if (mainPaddingCaptured) {
+                if (mainPaddingValue) {
+                    node.style.paddingTop = mainPaddingValue;
+                } else {
+                    node.style.removeProperty('padding-top');
+                    if (!node.getAttribute('style')) {
+                        node.removeAttribute('style');
+                    }
+                }
+                node.classList.remove('gbn-main-offset');
+            }
+        }
 
         function updateToggleLabel() {
             if (!toggleBtn) {
@@ -131,6 +264,10 @@
             updateToggleLabel();
             state.all().forEach(ensureBlockSetup);
             persistState();
+            adjustMainPadding();
+            if (!active) {
+                panel.close();
+            }
         }
 
         function handleToggle(event) {
@@ -169,6 +306,8 @@
             if (!cfg.isEditor) {
                 return;
             }
+
+            panel.init();
 
             attachToggle();
 

@@ -27,6 +27,21 @@
         return utils.parseStyleString(inline || '');
     }
 
+    function parseJsonAttr(el, attr, fallback) {
+        if (!el || !attr) {
+            return fallback || null;
+        }
+        var raw = el.getAttribute(attr);
+        if (!raw) {
+            return fallback || null;
+        }
+        try {
+            return JSON.parse(raw);
+        } catch (_) {
+            return fallback || null;
+        }
+    }
+
     function registerBlock(role, el, meta) {
         if (!el) {
             return null;
@@ -40,12 +55,15 @@
         }
 
         var id = ensureId(el);
+        var initialConfig = parseJsonAttr(el, 'data-gbn-config', {}) || {};
+        var initialSchema = parseJsonAttr(el, 'data-gbn-schema', []);
         var block = {
             id: id,
             role: role,
             element: el,
             meta: utils.assign({}, meta || {}),
-            config: {},
+            config: utils.assign({}, initialConfig),
+            schema: Array.isArray(initialSchema) ? initialSchema : [],
             styles: {
                 inline: captureInlineStyles(el),
                 current: {}
@@ -92,6 +110,7 @@
         getByElement: getByElement,
         get: get,
         clear: clear,
+        parseJsonAttr: parseJsonAttr,
     };
 })(window);
 

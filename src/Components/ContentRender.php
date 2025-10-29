@@ -5,6 +5,7 @@ namespace Glory\Components;
 use WP_Query;
 use Glory\Components\PaginationRenderer;
 use Glory\Utility\ImageUtility;
+use Glory\Core\GloryFeatures;
 
 class ContentRender
 {
@@ -12,6 +13,56 @@ class ContentRender
     private static $currentConfig = [];
     /** @var bool */
     private static $hooksRegistered = false;
+
+    /**
+     * Devuelve la configuración predeterminada y el esquema para GBN.
+     *
+     * @return array{config:array<string,mixed>,schema:array<int,array<string,mixed>>}
+     */
+    public static function gbnDefaults(): array
+    {
+        return [
+            'config' => [
+                'publicacionesPorPagina' => 6,
+                'claseContenedor' => 'gbn-content-grid',
+                'claseItem' => 'gbn-content-card',
+                'plantilla' => null,
+                'argumentosConsulta' => [],
+                'forzarSinCache' => false,
+                'paginacion' => false,
+            ],
+            'schema' => [
+                [
+                    'id' => 'publicacionesPorPagina',
+                    'tipo' => 'slider',
+                    'etiqueta' => 'Entradas por página',
+                    'min' => 1,
+                    'max' => 20,
+                    'paso' => 1,
+                ],
+                [
+                    'id' => 'claseContenedor',
+                    'tipo' => 'text',
+                    'etiqueta' => 'Clase del contenedor',
+                ],
+                [
+                    'id' => 'claseItem',
+                    'tipo' => 'text',
+                    'etiqueta' => 'Clase de cada item',
+                ],
+                [
+                    'id' => 'paginacion',
+                    'tipo' => 'toggle',
+                    'etiqueta' => 'Activar paginación AJAX',
+                ],
+                [
+                    'id' => 'forzarSinCache',
+                    'tipo' => 'toggle',
+                    'etiqueta' => 'Ignorar caché',
+                ],
+            ],
+        ];
+    }
 
     /**
      * Inicializa los hooks para limpieza de caché
@@ -291,7 +342,7 @@ class ContentRender
                          data-content-target=".' . esc_attr($content_target_class) . '"
                          data-pagination-target=".' . esc_attr($pagination_target_class) . '">';
 
-                echo '<div class="' . esc_attr($content_target_class) . '">';
+            echo '<div class="' . esc_attr($content_target_class) . '">';
             }
             
             // Data attributes para JS/UI agnóstico
@@ -345,7 +396,18 @@ class ContentRender
                 }
             }
 
+            $gbnAttrs = '';
+            if (class_exists(GloryFeatures::class) && GloryFeatures::isActive('gbn', 'glory_gbn_activado') !== false) {
+                $gbnRole = self::gbnDefaults();
+                $configAttr = esc_attr(wp_json_encode($gbnRole['config'] ?? []));
+                $schemaAttr = esc_attr(wp_json_encode($gbnRole['schema'] ?? []));
+                $gbnAttrs = ' data-gbn-content="1" data-gbn-role="content"'
+                    . ' data-gbn-config="' . $configAttr . '"'
+                    . ' data-gbn-schema="' . $schemaAttr . '"';
+            }
+
             echo '<div class="' . esc_attr($contenedorClass) . '"'
+                . $gbnAttrs
                 . ' data-post-type="' . esc_attr($postType) . '"'
                 . (!empty($acciones) ? ' data-content-actions="' . esc_attr($acciones) . '"' : '')
                 . ' data-submenu-enabled="' . ($submenuEnabled ? '1' : '0') . '"'

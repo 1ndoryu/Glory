@@ -5,33 +5,92 @@
     var utils = Gbn.utils;
     var state = Gbn.state;
     var styleManager = Gbn.styleManager;
+    var ROLE_DEFAULTS = {};
+    var ROLE_MAP = {};
 
-    var ROLE_MAP = {
-        principal: {
-            attr: 'gloryDiv',
-            dataAttr: 'data-gbnPrincipal'
-        },
-        secundario: {
-            attr: 'gloryDivSecundario',
-            dataAttr: 'data-gbnSecundario'
-        },
-        content: {
-            attr: 'gloryContentRender',
-            dataAttr: 'data-gbnContent'
-        }
+    var FALLBACK_SELECTORS = {
+        principal: { attribute: 'gloryDiv', dataAttribute: 'data-gbnPrincipal' },
+        secundario: { attribute: 'gloryDivSecundario', dataAttribute: 'data-gbnSecundario' },
+        content: { attribute: 'gloryContentRender', dataAttribute: 'data-gbnContent' }
     };
 
+    function ensureSelector(role, selector) {
+        var existing = ROLE_MAP[role] || {};
+        var fallback = FALLBACK_SELECTORS[role] || {};
+        var attr = existing.attr
+            || (selector && (selector.attribute || selector.attr))
+            || fallback.attribute
+            || fallback.attr
+            || null;
+        var dataAttr = existing.dataAttr
+            || (selector && (selector.dataAttribute || selector.dataAttr))
+            || fallback.dataAttribute
+            || fallback.dataAttr
+            || null;
+        ROLE_MAP[role] = {
+            attr: attr,
+            dataAttr: dataAttr,
+        };
+    }
+
+    var containerDefs = utils.getConfig().containers || {};
+    Object.keys(containerDefs).forEach(function (role) {
+        var data = containerDefs[role] || {};
+        ROLE_DEFAULTS[role] = {
+            config: utils.assign({}, data.config || {}),
+            schema: Array.isArray(data.schema) ? data.schema.slice() : [],
+        };
+        ensureSelector(role, data.selector || {});
+    });
+
+    if (!Object.keys(ROLE_DEFAULTS).length) {
+        var legacyRoles = utils.getConfig().roles || {};
+        Object.keys(legacyRoles).forEach(function (role) {
+            var data = legacyRoles[role] || {};
+            ROLE_DEFAULTS[role] = {
+                config: utils.assign({}, data.config || {}),
+                schema: Array.isArray(data.schema) ? data.schema.slice() : [],
+            };
+            ensureSelector(role, {});
+        });
+    }
+
+    Object.keys(FALLBACK_SELECTORS).forEach(function (role) {
+        ensureSelector(role, FALLBACK_SELECTORS[role]);
+    });
+
+    var ROLE_PRIORITY = [];
+    ['content', 'secundario', 'principal'].forEach(function (role) {
+        if (ROLE_MAP[role] && ROLE_PRIORITY.indexOf(role) === -1) {
+            ROLE_PRIORITY.push(role);
+        }
+    });
+    Object.keys(ROLE_MAP).forEach(function (role) {
+        if (ROLE_PRIORITY.indexOf(role) === -1) {
+            ROLE_PRIORITY.push(role);
+        }
+    });
+
     function detectRole(el) {
-        if (el.hasAttribute(ROLE_MAP.content.attr) || el.hasAttribute(ROLE_MAP.content.dataAttr)) {
-            return 'content';
-        }
-        if (el.hasAttribute(ROLE_MAP.secundario.attr) || el.hasAttribute(ROLE_MAP.secundario.dataAttr)) {
-            return 'secundario';
-        }
-        if (el.hasAttribute(ROLE_MAP.principal.attr) || el.hasAttribute(ROLE_MAP.principal.dataAttr)) {
-            return 'principal';
+        for (var i = 0; i < ROLE_PRIORITY.length; i += 1) {
+            var role = ROLE_PRIORITY[i];
+            var meta = ROLE_MAP[role];
+            if (!meta) {
+                continue;
+            }
+            if ((meta.attr && el.hasAttribute(meta.attr)) || (meta.dataAttr && el.hasAttribute(meta.dataAttr))) {
+                return role;
+            }
         }
         return null;
+    }
+
+    function getRoleDefaults(role) {
+        var defaults = ROLE_DEFAULTS[role] || {};
+        return {
+            config: utils.assign({}, defaults.config || {}),
+            schema: Array.isArray(defaults.schema) ? defaults.schema.slice() : [],
+        };
     }
 
     function normalizeAttributes(el, role) {
@@ -42,17 +101,24 @@
         if (!meta) {
             return;
         }
-        if (!el.hasAttribute(meta.attr)) {
+        if (meta.attr && !el.hasAttribute(meta.attr)) {
             el.setAttribute(meta.attr, role);
         }
-        if (!el.hasAttribute(meta.dataAttr)) {
+        if (meta.dataAttr && !el.hasAttribute(meta.dataAttr)) {
             el.setAttribute(meta.dataAttr, '1');
         }
-        if (!el.hasAttribute('data-gbn-config')) {
-            el.setAttribute('data-gbn-config', '{}');
+        if (!el.hasAttribute('data-gbn-role')) {
+            el.setAttribute('data-gbn-role', role);
         }
-        if (!el.hasAttribute('data-gbn-schema')) {
-            el.setAttribute('data-gbn-schema', '[]');
+
+        var defaults = getRoleDefaults(role);
+        var hasConfig = el.hasAttribute('data-gbn-config');
+        if (!hasConfig) {
+            el.setAttribute('data-gbn-config', JSON.stringify(defaults.config || {}));
+        }
+        var hasSchema = el.hasAttribute('data-gbn-schema');
+        if (!hasSchema) {
+            el.setAttribute('data-gbn-schema', JSON.stringify(defaults.schema || []));
         }
     }
 
@@ -140,7 +206,13 @@
         normalizeAttributes(el, role);
         var meta = {};
         if (role === 'content') {
-            var typeAttr = el.getAttribute(ROLE_MAP.content.attr);
+            var attrName = null;
+            if (ROLE_MAP.content && ROLE_MAP.content.attr) {
+                attrName = ROLE_MAP.content.attr;
+            } else if (FALLBACK_SELECTORS.content && (FALLBACK_SELECTORS.content.attribute || FALLBACK_SELECTORS.content.attr)) {
+                attrName = FALLBACK_SELECTORS.content.attribute || FALLBACK_SELECTORS.content.attr;
+            }
+            var typeAttr = attrName ? el.getAttribute(attrName) : null;
             meta.postType = typeAttr && typeAttr !== 'content' ? typeAttr : 'post';
             var opcionesAttr = el.getAttribute('opciones') || el.getAttribute('data-gbn-opciones') || '';
             meta.optionsString = opcionesAttr;
@@ -157,11 +229,23 @@
 
     function scan(target) {
         var root = target || document;
-        var selector = Object.keys(ROLE_MAP).map(function (role) {
+        var selectorParts = [];
+        Object.keys(ROLE_MAP).forEach(function (role) {
             var map = ROLE_MAP[role];
-            return '[' + map.attr + '],[' + map.dataAttr + ']';
-        }).join(',');
-        var nodes = utils.qsa(selector, root);
+            if (!map) {
+                return;
+            }
+            if (map.attr) {
+                selectorParts.push('[' + map.attr + ']');
+            }
+            if (map.dataAttr) {
+                selectorParts.push('[' + map.dataAttr + ']');
+            }
+        });
+        if (!selectorParts.length) {
+            return [];
+        }
+        var nodes = utils.qsa(selectorParts.join(','), root);
         var blocks = [];
         nodes.forEach(function (el) {
             var block = buildBlock(el);

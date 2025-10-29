@@ -14,6 +14,7 @@ use Glory\Integration\IntegrationsManager;
 use Glory\Services\LicenseManager;
 use Glory\Services\PerformanceProfiler;
 use Glory\Core\GloryLogger;
+use Glory\Gbn\GbnManager;
 
 use Glory\Admin\OpcionPanelController;
 use Glory\Admin\DatabaseExportController;
@@ -241,6 +242,14 @@ class Setup
             'ContentRender.initHooks',
             'component'
         );
+
+        if (GloryFeatures::isActive('gbn') !== false) {
+            PerformanceProfiler::medirFuncion(
+                fn() => GbnManager::bootstrap(),
+                'GbnManager.bootstrap',
+                'gbn'
+            );
+        }
 
         PerformanceProfiler::end('Setup.constructor');
     }

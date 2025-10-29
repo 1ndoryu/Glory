@@ -63,14 +63,16 @@
 .gbn-active [data-gbnSecundario] {
     min-height: 40px;
     position: relative;
-    outline: 1px dashed rgba(29, 143, 241, 0);
-    transition: outline-color 0.2s ease, background-color 0.2s ease;
+    outline: 1px dashed rgba(29, 143, 241, 0.35);
+    outline-offset: 2px;
+    transition: outline-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .gbn-active [data-gbnPrincipal]:hover,
 .gbn-active [data-gbnSecundario]:hover {
-    outline-color: rgba(29, 143, 241, 0.7);
+    outline-color: rgba(29, 143, 241, 0.9);
     background-color: rgba(29, 143, 241, 0.08);
+    box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.18);
 }
 
 .gbn-config-btn {
@@ -146,11 +148,53 @@
     font-weight: 500;
 }
 
+#gbn-panel .gbn-header-title {
+    font-weight: 600;
+}
+
+#gbn-panel .gbn-header-close {
+    appearance: none;
+    border: none;
+    background: none;
+    color: var(--muted, #6b6b6b);
+    font-size: 20px;
+    line-height: 1;
+    padding: 4px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+#gbn-panel .gbn-header-close:hover {
+    color: var(--text, #111111);
+}
+
 #gbn-panel .gbn-body {
     padding: 16px;
     overflow: auto;
     height: calc(100% - 50px - 40px);
     padding-bottom: 40px;
+}
+
+#gbn-panel .gbn-panel-empty,
+#gbn-panel .gbn-panel-coming-soon {
+    font-size: 13px;
+    color: var(--muted, #6b6b6b);
+    line-height: 1.5;
+}
+
+#gbn-panel .gbn-panel-block-summary {
+    display: grid;
+    gap: 4px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: var(--text, #111111);
+}
+
+#gbn-panel .gbn-panel-block-id code {
+    font-size: 12px;
+    background: rgba(17, 24, 39, 0.05);
+    padding: 2px 6px;
+    border-radius: 4px;
 }
 
 /* Footer dentro del panel */
@@ -165,6 +209,26 @@
     padding: 10px 16px;
     border-top: 1px solid var(--border-color, #e6e6e6);
     background: var(--bg, #ffffff);
+}
+
+#gbn-panel .gbn-footer-primary {
+    appearance: none;
+    border: none;
+    border-radius: 6px;
+    background: #1d8ff1;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+#gbn-panel .gbn-footer-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Botón flotante de edición */

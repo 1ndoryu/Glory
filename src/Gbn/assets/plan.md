@@ -1,4 +1,6 @@
-GBN será un constructor visual con compatibilidad con el front y el back (código). Debe permitir construir sitios desde el HTML plano y, opcionalmente, desde la interfaz del front. Mantiene una UI en inglés, pero todo el código queda en español. El núcleo en `Glory/` se mantiene agnóstico; cualquier personalización específica vive en el tema.
+GBN será un constructor visual con compatibilidad con el front y el back (código). Debe permitir construir sitios desde el HTML plano y, opcionalmente, desde la interfaz del front. Mantiene una UI en inglés, pero todo el código queda en español. El núcleo en `Glory/` se mantiene agnóstico; cualquier personalización específica vive en el tema. 
+
+Los componentes de Glory deberan de mantener su propias configuaciones compatibles en el codigo y el constructor en el front, se adaptara los componentes poco a poco. Seguir los principios solid.
 
 ## Principios
 - HTML limpio sin shortcodes.
@@ -27,7 +29,7 @@ Ejemplo mínimo:
     </div>
 ```
 
-Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejecuta la carga AJAX usando `gloryAjax`, inyectando el HTML recibido dentro del bloque. Los componentes agnósticos (por ejemplo `ContentRender`) deben aceptar atributos `data-gbn` sin interferir con su salida predeterminada.
+Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejecuta la carga AJAX usando `gloryAjax`, inyectando el HTML recibido dentro del bloque. Los componentes agnósticos (por ejemplo `ContentRender`) deben aceptar atributos `data-gbn` sin interferir con su salida predeterminada. Asi los demás componente deben comportarse igual.
 
 ## Estilos renderizados
 - GBN genera estilos en un `<style data-gbn-style="layoutHero">` cercano a cada nodo principal. Así se conserva legibilidad y permite rehacer estilos sin mezclar con atributos `style` manuales.
@@ -44,13 +46,44 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 
 ## Experiencia de edición actual
 - Usuarios con permisos ven un botón flotante `Open GBN` (UI en inglés). El estado se guarda por usuario/página en `localStorage`.
-- Al activar el constructor se añade `gbn-active`, cada `gloryDiv`/`gloryDivSecundario` recibe `min-height: 40px` y outline azul en hover.
-- Cada bloque genera un botón contextual `Config` (stub) que se vuelve a insertar tras cada `gbn:contentHydrated`.
+- Al activar el constructor se añade `gbn-active`, cada `gloryDiv`/`gloryDivSecundario` recibe `min-height: 40px`, outline azul permanente y brillo en hover.
+- El `<main>` desplaza el contenido `100px` hacia abajo mientras GBN está activo para evitar que el panel lo cubra; el padding original se restaura al cerrar.
+- Cada bloque genera un botón contextual `Config` que abre un panel lateral (placeholder) con resumen del bloque; el panel se cierra al desactivar el modo o con `Esc`.
 - `gloryContentRender` se hidrata vía `gloryAjax` y emite `gbn:contentHydrated` para volver a enganchar los controles sin perder interactividad.
 
 ## Roadmap Fase 1
-1. Definir esquemas base por rol (principal/secundario/content) y almacenarlos en una carpeta de configuraciones reutilizable.
-2. Construir el panel real (inputs, tabs) reutilizando `data-gbn-schema` y conectándolo a `state` + `styleManager`.
-3. Persistir los estilos actualizados mediante AJAX (`glory_gbn_guardar_config`) y recargar bloques sin perder controles.
-4. Añadir feedback visual (loading, hover) para botones `Config` y estados de bloque.
-5. Documentar cómo registrar nuevos elementos/controles y cómo extender las opciones por proyecto.
+
+### Etapa 1 · Fundamentos de bloques
+- [x] Definir esquemas base por rol (principal/secundario/content) y almacenarlos en una carpeta de configuraciones reutilizable.
+- [ ] Centralizar la definición de contenedores (`gloryDiv`, `gloryDivSecundario`, `gloryContentRender`) en un registro único consumido por el builder y por los componentes.
+- [ ] Ajustar cada componente agnóstico para que exponga su configuración y esquema desde su propio archivo, evitando duplicados.
+
+### Etapa 2 · Panel interactivo y UX
+- [ ] Construir el panel real (inputs, tabs) reutilizando `data-gbn-schema` y conectándolo a `state` + `styleManager`.
+- [ ] Añadir feedback visual (loading, hover) para botones `Config` y estados de bloque.
+- [ ] Reordenar los botones flotantes (`Open GBN`, `Config tema`, `Config página`, `Restaurar`) para que vivan bajo el panel y respeten el modo activo.
+
+### Etapa 3 · Persistencia y sincronización
+- [ ] Persistir los estilos actualizados mediante AJAX (`glory_gbn_guardar_config`) y recargar bloques sin perder controles.
+- [ ] Definir el flujo de restauración que recupere el markup baseline y sincronice `data-gbnConfig` con la versión persistida.
+
+### Etapa 4 · Configuraciones globales
+- [ ] Implementar el panel de configuración del tema (colores, fuentes, `init.css`) con almacenamiento centralizado.
+- [ ] Implementar el panel de configuración de la página (fondo, padding del `main`, overrides locales).
+- [ ] Conectar la opción de restaurar valores por defecto con las configuraciones de tema y página.
+
+### Etapa 5 · Documentación y extensión
+- [ ] Documentar cómo registrar nuevos elementos/controles y cómo extender las opciones por proyecto.
+- [ ] Documentar el flujo de configuraciones globales, restauración y dependencias entre builder y componentes.
+
+###
+Comentarios del usuario 
+
+[solucionado] Actualmente al entrar a la pagina "constructor.php" donde estamos haciendo los test, no veo el boton, tampoco veo que algún script de gbn este cargando. Al activivar el constructor los elementos editables deben ser identificables facilmente al pasar el mouse.
+
+[solucionado] El boton aparece pero no hace nada, los script aparecen con version 1.0, deben de tener el versionado de assetmanager de cuando el modo local o dev este activo, supongo yo que hay que preparar las configuraciones para los divs? y adaptar gloryContentRender el primer componente que va a soportar gbn
+
+[solucionado] Al activar GBN el panel lateral debe mostrarse y el contenido principal debe desplazarse (padding-top: 100px) para que sea visible.
+
+[pendiente] Mantener centralizada la configuración de contenedores y dejar que cada componente defina la suya; añadir botones para tema, página y restaurar por defecto (resuelto dentro de las Etapas 1, 2 y 4 del roadmap). También considerar configuraciones del tema (colores, fuentes, `init.css`) y de la página (fondo, padding del `main`) para futuras iteraciones.
+

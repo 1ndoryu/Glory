@@ -3,15 +3,43 @@
 namespace Glory\Gbn;
 
 use Glory\Core\GloryFeatures;
+use Glory\Manager\AssetManager;
+use Glory\Gbn\Config\RoleConfig;
+use Glory\Gbn\Config\ContainerRegistry;
 
 class GbnManager
 {
+    /** @var bool */
+    protected static $booted = false;
+
     public static function bootstrap(): void
     {
         $isActive = method_exists(GloryFeatures::class, 'isActive') ? GloryFeatures::isActive('gbn', 'glory_gbn_activado') : true;
         if (!$isActive) { return; }
+        if (self::$booted) { return; }
+        self::$booted = true;
         add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);
-        add_action('wp_footer', [self::class, 'injectEditButtons'], 20);
+        add_action('wp_footer', [self::class, 'injectEditButtons'], 5);
+    }
+
+    protected static function shouldBustVersion(): bool
+    {
+        return AssetManager::isGlobalDevMode()
+            || (defined('LOCAL') && LOCAL)
+            || (defined('WP_DEBUG') && WP_DEBUG);
+    }
+
+    protected static function resolveVersion(string $filePath): string
+    {
+        if (self::shouldBustVersion()) {
+            $mtime = @filemtime($filePath);
+            if ($mtime) {
+                return (string) $mtime;
+            }
+        }
+        $theme = wp_get_theme();
+        $themeVersion = $theme->get('Version');
+        return $themeVersion ?: '1.0.0';
     }
 
     public static function isBuilderActive(): bool
@@ -31,9 +59,9 @@ class GbnManager
         $baseDir = get_template_directory() . '/Glory/src/Gbn/assets';
         $baseUrl = get_template_directory_uri() . '/Glory/src/Gbn/assets';
         $cssPath = $baseDir . '/css/gbn.css';
-        $verCss  = defined('WP_DEBUG') && WP_DEBUG ? (string) @filemtime($cssPath) : '1.0';
+        $verCss  = self::resolveVersion($cssPath);
 
-        wp_enqueue_style('glory-gbn', $baseUrl . '/css/gbn.css', [], $verCss ?: '1.0');
+        wp_enqueue_style('glory-gbn', $baseUrl . '/css/gbn.css', [], $verCss);
 
         if (!wp_script_is('glory-ajax', 'enqueued')) {
             if (!wp_script_is('glory-ajax', 'registered')) {
@@ -79,12 +107,12 @@ class GbnManager
 
         foreach ($scripts as $handle => $data) {
             $filePath = $baseDir . $data['file'];
-            $ver = defined('WP_DEBUG') && WP_DEBUG ? (string) @filemtime($filePath) : '1.0';
+            $ver = self::resolveVersion($filePath);
             wp_enqueue_script(
                 $handle,
                 $baseUrl . $data['file'],
                 $data['deps'],
-                $ver ?: '1.0',
+                $ver,
                 true
             );
         }
@@ -98,6 +126,9 @@ class GbnManager
             'pageId' => get_queried_object_id(),
             'userId' => get_current_user_id(),
             'isEditor' => current_user_can('edit_posts'),
+            'roles' => RoleConfig::all(),
+            'containers' => ContainerRegistry::all(),
+            'devMode' => self::shouldBustVersion(),
         ]);
     }
 
@@ -110,9 +141,4 @@ class GbnManager
             . '</div>';
     }
 }
-
-\add_action('init', [\Glory\Gbn\GbnManager::class, 'bootstrap']);
-
-
-
 
