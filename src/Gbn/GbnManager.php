@@ -138,6 +138,11 @@ class GbnManager
         if (!current_user_can('edit_posts')) { return; }
         echo '<div id="glory-gbn-root" class="gbn-toggle-wrapper" data-enabled="0">'
             . '<button type="button" id="gbn-toggle" class="gbn-toggle-btn" data-gbn-state="off" aria-pressed="false">Open GBN</button>'
+            . '<div class="gbn-toggle-secondary">'
+            . '  <button type="button" class="gbn-secondary-btn" data-gbn-action="theme" disabled aria-disabled="true">Theme settings</button>'
+            . '  <button type="button" class="gbn-secondary-btn" data-gbn-action="page" disabled aria-disabled="true">Page settings</button>'
+            . '  <button type="button" class="gbn-secondary-btn" data-gbn-action="restore" disabled aria-disabled="true">Restore defaults</button>'
+            . '</div>'
             . '</div>';
     }
 }

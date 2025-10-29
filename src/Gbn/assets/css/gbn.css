@@ -19,8 +19,10 @@
     position: fixed;
     right: 20px;
     bottom: 20px;
-    z-index: 100000;
+    z-index: 90000;
     display: flex;
+    flex-direction: column;
+    align-items: flex-end;
     gap: 8px;
 }
 
@@ -55,6 +57,40 @@
     box-shadow: 0 16px 38px rgba(29, 143, 241, 0.28);
 }
 
+.gbn-toggle-secondary {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 200px;
+}
+
+.gbn-secondary-btn {
+    appearance: none;
+    border: none;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #111827;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 12px;
+    text-align: right;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.gbn-secondary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.16);
+}
+
+.gbn-secondary-btn[disabled],
+.gbn-toggle-wrapper[data-enabled="0"] .gbn-secondary-btn {
+    cursor: not-allowed;
+    opacity: 0.6;
+    box-shadow: none;
+}
+
 .gbn-node {
     position: relative;
 }
@@ -73,6 +109,29 @@
     outline-color: rgba(29, 143, 241, 0.9);
     background-color: rgba(29, 143, 241, 0.08);
     box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.18);
+}
+
+.gbn-block {
+    transition: outline-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.gbn-block-active {
+    outline-color: rgba(29, 143, 241, 0.9) !important;
+    box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.22);
+    background-color: rgba(29, 143, 241, 0.06);
+}
+
+.gbn-block.gbn-loading::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: 16px;
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(29, 143, 241, 0.4);
+    border-top-color: rgba(29, 143, 241, 0.95);
+    animation: gbn-spin 0.8s linear infinite;
 }
 
 .gbn-config-btn {
@@ -108,6 +167,20 @@
 .gbn-active [data-gbn-role]:hover > .gbn-config-btn {
     opacity: 1;
     transform: translateY(-2px);
+}
+
+.gbn-active .gbn-block-active > .gbn-config-btn,
+.gbn-config-btn.is-active {
+    display: inline-flex;
+    opacity: 1;
+    transform: translateY(-2px);
+    background: #1d8ff1;
+    box-shadow: 0 12px 24px rgba(29, 143, 241, 0.28);
+}
+
+.gbn-config-btn[disabled] {
+    cursor: not-allowed;
+    opacity: 0.4;
 }
 
 #gbn-panel {
@@ -195,6 +268,150 @@
     background: rgba(17, 24, 39, 0.05);
     padding: 2px 6px;
     border-radius: 4px;
+}
+
+#gbn-panel .gbn-footer-status {
+    font-size: 12px;
+    color: var(--muted, #6b6b6b);
+}
+
+#gbn-panel .gbn-panel-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#gbn-panel .gbn-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+}
+
+#gbn-panel .gbn-field-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted, #6b6b6b);
+}
+
+#gbn-panel .gbn-field-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted, #6b6b6b);
+}
+
+#gbn-panel .gbn-field-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text, #111111);
+}
+
+#gbn-panel .gbn-field-hint {
+    font-size: 12px;
+    color: var(--muted, #6b6b6b);
+    line-height: 1.4;
+    margin: 0;
+}
+
+#gbn-panel .gbn-input,
+#gbn-panel .gbn-select,
+#gbn-panel .gbn-input-color,
+#gbn-panel .gbn-panel-form input[type="number"],
+#gbn-panel .gbn-panel-form input[type="text"] {
+    border: 1px solid var(--border-color, #e6e6e6);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    background: #ffffff;
+    color: var(--text, #111111);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#gbn-panel .gbn-input:focus,
+#gbn-panel .gbn-select:focus,
+#gbn-panel .gbn-panel-form input[type="number"]:focus,
+#gbn-panel .gbn-panel-form input[type="text"]:focus,
+#gbn-panel .gbn-panel-form select:focus {
+    outline: none;
+    border-color: rgba(29, 143, 241, 0.6);
+    box-shadow: 0 0 0 3px rgba(29, 143, 241, 0.12);
+}
+
+#gbn-panel .gbn-field-range input[type="range"] {
+    width: 100%;
+}
+
+#gbn-panel .gbn-field-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+}
+
+#gbn-panel .gbn-field-toggle input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+#gbn-panel .gbn-field-spacing {
+    border: 1px solid var(--border-color, #e6e6e6);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#gbn-panel .gbn-field-spacing legend {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted, #6b6b6b);
+}
+
+#gbn-panel .gbn-spacing-unit {
+    align-self: flex-end;
+    border: 1px solid var(--border-color, #e6e6e6);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+#gbn-panel .gbn-spacing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+#gbn-panel .gbn-spacing-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    font-size: 12px;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color, #e6e6e6);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+#gbn-panel .gbn-spacing-input input[type="number"] {
+    width: 60px;
+    margin-left: auto;
+}
+
+#gbn-panel .gbn-spacing-unit-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted, #6b6b6b);
 }
 
 /* Footer dentro del panel */
@@ -724,3 +941,12 @@ button#gbn-close {
 .glory-split__title-text{display:inline}
 .glory-split__title-icon{display:inline-block;vertical-align:middle;opacity:0.8;margin-left:6px;line-height:1;width:16px;height:16px;white-space:nowrap}
 .glory-split__title-icon svg{display:block;width:16px;height:16px}
+
+@keyframes gbn-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

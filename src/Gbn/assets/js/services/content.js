@@ -71,6 +71,22 @@
         }
     });
 
+    function readJsonAttribute(el, attr) {
+        if (!el || !attr) {
+            return null;
+        }
+        var raw = el.getAttribute(attr);
+        if (!raw) {
+            return null;
+        }
+        try {
+            return JSON.parse(raw);
+        } catch (error) {
+            utils.warn('No se pudo parsear', attr, 'para', el, error);
+            return null;
+        }
+    }
+
     function detectRole(el) {
         for (var i = 0; i < ROLE_PRIORITY.length; i += 1) {
             var role = ROLE_PRIORITY[i];
@@ -112,12 +128,15 @@
         }
 
         var defaults = getRoleDefaults(role);
-        var hasConfig = el.hasAttribute('data-gbn-config');
-        if (!hasConfig) {
+        var existingConfig = readJsonAttribute(el, 'data-gbn-config');
+        if (!existingConfig || Object.keys(existingConfig).length === 0) {
             el.setAttribute('data-gbn-config', JSON.stringify(defaults.config || {}));
+        } else {
+            var mergedConfig = utils.assign({}, defaults.config || {}, existingConfig || {});
+            el.setAttribute('data-gbn-config', JSON.stringify(mergedConfig));
         }
-        var hasSchema = el.hasAttribute('data-gbn-schema');
-        if (!hasSchema) {
+        var existingSchema = readJsonAttribute(el, 'data-gbn-schema');
+        if (!Array.isArray(existingSchema) || existingSchema.length === 0) {
             el.setAttribute('data-gbn-schema', JSON.stringify(defaults.schema || []));
         }
     }
