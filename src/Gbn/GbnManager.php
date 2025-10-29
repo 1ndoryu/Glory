@@ -95,13 +95,17 @@ class GbnManager
                 'file' => '/js/services/content.js',
                 'deps' => ['glory-gbn-style'],
             ],
-            'glory-gbn-ui' => [
-                'file' => '/js/ui/overlay.js',
+            'glory-gbn-ui-panel' => [
+                'file' => '/js/ui/panel.js',
                 'deps' => ['glory-gbn-services'],
+            ],
+            'glory-gbn-ui-inspector' => [
+                'file' => '/js/ui/inspector.js',
+                'deps' => ['glory-gbn-ui-panel'],
             ],
             'glory-gbn' => [
                 'file' => '/js/gbn.js',
-                'deps' => ['glory-gbn-ui'],
+                'deps' => ['glory-gbn-ui-inspector'],
             ],
         ];
 
