@@ -33,7 +33,10 @@ Los componentes de Glory deberan de mantener su propias configuaciones compatibl
    }
    ```
    El orden y las relaciones padre-hijo se calculan leyendo el árbol de `data-gbn-id`.
-3. **Transporte AJAX**: se llamará al endpoint `glory_gbn_guardar_config` usando `gloryAjax`. El nonce y la URL ya se entregan vía `gloryGbnCfg`.
+3. **Transporte AJAX**: se usarán endpoints vía `gloryAjax` con `nonce` `glory_gbn_nonce` y URL entregada en `gloryGbnCfg`:
+   - `gbn_save_options` (guardar opciones/estilos por bloque)
+   - `gbn_preview_block` (vista previa con overrides sin persistir)
+   - `gbn_get_page_settings` / `gbn_save_page_settings` (configuraciones por página)
 4. **Persistencia en WordPress**:
    - Los datos se guardarán en el metadato `gbn_config` (array por bloque) asociado al `pageId`.
    - El CSS instanciado se guarda en `gbn_styles` para poder regenerar `<style data-gbn-style="...">` sin depender del inline original.
@@ -45,6 +48,16 @@ Los componentes de Glory deberan de mantener su propias configuaciones compatibl
    - Al iniciar GBN en el front, `services/content` consultará `gloryGbnCfg.presets` (por implementar) para hidratar `data-gbn-config` desde los metadatos guardados.
    - Si no existen datos persistidos, se usan los defaults definidos por cada componente (`gbnDefaults()` en PHP o `ROLE_DEFAULTS` en JS).
 7. **Rollback / Restaurar**: la opción de “Restore defaults” vacía `gbn_config`, borra `gbn_styles` y fuerza a PageManager a regenerar `post_content` desde el HTML baseline del tema.
+
+## Endpoints y estructura de handlers (PHP)
+- Registrador: `Glory/src/Gbn/Ajax/Registrar.php` centraliza los `add_action('wp_ajax_*', ...)`.
+- Handlers atómicos:
+  - `OrderHandler`: `gbn_save_order`.
+  - `ContentHandler`: `gbn_save_options`, `gbn_preview_block`.
+  - `PageSettingsHandler`: `gbn_get_page_settings`, `gbn_save_page_settings`.
+  - `LibraryHandler`: `create_glory_link`, `update_glory_link`, `create_glory_header`, `update_glory_header`.
+  - `DeleteHandler`: `gbn_delete_item`.
+- Compatibilidad: `GbnAjaxHandler::register()` delega en `Ajax\\Registrar::register()`.
 
 ## Marcado base
 Los autores pueden escribir HTML minimalista con atributos como `gloryDiv`, `gloryDivSecundario` o `gloryContentRender="post"`. En tiempo de ejecución, GBN normaliza esos atributos a la versión válida `data-gbn-*` y asigna IDs estables (`data-gbn-id`). Si el autor ya define atributos `data-gbn-*`, se respetan. Cada nodo administrado necesita:
@@ -79,8 +92,10 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 2. `core/state`: registra nodos, crea `data-gbn-id`, persiste config y expone getters.
 3. `render/styleManager`: sincroniza estilos base en `<style data-gbn-style="*">` reutilizando los inline originales.
 4. `services/content`: normaliza atributos `glory*`, parsea `opciones`, define meta y lanza AJAX (`gloryAjax`) para hidratar `gloryContentRender`.
-5. `ui/overlay`: prepara nodos inspectables y provee un stub de panel para futuras configuraciones.
-6. `gbn.js`: orquesta el arranque (omite ejecución cuando el builder externo está activo).
+5. `ui/panel`: núcleo del panel lateral (montaje, títulos, estado, summary y aplicación de estilos vía `styleManager`).
+6. `ui/panel-fields`: constructores de campos (spacing, slider, select, toggle, color, text) que delegan en `Gbn.ui.panelApi` para actualizar config.
+7. `ui/inspector`: toggle “Open GBN”, botones secundarios, persistencia local y activación/desactivación; abre paneles de tema/página/restauración.
+8. `gbn.js`: orquesta el arranque (omite ejecución cuando el builder externo está activo).
 
 ## Experiencia de edición actual
 - Usuarios con permisos ven un botón flotante `Open GBN` (UI en inglés). El estado se guarda por usuario/página en `localStorage`.
@@ -129,7 +144,9 @@ Comentarios del usuario
 
 [solucionado] Al activar GBN el panel lateral debe mostrarse y el contenido principal debe desplazarse (padding-top: 100px) para que sea visible.
 
-Creo que es necesario refactorizar Overlay.js, se hizo muy grande, igual refactorizar gbnAjaxHandler
+[solucionado] Refactor UI: `overlay.js` dividido en `ui/panel.js`, `ui/panel-fields.js` y `ui/inspector.js`. `overlay.js` eliminado.
+
+[solucionado] Refactor AJAX: `GbnAjaxHandler` dividido en `Ajax/Registrar` + `OrderHandler`, `ContentHandler`, `PageSettingsHandler`, `LibraryHandler`, `DeleteHandler`.
 
 [pendiente] Repasar los componentes agnósticos sin `gbnDefaults()` y conectar la persistencia antes de habilitar la inserción/reordenamiento de bloques (Etapa 6).
 
