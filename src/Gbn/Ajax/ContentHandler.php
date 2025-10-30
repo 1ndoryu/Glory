@@ -254,6 +254,44 @@ class ContentHandler
         ]);
     }
 
+    public static function restorePage(): void
+    {
+        check_ajax_referer('glory_gbn_nonce', 'nonce');
+        $pageId = isset($_POST['pageId']) ? absint($_POST['pageId']) : 0;
+        if (!$pageId) { wp_send_json_error(['message' => 'Datos inválidos']); }
+        if (!current_user_can('edit_post', $pageId)) { wp_send_json_error(['message' => 'Sin permisos']); }
+
+        delete_post_meta($pageId, 'gbn_config');
+        delete_post_meta($pageId, 'gbn_styles');
+
+        $updatedContent = false;
+        $mode = method_exists(PageManager::class, 'getModoContenidoParaPagina')
+            ? PageManager::getModoContenidoParaPagina($pageId)
+            : 'code';
+
+        if ($mode === 'editor' && method_exists(PageManager::class, 'getDefinicionPorSlug')) {
+            $slug = (string) get_post_field('post_name', $pageId);
+            $def  = PageManager::getDefinicionPorSlug($slug);
+            if (is_array($def) && !empty($def['funcion']) && method_exists(PageManager::class, 'renderHandlerParaCopiar')) {
+                $html = PageManager::renderHandlerParaCopiar((string) $def['funcion']);
+                if ($html !== '') {
+                    remove_filter('content_save_pre', 'wp_filter_post_kses');
+                    wp_update_post(['ID' => $pageId, 'post_content' => $html]);
+                    update_post_meta($pageId, '_glory_content_hash', self::hashContenidoLocal($html));
+                    $updatedContent = true;
+                }
+            }
+        }
+
+        wp_send_json_success(['ok' => true, 'mode' => $mode, 'contentUpdated' => $updatedContent]);
+    }
+
+    private static function hashContenidoLocal(string $content): string
+    {
+        $normalized = preg_replace('/\s+/', ' ', trim($content));
+        return hash('sha256', (string) $normalized);
+    }
+
     private static function sanitizeMixedArray(array $input): array
     {
         $out = [];

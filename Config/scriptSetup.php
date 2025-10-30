@@ -459,7 +459,13 @@ AssetManager::define(
     'script',
     'glory-ajax',
     '/Glory/assets/js/genericAjax/gloryAjax.js',
-    ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both', 'feature' => 'gloryAjax']
+    [
+        'deps'      => ['jquery'],
+        'in_footer' => false,      // cargar en <head>
+        'defer'     => false,      // ejecutar inmediatamente
+        'area'      => 'both',
+        'feature'   => 'gloryAjax'
+    ]
 );
 
 // Servicio: Búsqueda

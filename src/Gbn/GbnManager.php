@@ -144,6 +144,10 @@ class GbnManager
         ];
         // Asegurar que la config esté disponible antes de cualquier script consumidor
         wp_localize_script('glory-gbn-core', 'gloryGbnCfg', $localizedData);
+        // Proveer ajax_params para gloryAjax si no lo define otro módulo
+        wp_localize_script('glory-gbn-core', 'ajax_params', [
+            'ajax_url' => admin_url('admin-ajax.php'),
+        ]);
         // Mantener compatibilidad: también localizamos en el script final
         wp_localize_script('glory-gbn', 'gloryGbnCfg', $localizedData);
     }

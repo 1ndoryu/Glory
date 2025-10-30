@@ -84,7 +84,17 @@
         return ajaxFn('gbn_save_config', payload);
     }
 
-    Gbn.persistence = { savePageConfig: savePageConfig };
+    async function restorePage() {
+        var ajaxFn = global.gloryAjax || global.enviarAjax;
+        var cfg = utils.getConfig();
+        if (typeof ajaxFn !== 'function' || !cfg || !cfg.pageId) {
+            utils.warn('Persistencia: gloryAjax o configuración no disponibles');
+            return { success: false, message: 'Persistencia no disponible' };
+        }
+        return ajaxFn('gbn_restore_page', { nonce: cfg.nonce, pageId: cfg.pageId });
+    }
+
+    Gbn.persistence = { savePageConfig: savePageConfig, restorePage: restorePage };
 })(window);
 
 

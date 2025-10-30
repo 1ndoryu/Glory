@@ -330,10 +330,12 @@
         if (opts.plantilla) {
             payload.plantilla = opts.plantilla;
         }
+        utils.debug('Solicitando contenido', payload);
         block.element.classList.add('gbn-loading');
         ajaxFn('obtenerHtmlLista', payload).then(function (res) {
             block.element.classList.remove('gbn-loading');
             var html = extractHtml(res);
+            utils.debug('Contenido recibido', html ? ('len=' + html.length) : 'vacío');
             if (html) {
                 block.element.innerHTML = html;
                 emitHydrated(block);

@@ -136,7 +136,19 @@
                     var action = btn.dataset.gbnAction;
                     if (action === 'theme' && Gbn.ui.panel) { Gbn.ui.panel.openTheme(); }
                     else if (action === 'page' && Gbn.ui.panel) { Gbn.ui.panel.openPage(); }
-                    else if (action === 'restore' && Gbn.ui.panel) { Gbn.ui.panel.openRestore(); }
+                    else if (action === 'restore') {
+                        if (Gbn.persistence && typeof Gbn.persistence.restorePage === 'function') {
+                            btn.disabled = true;
+                            btn.setAttribute('aria-disabled', 'true');
+                            Gbn.persistence.restorePage().then(function (res) {
+                                try { window.location.reload(); } catch (_) {}
+                            }).catch(function () {
+                                btn.disabled = false; btn.setAttribute('aria-disabled', 'false');
+                            });
+                        } else if (Gbn.ui.panel) {
+                            Gbn.ui.panel.openRestore();
+                        }
+                    }
                 });
             });
         }

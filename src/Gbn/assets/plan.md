@@ -118,6 +118,8 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 
 ### Etapa 3 · Persistencia y sincronización
 - [x] Implementar el dispatcher AJAX (`gbn_save_config`) que reciba la estructura de bloques, valide permisos y escriba los metadatos `gbn_config`/`gbn_styles` por página.
+- [x] Cliente JS de persistencia y botón Guardar conectado al dispatcher.
+- [x] Restauración básica: endpoint `gbn_restore_page` que limpia `gbn_config`/`gbn_styles` y regenera `post_content` cuando el modo es `editor`.
 - [ ] Integrar la lectura/escritura con `PageManager`: respetar `content_mode = code`, actualizar `post_content` sólo cuando el modo sea `editor` y mantener el hash `_glory_content_hash` para detectar ediciones manuales.
 - [ ] Definir el flujo de restauración que recupere el markup baseline, limpie metadatos y vuelva a sincronizar `data-gbnConfig` con la versión guardada o la del tema.
 
