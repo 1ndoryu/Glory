@@ -247,7 +247,7 @@
             if (!panelBody) { return; }
             if (!block) { renderPlaceholder(); return; }
             renderBlockControls(block);
-            if (panelFooter) { panelFooter.disabled = true; }
+            if (panelFooter) { panelFooter.disabled = false; panelFooter.textContent = 'Guardar'; }
             utils.debug('Panel abierto', block ? block.id : null);
         },
         openTheme: function () {

@@ -152,4 +152,11 @@ Comentarios del usuario
 
 [pendiente] Repasar los componentes agnósticos sin `gbnDefaults()` y conectar la persistencia antes de habilitar la inserción/reordenamiento de bloques (Etapa 6).
 
+Status
 
+por ejemplo al div principal le agrego 200px arriba de padding
+veo en el html que se aplica los 200px pero no tiene 200px de padding arriba
+
+
+
+<div glorydiv="" class="divPrincipal gbn-node gbn-block" style="padding: 40px 20px; gap: 24px;" data-gbnprincipal="1" data-gbn-role="principal" data-gbn-config="{&quot;padding&quot;:{&quot;superior&quot;:&quot;200px&quot;,&quot;derecha&quot;:null,&quot;inferior&quot;:null,&quot;izquierda&quot;:null},&quot;alineacion&quot;:&quot;inherit&quot;,&quot;maxAncho&quot;:null,&quot;fondo&quot;:null,&quot;maxancho&quot;:null}" data-gbn-schema="[{&quot;id&quot;:&quot;padding&quot;,&quot;tipo&quot;:&quot;spacing&quot;,&quot;etiqueta&quot;:&quot;Padding&quot;,&quot;unidades&quot;:[&quot;px&quot;,&quot;%&quot;,&quot;rem&quot;],&quot;paso&quot;:4,&quot;min&quot;:0,&quot;max&quot;:240,&quot;campos&quot;:[&quot;superior&quot;,&quot;derecha&quot;,&quot;inferior&quot;,&quot;izquierda&quot;]},{&quot;id&quot;:&quot;alineacion&quot;,&quot;tipo&quot;:&quot;select&quot;,&quot;etiqueta&quot;:&quot;Alineación del contenido&quot;,&quot;opciones&quot;:[{&quot;valor&quot;:&quot;inherit&quot;,&quot;etiqueta&quot;:&quot;Hereda&quot;},{&quot;valor&quot;:&quot;left&quot;,&quot;etiqueta&quot;:&quot;Izquierda&quot;},{&quot;valor&quot;:&quot;center&quot;,&quot;etiqueta&quot;:&quot;Centro&quot;},{&quot;valor&quot;:&quot;right&quot;,&quot;etiqueta&quot;:&quot;Derecha&quot;}]},{&quot;id&quot;:&quot;maxAncho&quot;,&quot;tipo&quot;:&quot;slider&quot;,&quot;etiqueta&quot;:&quot;Ancho máximo&quot;,&quot;unidad&quot;:&quot;px&quot;,&quot;min&quot;:320,&quot;max&quot;:1600,&quot;paso&quot;:10},{&quot;id&quot;:&quot;fondo&quot;,&quot;tipo&quot;:&quot;color&quot;,&quot;etiqueta&quot;:&quot;Color de fondo&quot;,&quot;permiteTransparencia&quot;:true}]" 
