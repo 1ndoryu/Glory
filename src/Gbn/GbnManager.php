@@ -18,8 +18,18 @@ class GbnManager
         if (!$isActive) { return; }
         if (self::$booted) { return; }
         self::$booted = true;
+        // Registrar endpoints AJAX de GBN en init
+        add_action('init', [GbnManager::class, 'registerAjax']);
         add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);
         add_action('wp_footer', [self::class, 'injectEditButtons'], 5);
+    }
+
+    public static function registerAjax(): void
+    {
+        // Usa el registrador centralizado de GBN para ajax
+        if (class_exists(\Glory\Gbn\GbnAjaxHandler::class)) {
+            \Glory\Gbn\GbnAjaxHandler::register();
+        }
     }
 
     protected static function shouldBustVersion(): bool
@@ -72,7 +82,7 @@ class GbnManager
                     get_template_directory_uri() . '/Glory/assets/js/genericAjax/gloryAjax.js',
                     ['jquery'],
                     $verAjax ?: '1.0',
-                    true
+                    false
                 );
             }
             wp_enqueue_script('glory-ajax');
@@ -129,18 +139,31 @@ class GbnManager
             );
         }
 
+        $pageId = get_queried_object_id();
+        $presets = [
+            'config' => [],
+            'styles' => []
+        ];
+        if ($pageId) {
+            $savedCfg = get_post_meta($pageId, 'gbn_config', true);
+            $savedSty = get_post_meta($pageId, 'gbn_styles', true);
+            if (is_array($savedCfg)) { $presets['config'] = $savedCfg; }
+            if (is_array($savedSty)) { $presets['styles'] = $savedSty; }
+        }
+
         $localizedData = [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('glory_gbn_nonce'),
             'siteTitle' => get_bloginfo('name'),
             'enabled' => true,
             'initialActive' => false,
-            'pageId' => get_queried_object_id(),
+            'pageId' => $pageId,
             'userId' => get_current_user_id(),
             'isEditor' => current_user_can('edit_posts'),
             'roles' => RoleConfig::all(),
             'containers' => ContainerRegistry::all(),
             'devMode' => self::shouldBustVersion(),
+            'presets' => $presets,
         ];
         // Asegurar que la config esté disponible antes de cualquier script consumidor
         wp_localize_script('glory-gbn-core', 'gloryGbnCfg', $localizedData);

@@ -241,8 +241,32 @@ class ContentHandler
             ? PageManager::getModoContenidoParaPagina($pageId)
             : 'code';
 
-        // Modo 'editor': en futuras iteraciones se volcará HTML regenerado a post_content
-        // Respetar 'code': no tocar el contenido
+        $manualEditDetected = false;
+        $contentUpdated = false;
+
+        if ($mode === 'editor') {
+            $currentContent = (string) get_post_field('post_content', $pageId);
+            $savedHash = (string) get_post_meta($pageId, '_glory_content_hash', true);
+            $currentHash = $currentContent !== '' ? self::hashContenidoLocal($currentContent) : '';
+
+            // Si el usuario editó manualmente, no sobreescribir y notificar
+            if ($savedHash !== '' && $savedHash !== $currentHash) {
+                $manualEditDetected = true;
+            } else {
+                // Volcar HTML baseline renderizado por el handler cuando exista
+                $slug = (string) get_post_field('post_name', $pageId);
+                $def  = method_exists(PageManager::class, 'getDefinicionPorSlug') ? PageManager::getDefinicionPorSlug($slug) : null;
+                if (is_array($def) && !empty($def['funcion']) && method_exists(PageManager::class, 'renderHandlerParaCopiar')) {
+                    $html = PageManager::renderHandlerParaCopiar((string) $def['funcion']);
+                    if ($html !== '') {
+                        remove_filter('content_save_pre', 'wp_filter_post_kses');
+                        wp_update_post(['ID' => $pageId, 'post_content' => $html]);
+                        update_post_meta($pageId, '_glory_content_hash', self::hashContenidoLocal($html));
+                        $contentUpdated = true;
+                    }
+                }
+            }
+        }
 
         wp_send_json_success([
             'ok' => true,
@@ -251,6 +275,8 @@ class ContentHandler
                 'styles' => count($stylesById),
             ],
             'mode' => $mode,
+            'manualEditDetected' => $manualEditDetected,
+            'contentUpdated' => $contentUpdated,
         ]);
     }
 

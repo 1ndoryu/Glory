@@ -243,6 +243,20 @@
         var block = state.register(role, el, meta);
         el.classList.add('gbn-node');
         styleManager.ensureBaseline(block);
+        // Aplicar presets persistidos (config y estilos) si existen para este bloque
+        try {
+            var presets = utils.getConfig().presets || {};
+            if (presets.config && presets.config[block.id]) {
+                var presetCfg = presets.config[block.id];
+                var nextCfg = (presetCfg && typeof presetCfg === 'object' && presetCfg.config) ? presetCfg.config : presetCfg;
+                if (nextCfg && typeof nextCfg === 'object') {
+                    state.updateConfig(block.id, nextCfg);
+                }
+            }
+            if (presets.styles && presets.styles[block.id]) {
+                styleManager.update(block, presets.styles[block.id]);
+            }
+        } catch (_) {}
         return block;
     }
 
