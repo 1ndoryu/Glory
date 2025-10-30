@@ -23,6 +23,16 @@ class AvadaIntegration
             }
         }, 100);
 
+        // Redirigir automáticamente desde la página de setup de Avada al dashboard principal
+        add_action('admin_init', function() {
+            if (class_exists(Compatibility::class) && method_exists(Compatibility::class, 'avadaActivo') && Compatibility::avadaActivo()) {
+                if (isset($_GET['page']) && $_GET['page'] === 'avada-setup') {
+                    wp_safe_redirect(admin_url());
+                    exit;
+                }
+            }
+        });
+
         // Inyecta la sección "Glory" y puentea lectura/escritura con Avada Options.
         # Nota de wandorius: esto parece necesitar ejecuptarse after_setup_theme' para que pueda funcionar, en caso de que falle, habrá que integrarlo en un archivo de carga temprana. 
         if (class_exists(AvadaOptionsBridge::class)) {
