@@ -114,7 +114,9 @@ class GloryHeaderCpt
     }
 }
 
-// Registro global (tema controla la visibilidad vía supports/consultas)
+// Registro condicional: solo si gbnSplitContent está activo
 \add_action('plugins_loaded', function () {
-    GloryHeaderCpt::register();
+    if (GloryFeatures::isActive('gbnSplitContent')) {
+        GloryHeaderCpt::register();
+    }
 });
