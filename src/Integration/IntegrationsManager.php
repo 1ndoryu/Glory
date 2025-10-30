@@ -33,7 +33,8 @@ class IntegrationsManager
             // Además, limpiar caché de secciones del panel de Avada para ocultar "Glory" si quedó cacheada.
             add_action('init', function() {
                 try {
-                    if (function_exists('delete_transient')) {
+                    // Solo eliminar transients en modo dev
+                    if (function_exists('delete_transient') && defined('LOCAL') && LOCAL) {
                         delete_transient('fusion_tos');
                         delete_transient('fusion_fb_tos');
                     }

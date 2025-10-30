@@ -17,7 +17,8 @@ final class Registrar
 
         // Invalidar caché de secciones del panel para reflejar cambios en claves/estructura (no afecta valores guardados).
         add_action('init', function() {
-            if (function_exists('delete_transient')) {
+            // Solo eliminar transients en modo dev
+            if (function_exists('delete_transient') && defined('LOCAL') && LOCAL) {
                 delete_transient('fusion_tos');
                 delete_transient('fusion_fb_tos');
             }
