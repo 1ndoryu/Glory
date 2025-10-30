@@ -115,13 +115,18 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 - [x] Construir el panel real (inputs, tabs) reutilizando `data-gbn-schema` y conectándolo a `state` + `styleManager`.
 - [x] Añadir feedback visual (loading, hover) para botones `Config` y estados de bloque.
 - [x] Reordenar los botones flotantes (`Open GBN`, `Config tema`, `Config página`, `Restaurar`) para que vivan bajo el panel y respeten el modo activo.
+- [x] Resolver problema de estilos inline vs GBN: modificar `styleManager` para aplicar estilos directamente al atributo `style` del elemento en lugar de usar reglas CSS que compiten con estilos inline.
+- [x] Sincronizar estilos inline con configuración inicial: cuando un elemento tiene estilos inline (ej: `style="padding-top: 100px"`), GBN ahora carga estos valores en los controles del panel automáticamente.
+- [x] Implementar reset inteligente a valores por defecto: cuando se borra un valor en los controles, regresa al valor inline original (del HTML) o al valor por defecto del schema, no se queda con el último valor editado.
+- [x] Agregar opciones de altura (auto, mínimo, altura completa) a divs primarios y secundarios.
+- [x] Implementar selector flex/grid con opciones específicas condicionales para cada layout (flex-direction, flex-wrap, justify-content, align-items para flex; grid-columns, grid-gap para grid).
 
 ### Etapa 3 · Persistencia y sincronización
 - [x] Implementar el dispatcher AJAX (`gbn_save_config`) que reciba la estructura de bloques, valide permisos y escriba los metadatos `gbn_config`/`gbn_styles` por página.
 - [x] Cliente JS de persistencia y botón Guardar conectado al dispatcher.
 - [x] Restauración básica: endpoint `gbn_restore_page` que limpia `gbn_config`/`gbn_styles` y regenera `post_content` cuando el modo es `editor`.
-- [ ] Integrar la lectura/escritura con `PageManager`: respetar `content_mode = code`, actualizar `post_content` sólo cuando el modo sea `editor` y mantener el hash `_glory_content_hash` para detectar ediciones manuales.
-- [ ] Definir el flujo de restauración que recupere el markup baseline, limpie metadatos y vuelva a sincronizar `data-gbnConfig` con la versión guardada o la del tema.
+- [ ] (no se si esto ya esta resuelto hay revisar primero) Integrar la lectura/escritura con `PageManager`: respetar `content_mode = code`, actualizar `post_content` sólo cuando el modo sea `editor` y mantener el hash `_glory_content_hash` para detectar ediciones manuales.
+- [ ] (no se si esto ya esta resuelto hay revisar primero) Definir el flujo de restauración que recupere el markup baseline, limpie metadatos y vuelva a sincronizar `data-gbnConfig` con la versión guardada o la del tema.
 
 ### Etapa 4 · Configuraciones globales
 - [ ] Implementar el panel de configuración del tema (colores, fuentes, `init.css`) con almacenamiento centralizado.
@@ -152,11 +157,5 @@ Comentarios del usuario
 
 [pendiente] Repasar los componentes agnósticos sin `gbnDefaults()` y conectar la persistencia antes de habilitar la inserción/reordenamiento de bloques (Etapa 6).
 
-Status
+[solucionado] Problema de estilos inline vs GBN: ahora los estilos escritos en HTML (style="padding-top: 100px") se cargan automáticamente en el panel la primera vez, y al borrar valores regresan al valor inline original. ----> Actualización, la primera vez no carga los estilos escrito en el html, los carga dejar vacío la opcion en el panel o al restaurar default, no representa un problema grave pero si se puede ajustar en el futuro sería lo ideal, no es urgente resolverlo ahora, solo tenerlo en cuenta para el futuro.
 
-por ejemplo al div principal le agrego 200px arriba de padding
-veo en el html que se aplica los 200px pero no tiene 200px de padding arriba
-
-
-
-<div glorydiv="" class="divPrincipal gbn-node gbn-block" style="padding: 40px 20px; gap: 24px;" data-gbnprincipal="1" data-gbn-role="principal" data-gbn-config="{&quot;padding&quot;:{&quot;superior&quot;:&quot;200px&quot;,&quot;derecha&quot;:null,&quot;inferior&quot;:null,&quot;izquierda&quot;:null},&quot;alineacion&quot;:&quot;inherit&quot;,&quot;maxAncho&quot;:null,&quot;fondo&quot;:null,&quot;maxancho&quot;:null}" data-gbn-schema="[{&quot;id&quot;:&quot;padding&quot;,&quot;tipo&quot;:&quot;spacing&quot;,&quot;etiqueta&quot;:&quot;Padding&quot;,&quot;unidades&quot;:[&quot;px&quot;,&quot;%&quot;,&quot;rem&quot;],&quot;paso&quot;:4,&quot;min&quot;:0,&quot;max&quot;:240,&quot;campos&quot;:[&quot;superior&quot;,&quot;derecha&quot;,&quot;inferior&quot;,&quot;izquierda&quot;]},{&quot;id&quot;:&quot;alineacion&quot;,&quot;tipo&quot;:&quot;select&quot;,&quot;etiqueta&quot;:&quot;Alineación del contenido&quot;,&quot;opciones&quot;:[{&quot;valor&quot;:&quot;inherit&quot;,&quot;etiqueta&quot;:&quot;Hereda&quot;},{&quot;valor&quot;:&quot;left&quot;,&quot;etiqueta&quot;:&quot;Izquierda&quot;},{&quot;valor&quot;:&quot;center&quot;,&quot;etiqueta&quot;:&quot;Centro&quot;},{&quot;valor&quot;:&quot;right&quot;,&quot;etiqueta&quot;:&quot;Derecha&quot;}]},{&quot;id&quot;:&quot;maxAncho&quot;,&quot;tipo&quot;:&quot;slider&quot;,&quot;etiqueta&quot;:&quot;Ancho máximo&quot;,&quot;unidad&quot;:&quot;px&quot;,&quot;min&quot;:320,&quot;max&quot;:1600,&quot;paso&quot;:10},{&quot;id&quot;:&quot;fondo&quot;,&quot;tipo&quot;:&quot;color&quot;,&quot;etiqueta&quot;:&quot;Color de fondo&quot;,&quot;permiteTransparencia&quot;:true}]" 

@@ -47,9 +47,10 @@
         wrapper.dataset.unit = unitSelect.value;
         var grid = document.createElement('div'); grid.className = 'gbn-spacing-grid';
         function handleSpacingInput(event) {
-            var input = event.target; var value = input.value; var unit = wrapper.dataset.unit || unitSelect.value || 'px';
+            var input = event.target; var value = input.value.trim(); var unit = wrapper.dataset.unit || unitSelect.value || 'px';
             if (input.__gbnUnit) { input.__gbnUnit.textContent = unit; }
-            var path = input.dataset.configPath; var finalValue = value === '' ? null : value + unit;
+            var path = input.dataset.configPath;
+            var finalValue = value === '' ? null : (isNaN(parseFloat(value)) ? null : value + unit);
             var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
             if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, path, finalValue); }
         }
@@ -95,10 +96,17 @@
         if (current === null || current === undefined || current === '') { current = field.min !== undefined ? field.min : 0; }
         input.value = current; valueBadge.textContent = input.value + (field.unidad ? field.unidad : ''); input.dataset.configPath = field.id;
         input.addEventListener('input', function () {
-            var numeric = parseFloat(input.value); if (isNaN(numeric)) { numeric = 0; }
-            valueBadge.textContent = numeric + (field.unidad ? field.unidad : '');
-            var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, numeric); }
+            var value = input.value.trim();
+            var numeric = parseFloat(value);
+            if (isNaN(numeric) || value === '') {
+                valueBadge.textContent = 'auto';
+                var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
+                if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, null); }
+            } else {
+                valueBadge.textContent = numeric + (field.unidad ? field.unidad : '');
+                var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
+                if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, numeric); }
+            }
         });
         wrapper.appendChild(input); appendFieldDescription(wrapper, field); return wrapper;
     }
@@ -135,8 +143,9 @@
         var input = document.createElement('input'); input.type = 'text'; input.className = 'gbn-input';
         var current = getConfigValue(block, field.id); if (current !== undefined && current !== null) { input.value = current; }
         input.addEventListener('input', function () {
+            var value = input.value.trim();
             var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, input.value); }
+            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, value === '' ? null : value); }
         });
         wrapper.appendChild(input); appendFieldDescription(wrapper, field); return wrapper;
     }
@@ -148,14 +157,26 @@
         var current = getConfigValue(block, field.id);
         if (typeof current === 'string' && current.trim() !== '') { input.value = current; } else { input.value = '#ffffff'; }
         input.addEventListener('input', function () {
+            var value = input.value.trim();
             var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, input.value); }
+            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, value === '' ? null : value); }
         });
         wrapper.appendChild(input); appendFieldDescription(wrapper, field); return wrapper;
     }
 
+    function shouldShowField(block, field) {
+        if (!field || !field.condicion || !Array.isArray(field.condicion) || field.condicion.length !== 2) {
+            return true; // Mostrar si no hay condición
+        }
+        var conditionField = field.condicion[0];
+        var conditionValue = field.condicion[1];
+        var currentValue = getConfigValue(block, conditionField);
+        return currentValue === conditionValue;
+    }
+
     function buildField(block, field) {
         if (!field || !field.id) { return null; }
+        if (!shouldShowField(block, field)) { return null; }
         switch (field.tipo) {
             case 'spacing': return buildSpacingField(block, field);
             case 'slider': return buildSliderField(block, field);

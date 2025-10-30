@@ -127,11 +127,68 @@
         return output;
     }
 
+    function getInlineValueForPath(block, path) {
+        if (!block || !block.styles || !block.styles.inline || !path) {
+            return null;
+        }
+
+        var inline = block.styles.inline;
+
+        // Mapeo de rutas de configuración a propiedades CSS
+        var pathToCssMap = {
+            'padding.superior': 'padding-top',
+            'padding.derecha': 'padding-right',
+            'padding.inferior': 'padding-bottom',
+            'padding.izquierda': 'padding-left',
+            'height': 'height',
+            'alineacion': 'text-align',
+            'maxAncho': 'max-width',
+            'fondo': 'background'
+        };
+
+        var cssProp = pathToCssMap[path];
+        if (cssProp && inline[cssProp] !== undefined) {
+            return inline[cssProp];
+        }
+
+        return null;
+    }
+
+    function getDefaultValueForPath(block, path) {
+        if (!block || !path) { return null; }
+
+        var defaults = getRoleDefaults(block.role);
+        if (!defaults || !defaults.config) { return null; }
+
+        var segments = path.split('.');
+        var cursor = defaults.config;
+        for (var i = 0; i < segments.length; i += 1) {
+            if (cursor === null || cursor === undefined) { return null; }
+            cursor = cursor[segments[i]];
+        }
+        return cursor;
+    }
+
     function updateConfigValue(block, path, value) {
         if (!block || !path) { return; }
+
         var current = cloneConfig(block.config);
         var segments = path.split('.');
         var cursor = current;
+
+        // Si el valor está vacío, intentar usar el valor inline o por defecto
+        if (value === null || value === undefined || value === '') {
+            var inlineValue = getInlineValueForPath(block, path);
+            if (inlineValue !== null) {
+                value = inlineValue;
+            } else {
+                var defaultValue = getDefaultValueForPath(block, path);
+                if (defaultValue !== null && defaultValue !== undefined) {
+                    value = defaultValue;
+                }
+            }
+        }
+
         for (var i = 0; i < segments.length - 1; i += 1) {
             var key = segments[i];
             var existing = cursor[key];
@@ -148,6 +205,12 @@
         applyBlockStyles(updated);
         activeBlock = updated;
         flashPanelStatus('Cambios aplicados');
+
+        // Refrescar panel si el campo modificado puede afectar condiciones
+        var conditionalFields = ['layout']; // Campos que pueden mostrar/ocultar otros campos
+        if (conditionalFields.indexOf(path) !== -1) {
+            renderBlockControls(updated);
+        }
     }
 
     function extractSpacingStyles(spacingConfig) {
@@ -166,6 +229,13 @@
     var styleResolvers = {
         principal: function (config) {
             var styles = extractSpacingStyles(config.padding);
+            if (config.height && config.height !== 'auto') {
+                if (config.height === 'min-content') {
+                    styles['height'] = 'min-content';
+                } else if (config.height === '100vh') {
+                    styles['height'] = '100vh';
+                }
+            }
             if (config.alineacion && config.alineacion !== 'inherit') { styles['text-align'] = config.alineacion; }
             if (config.maxAncho !== null && config.maxAncho !== undefined && config.maxAncho !== '') {
                 var max = parseFloat(config.maxAncho);
@@ -176,14 +246,35 @@
         },
         secundario: function (config) {
             var styles = extractSpacingStyles(config.padding);
+            if (config.height && config.height !== 'auto') {
+                if (config.height === 'min-content') {
+                    styles['height'] = 'min-content';
+                } else if (config.height === '100vh') {
+                    styles['height'] = '100vh';
+                }
+            }
             if (config.gap !== null && config.gap !== undefined && config.gap !== '') {
                 var gap = parseFloat(config.gap);
                 if (!isNaN(gap)) { styles.gap = gap + 'px'; }
             }
             if (config.layout) {
-                if (config.layout === 'grid') { styles.display = 'grid'; }
-                else if (config.layout === 'flex') { styles.display = 'flex'; }
-                else { styles.display = 'block'; }
+                if (config.layout === 'grid') {
+                    styles.display = 'grid';
+                    if (config.gridColumns) {
+                        styles['grid-template-columns'] = 'repeat(' + config.gridColumns + ', 1fr)';
+                    }
+                    if (config.gridRows && config.gridRows !== 'auto') {
+                        styles['grid-template-rows'] = config.gridRows;
+                    }
+                } else if (config.layout === 'flex') {
+                    styles.display = 'flex';
+                    if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
+                    if (config.flexWrap) { styles['flex-wrap'] = config.flexWrap; }
+                    if (config.flexJustify) { styles['justify-content'] = config.flexJustify; }
+                    if (config.flexAlign) { styles['align-items'] = config.flexAlign; }
+                } else {
+                    styles.display = 'block';
+                }
             }
             return styles;
         },
@@ -192,11 +283,9 @@
 
     function applyBlockStyles(block) {
         if (!block || !styleManager || !styleManager.update) { return; }
-        var base = (block.styles && block.styles.inline) ? utils.assign({}, block.styles.inline) : {};
         var resolver = styleResolvers[block.role] || function () { return {}; };
-        var overrides = resolver(block.config || {}, block) || {};
-        var merged = utils.assign({}, base, overrides);
-        styleManager.update(block, merged);
+        var computedStyles = resolver(block.config || {}, block) || {};
+        styleManager.update(block, computedStyles);
     }
 
     function createSummary(block) {

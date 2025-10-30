@@ -19,6 +19,21 @@
         return style;
     }
 
+    function applyInlineStyles(block, styles) {
+        if (!block || !block.element || !styles) {
+            return;
+        }
+        var currentInline = utils.parseStyleString(block.element.getAttribute('style') || '');
+        var merged = utils.assign({}, currentInline, styles);
+        var styleString = utils.stringifyStyles(merged);
+        if (styleString) {
+            block.element.setAttribute('style', styleString);
+        } else {
+            block.element.removeAttribute('style');
+        }
+        block.styles.current = utils.assign({}, styles);
+    }
+
     function writeRule(block, styles) {
         if (!block || !styles) {
             return;
@@ -38,8 +53,19 @@
         if (!block || !block.styles) {
             return;
         }
-        if (block.styles.inline && Object.keys(block.styles.inline).length) {
-            writeRule(block, block.styles.inline);
+        // Solo escribir reglas CSS para estilos que no estén en inline
+        // Los estilos inline ya están aplicados en el elemento
+        var inlineKeys = Object.keys(block.styles.inline || {});
+        var nonInlineStyles = {};
+        if (block.styles.current) {
+            Object.keys(block.styles.current).forEach(function(key) {
+                if (inlineKeys.indexOf(key) === -1) {
+                    nonInlineStyles[key] = block.styles.current[key];
+                }
+            });
+        }
+        if (Object.keys(nonInlineStyles).length) {
+            writeRule(block, nonInlineStyles);
         }
     }
 
@@ -48,7 +74,8 @@
         if (!block) {
             return;
         }
-        writeRule(block, styles);
+        // Aplicar estilos directamente al elemento para máxima prioridad
+        applyInlineStyles(block, styles);
     }
 
     Gbn.styleManager = {

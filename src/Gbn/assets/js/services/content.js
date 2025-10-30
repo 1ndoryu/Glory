@@ -109,6 +109,112 @@
         };
     }
 
+    function deepCloneConfig(obj) {
+        if (!obj || typeof obj !== 'object') {
+            return {};
+        }
+        try {
+            return JSON.parse(JSON.stringify(obj));
+        } catch (_) {
+            var copy = Array.isArray(obj) ? [] : {};
+            Object.keys(obj).forEach(function (key) {
+                var value = obj[key];
+                if (value && typeof value === 'object') {
+                    copy[key] = deepCloneConfig(value);
+                } else {
+                    copy[key] = value;
+                }
+            });
+            return copy;
+        }
+    }
+
+    function mergeConfigIfEmpty(target, source) {
+        if (!target || typeof target !== 'object') {
+            target = {};
+        }
+        Object.keys(source || {}).forEach(function (key) {
+            var value = source[key];
+            if (value && typeof value === 'object' && !Array.isArray(value)) {
+                if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
+                    target[key] = {};
+                }
+                mergeConfigIfEmpty(target[key], value);
+            } else if (value !== undefined && value !== null && value !== '') {
+                var current = target[key];
+                if (current === undefined || current === null || current === '') {
+                    target[key] = value;
+                }
+            }
+        });
+        return target;
+    }
+
+    function syncInlineStylesWithConfig(inlineStyles, schema, defaults) {
+        if (!inlineStyles || !schema || !Array.isArray(schema)) {
+            return deepCloneConfig(defaults || {});
+        }
+
+        var config = deepCloneConfig(defaults || {});
+        var spacingMap = {
+            'padding-top': 'padding.superior',
+            'padding-right': 'padding.derecha',
+            'padding-bottom': 'padding.inferior',
+            'padding-left': 'padding.izquierda'
+        };
+
+        // Procesar estilos inline y mapearlos a la configuración
+        Object.keys(inlineStyles).forEach(function(cssProp) {
+            var cssValue = inlineStyles[cssProp];
+
+            // Manejar propiedades de espaciado
+            if (spacingMap[cssProp]) {
+                var configPath = spacingMap[cssProp];
+                var segments = configPath.split('.');
+                var cursor = config;
+                for (var i = 0; i < segments.length - 1; i++) {
+                    if (!cursor[segments[i]]) {
+                        cursor[segments[i]] = {};
+                    }
+                    cursor = cursor[segments[i]];
+                }
+                cursor[segments[segments.length - 1]] = cssValue;
+                return;
+            }
+
+            // Manejar otras propiedades comunes
+            if (cssProp === 'height') {
+                if (cssValue === 'min-content') {
+                    config.height = 'min-content';
+                } else if (cssValue === '100vh') {
+                    config.height = '100vh';
+                }
+                return;
+            }
+
+            if (cssProp === 'text-align') {
+                config.alineacion = cssValue;
+                return;
+            }
+
+            if (cssProp === 'max-width') {
+                // Extraer el valor numérico si es posible
+                var match = cssValue.match(/^(\d+(?:\.\d+)?)(px|%|rem|em)?$/);
+                if (match) {
+                    config.maxAncho = match[1] + (match[2] || 'px');
+                }
+                return;
+            }
+
+            if (cssProp === 'background') {
+                config.fondo = cssValue;
+                return;
+            }
+        });
+
+        return config;
+    }
+
     function normalizeAttributes(el, role) {
         if (!role) {
             return;
@@ -129,8 +235,12 @@
 
         var defaults = getRoleDefaults(role);
         var existingConfig = readJsonAttribute(el, 'data-gbn-config');
+        var inlineStyles = utils.parseStyleString(el.getAttribute('style') || '');
+
         if (!existingConfig || Object.keys(existingConfig).length === 0) {
-            el.setAttribute('data-gbn-config', JSON.stringify(defaults.config || {}));
+            // Si no hay configuración existente, sincronizar estilos inline con defaults
+            var initialConfig = syncInlineStylesWithConfig(inlineStyles, defaults.schema, defaults.config);
+            el.setAttribute('data-gbn-config', JSON.stringify(initialConfig));
         } else {
             var mergedConfig = utils.assign({}, defaults.config || {}, existingConfig || {});
             el.setAttribute('data-gbn-config', JSON.stringify(mergedConfig));
@@ -242,7 +352,16 @@
         }
         var block = state.register(role, el, meta);
         el.classList.add('gbn-node');
-        styleManager.ensureBaseline(block);
+
+        // Asegurar que los valores inline iniciales se reflejen en la configuración del bloque
+        try {
+            var roleDefaults = getRoleDefaults(role);
+            var inlineConfig = syncInlineStylesWithConfig(block.styles.inline, roleDefaults.schema, roleDefaults.config);
+            var currentConfig = utils.assign({}, block.config || {});
+            var mergedWithInline = mergeConfigIfEmpty(currentConfig, inlineConfig);
+            block = state.updateConfig(block.id, mergedWithInline) || block;
+        } catch (_) {}
+
         // Aplicar presets persistidos (config y estilos) si existen para este bloque
         try {
             var presets = utils.getConfig().presets || {};
@@ -254,9 +373,22 @@
                 }
             }
             if (presets.styles && presets.styles[block.id]) {
-                styleManager.update(block, presets.styles[block.id]);
+                // Aplicar estilos persistidos directamente al elemento
+                var currentInline = utils.parseStyleString(el.getAttribute('style') || '');
+                var mergedStyles = utils.assign({}, currentInline, presets.styles[block.id]);
+                var styleString = utils.stringifyStyles(mergedStyles);
+                if (styleString) {
+                    el.setAttribute('style', styleString);
+                }
+                block.styles.current = utils.assign({}, presets.styles[block.id]);
             }
         } catch (_) {}
+
+        // Solo aplicar baseline si no hay presets
+        if (!presets.styles || !presets.styles[block.id]) {
+            styleManager.ensureBaseline(block);
+        }
+
         return block;
     }
 
