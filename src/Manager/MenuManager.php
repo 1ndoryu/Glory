@@ -24,7 +24,7 @@ class MenuManager
         add_action('after_setup_theme', [self::class, 'asegurarMenus'], 20);
 
         // Marcar menú como desincronizado cuando el usuario lo edita desde el admin
-        add_action('wp_update_nav_menu', [self::class, 'onMenuUpdated'], 10, 2);
+        add_action('wp_update_nav_menu', [self::class, 'onMenuUpdated'], 10, 1);
         add_action('wp_delete_nav_menu', [self::class, 'onMenuDeleted'], 10, 1);
         add_action('wp_update_nav_menu_item', [self::class, 'onMenuItemUpdated'], 10, 3);
     }
@@ -382,7 +382,7 @@ class MenuManager
         return sha1($json);
     }
 
-    public static function onMenuUpdated(int $menuId, $data): void
+    public static function onMenuUpdated(int $menuId): void
     {
         // Cualquier guardado manual desincroniza del código
         update_term_meta($menuId, 'glory_menu_desync', 1);
