@@ -73,6 +73,11 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'grid_max_columns'         => 12,
                 'grid_max_columns_medium'  => '',
                 'grid_max_columns_small'   => '',
+				// Grid rotate effect
+				'grid_rotate'              => 'no',
+				'grid_rotate_interval'     => 3000,
+				'grid_rotate_fade'         => 400,
+				'grid_rotate_offset'       => '10px',
                 // Imagen (por instancia)
                 'img_show'                 => 'yes',
                 'img_aspect_ratio'         => '1 / 1',
@@ -264,11 +269,21 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 $metaKey   = isset($this->args['meta_key']) ? trim((string) $this->args['meta_key']) : '';
                 $metaOrder = isset($this->args['meta_order']) ? strtoupper((string) $this->args['meta_order']) : 'ASC';
 
+				// Grid rotate effect: parse args
+				$display_mode_raw      = isset($this->args['display_mode']) ? (string) $this->args['display_mode'] : 'flex';
+				$grid_columns_mode_raw = isset($this->args['grid_columns_mode']) ? (string) $this->args['grid_columns_mode'] : 'fixed';
+				$grid_rotate_raw       = isset($this->args['grid_rotate']) ? (string) $this->args['grid_rotate'] : 'no';
+				$grid_rotate           = in_array(strtolower(trim($grid_rotate_raw)), ['yes','1','true','on'], true);
+				$grid_rotate_interval  = isset($this->args['grid_rotate_interval']) ? max(100, (int) $this->args['grid_rotate_interval']) : 3000;
+				$grid_rotate_fade      = isset($this->args['grid_rotate_fade']) ? max(50, (int) $this->args['grid_rotate_fade']) : 400;
+				$grid_rotate_offset    = isset($this->args['grid_rotate_offset']) ? (string) $this->args['grid_rotate_offset'] : '10px';
+				$gridRotateEnabled     = ($grid_rotate && 'grid' === $display_mode_raw && 'fixed' === $grid_columns_mode_raw);
+
                 $config = [
                     'publicacionesPorPagina' => isset($this->args['publicaciones_por_pagina']) ? (int) $this->args['publicaciones_por_pagina'] : 10,
                     'claseContenedor'        => $this->args['clase_contenedor'] ?? 'glory-content-list',
                     'claseItem'              => $this->args['clase_item'] ?? 'glory-content-item',
-                    'paginacion'             => (isset($this->args['paginacion']) && 'yes' === $this->args['paginacion']),
+					'paginacion'             => $gridRotateEnabled ? false : (isset($this->args['paginacion']) && 'yes' === $this->args['paginacion']),
                     'plantillaCallback'      => $callable,
                     'argumentosConsulta'     => $argumentosConsulta,
                     'orden'                  => ('meta' === $orden && '' !== $metaKey) ? $metaOrder : ('random' === $orden ? 'random' : 'fecha'),
@@ -293,6 +308,11 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                     'toggleDefaultState'     => $toggle_default_state,
                     'enableHorizontalDrag'   => (isset($this->args['enable_horizontal_drag']) && 'yes' === $this->args['enable_horizontal_drag']),
                     'internalLayoutOptions'  => $internal_layout_options,
+					// Grid rotate effect
+					'gridRotate'             => $gridRotateEnabled,
+					'gridRotateInterval'     => $grid_rotate_interval,
+					'gridRotateFade'         => $grid_rotate_fade,
+					'gridRotateOffset'       => $grid_rotate_offset,
                 ];
 
                 // Clase única por instancia para poder aplicar CSS aislado
@@ -381,6 +401,39 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 $selector = '.' . $instanceClass;
                 $config['instanceClass'] = $this->currentInstanceClass;
                 $html .= \Glory\Support\Scripts\ContentRenderScripts::buildAll($selector, $config);
+
+				// Inline CSS+JS para el efecto Rotate Grid (scoped por instancia)
+				if ($gridRotateEnabled) {
+					$cssRotate = ''
+						. $selector . ' { overflow: hidden; --gr-fade-duration: ' . (int) $grid_rotate_fade . 'ms; transition: opacity var(--gr-fade-duration) ease; }'
+						. $selector . '.gr-fading { opacity: 0; }'
+						. $selector . '.gr-measure { opacity: 0; }';
+
+					$html .= '<style id="' . esc_attr($instanceClass) . '-grid-rotate-css">' . $cssRotate . '</style>';
+
+					$intervalMs = (int) $grid_rotate_interval;
+					$js  = '(function(){try{';
+					$js .= 'var root=document.querySelector("' . addslashes($selector) . '");if(!root){return;}';
+					$js .= 'var items=Array.prototype.slice.call(root.querySelectorAll(".' . addslashes($instanceClass) . '__item"));if(!items.length){return;}';
+					$js .= 'var interval=' . $intervalMs . ';var fade=' . (int) $grid_rotate_fade . ';';
+					$js .= 'function measureCols(){root.classList.add("gr-measure");var tops=items.map(function(el){var r=el.getBoundingClientRect();return Math.round(r.top);});root.classList.remove("gr-measure");if(!tops.length){return 1;}var minTop=Math.min.apply(Math,tops);var cols=0;for(var i=0;i<tops.length;i++){if(Math.abs(tops[i]-minTop)<2){cols++;}else{break;}}return Math.max(1,cols);}';
+					$js .= 'function measureRowHeight(cols){if(items.length===0||cols<1){return 0;}var minTop=Infinity;var maxBottom=-Infinity;for(var i=0;i<Math.min(cols,items.length);i++){var r=items[i].getBoundingClientRect();if(r.height===0){continue;}if(r.top<minTop){minTop=r.top;}if(r.bottom>maxBottom){maxBottom=r.bottom;}}return (maxBottom>minTop)?Math.round(maxBottom-minTop):0;}';
+					$js .= 'function sliceIdx(start,count){var out=[];for(var i=start;i<Math.min(start+count,items.length);i++){out.push(i);}return out;}';
+					$js .= 'function reorderTo(indices){var set={};indices.forEach(function(i){set[i]=true;});var order=indices.slice();for(var k=0;k<items.length;k++){if(!set[k]){order.push(k);}}var frag=document.createDocumentFragment();var newItems=[];for(var q=0;q<order.length;q++){var node=items[order[q]];frag.appendChild(node);newItems.push(node);}root.appendChild(frag);items=newItems;}';
+					$js .= 'function nextChunk(currStart,cols){var nextStart=currStart+cols;var next=sliceIdx(nextStart,cols);if(next.length<cols){var rem=cols-next.length;var pool=sliceIdx(currStart,cols);while(rem>0&&pool.length){var p=Math.floor(Math.random()*pool.length);next.push(pool.splice(p,1)[0]);rem--;}}return{chunk:next,start:(nextStart>=items.length?0:nextStart)};}';
+					$js .= 'var cols=measureCols();if(items.length<=cols){return;}';
+					$js .= 'root.classList.add("gr-fading");var rowH=measureRowHeight(cols);if(rowH>0){root.style.height=rowH+"px";}reorderTo(sliceIdx(0,cols));requestAnimationFrame(function(){root.classList.remove("gr-fading");});';
+					$js .= 'var start=0;';
+					$js .= 'function tick(){var res=nextChunk(start,cols);root.classList.add("gr-fading");setTimeout(function(){reorderTo(res.chunk);var h=measureRowHeight(cols);if(h>0){root.style.height=h+"px";}root.classList.remove("gr-fading");start=res.start;},fade);}';
+					$js .= 'var timer=setInterval(tick,interval);';
+					$js .= 'root.addEventListener("mouseenter",function(){if(timer){clearInterval(timer);timer=null;}});';
+					$js .= 'root.addEventListener("mouseleave",function(){if(!timer){timer=setInterval(tick,interval);}});';
+					$js .= 'function onResize(){var newCols=measureCols();if(newCols!==cols){cols=newCols;if(items.length<=cols){if(timer){clearInterval(timer);timer=null;}root.style.height="";root.classList.remove("gr-fading");return;}start=0;reorderTo(sliceIdx(0,cols));var h=measureRowHeight(cols);if(h>0){root.style.height=h+"px";}}}';
+					$js .= 'if("ResizeObserver" in window){var ro=new ResizeObserver(onResize);ro.observe(root);}else{window.addEventListener("resize",onResize);}';
+					$js .= '}catch(e){}})();';
+
+					$html .= '<script id="' . esc_attr($instanceClass) . '-grid-rotate-js">' . $js . '</script>';
+				}
 
                 $this->counter++;
                 $this->on_render();
