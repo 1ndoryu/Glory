@@ -22,13 +22,11 @@ class AssetsUtility
         self::registerAssetPath('glory', 'Glory/assets/images');
         self::registerAssetPath('elements', 'Glory/assets/images/elements');
         // Importante: respetar mayúsculas/minúsculas reales del filesystem (Linux es case-sensitive)
-        self::registerAssetPath('tema', 'App/Assets/images');
         // Alias dedicado a la carpeta de colores solicitada para portafolio
         self::registerAssetPath('colors', 'Glory/assets/images/colors');
         // Alias para logos de marcas
         self::registerAssetPath('logos', 'Glory/assets/images/logos');
         self::$isInitialized = true;
-        add_action('admin_init', [AssetsUtility::class, 'importTemaAssets']);
     }
 
 
@@ -622,6 +620,11 @@ class AssetsUtility
         self::importAllFromAlias('tema');
     }
 
+    public static function importAssetsForAlias(string $alias): void
+    {
+        self::importAllFromAlias($alias);
+    }
+
     private static function importAllFromAlias(string $alias): void
     {
         if (!isset(self::$assetPaths[$alias])) {
@@ -631,7 +634,7 @@ class AssetsUtility
         if (!is_dir($dir)) {
             return;
         }
-        $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
         foreach ($extensions as $ext) {
             $files = glob($dir . '*.' . $ext);
             if (!is_array($files)) {
