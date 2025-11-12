@@ -230,6 +230,18 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 }
                 $this->currentModoInteraccion = $modo_interaccion;
 
+                // Aplicar overrides forzados por plantilla (agnóstico)
+                if (! empty($this->currentTemplateSupports['containerOverrides']) && is_array($this->currentTemplateSupports['containerOverrides'])) {
+                    foreach ((array) $this->currentTemplateSupports['containerOverrides'] as $k => $v) {
+                        $this->args[$k] = $v;
+                    }
+                }
+                if (! empty($this->currentTemplateSupports['forceArgs']) && is_array($this->currentTemplateSupports['forceArgs'])) {
+                    foreach ((array) $this->currentTemplateSupports['forceArgs'] as $k => $v) {
+                        $this->args[$k] = $v;
+                    }
+                }
+
                 $carousel_speed = isset($this->args['carousel_speed']) ? max(1.0, (float) $this->args['carousel_speed']) : 20.0;
                 $toggle_separator_raw = isset($this->args['toggle_separator']) ? (string) $this->args['toggle_separator'] : '';
                 $toggle_separator = in_array(strtolower(trim($toggle_separator_raw)), ['yes', '1', 'true', 'on'], true);
@@ -358,6 +370,11 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                     'title_position'         => $this->args['title_position'] ?? 'top',
                     'title_show'             => $this->args['title_show'] ?? 'yes',
                 ]);
+                // Propagar opciones específicas de plantilla: Service Kura
+                $rawBorderShow = isset($this->args['service_kura_border_show']) ? (string) $this->args['service_kura_border_show'] : 'yes';
+                \Glory\Components\ContentRender::setCurrentOption('serviceKuraBorderShow', ('yes' === strtolower($rawBorderShow)));
+                \Glory\Components\ContentRender::setCurrentOption('serviceKuraBorderColor', isset($this->args['service_kura_border_color']) ? (string) $this->args['service_kura_border_color'] : 'rgba(0,0,0,0.15)');
+                \Glory\Components\ContentRender::setCurrentOption('serviceKuraBorderWidth', isset($this->args['service_kura_border_width']) ? (string) $this->args['service_kura_border_width'] : '1px');
                 $instanceConfigSnapshot = [];
                 ob_start();
                 try {
@@ -389,6 +406,9 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                     \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarCategorias', null);
                     \Glory\Components\ContentRender::setCurrentOption('teamShowRole', null);
                     \Glory\Components\ContentRender::setCurrentOption('teamShowProfession', null);
+                    \Glory\Components\ContentRender::setCurrentOption('serviceKuraBorderShow', null);
+                    \Glory\Components\ContentRender::setCurrentOption('serviceKuraBorderColor', null);
+                    \Glory\Components\ContentRender::setCurrentOption('serviceKuraBorderWidth', null);
                 }
                 $html .= ob_get_clean();
 

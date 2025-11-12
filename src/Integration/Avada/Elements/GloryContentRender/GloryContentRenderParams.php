@@ -93,9 +93,9 @@ class GloryContentRenderParams
             [ 'type' => 'radio_button_set', 'heading' => 'Title position', 'param_name' => 'title_position', 'default' => 'top', 'value' => [ 'top' => 'Top', 'bottom' => 'Bottom' ], 'group' => 'Design' ],
 			// Layout pattern (alternating S-LL-S) - responsive
 			[ 'type' => 'radio_button_set', 'heading' => 'Layout pattern', 'param_name' => 'layout_pattern', 'default' => 'none', 'value' => [ 'none' => 'None', 'alternado_slls' => 'Alternating S-LL-S' ], 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ] ],
-			[ 'type' => 'textfield', 'heading' => 'Row gap (pattern)', 'param_name' => 'pattern_row_gap', 'default' => '40px', 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ] ],
-			[ 'type' => 'range', 'heading' => 'Small width %', 'param_name' => 'pattern_small_width_percent', 'value' => [ 'large' => 40, 'medium' => '', 'small' => '' ], 'default' => 40, 'min' => 10, 'max' => 90, 'step' => 1, 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ] ],
-			[ 'type' => 'range', 'heading' => 'Large width %', 'param_name' => 'pattern_large_width_percent', 'value' => [ 'large' => 60, 'medium' => '', 'small' => '' ], 'default' => 60, 'min' => 10, 'max' => 90, 'step' => 1, 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ] ],
+			[ 'type' => 'textfield', 'heading' => 'Row gap (pattern)', 'param_name' => 'pattern_row_gap', 'default' => '40px', 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ], 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'none', 'operator' => '!=' ] ] ],
+			[ 'type' => 'range', 'heading' => 'Small width %', 'param_name' => 'pattern_small_width_percent', 'value' => [ 'large' => 40, 'medium' => '', 'small' => '' ], 'default' => 40, 'min' => 10, 'max' => 90, 'step' => 1, 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ], 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'none', 'operator' => '!=' ] ] ],
+			[ 'type' => 'range', 'heading' => 'Large width %', 'param_name' => 'pattern_large_width_percent', 'value' => [ 'large' => 60, 'medium' => '', 'small' => '' ], 'default' => 60, 'min' => 10, 'max' => 90, 'step' => 1, 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ], 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'none', 'operator' => '!=' ] ] ],
 
             // Internal content typography
             [ 'type' => 'radio_button_set', 'heading' => 'Enable internal typography', 'param_name' => 'internal_typography_enable', 'default' => 'no', 'value' => [ 'yes' => 'Yes', 'no' => 'No' ], 'group' => 'Design' ],
@@ -114,6 +114,18 @@ class GloryContentRenderParams
             try {
                 $templateOptions = \Glory\Utility\TemplateRegistry::options(null);
                 if ( is_array($templateOptions) ) {
+                    // Recoger reglas de ocultación por plantilla
+                    $hideByTemplate = [];
+                    foreach ( $templateOptions as $templateId => $templateLabel ) {
+                        if ( '__default' === (string) $templateId ) {
+                            continue;
+                        }
+                        $supports = \Glory\Utility\TemplateRegistry::supports( (string) $templateId );
+                        if ( is_array($supports) && ! empty($supports['hideControls']) && is_array($supports['hideControls']) ) {
+                            $hideByTemplate[(string) $templateId] = array_map('strval', $supports['hideControls']);
+                        }
+                    }
+
                     foreach ( $templateOptions as $templateId => $templateLabel ) {
                         if ( '__default' === (string) $templateId ) {
                             continue;
@@ -154,6 +166,23 @@ class GloryContentRenderParams
                                 $dependency[] = [ 'element' => 'template_id', 'value' => (string) $templateId, 'operator' => '==' ];
                                 $param['dependency'] = $dependency;
                                 $params[] = $param;
+                            }
+                        }
+
+                        // Ocultar controles genéricos cuando la plantilla lo solicite
+                        if ( isset($hideByTemplate[(string) $templateId]) && is_array($hideByTemplate[(string) $templateId]) ) {
+                            $toHide = $hideByTemplate[(string) $templateId];
+                            foreach ($params as $idx => $p) {
+                                if (! is_array($p) || empty($p['param_name'])) {
+                                    continue;
+                                }
+                                if (in_array($p['param_name'], $toHide, true)) {
+                                    $dep = $params[$idx]['dependency'] ?? [];
+                                    if (! is_array($dep)) { $dep = []; }
+                                    // Mostrar SOLO cuando el template seleccionado sea distinto
+                                    $dep[] = [ 'element' => 'template_id', 'value' => (string) $templateId, 'operator' => '!=' ];
+                                    $params[$idx]['dependency'] = $dep;
+                                }
                             }
                         }
                     }
