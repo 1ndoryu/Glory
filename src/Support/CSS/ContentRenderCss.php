@@ -59,6 +59,7 @@ class ContentRenderCss
 		$img_max_height_r = $normalize( $args['img_max_height'] ?? '', 'img_max_height' );
 
 		$title_styles = '';
+		$title_bold_param = isset( $args['title_bold'] ) ? (string) $args['title_bold'] : '';
 		if ( class_exists( 'Fusion_Builder_Element_Helper' ) && $useFusionTypography ) {
 			// Solo procesar tipografías de Fusion si existen las claves necesarias
 			$fusion_font_keys = [
@@ -83,6 +84,7 @@ class ContentRenderCss
 		}
 
 		$internal_styles = '';
+		$internal_bold_param = isset( $args['internal_bold'] ) ? (string) $args['internal_bold'] : '';
 		$internal_enabled = isset( $args['internal_typography_enable'] ) && 'yes' === (string) $args['internal_typography_enable'];
 		if ( $internal_enabled ) {
 			$sanitizer = function_exists( 'fusion_library' ) ? fusion_library()->sanitize : null;
@@ -125,8 +127,14 @@ class ContentRenderCss
 			if ( '' !== $internal_font_family ) {
 				$internal_styles .= 'font-family:' . esc_attr( $internal_font_family ) . ';';
 			}
-			if ( '' !== $internal_font_variant ) {
-				$internal_styles .= 'font-weight:' . esc_attr( $internal_font_variant ) . ';';
+			$internal_font_weight = $internal_font_variant;
+			if ( 'yes' === $internal_bold_param ) {
+				$internal_font_weight = '700';
+			} elseif ( 'no' === $internal_bold_param && array_key_exists( 'internal_bold', $args ) ) {
+				$internal_font_weight = '400';
+			}
+			if ( '' !== $internal_font_weight ) {
+				$internal_styles .= 'font-weight:' . esc_attr( $internal_font_weight ) . ';';
 			}
 			$internal_text_transform = isset( $args['internal_text_transform'] ) ? (string) $args['internal_text_transform'] : '';
 			if ( '' !== $internal_text_transform ) {
@@ -170,6 +178,11 @@ class ContentRenderCss
 			}
 		}
 
+		if ( 'yes' === $title_bold_param ) {
+			$title_styles .= 'font-weight:700;';
+		} elseif ( 'no' === $title_bold_param && array_key_exists( 'title_bold', $args ) ) {
+			$title_styles .= 'font-weight:400;';
+		}
 		$title_transform = isset( $args['title_text_transform'] ) ? (string) $args['title_text_transform'] : '';
 		$title_min_width = isset( $args['title_min_width'] ) ? (string) $args['title_min_width'] : '';
 		$title_width = isset( $args['title_width'] ) ? (string) $args['title_width'] : '';
