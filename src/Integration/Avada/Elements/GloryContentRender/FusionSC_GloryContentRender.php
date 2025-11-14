@@ -126,6 +126,12 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'content_min_width'             => '',
                 'content_width'                  => '',
                 'content_max_width'              => '',
+                'mostrar_contenido'              => 'yes',
+                'mostrarContenido'               => 'yes',
+                'mostrar_fecha'                  => 'yes',
+                'mostrarFecha'                   => 'yes',
+                'contenido_max_palabras'         => '55',
+                'contenidoMaxPalabras'           => '55',
                 'title_show_on_hover'            => 'no',
                 'title_position'                 => 'top', // top | bottom
 				// Color del título
@@ -328,6 +334,14 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
 					'gridRotateFade'         => $grid_rotate_fade,
 					'gridRotateOffset'       => $grid_rotate_offset,
                 ];
+
+                $mostrarContenidoArg = $this->args['mostrarContenido'] ?? $this->args['mostrar_contenido'] ?? 'yes';
+                $mostrarFechaArg     = $this->args['mostrarFecha'] ?? $this->args['mostrar_fecha'] ?? 'yes';
+                $contenidoMaxArg     = $this->args['contenidoMaxPalabras'] ?? $this->args['contenido_max_palabras'] ?? 55;
+
+                $config['mostrarContenido']     = is_string($mostrarContenidoArg) ? $mostrarContenidoArg : (string) $mostrarContenidoArg;
+                $config['mostrarFecha']         = is_string($mostrarFechaArg) ? $mostrarFechaArg : (string) $mostrarFechaArg;
+                $config['contenidoMaxPalabras'] = is_numeric($contenidoMaxArg) ? (int) $contenidoMaxArg : (int) $contenidoMaxArg;
 
                 // Clase única por instancia para poder aplicar CSS aislado
                 $instanceClass = 'glory-cr-' . substr(md5(uniqid('', true)), 0, 8);
