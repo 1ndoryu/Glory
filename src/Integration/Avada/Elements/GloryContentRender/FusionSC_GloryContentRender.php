@@ -106,6 +106,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'img_quality'              => 60,
                 // Título (por instancia)
                 'title_show'                     => 'yes',
+                'title_bold'                     => 'no',
                 'fusion_font_family_title_font'  => '',
                 'fusion_font_variant_title_font' => '',
                 'font_size'                      => '',
@@ -140,6 +141,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
 				'pattern_large_width_percent_small'  => '',
                 // Tipografía interna (por instancia) - mismas opciones del título pero separadas
                 'internal_typography_enable'           => 'no',
+                'internal_bold'                        => 'no',
                 'fusion_font_family_internal_font'     => '',
                 'fusion_font_variant_internal_font'    => '',
                 'internal_font_size'                   => '',
