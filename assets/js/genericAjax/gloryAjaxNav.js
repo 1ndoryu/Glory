@@ -473,6 +473,63 @@
         }
     }
 
+    // Guarda clases/atributos para recrear el estado de html/body al navegar
+    function capturarEstadoNodo(el) {
+        if (!el) return null;
+        try {
+            const atributos = [];
+            if (el.attributes && el.attributes.length) {
+                for (let i = 0; i < el.attributes.length; i++) {
+                    const attr = el.attributes[i];
+                    atributos.push({ nombre: attr.name, valor: attr.value });
+                }
+            }
+            return {
+                clases: el.className || '',
+                atributos: atributos
+            };
+        } catch(_e) {
+            return null;
+        }
+    }
+
+    function aplicarEstadoNodo(target, estado) {
+        if (!target || !estado) return;
+        try {
+            const deseados = {};
+            if (Array.isArray(estado.atributos)) {
+                for (let i = 0; i < estado.atributos.length; i++) {
+                    const attr = estado.atributos[i];
+                    if (!attr || !attr.nombre) continue;
+                    if (attr.nombre === 'class') continue;
+                    deseados[attr.nombre] = true;
+                    const valor = attr.valor == null ? '' : String(attr.valor);
+                    target.setAttribute(attr.nombre, valor);
+                }
+            }
+            const existentes = target.attributes ? Array.prototype.slice.call(target.attributes) : [];
+            existentes.forEach((attr) => {
+                if (attr.name === 'class') return;
+                if (!deseados[attr.name]) {
+                    target.removeAttribute(attr.name);
+                }
+            });
+            target.className = typeof estado.clases === 'string' ? estado.clases : '';
+        } catch(_e) {}
+    }
+
+    function aplicarEstadoRaizDesdeCache(entrada) {
+        try {
+            if (!entrada) return;
+            if (entrada.htmlAttrs) {
+                aplicarEstadoNodo(document.documentElement, entrada.htmlAttrs);
+            }
+            if (entrada.bodyAttrs) {
+                aplicarEstadoNodo(document.body, entrada.bodyAttrs);
+            }
+        } catch(_e) {}
+    }
+
     /**
      * Loads page content via fetch, parses, replaces content, and triggers re-initialization.
      * @param {string} url - The URL to load.
@@ -493,6 +550,10 @@
             return;
         }
 
+        const fromUrl = window.location.href;
+        const estadoHtmlPrevio = capturarEstadoNodo(document.documentElement);
+        const estadoBodyPrevio = capturarEstadoNodo(document.body);
+
         // Use cache if available and caching is enabled/allowed for this URL
         if (pageCache[url] && shouldCache(url)) {
             gloryLog(`Loading from cache: ${url}`);
@@ -507,6 +568,7 @@
             } else {
                 contentElement.innerHTML = pageCache[url].content || pageCache[url];
             }
+            aplicarEstadoRaizDesdeCache(pageCache[url]);
             if (pushState) {
                 history.pushState({url: url}, '', url);
             }
@@ -590,7 +652,6 @@
                 }
 
                 // Capturar nodos actuales antes de reemplazar para guardarlos en caché del URL de origen
-                const fromUrl = window.location.href;
                 const previousNodes = Array.prototype.slice.call(contentElement.childNodes);
 
                 // Replace content & title usando adopción de nodos (evita reparsear strings)
@@ -602,6 +663,11 @@
                 // Opcional: sincronizar <head> SEO de la respuesta (agnóstico por config)
                 syncHeadSeo(doc);
 
+                const estadoHtmlNuevo = capturarEstadoNodo(doc.documentElement);
+                const estadoBodyNuevo = capturarEstadoNodo(doc.body);
+                aplicarEstadoNodo(document.documentElement, estadoHtmlNuevo);
+                aplicarEstadoNodo(document.body, estadoBodyNuevo);
+
                 // Extraer scripts del head ANTES de procesarlos (para cache y ejecución)
                 const headScripts = extractAndExecuteHeadScripts(doc, false);
                 
@@ -610,6 +676,8 @@
                     pageCache[url] = {
                         content: contentElement.innerHTML,
                         headScripts: headScripts,
+                        htmlAttrs: estadoHtmlNuevo,
+                        bodyAttrs: estadoBodyNuevo,
                         // Guardamos referencia de nodos actuales (ya insertados) para reuso posterior
                         nodeChildren: Array.prototype.slice.call(contentElement.childNodes)
                     };
@@ -624,6 +692,12 @@
                         // Asegurar tener también la versión string como respaldo
                         if (!pageCache[fromUrl].content) {
                             pageCache[fromUrl].content = previousNodes.map(n => n.outerHTML || (n.nodeType === 3 ? n.textContent : '')).join('');
+                        }
+                        if (estadoHtmlPrevio) {
+                            pageCache[fromUrl].htmlAttrs = estadoHtmlPrevio;
+                        }
+                        if (estadoBodyPrevio) {
+                            pageCache[fromUrl].bodyAttrs = estadoBodyPrevio;
                         }
                     }
                 } catch(_e) {}
@@ -738,7 +812,14 @@
                         if (!nc) return;
                         const hs = extractAndExecuteHeadScripts(doc, false);
                         if (shouldCache(url)) {
-                            pageCache[url] = { content: nc.innerHTML, headScripts: hs };
+                            const estadoHtmlPrefetch = capturarEstadoNodo(doc.documentElement);
+                            const estadoBodyPrefetch = capturarEstadoNodo(doc.body);
+                            pageCache[url] = {
+                                content: nc.innerHTML,
+                                headScripts: hs,
+                                htmlAttrs: estadoHtmlPrefetch,
+                                bodyAttrs: estadoBodyPrefetch
+                            };
                             gloryLog('Prefetched and cached:', url);
                         }
                     })
@@ -864,9 +945,13 @@
             if (shouldCache(initialUrl) && contentElement.innerHTML) {
                 // Extraer scripts del head de la página inicial (sin ejecutar, ya están en el documento)
                 const initialHeadScripts = extractAndExecuteHeadScripts(document, false);
+                const estadoHtmlInicial = capturarEstadoNodo(document.documentElement);
+                const estadoBodyInicial = capturarEstadoNodo(document.body);
                 pageCache[initialUrl] = {
                     content: contentElement.innerHTML,
-                    headScripts: initialHeadScripts
+                    headScripts: initialHeadScripts,
+                    htmlAttrs: estadoHtmlInicial,
+                    bodyAttrs: estadoBodyInicial
                 };
                 gloryLog(`Initial page cached: ${initialUrl} (with ${initialHeadScripts.length} head scripts)`);
                 // Use replaceState for the initial load so it doesn't create a redundant history entry
