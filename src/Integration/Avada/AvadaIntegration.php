@@ -59,6 +59,9 @@ class AvadaIntegration
             return;
         }
         add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);
+
+        // Bridge: ajustar comportamiento del menú principal de Avada cuando se usa el header completo de Glory.
+        add_filter('wp_nav_menu_items', [self::class, 'filterMaybeRemoveMainMenuSearch'], 100, 2);
     }
 
     // Delegaciones al registrador de elementos/shortcode
@@ -203,6 +206,46 @@ class AvadaIntegration
         } elseif ( is_readable($themePath) ) {
             wp_enqueue_script('glory-carousel', $themeDir . '/Glory/assets/js/glory-carousel.js', [], null, true);
         }
+    }
+
+    /**
+     * Si se está utilizando el header completo de Glory (GLORY_USE_FULL_HEADER),
+     * evitamos que Avada inyecte el icono/bloque de búsqueda en el menú principal
+     * (li.fusion-main-menu-search) para no romper el layout del header de Glory.
+     *
+     * @param string          $items HTML de los items del menú.
+     * @param array|\stdClass $args  Argumentos de wp_nav_menu.
+     * @return string
+     */
+    public static function filterMaybeRemoveMainMenuSearch($items, $args)
+    {
+        try {
+            // Solo aplicar cuando se usa el header completo de Glory.
+            if (!defined('GLORY_USE_FULL_HEADER') || !GLORY_USE_FULL_HEADER) {
+                return $items;
+            }
+
+            // Asegurar que tenemos theme_location disponible.
+            $location = '';
+            if (is_array($args) && isset($args['theme_location'])) {
+                $location = (string) $args['theme_location'];
+            } elseif (is_object($args) && isset($args->theme_location)) {
+                $location = (string) $args->theme_location;
+            }
+
+            // Solo tocar menú principal / sticky, igual que avada_add_search_to_main_nav.
+            if ($location !== 'main_navigation' && $location !== 'sticky_navigation') {
+                return $items;
+            }
+
+            // Eliminar cualquier <li> que contenga la clase fusion-main-menu-search.
+            $items = preg_replace('~<li[^>]*\bfusion-main-menu-search\b[^>]*>.*?</li>~s', '', (string) $items);
+        } catch (\Throwable $t) {
+            // En caso de error, devolver el HTML original sin romper el menú.
+            return $items;
+        }
+
+        return $items;
     }
 }
 
