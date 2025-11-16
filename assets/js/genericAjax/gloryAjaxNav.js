@@ -36,10 +36,6 @@
             jsonLdSelectors: [] // e.g. ['script[type="application/ld+json"][data-glory-seo="1"]']
         },
 
-        // Reset completo de CSS entre páginas (opcional)
-        resetCssOnNavigation: true,
-        cssResetPreserveSelectors: [],
-
         // Inline script execution controls (agnóstico)
         skipInlineScriptTypes: ['application/ld+json'],
         skipInlineScriptSelectors: [], // e.g. ['script[data-skip-exec="1"]']
@@ -243,17 +239,8 @@
     /**
      * Normaliza URL absoluta para comparación.
      */
-    function toAbsoluteUrl(url, baseHref) {
-        try {
-            if (baseHref) {
-                return new URL(url, baseHref).href;
-            }
-            if (typeof window !== 'undefined' && window.location) {
-                const fallbackBase = window.location.href || window.location.origin;
-                return new URL(url, fallbackBase).href;
-            }
-            return new URL(url).href;
-        } catch(_e){ return url; }
+    function toAbsoluteUrl(url) {
+        try { return new URL(url, window.location.origin).href; } catch(_e){ return url; }
     }
 
     /**
@@ -291,16 +278,16 @@
                 const body = document.body || document.documentElement;
 
                 // Estilos primero (no bloquean)
-                if (!config.resetCssOnNavigation) {
-                    doc.querySelectorAll('link[rel="stylesheet"][href]').forEach((lnk) => {
-                        const href = lnk.getAttribute('href');
-                        if (!href || isStylesheetLoaded(href)) return;
-                        const nl = document.createElement('link');
-                        nl.rel = 'stylesheet';
-                        nl.href = toAbsoluteUrl(href);
-                        head.appendChild(nl);
-                    });
-                }
+                const newLinks = [];
+                doc.querySelectorAll('link[rel="stylesheet"][href]').forEach((lnk) => {
+                    const href = lnk.getAttribute('href');
+                    if (!href || isStylesheetLoaded(href)) return;
+                    const nl = document.createElement('link');
+                    nl.rel = 'stylesheet';
+                    nl.href = toAbsoluteUrl(href);
+                    head.appendChild(nl);
+                    newLinks.push(nl);
+                });
 
                 // Scripts externos, preservar orden de aparición
                 const scripts = Array.prototype.slice.call(doc.querySelectorAll('script[src]'));
@@ -486,169 +473,6 @@
         }
     }
 
-    function matchesSelectorList(node, selectors) {
-        if (!node || typeof node.matches !== 'function' || !Array.isArray(selectors) || !selectors.length) {
-            return false;
-        }
-        for (let i = 0; i < selectors.length; i++) {
-            const sel = selectors[i];
-            if (!sel) continue;
-            try {
-                if (node.matches(sel)) return true;
-            } catch(_e) {}
-        }
-        return false;
-    }
-
-    function serializarNodoCss(node, baseHref) {
-        if (!node) return null;
-        const tag = (node.tagName || '').toLowerCase();
-        if (tag !== 'link' && tag !== 'style') return null;
-        const attrs = {};
-        if (node.attributes && node.attributes.length) {
-            for (let i = 0; i < node.attributes.length; i++) {
-                const attr = node.attributes[i];
-                attrs[attr.name] = attr.value;
-            }
-        }
-        if (tag === 'link' && attrs.href) {
-            attrs.href = toAbsoluteUrl(attrs.href, baseHref);
-        }
-        return {
-            tag: tag,
-            attrs: attrs,
-            content: tag === 'style' ? (node.textContent || '') : ''
-        };
-    }
-
-    function capturarCssActual() {
-        if (!config.resetCssOnNavigation) return [];
-        const head = document.head || document.getElementsByTagName('head')[0];
-        if (!head) return [];
-        const nodos = head.querySelectorAll('link[rel="stylesheet"], style');
-        const snapshot = [];
-        nodos.forEach((node) => {
-            if (matchesSelectorList(node, config.cssResetPreserveSelectors)) return;
-            const data = serializarNodoCss(node);
-            if (data) snapshot.push(data);
-        });
-        return snapshot;
-    }
-
-    function extraerCssDesdeDoc(doc, baseHref) {
-        if (!config.resetCssOnNavigation || !doc) return [];
-        const head = doc.head || doc.getElementsByTagName('head')[0];
-        if (!head) return [];
-        const resolvedBase = baseHref || doc.baseURI || (typeof window !== 'undefined' && window.location ? window.location.href : undefined);
-        const snapshot = [];
-        head.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => {
-            if (matchesSelectorList(node, config.cssResetPreserveSelectors)) return;
-            const data = serializarNodoCss(node, resolvedBase);
-            if (data) snapshot.push(data);
-        });
-        return snapshot;
-    }
-
-    function limpiarCssActual() {
-        if (!config.resetCssOnNavigation) return;
-        const head = document.head || document.getElementsByTagName('head')[0];
-        if (!head) return;
-        const nodos = Array.prototype.slice.call(head.querySelectorAll('link[rel="stylesheet"], style'));
-        nodos.forEach((node) => {
-            if (matchesSelectorList(node, config.cssResetPreserveSelectors)) return;
-            if (node.parentNode) {
-                node.parentNode.removeChild(node);
-            }
-        });
-    }
-
-    function aplicarCssDesdeEntries(entries) {
-        if (!config.resetCssOnNavigation) return;
-        limpiarCssActual();
-        if (!Array.isArray(entries) || !entries.length) return;
-        const head = document.head || document.getElementsByTagName('head')[0];
-        if (!head) return;
-        entries.forEach((entry) => {
-            if (!entry || !entry.tag) return;
-            const tag = entry.tag.toLowerCase();
-            let el = null;
-            if (tag === 'link') {
-                el = document.createElement('link');
-            } else if (tag === 'style') {
-                el = document.createElement('style');
-            }
-            if (!el) return;
-            const attrs = entry.attrs || {};
-            Object.keys(attrs).forEach((name) => {
-                try { el.setAttribute(name, attrs[name]); } catch(_e) {}
-            });
-            if (tag === 'link' && !el.getAttribute('rel')) {
-                el.setAttribute('rel', 'stylesheet');
-            }
-            if (tag === 'style') {
-                el.textContent = entry.content || '';
-            }
-            head.appendChild(el);
-        });
-    }
-
-    // Guarda clases/atributos para recrear el estado de html/body al navegar
-    function capturarEstadoNodo(el) {
-        if (!el) return null;
-        try {
-            const atributos = [];
-            if (el.attributes && el.attributes.length) {
-                for (let i = 0; i < el.attributes.length; i++) {
-                    const attr = el.attributes[i];
-                    atributos.push({ nombre: attr.name, valor: attr.value });
-                }
-            }
-            return {
-                clases: el.className || '',
-                atributos: atributos
-            };
-        } catch(_e) {
-            return null;
-        }
-    }
-
-    function aplicarEstadoNodo(target, estado) {
-        if (!target || !estado) return;
-        try {
-            const deseados = {};
-            if (Array.isArray(estado.atributos)) {
-                for (let i = 0; i < estado.atributos.length; i++) {
-                    const attr = estado.atributos[i];
-                    if (!attr || !attr.nombre) continue;
-                    if (attr.nombre === 'class') continue;
-                    deseados[attr.nombre] = true;
-                    const valor = attr.valor == null ? '' : String(attr.valor);
-                    target.setAttribute(attr.nombre, valor);
-                }
-            }
-            const existentes = target.attributes ? Array.prototype.slice.call(target.attributes) : [];
-            existentes.forEach((attr) => {
-                if (attr.name === 'class') return;
-                if (!deseados[attr.name]) {
-                    target.removeAttribute(attr.name);
-                }
-            });
-            target.className = typeof estado.clases === 'string' ? estado.clases : '';
-        } catch(_e) {}
-    }
-
-    function aplicarEstadoRaizDesdeCache(entrada) {
-        try {
-            if (!entrada) return;
-            if (entrada.htmlAttrs) {
-                aplicarEstadoNodo(document.documentElement, entrada.htmlAttrs);
-            }
-            if (entrada.bodyAttrs) {
-                aplicarEstadoNodo(document.body, entrada.bodyAttrs);
-            }
-        } catch(_e) {}
-    }
-
     /**
      * Loads page content via fetch, parses, replaces content, and triggers re-initialization.
      * @param {string} url - The URL to load.
@@ -669,30 +493,6 @@
             return;
         }
 
-        const fromUrl = window.location.href;
-        const previousNodes = Array.prototype.slice.call(contentElement.childNodes);
-        const estadoHtmlPrevio = capturarEstadoNodo(document.documentElement);
-        const estadoBodyPrevio = capturarEstadoNodo(document.body);
-        const estadoCssPrevio = config.resetCssOnNavigation ? capturarCssActual() : null;
-
-        if (shouldCache(fromUrl)) {
-            pageCache[fromUrl] = pageCache[fromUrl] || {};
-            pageCache[fromUrl].nodeChildren = previousNodes;
-            if (!pageCache[fromUrl].content) {
-                pageCache[fromUrl].content = previousNodes.map(n => n.outerHTML || (n.nodeType === 3 ? n.textContent : '')).join('');
-            }
-            if (estadoHtmlPrevio) {
-                pageCache[fromUrl].htmlAttrs = estadoHtmlPrevio;
-            }
-            if (estadoBodyPrevio) {
-                pageCache[fromUrl].bodyAttrs = estadoBodyPrevio;
-            }
-            if (config.resetCssOnNavigation) {
-                pageCache[fromUrl].headCss = (estadoCssPrevio && estadoCssPrevio.length) ? estadoCssPrevio.slice() : [];
-            }
-            pageCache[fromUrl].title = document.title || '';
-        }
-
         // Use cache if available and caching is enabled/allowed for this URL
         if (pageCache[url] && shouldCache(url)) {
             gloryLog(`Loading from cache: ${url}`);
@@ -706,19 +506,6 @@
                 }
             } else {
                 contentElement.innerHTML = pageCache[url].content || pageCache[url];
-            }
-            if (config.resetCssOnNavigation) {
-                if (Array.isArray(pageCache[url].headCss)) {
-                    aplicarCssDesdeEntries(pageCache[url].headCss);
-                } else {
-                    gloryLog('Head CSS snapshot missing for cached page, forcing hard reload.');
-                    window.location.href = url;
-                    return;
-                }
-            }
-            aplicarEstadoRaizDesdeCache(pageCache[url]);
-            if (pageCache[url].title) {
-                document.title = pageCache[url].title;
             }
             if (pushState) {
                 history.pushState({url: url}, '', url);
@@ -802,6 +589,10 @@
                     return;
                 }
 
+                // Capturar nodos actuales antes de reemplazar para guardarlos en caché del URL de origen
+                const fromUrl = window.location.href;
+                const previousNodes = Array.prototype.slice.call(contentElement.childNodes);
+
                 // Replace content & title usando adopción de nodos (evita reparsear strings)
                 const frag = document.createDocumentFragment();
                 while (newContent.firstChild) { frag.appendChild(newContent.firstChild); }
@@ -811,35 +602,31 @@
                 // Opcional: sincronizar <head> SEO de la respuesta (agnóstico por config)
                 syncHeadSeo(doc);
 
-                const headCssEntries = config.resetCssOnNavigation ? extraerCssDesdeDoc(doc, url) : null;
-                if (config.resetCssOnNavigation) {
-                    aplicarCssDesdeEntries(headCssEntries || []);
-                }
-
-                const estadoHtmlNuevo = capturarEstadoNodo(doc.documentElement);
-                const estadoBodyNuevo = capturarEstadoNodo(doc.body);
-                aplicarEstadoNodo(document.documentElement, estadoHtmlNuevo);
-                aplicarEstadoNodo(document.body, estadoBodyNuevo);
-
                 // Extraer scripts del head ANTES de procesarlos (para cache y ejecución)
                 const headScripts = extractAndExecuteHeadScripts(doc, false);
                 
                 // Cache if applicable - guardar tanto contenido como scripts del head
                 if (shouldCache(url)) {
-                    const cacheEntry = {
+                    pageCache[url] = {
                         content: contentElement.innerHTML,
                         headScripts: headScripts,
-                        htmlAttrs: estadoHtmlNuevo,
-                        bodyAttrs: estadoBodyNuevo,
-                        nodeChildren: Array.prototype.slice.call(contentElement.childNodes),
-                        title: (newTitle && newTitle.textContent) ? newTitle.textContent : document.title
+                        // Guardamos referencia de nodos actuales (ya insertados) para reuso posterior
+                        nodeChildren: Array.prototype.slice.call(contentElement.childNodes)
                     };
-                    if (config.resetCssOnNavigation) {
-                        cacheEntry.headCss = headCssEntries || [];
-                    }
-                    pageCache[url] = cacheEntry;
                     gloryLog(`Cached: ${url} (with ${headScripts.length} head scripts)`);
                 }
+
+                // Guardar nodos de la página anterior para reuso si se vuelve a ella
+                try {
+                    if (shouldCache(fromUrl)) {
+                        pageCache[fromUrl] = pageCache[fromUrl] || {};
+                        pageCache[fromUrl].nodeChildren = previousNodes;
+                        // Asegurar tener también la versión string como respaldo
+                        if (!pageCache[fromUrl].content) {
+                            pageCache[fromUrl].content = previousNodes.map(n => n.outerHTML || (n.nodeType === 3 ? n.textContent : '')).join('');
+                        }
+                    }
+                } catch(_e) {}
 
                 // Update History
                 if (pushState) {
@@ -950,22 +737,8 @@
                         const nc = doc.querySelector(config.contentSelector);
                         if (!nc) return;
                         const hs = extractAndExecuteHeadScripts(doc, false);
-                        const cssPrefetch = config.resetCssOnNavigation ? extraerCssDesdeDoc(doc, url) : null;
-                        const tituloPrefetch = doc.querySelector('title');
                         if (shouldCache(url)) {
-                            const estadoHtmlPrefetch = capturarEstadoNodo(doc.documentElement);
-                            const estadoBodyPrefetch = capturarEstadoNodo(doc.body);
-                            const prefetchEntry = {
-                                content: nc.innerHTML,
-                                headScripts: hs,
-                                htmlAttrs: estadoHtmlPrefetch,
-                                bodyAttrs: estadoBodyPrefetch,
-                                title: tituloPrefetch ? tituloPrefetch.textContent : ''
-                            };
-                            if (config.resetCssOnNavigation) {
-                                prefetchEntry.headCss = cssPrefetch || [];
-                            }
-                            pageCache[url] = prefetchEntry;
+                            pageCache[url] = { content: nc.innerHTML, headScripts: hs };
                             gloryLog('Prefetched and cached:', url);
                         }
                     })
@@ -1091,20 +864,10 @@
             if (shouldCache(initialUrl) && contentElement.innerHTML) {
                 // Extraer scripts del head de la página inicial (sin ejecutar, ya están en el documento)
                 const initialHeadScripts = extractAndExecuteHeadScripts(document, false);
-                const estadoHtmlInicial = capturarEstadoNodo(document.documentElement);
-                const estadoBodyInicial = capturarEstadoNodo(document.body);
-                const initialCssSnapshot = config.resetCssOnNavigation ? capturarCssActual() : null;
-                const initialEntry = {
+                pageCache[initialUrl] = {
                     content: contentElement.innerHTML,
-                    headScripts: initialHeadScripts,
-                    htmlAttrs: estadoHtmlInicial,
-                    bodyAttrs: estadoBodyInicial,
-                    title: document.title || ''
+                    headScripts: initialHeadScripts
                 };
-                if (config.resetCssOnNavigation) {
-                    initialEntry.headCss = initialCssSnapshot || [];
-                }
-                pageCache[initialUrl] = initialEntry;
                 gloryLog(`Initial page cached: ${initialUrl} (with ${initialHeadScripts.length} head scripts)`);
                 // Use replaceState for the initial load so it doesn't create a redundant history entry
                 history.replaceState({url: initialUrl}, '', initialUrl);
@@ -1174,16 +937,14 @@
                 const body = document.body || document.documentElement;
 
                 // Estilos
-                if (!config.resetCssOnNavigation) {
-                    doc.querySelectorAll('link[rel="stylesheet"][href]').forEach((lnk) => {
-                        const href = lnk.getAttribute('href');
-                        if (!href || isStylesheetLoaded(href)) return;
-                        const nl = document.createElement('link');
-                        nl.rel = 'stylesheet';
-                        nl.href = toAbsoluteUrl(href);
-                        head.appendChild(nl);
-                    });
-                }
+                doc.querySelectorAll('link[rel="stylesheet"][href]').forEach((lnk) => {
+                    const href = lnk.getAttribute('href');
+                    if (!href || isStylesheetLoaded(href)) return;
+                    const nl = document.createElement('link');
+                    nl.rel = 'stylesheet';
+                    nl.href = toAbsoluteUrl(href);
+                    head.appendChild(nl);
+                });
 
                 // Scripts externos
                 const scripts = Array.prototype.slice.call(doc.querySelectorAll('script[src]'));
@@ -1254,4 +1015,3 @@
         });
     }
 })();
-
