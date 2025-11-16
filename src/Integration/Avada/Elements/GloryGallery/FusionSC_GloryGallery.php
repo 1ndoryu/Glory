@@ -49,6 +49,13 @@ if (!class_exists('FusionSC_GloryGallery') && class_exists('Fusion_Element')) {
                 'grid_max_columns'         => 12,
                 'grid_max_columns_medium'  => '',
                 'grid_max_columns_small'   => '',
+                // Modo destacado (imagen principal + miniaturas)
+                'featured_mode'            => 'no',
+                'featured_thumbs_position' => 'bottom', // top | bottom
+                'featured_thumb_height'    => '',
+                'featured_thumb_aspect_ratio' => '',
+                'featured_main_object_fit' => 'cover',
+                'featured_main_bg_color'   => '',
                 // Imagen (por instancia)
                 'img_show'                 => 'yes',
                 'img_aspect_ratio'         => '1 / 1',
@@ -63,7 +70,7 @@ if (!class_exists('FusionSC_GloryGallery') && class_exists('Fusion_Element')) {
                 'img_optimize'             => 'yes',
                 'img_quality'              => 60,
                 // Título (por instancia)
-                'title_show'               => 'yes',
+                'title_show'               => 'no',
                 'title_font_family'        => '',
                 'title_font_size'          => '',
                 'title_font_weight'        => '',

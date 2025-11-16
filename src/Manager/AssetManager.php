@@ -206,7 +206,7 @@ final class AssetManager
                 GloryLogger::info('AssetManager: CSS crítico activo; estilos se mantienen síncronos (compatibilidad)');
             }
         } else {
-            GloryLogger::info('AssetManager: sin CSS crítico para esta vista');
+        // GloryLogger::info('AssetManager: sin CSS crítico para esta vista');
         }
 
         self::enqueueForArea('frontend');
@@ -309,7 +309,7 @@ final class AssetManager
                     wp_enqueue_script($handle);
                 } else {
                     wp_register_style($handle, $url, $config['deps'], $version, $config['media']);
-                    GloryLogger::info('AssetManager: enqueue estilo', ['handle' => $handle, 'url' => $url]);
+                    // GloryLogger::info('AssetManager: enqueue estilo', ['handle' => $handle, 'url' => $url]);
                     wp_enqueue_style($handle);
                 }
             }

@@ -32,73 +32,81 @@ class GloryGalleryRegistrar
         }
 
         $params = [
-            // Selector principal de imágenes
-            [ 'type' => 'upload_images', 'heading' => __('Imágenes de la galería', 'glory-ab'), 'param_name' => 'image_ids', 'value' => '', 'save_type' => 'id', 'description' => __('Selecciona múltiples imágenes para mostrar en la galería. La galería solo se mostrará cuando selecciones al menos una imagen.', 'glory-ab'), 'group' => __('General', 'glory-ab') ],
+            // Main image selector
+            [ 'type' => 'upload_images', 'heading' => __('Gallery images', 'glory-ab'), 'param_name' => 'image_ids', 'value' => '', 'save_type' => 'id', 'description' => __('Select multiple images to display in the gallery. The gallery will only be displayed when at least one image is selected.', 'glory-ab'), 'group' => __('General', 'glory-ab') ],
 
-            // Configuración básica
-            [ 'type' => 'range', 'heading' => __('Imágenes por página', 'glory-ab'), 'param_name' => 'publicaciones_por_pagina', 'default' => 10, 'min' => 1, 'max' => 100, 'step' => 1, 'group' => __('General', 'glory-ab') ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Paginación AJAX', 'glory-ab'), 'param_name' => 'paginacion', 'default' => 'no', 'value' => [ 'yes' => __('Sí','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('General', 'glory-ab') ],
-            [ 'type' => 'range', 'heading' => __('Tiempo de caché (segundos)', 'glory-ab'), 'param_name' => 'tiempo_cache', 'default' => 3600, 'min' => 0, 'max' => 86400, 'step' => 60, 'description' => __('0 para desactivar caché.', 'glory-ab'), 'group' => __('General', 'glory-ab') ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Forzar sin caché', 'glory-ab'), 'param_name' => 'forzar_sin_cache', 'default' => 'no', 'value' => [ 'yes' => __('Sí','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('General', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Clase contenedor', 'glory-ab'), 'param_name' => 'clase_contenedor', 'default' => 'glory-gallery-list', 'group' => __('General', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Clase de item', 'glory-ab'), 'param_name' => 'clase_item', 'default' => 'glory-gallery-item', 'group' => __('General', 'glory-ab') ],
+            // Basic configuration
+            [ 'type' => 'range', 'heading' => __('Images per page', 'glory-ab'), 'param_name' => 'publicaciones_por_pagina', 'default' => 10, 'min' => 1, 'max' => 100, 'step' => 1, 'group' => __('General', 'glory-ab') ],
+            [ 'type' => 'radio_button_set', 'heading' => __('AJAX pagination', 'glory-ab'), 'param_name' => 'paginacion', 'default' => 'no', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('General', 'glory-ab') ],
+            [ 'type' => 'range', 'heading' => __('Cache time (seconds)', 'glory-ab'), 'param_name' => 'tiempo_cache', 'default' => 3600, 'min' => 0, 'max' => 86400, 'step' => 60, 'description' => __('0 to disable cache.', 'glory-ab'), 'group' => __('General', 'glory-ab') ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Force no cache', 'glory-ab'), 'param_name' => 'forzar_sin_cache', 'default' => 'no', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('General', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Container class', 'glory-ab'), 'param_name' => 'clase_contenedor', 'default' => 'glory-gallery-list', 'group' => __('General', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Item class', 'glory-ab'), 'param_name' => 'clase_item', 'default' => 'glory-gallery-item', 'group' => __('General', 'glory-ab') ],
 
-            // Grupo Diseño / Layout (sin dependencias en params eliminados)
-            [ 'type' => 'radio_button_set', 'heading' => __('Display', 'glory-ab'), 'param_name' => 'display_mode', 'default' => 'flex', 'value' => [ 'flex' => 'Flex', 'grid' => 'Grid', 'block' => 'Block' ], 'group' => __('Diseño', 'glory-ab'), 'dependency' => [ [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ] ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Dirección (flex-direction)', 'glory-ab'), 'param_name' => 'flex_direction', 'default' => 'row', 'value' => [ 'row' => 'row', 'column' => 'column' ], 'group' => __('Diseño', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'flex', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ] ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Flex wrap', 'glory-ab'), 'param_name' => 'flex_wrap', 'default' => 'wrap', 'value' => [ 'nowrap' => 'nowrap', 'wrap' => 'wrap' ], 'group' => __('Diseño', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'flex', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ] ],
-            [ 'type' => 'textfield', 'heading' => __('Gap', 'glory-ab'), 'param_name' => 'gap', 'default' => '20px', 'group' => __('Diseño', 'glory-ab') ],
-            [ 'type' => 'select', 'heading' => __('Align items', 'glory-ab'), 'param_name' => 'align_items', 'default' => 'stretch', 'value' => [ 'stretch'=>'stretch','flex-start'=>'flex-start','center'=>'center','flex-end'=>'flex-end' ], 'group' => __('Diseño', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'flex', 'operator' => '==' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ] ],
-            [ 'type' => 'select', 'heading' => __('Justify content', 'glory-ab'), 'param_name' => 'justify_content', 'default' => 'flex-start', 'value' => [ 'flex-start'=>'flex-start','center'=>'center','space-between'=>'space-between','space-around'=>'space-around','flex-end'=>'flex-end' ], 'group' => __('Diseño', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Grid min-width', 'glory-ab'), 'param_name' => 'grid_min_width', 'default' => '250px', 'group' => __('Diseño', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ] ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Grid auto-fit', 'glory-ab'), 'param_name' => 'grid_auto_fit', 'default' => 'yes', 'value' => [ 'yes' => 'auto-fit', 'no' => 'auto-fill' ], 'group' => __('Diseño', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ] ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Modo de columnas', 'glory-ab'), 'param_name' => 'grid_columns_mode', 'default' => 'fixed', 'value' => [ 'fixed' => __('Fijas','glory-ab'), 'auto' => __('Auto (mín/máx)','glory-ab') ], 'group' => __('Diseño', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ], 'description' => __('Selecciona si las columnas son fijas o automáticas por rango.', 'glory-ab') ],
-            [ 'type' => 'range', 'heading' => __('Columnas', 'glory-ab'), 'param_name' => 'grid_columns', 'value' => [ 'large' => 4, 'medium' => '', 'small' => '' ], 'default' => 4, 'min' => 1, 'max' => 12, 'step' => 1, 'group' => __('Diseño', 'glory-ab'), 'responsive' => [ 'state' => 'large', 'default_value' => true ], 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'grid_columns_mode', 'value' => 'fixed', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ], 'description' => __('Número de columnas exactas por dispositivo (usar toggle responsive).', 'glory-ab') ],
-            [ 'type' => 'range', 'heading' => __('Mínimo columnas', 'glory-ab'), 'param_name' => 'grid_min_columns', 'value' => [ 'large' => 1, 'medium' => '', 'small' => '' ], 'default' => 1, 'min' => 1, 'max' => 12, 'step' => 1, 'group' => __('Diseño', 'glory-ab'), 'responsive' => [ 'state' => 'large', 'default_value' => true ], 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'grid_columns_mode', 'value' => 'auto', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ], 'description' => __('Mínimo de columnas deseado por dispositivo (toggle responsive).', 'glory-ab') ],
-            [ 'type' => 'range', 'heading' => __('Máximo columnas', 'glory-ab'), 'param_name' => 'grid_max_columns', 'value' => [ 'large' => 12, 'medium' => '', 'small' => '' ], 'default' => 12, 'min' => 1, 'max' => 12, 'step' => 1, 'group' => __('Diseño', 'glory-ab'), 'responsive' => [ 'state' => 'large', 'default_value' => true ], 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'grid_columns_mode', 'value' => 'auto', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ], 'description' => __('Máximo de columnas permitidas por dispositivo (toggle responsive).', 'glory-ab') ],
+            // Layout group
+            [ 'type' => 'radio_button_set', 'heading' => __('Display', 'glory-ab'), 'param_name' => 'display_mode', 'default' => 'flex', 'value' => [ 'flex' => 'Flex', 'grid' => 'Grid', 'block' => 'Block' ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ] ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Direction (flex-direction)', 'glory-ab'), 'param_name' => 'flex_direction', 'default' => 'row', 'value' => [ 'row' => 'row', 'column' => 'column' ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'flex', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ] ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Flex wrap', 'glory-ab'), 'param_name' => 'flex_wrap', 'default' => 'wrap', 'value' => [ 'nowrap' => 'nowrap', 'wrap' => 'wrap' ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'flex', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ] ],
+            [ 'type' => 'textfield', 'heading' => __('Gap', 'glory-ab'), 'param_name' => 'gap', 'default' => '20px', 'group' => __('Layout', 'glory-ab') ],
+            [ 'type' => 'select', 'heading' => __('Align items', 'glory-ab'), 'param_name' => 'align_items', 'default' => 'stretch', 'value' => [ 'stretch'=>'stretch','flex-start'=>'flex-start','center'=>'center','flex-end'=>'flex-end' ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'flex', 'operator' => '==' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ] ] ],
+            [ 'type' => 'select', 'heading' => __('Justify content', 'glory-ab'), 'param_name' => 'justify_content', 'default' => 'flex-start', 'value' => [ 'flex-start'=>'flex-start','center'=>'center','space-between'=>'space-between','space-around'=>'space-around','flex-end'=>'flex-end' ], 'group' => __('Layout', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Grid min-width', 'glory-ab'), 'param_name' => 'grid_min_width', 'default' => '250px', 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ] ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Grid auto-fit', 'glory-ab'), 'param_name' => 'grid_auto_fit', 'default' => 'yes', 'value' => [ 'yes' => 'auto-fit', 'no' => 'auto-fill' ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ] ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Columns mode', 'glory-ab'), 'param_name' => 'grid_columns_mode', 'default' => 'fixed', 'value' => [ 'fixed' => __('Fixed','glory-ab'), 'auto' => __('Auto (min/max)','glory-ab') ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ], 'description' => __('Choose whether columns are fixed or automatic within a range.', 'glory-ab') ],
+            [ 'type' => 'range', 'heading' => __('Columns', 'glory-ab'), 'param_name' => 'grid_columns', 'value' => [ 'large' => 4, 'medium' => '', 'small' => '' ], 'default' => 4, 'min' => 1, 'max' => 12, 'step' => 1, 'group' => __('Layout', 'glory-ab'), 'responsive' => [ 'state' => 'large', 'default_value' => true ], 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'grid_columns_mode', 'value' => 'fixed', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ], 'description' => __('Exact number of columns per device (use responsive toggle).', 'glory-ab') ],
+            [ 'type' => 'range', 'heading' => __('Minimum columns', 'glory-ab'), 'param_name' => 'grid_min_columns', 'value' => [ 'large' => 1, 'medium' => '', 'small' => '' ], 'default' => 1, 'min' => 1, 'max' => 12, 'step' => 1, 'group' => __('Layout', 'glory-ab'), 'responsive' => [ 'state' => 'large', 'default_value' => true ], 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'grid_columns_mode', 'value' => 'auto', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ], 'description' => __('Minimum desired columns per device (responsive toggle).', 'glory-ab') ],
+            [ 'type' => 'range', 'heading' => __('Maximum columns', 'glory-ab'), 'param_name' => 'grid_max_columns', 'value' => [ 'large' => 12, 'medium' => '', 'small' => '' ], 'default' => 12, 'min' => 1, 'max' => 12, 'step' => 1, 'group' => __('Layout', 'glory-ab'), 'responsive' => [ 'state' => 'large', 'default_value' => true ], 'dependency' => [ [ 'element' => 'display_mode', 'value' => 'grid', 'operator' => '==' ], [ 'element' => 'grid_columns_mode', 'value' => 'auto', 'operator' => '==' ], [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'carousel_manual', 'value' => 'yes', 'operator' => '!=' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ], 'description' => __('Maximum allowed columns per device (responsive toggle).', 'glory-ab') ],
 
-            // Carrusel
-            [ 'type' => 'radio_button_set', 'heading' => __('Carrusel', 'glory-ab'), 'param_name' => 'carousel', 'default' => 'no', 'value' => [ 'yes' => __('Sí','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Diseño', 'glory-ab') ],
-            [ 'type' => 'range', 'heading' => __('Velocidad carrusel (px/s)', 'glory-ab'), 'param_name' => 'carousel_speed', 'default' => 20, 'min' => 1, 'max' => 200, 'step' => 1, 'group' => __('Diseño', 'glory-ab'), 'dependency' => [ [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '==' ] ] ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Carrusel manual', 'glory-ab'), 'param_name' => 'carousel_manual', 'default' => 'no', 'value' => [ 'yes' => __('Sí','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Diseño', 'glory-ab') ],
+            // Featured mode (single main image + thumbnails)
+            [ 'type' => 'radio_button_set', 'heading' => __('Featured image with thumbnails', 'glory-ab'), 'param_name' => 'featured_mode', 'default' => 'no', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Layout', 'glory-ab') ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Thumbnails position', 'glory-ab'), 'param_name' => 'featured_thumbs_position', 'default' => 'bottom', 'value' => [ 'top' => __('Top','glory-ab'), 'bottom' => __('Bottom','glory-ab') ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '==' ] ] ],
+            [ 'type' => 'textfield', 'heading' => __('Thumbnail height', 'glory-ab'), 'param_name' => 'featured_thumb_height', 'default' => '', 'description' => __('CSS height value, e.g. 100px.', 'glory-ab'), 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '==' ] ] ],
+            [ 'type' => 'textfield', 'heading' => __('Thumbnail aspect ratio', 'glory-ab'), 'param_name' => 'featured_thumb_aspect_ratio', 'default' => '', 'description' => __('E.g.: 1 / 1, 4 / 3, 16 / 9.', 'glory-ab'), 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '==' ] ] ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Main image object-fit', 'glory-ab'), 'param_name' => 'featured_main_object_fit', 'default' => 'cover', 'value' => [ 'cover' => 'cover', 'contain' => 'contain' ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '==' ] ] ],
+            [ 'type' => 'colorpicker', 'heading' => __('Main image background color', 'glory-ab'), 'param_name' => 'featured_main_bg_color', 'default' => '', 'description' => __('Background for main image when object-fit is contain.', 'glory-ab'), 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '==' ] ] ],
 
-            // Imagen
-            [ 'type' => 'radio_button_set', 'heading' => __('Mostrar imagen', 'glory-ab'), 'param_name' => 'img_show', 'default' => 'yes', 'value' => [ 'yes' => __('Sí','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'select', 'heading' => __('Tamaño de imagen', 'glory-ab'), 'param_name' => 'img_size', 'default' => 'medium', 'value' => self::discoverImageSizes(), 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Aspect ratio', 'glory-ab'), 'param_name' => 'img_aspect_ratio', 'default' => '1 / 1', 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Object fit', 'glory-ab'), 'param_name' => 'img_object_fit', 'default' => 'cover', 'value' => [ 'cover'=>'cover','contain'=>'contain' ], 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Min width', 'glory-ab'), 'param_name' => 'img_min_width', 'default' => '', 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Width', 'glory-ab'), 'param_name' => 'img_width', 'default' => '', 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Max width', 'glory-ab'), 'param_name' => 'img_max_width', 'default' => '', 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Min height', 'glory-ab'), 'param_name' => 'img_min_height', 'default' => '', 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Height', 'glory-ab'), 'param_name' => 'img_height', 'default' => '', 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Max height', 'glory-ab'), 'param_name' => 'img_max_height', 'default' => '', 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Optimizar imagen', 'glory-ab'), 'param_name' => 'img_optimize', 'default' => 'yes', 'value' => [ 'yes' => __('Sí','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Imagen', 'glory-ab') ],
-            [ 'type' => 'range', 'heading' => __('Calidad de imagen', 'glory-ab'), 'param_name' => 'img_quality', 'default' => 60, 'min' => 10, 'max' => 100, 'step' => 1, 'group' => __('Imagen', 'glory-ab') ],
+            // Carousel
+            [ 'type' => 'radio_button_set', 'heading' => __('Carousel', 'glory-ab'), 'param_name' => 'carousel', 'default' => 'no', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ] ],
+            [ 'type' => 'range', 'heading' => __('Carousel speed (px/s)', 'glory-ab'), 'param_name' => 'carousel_speed', 'default' => 20, 'min' => 1, 'max' => 200, 'step' => 1, 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'carousel', 'value' => 'yes', 'operator' => '==' ], [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ] ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Manual carousel', 'glory-ab'), 'param_name' => 'carousel_manual', 'default' => 'no', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Layout', 'glory-ab'), 'dependency' => [ [ 'element' => 'featured_mode', 'value' => 'yes', 'operator' => '!=' ] ] ],
 
-            // Título (caption)
-            [ 'type' => 'radio_button_set', 'heading' => __('Mostrar título/caption', 'glory-ab'), 'param_name' => 'title_show', 'default' => 'yes', 'value' => [ 'yes' => __('Sí','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Título', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Fuente (font-family)', 'glory-ab'), 'param_name' => 'title_font_family', 'default' => '', 'group' => __('Título', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Tamaño de fuente', 'glory-ab'), 'param_name' => 'title_font_size', 'default' => '', 'group' => __('Título', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Peso (font-weight)', 'glory-ab'), 'param_name' => 'title_font_weight', 'default' => '', 'group' => __('Título', 'glory-ab') ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Transformación de texto', 'glory-ab'), 'param_name' => 'title_text_transform', 'default' => '', 'value' => [ ''=>'Ninguno','uppercase'=>'uppercase','capitalize'=>'capitalize','lowercase'=>'lowercase' ], 'group' => __('Título', 'glory-ab') ],
-            [ 'type' => 'textfield', 'heading' => __('Ancho máximo del título', 'glory-ab'), 'param_name' => 'title_max_width', 'default' => '', 'description' => __('Ej.: 200px, 30ch, 80%', 'glory-ab'), 'group' => __('Título', 'glory-ab') ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Mostrar título solo en hover', 'glory-ab'), 'param_name' => 'title_show_on_hover', 'default' => 'no', 'value' => [ 'yes' => __('Sí','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Título', 'glory-ab') ],
-            [ 'type' => 'radio_button_set', 'heading' => __('Posición del título', 'glory-ab'), 'param_name' => 'title_position', 'default' => 'bottom', 'value' => [ 'top' => __('Arriba','glory-ab'), 'bottom' => __('Abajo','glory-ab') ], 'group' => __('Título', 'glory-ab') ],
+            // Image
+            [ 'type' => 'radio_button_set', 'heading' => __('Show image', 'glory-ab'), 'param_name' => 'img_show', 'default' => 'yes', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'select', 'heading' => __('Image size', 'glory-ab'), 'param_name' => 'img_size', 'default' => 'medium', 'value' => self::discoverImageSizes(), 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Aspect ratio', 'glory-ab'), 'param_name' => 'img_aspect_ratio', 'default' => '1 / 1', 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Object fit', 'glory-ab'), 'param_name' => 'img_object_fit', 'default' => 'cover', 'value' => [ 'cover'=>'cover','contain'=>'contain' ], 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Min width', 'glory-ab'), 'param_name' => 'img_min_width', 'default' => '', 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Width', 'glory-ab'), 'param_name' => 'img_width', 'default' => '', 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Max width', 'glory-ab'), 'param_name' => 'img_max_width', 'default' => '', 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Min height', 'glory-ab'), 'param_name' => 'img_min_height', 'default' => '', 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Height', 'glory-ab'), 'param_name' => 'img_height', 'default' => '', 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Max height', 'glory-ab'), 'param_name' => 'img_max_height', 'default' => '', 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Optimize image', 'glory-ab'), 'param_name' => 'img_optimize', 'default' => 'yes', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Image', 'glory-ab') ],
+            [ 'type' => 'range', 'heading' => __('Image quality', 'glory-ab'), 'param_name' => 'img_quality', 'default' => 60, 'min' => 10, 'max' => 100, 'step' => 1, 'group' => __('Image', 'glory-ab') ],
 
-            // Enlace
-            [ 'type' => 'radio_button_set', 'heading' => __('Enlace a imagen completa', 'glory-ab'), 'param_name' => 'link_enabled', 'default' => 'yes', 'value' => [ 'yes' => __('Sí','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('General', 'glory-ab') ],
+            // Title (caption)
+            [ 'type' => 'radio_button_set', 'heading' => __('Show title/caption', 'glory-ab'), 'param_name' => 'title_show', 'default' => 'no', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Title', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Font family', 'glory-ab'), 'param_name' => 'title_font_family', 'default' => '', 'group' => __('Title', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Font size', 'glory-ab'), 'param_name' => 'title_font_size', 'default' => '', 'group' => __('Title', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Font weight', 'glory-ab'), 'param_name' => 'title_font_weight', 'default' => '', 'group' => __('Title', 'glory-ab') ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Text transform', 'glory-ab'), 'param_name' => 'title_text_transform', 'default' => '', 'value' => [ ''=>'None','uppercase'=>'uppercase','capitalize'=>'capitalize','lowercase'=>'lowercase' ], 'group' => __('Title', 'glory-ab') ],
+            [ 'type' => 'textfield', 'heading' => __('Title max width', 'glory-ab'), 'param_name' => 'title_max_width', 'default' => '', 'description' => __('E.g.: 200px, 30ch, 80%', 'glory-ab'), 'group' => __('Title', 'glory-ab') ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Show title only on hover', 'glory-ab'), 'param_name' => 'title_show_on_hover', 'default' => 'no', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('Title', 'glory-ab') ],
+            [ 'type' => 'radio_button_set', 'heading' => __('Title position', 'glory-ab'), 'param_name' => 'title_position', 'default' => 'bottom', 'value' => [ 'top' => __('Top','glory-ab'), 'bottom' => __('Bottom','glory-ab') ], 'group' => __('Title', 'glory-ab') ],
+
+            // Link
+            [ 'type' => 'radio_button_set', 'heading' => __('Link to full image', 'glory-ab'), 'param_name' => 'link_enabled', 'default' => 'yes', 'value' => [ 'yes' => __('Yes','glory-ab'), 'no' => __('No','glory-ab') ], 'group' => __('General', 'glory-ab') ],
         ];
 
         if ( function_exists('fusion_builder_frontend_data') ) {
             fusion_builder_map(
                 fusion_builder_frontend_data(
                     'FusionSC_GloryGallery',
-                    [ 'name' => __('Glory Galería','glory-ab'), 'shortcode' => 'glory_gallery', 'icon' => 'fusiona-images', 'params' => $params ]
+                    [ 'name' => __('Glory Gallery','glory-ab'), 'shortcode' => 'glory_gallery', 'icon' => 'fusiona-images', 'params' => $params ]
                 )
             );
         } else {
-            fusion_builder_map([ 'name' => __('Glory Galería','glory-ab'), 'shortcode' => 'glory_gallery', 'icon' => 'fusiona-images', 'params' => $params ]);
+            fusion_builder_map([ 'name' => __('Glory Gallery','glory-ab'), 'shortcode' => 'glory_gallery', 'icon' => 'fusiona-images', 'params' => $params ]);
         }
     }
 
@@ -166,7 +174,7 @@ class GloryGalleryRegistrar
                     'img_optimize'             => 'yes',
                     'img_quality'              => 60,
                     // Título
-                    'title_show'               => 'yes',
+                    'title_show'               => 'no',
                     'title_font_family'        => '',
                     'title_font_size'          => '',
                     'title_font_weight'        => '',
@@ -174,6 +182,13 @@ class GloryGalleryRegistrar
                     'title_max_width'          => '',
                     'title_show_on_hover'      => 'no',
                     'title_position'           => 'bottom',
+                    // Featured mode
+                    'featured_mode'            => 'no',
+                    'featured_thumbs_position' => 'bottom',
+                    'featured_thumb_height'    => '',
+                    'featured_thumb_aspect_ratio' => '',
+                    'featured_main_object_fit' => 'cover',
+                    'featured_main_bg_color'   => '',
                     // Enlace
                     'link_enabled'             => 'yes',
                 ];
@@ -216,7 +231,7 @@ class GloryGalleryRegistrar
                             'imgQuality'             => (int) ($a['img_quality'] ?? 60),
                             'imgSize'                => (string) ($a['img_size'] ?? 'medium'),
                             'imgShow'                => ('yes' === ($a['img_show'] ?? 'yes')),
-                            'titleShow'              => ('yes' === ($a['title_show'] ?? 'yes')),
+                            'titleShow'              => ('yes' === ($a['title_show'] ?? 'no')),
                             'titlePosition'          => (string) ($a['title_position'] ?? 'bottom'),
                             'linkEnabled'            => ('yes' === ($a['link_enabled'] ?? 'yes')),
                         ];
