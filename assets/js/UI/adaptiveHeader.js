@@ -282,16 +282,184 @@ function gloryMenu() {
     }
 }
 
+function gloryMenuBridge() {
+    const header = document.querySelector('.siteMenuW');
+    const burger = header ? header.querySelector('.burger') : null;
+    const backgroundBtn = header ? header.querySelector('.background') : null;
+    const navMenu = header ? header.querySelector('.siteMenuNav') : null;
+
+    if (!header || !navMenu) {
+        return;
+    }
+
+    // Evitar inicialización duplicada por ciclo de vida (pero permitir re-enlazar enlaces en gloryRecarga).
+    if (!header.dataset.menuBridgeObserved) {
+        header.dataset.menuBridgeObserved = 'true';
+    } else {
+        // Ya observamos las clases; solo re-enlazamos enlaces más abajo.
+    }
+
+    const isMobile = () => window.matchMedia('(max-width: 999px)').matches;
+    const getTextColor = () => 'var(--text)';
+
+    const applyOpenColors = () => {
+        const logo = header.querySelector('.siteMenuLogo');
+        const logoLink = header.querySelector('.siteMenuLogo a');
+        const logoImg = header.querySelector('.siteMenuLogo img');
+        const logoSvg = header.querySelector('.siteMenuLogo svg');
+
+        if (burger) {
+            burger.style.color = getTextColor();
+        }
+        if (logo) {
+            logo.style.color = getTextColor();
+        }
+        if (logoLink) {
+            logoLink.style.color = getTextColor();
+        }
+        if (logoImg) {
+            // Forzar versión sin invertir (logo oscuro) cuando el menú móvil está abierto.
+            logoImg.style.filter = 'brightness(0) invert(0)';
+        }
+        if (logoSvg) {
+            // Evitar filtros de adaptiveHeader mientras el menú está abierto.
+            logoSvg.style.filter = '';
+            logoSvg.style.color = getTextColor();
+        }
+    };
+
+    const clearOpenColors = () => {
+        const logo = header.querySelector('.siteMenuLogo');
+        const logoLink = header.querySelector('.siteMenuLogo a');
+        const logoImg = header.querySelector('.siteMenuLogo img');
+        const logoSvg = header.querySelector('.siteMenuLogo svg');
+
+        if (burger) {
+            burger.style.removeProperty('color');
+        }
+        if (logo) {
+            logo.style.removeProperty('color');
+        }
+        if (logoLink) {
+            logoLink.style.removeProperty('color');
+        }
+        if (logoImg) {
+            logoImg.style.removeProperty('filter');
+        }
+        if (logoSvg) {
+            logoSvg.style.removeProperty('filter');
+            logoSvg.style.removeProperty('color');
+        }
+    };
+
+    const closeMenu = () => {
+        if (!header.classList.contains('open')) {
+            return;
+        }
+        if (backgroundBtn) {
+            // Reutiliza el cierre nativo del menú de Glory (incluye animaciones GSAP).
+            backgroundBtn.click();
+        } else if (burger) {
+            burger.click();
+        } else {
+            document.body.classList.remove('menu-open');
+            header.classList.remove('open');
+        }
+    };
+
+    const handleHeaderClassChange = () => {
+        if (header.classList.contains('open')) {
+            applyOpenColors();
+            // Mientras esté abierto, asegurar colores ante scroll/resize.
+            window.addEventListener('scroll', applyOpenColors, { passive: true });
+            window.addEventListener('resize', applyOpenColors, { passive: true });
+        } else {
+            clearOpenColors();
+            window.removeEventListener('scroll', applyOpenColors);
+            window.removeEventListener('resize', applyOpenColors);
+            // Forzar recalculo inmediato del contraste del header por parte de adaptiveHeader.
+            requestAnimationFrame(() => {
+                try {
+                    window.dispatchEvent(new Event('resize'));
+                } catch (_) {}
+                try {
+                    window.dispatchEvent(new Event('scroll'));
+                } catch (_) {}
+            });
+        }
+    };
+
+    // Observar cambios en la clase del header (para detectar .open).
+    if (!header.__gloryMenuBridgeObserver) {
+        const obs = new MutationObserver(muts => {
+            for (let i = 0; i < muts.length; i++) {
+                const m = muts[i];
+                if (m.type === 'attributes' && m.attributeName === 'class') {
+                    handleHeaderClassChange();
+                    break;
+                }
+            }
+        });
+        obs.observe(header, { attributes: true });
+        header.__gloryMenuBridgeObserver = obs;
+        // Aplicar estado inicial si ya está abierto por alguna razón.
+        handleHeaderClassChange();
+    }
+
+    // Enlaces que cierran el menú en móvil cuando son ítems hoja (sin submenú).
+    const bindNavCloseOnClick = () => {
+        const links = navMenu.querySelectorAll('a');
+        links.forEach(a => {
+            if (a.__gloryMenuBridgeBound) {
+                return;
+            }
+            a.__gloryMenuBridgeBound = true;
+            a.addEventListener('click', () => {
+                if (!isMobile()) {
+                    return;
+                }
+                const li = a.closest('li');
+                const isParentWithChildren =
+                    li &&
+                    li.classList &&
+                    li.classList.contains('menu-item-has-children') &&
+                    li.querySelector(':scope > ul.sub-menu');
+
+                // No cerrar si es un padre que solo abre/cierra submenú.
+                if (isParentWithChildren) {
+                    return;
+                }
+
+                // Ítem hoja: cerrar el menú inmediatamente para mejor respuesta.
+                closeMenu();
+            });
+        });
+    };
+
+    bindNavCloseOnClick();
+
+    // Re-enlazar cuando Glory recarga contenido (AJAX).
+    document.addEventListener('gloryRecarga', () => {
+        setTimeout(() => {
+            bindNavCloseOnClick();
+            handleHeaderClassChange();
+        }, 100);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     gloryMenu();
     gloryAdaptiveHeader();
+    gloryMenuBridge();
 });
 
 // Fallback por si los recursos se cargan después del DOMContentLoaded (por ejemplo, en algunos constructores de páginas)
 window.addEventListener('load', () => {
     gloryMenu();
     gloryAdaptiveHeader();
+    gloryMenuBridge();
 });
 
 document.addEventListener('gloryRecarga', gloryMenu);
 document.addEventListener('gloryRecarga', gloryAdaptiveHeader);
+document.addEventListener('gloryRecarga', gloryMenuBridge);
