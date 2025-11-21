@@ -201,9 +201,9 @@ final class AssetManager
             $asyncResto = ($optAsync === null) ? true : (bool) $optAsync;
             if ($asyncResto) {
                 add_filter('style_loader_tag', [self::class, 'hacerEstilosAsincronos'], 999, 2);
-                GloryLogger::info('AssetManager: CSS crítico activo; estilos pasarán a async');
+                //GloryLogger::info('AssetManager: CSS crítico activo; estilos pasarán a async');
             } else {
-                GloryLogger::info('AssetManager: CSS crítico activo; estilos se mantienen síncronos (compatibilidad)');
+                //GloryLogger::info('AssetManager: CSS crítico activo; estilos se mantienen síncronos (compatibilidad)');
             }
         } else {
         // GloryLogger::info('AssetManager: sin CSS crítico para esta vista');
