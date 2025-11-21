@@ -1,4 +1,12 @@
 <?php
+/**
+ * Renderizador de Cabecera (Header)
+ *
+ * Orquesta la visualización de la cabecera del sitio, integrando el logo,
+ * el menú de navegación (propio o de Avada) y controles de UI adicionales.
+ *
+ * @package Glory\Components
+ */
 
 namespace Glory\Components;
 
@@ -6,15 +14,28 @@ use Glory\Integration\Compatibility;
 use Glory\Core\GloryFeatures;
 use Glory\Components\LogoRenderer;
 
+/**
+ * Clase HeaderRenderer.
+ *
+ * Gestiona la estructura principal del <header>.
+ */
 class HeaderRenderer
 {
+    /**
+     * Renderiza el header del sitio.
+     *
+     * @param array $config Configuración del header:
+     *                      - 'modoLogo': 'default', 'image', 'text', 'none'.
+     *                      - 'textoLogo': Texto a mostrar si el modo es texto.
+     *                      - 'logoImageId': ID de la imagen si el modo es image.
+     *                      - 'idMenu': ID HTML para el menú.
+     *                      - 'claseHeader': Clases extra para el contenedor.
+     */
     public static function render(array $config = []): void
     {
-        // Values from config array
-        $logoModo = $config['modoLogo'] ?? (Compatibility::avadaActivo() ? 'default' : 'image');
-        $textoLogo = $config['textoLogo'] ?? get_bloginfo('name', 'display');
-        $logoImageId = $config['logoImageId'] ?? null;
-        $idMenu = $config['idMenu'] ?? 'mainMenu';
+        // Valores desde el array de config
+        $logoModo    = $config['modoLogo'] ?? (Compatibility::avadaActivo() ? 'default' : 'image');
+        $idMenu      = $config['idMenu'] ?? 'mainMenu';
 
         $claseExtraHeader = '';
         if ($logoModo === 'text') {
@@ -23,7 +44,7 @@ class HeaderRenderer
             $claseExtraHeader = ' header-no-logo';
         }
 
-        $menuActivo = GloryFeatures::isActive('menu', 'glory_componente_menu_activado');
+        $menuActivo  = GloryFeatures::isActive('menu', 'glory_componente_menu_activado');
         $claseHeader = 'siteMenuW ' . ($config['claseHeader'] ?? '') . $claseExtraHeader;
 
         // Permitir controlar por constante si el header de Glory debe usar el menú nativo de Avada.
@@ -38,7 +59,7 @@ class HeaderRenderer
             && (!defined('GLORY_USE_FULL_HEADER') || !GLORY_USE_FULL_HEADER)
             && (!defined('GLORY_HEADER_USE_AVADA_MENU') || GLORY_HEADER_USE_AVADA_MENU);
         ?>
-        <?php if ($menuActivo): ?>
+        <?php if ($menuActivo) : ?>
             <header class="<?php echo esc_attr(trim($claseHeader)); ?>" role="banner">
                 <div class="siteMenuContainer">
 
@@ -47,14 +68,14 @@ class HeaderRenderer
                             <?php echo LogoRenderer::get_html(); ?>
                         </div>
 
-                        <?php if ($usarMenuAvada): ?>
+                        <?php if ($usarMenuAvada) : ?>
                             <?php
                             // Cuando el tema Avada está activo y la constante lo permite, usamos su menú principal nativo.
                             avada_main_menu();
                             ?>
                         <?php else : ?>
                             <nav class="siteMenuNav" role="navigation">
-                                <div class="navTitle">Navigation</div>
+                                <div class="navTitle"><?php esc_html_e('Navigation', 'glory'); ?></div>
                                 <?php
                                 if (has_nav_menu('main_navigation')) {
                                     wp_nav_menu([
@@ -70,7 +91,7 @@ class HeaderRenderer
                             </nav>
                         <?php endif; ?>
 
-                        <button aria-label="Toggle menu" class="burger" type="button">
+                        <button aria-label="<?php esc_attr_e('Toggle menu', 'glory'); ?>" class="burger" type="button">
                             <span></span>
                             <span></span>
                         </button>
@@ -79,10 +100,8 @@ class HeaderRenderer
                         // echo ThemeToggle::render();
                         ?>
                     <?php endif; ?>
-                    <button class="background" aria-label="Close menu"></button>
+                    <button class="background" aria-label="<?php esc_attr_e('Close menu', 'glory'); ?>"></button>
                 </div>
-
-
 
             </header>
         <?php endif; ?>

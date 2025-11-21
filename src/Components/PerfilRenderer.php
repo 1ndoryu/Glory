@@ -1,7 +1,20 @@
 <?php
+/**
+ * Renderizador de Perfil de Usuario
+ *
+ * Muestra la imagen de perfil del usuario actual, priorizando un metadato
+ * personalizado ('imagenPerfil') o usando el avatar por defecto de WordPress (Gravatar).
+ *
+ * @package Glory\Components
+ */
 
 namespace Glory\Components;
 
+/**
+ * Clase PerfilRenderer.
+ *
+ * Componente visual para la imagen del usuario logueado.
+ */
 class PerfilRenderer
 {
     /**
@@ -19,18 +32,18 @@ class PerfilRenderer
      */
     public static function getHtml(): string
     {
-        $usuarioID = get_current_user_id();
-        if (!$usuarioID) {
+        $usuarioId = get_current_user_id();
+        if (!$usuarioId) {
             return '';
         }
 
-        $imagenPerfilId = get_user_meta($usuarioID, 'imagenPerfil', true);
+        $imagenPerfilId  = get_user_meta($usuarioId, 'imagenPerfil', true);
         $imagenPerfilUrl = '';
 
         if (!empty($imagenPerfilId)) {
             $imagenPerfilUrl = wp_get_attachment_image_url($imagenPerfilId, 'thumbnail');
         } else {
-            $imagenPerfilUrl = get_avatar_url($usuarioID);
+            $imagenPerfilUrl = get_avatar_url($usuarioId);
         }
 
         if (empty($imagenPerfilUrl)) {
@@ -40,9 +53,9 @@ class PerfilRenderer
         ob_start();
         ?>
         <div class="imagenPerfil">
-            <img src="<?php echo esc_url($imagenPerfilUrl); ?>" alt="Imagen de Perfil">
+            <img src="<?php echo esc_url($imagenPerfilUrl); ?>" alt="<?php esc_attr_e('Imagen de Perfil', 'glory'); ?>">
         </div>
         <?php
-        return ob_get_clean();
+        return (string) ob_get_clean();
     }
 }

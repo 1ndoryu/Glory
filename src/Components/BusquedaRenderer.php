@@ -1,16 +1,25 @@
 <?php
+/**
+ * Renderizador de Resultados de Búsqueda
+ *
+ * Este componente transforma conjuntos de datos de búsqueda en HTML formateado.
+ * Funciona de manera agnóstica al origen de datos.
+ *
+ * @package Glory\Components
+ */
+
 namespace Glory\Components;
 
 use Glory\Core\GloryLogger;
 
 /**
- * Gestiona la renderización de los resultados de búsqueda.
+ * Clase BusquedaRenderer.
  *
+ * Gestiona la renderización de los resultados de búsqueda.
  * Transforma un array de datos de resultados en una representación HTML.
- * Es agnóstico a la fuente de los datos, simplemente los formatea.
+ *
  * @author @wandorius
- * // @tarea Jules: MEJORA FUTURA - Considerar la implementación de un sistema de plantillas (ej. get_template_part o un sistema de micro-plantillas basado en closures/filtros) para permitir una personalización más sencilla y desacoplada del HTML de los resultados de búsqueda. Esta mejora aumentaría significativamente la flexibilidad del componente.
- * @tarea Jules: Revisión de seguridad (escapado de HTML) y actualización de comentarios/tareas pendientes.
+ * // @tarea Jules: MEJORA FUTURA - Considerar la implementación de un sistema de plantillas (ej. get_template_part o un sistema de micro-plantillas basado en closures/filtros) para permitir una personalización más sencilla y desacoplada del HTML de los resultados de búsqueda.
  */
 class BusquedaRenderer
 {
@@ -23,7 +32,7 @@ class BusquedaRenderer
     public static function renderizarResultados(array $datos): string
     {
         GloryLogger::info('Iniciando renderizado de resultados.', ['datos_recibidos' => $datos]);
-        $htmlFinal = '';
+        $htmlFinal       = '';
         $totalResultados = array_reduce($datos, function ($carry, $items) {
             return $carry + (is_array($items) ? count($items) : 0);
         }, 0);
@@ -57,10 +66,10 @@ class BusquedaRenderer
     private static function renderizarItem(array $item): string
     {
         // Asegurar el escapado correcto de todas las variables para prevenir XSS.
-        $url = !empty($item['url']) ? esc_url($item['url']) : '#';
-        $titulo = !empty($item['titulo']) ? esc_html($item['titulo']) : 'Sin título';
-        $tipo = !empty($item['tipo']) ? esc_html($item['tipo']) : 'Desconocido'; // Escapar también el tipo por si se muestra directamente.
-        $claseTipo = sanitize_title(!empty($item['tipo']) ? $item['tipo'] : 'desconocido'); // Usar el tipo original para la clase, luego sanitizar.
+        $url       = !empty($item['url']) ? esc_url($item['url']) : '#';
+        $titulo    = !empty($item['titulo']) ? esc_html($item['titulo']) : 'Sin título';
+        $tipo      = !empty($item['tipo']) ? esc_html($item['tipo']) : 'Desconocido';
+        $claseTipo = sanitize_title(!empty($item['tipo']) ? $item['tipo'] : 'desconocido');
 
         $imagenHtml = !empty($item['imagen'])
             ? sprintf(
@@ -82,11 +91,11 @@ class BusquedaRenderer
 					</div>
 				</div>
 			</a>',
-            $url, // Ya escapada
+            $url,                // Ya escapada
             esc_attr($claseTipo), // Sanitizada y luego escapada como atributo de clase
-            $imagenHtml, // Contiene HTML seguro (img con URL y alt escapados, o div placeholder)
-            $titulo, // Ya escapada
-            $tipo    // Ya escapada
+            $imagenHtml,          // Contiene HTML seguro
+            $titulo,              // Ya escapada
+            $tipo                 // Ya escapada
         );
     }
 }
