@@ -1,4 +1,12 @@
-<?
+<?php
+/**
+ * Registro de Contenido por Defecto
+ *
+ * Mantiene un registro estático de las definiciones de contenido (posts) que
+ * el framework debe sincronizar o crear automáticamente.
+ *
+ * @package Glory\Core
+ */
 
 namespace Glory\Core;
 
@@ -23,9 +31,9 @@ class DefaultContentRegistry
      * Define el contenido por defecto para un tipo de post específico.
      *
      * @param string $tipoPost El slug del tipo de post.
-     * @param array $postsDefault Array de definiciones de posts.
+     * @param array  $postsDefault Array de definiciones de posts.
      * @param string $modoActualizacion 'none', 'force', 'smart'.
-     * @param bool $permitirEliminacion Si se deben eliminar posts de la BD que ya no están definidos en el código.
+     * @param bool   $permitirEliminacion Si se deben eliminar posts de la BD que ya no están definidos en el código.
      */
     public static function define(string $tipoPost, array $postsDefault, string $modoActualizacion = 'smart', bool $permitirEliminacion = false): void
     {

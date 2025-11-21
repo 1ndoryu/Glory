@@ -1,12 +1,30 @@
 <?php
+/**
+ * Componente Botón
+ *
+ * Renderiza un elemento de botón HTML de forma estandarizada, permitiendo
+ * configurar texto, clases y atributos adicionales.
+ *
+ * @package Glory\Components
+ */
 
 namespace Glory\Components;
 
+/**
+ * Clase Button.
+ *
+ * Generador simple de botones.
+ */
 class Button
 {
     /**
-     * Render a button HTML string.
-     * $options: ['texto'=>string, 'class'=>string, 'attrs'=>array]
+     * Renderiza una cadena HTML de botón.
+     *
+     * @param array $options Opciones de configuración:
+     *                       - 'texto': Etiqueta del botón (default 'Botón').
+     *                       - 'class': Clases CSS.
+     *                       - 'attrs': Array asociativo de atributos HTML.
+     * @return string HTML del botón.
      */
     public static function render(array $options = []): string
     {
@@ -19,8 +37,11 @@ class Button
             }
         }
 
-        return sprintf('<button class="%s" type="button"%s>%s</button>', htmlspecialchars($class, ENT_QUOTES), $attrs, htmlspecialchars($texto, ENT_QUOTES));
+        return sprintf(
+            '<button class="%s" type="button"%s>%s</button>',
+            htmlspecialchars($class, ENT_QUOTES),
+            $attrs,
+            htmlspecialchars($texto, ENT_QUOTES)
+        );
     }
 }
-
-

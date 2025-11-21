@@ -1,10 +1,17 @@
 <?php
+/**
+ * Configuración de Scripts y Assets
+ *
+ * Este archivo orquesta la carga condicional de scripts y estilos del framework.
+ * Gestiona dependencias (como jQuery, integraciones con Avada), assets del core
+ * y de componentes específicos. También localiza configuraciones de JS para el frontend.
+ *
+ * @package Glory\Config
+ */
 
 use Glory\Manager\AssetManager;
-use Glory\Manager\OpcionManager;
 use Glory\Integration\Compatibility;
 use Glory\Core\GloryFeatures;
-use Glory\Integration\IntegrationsManager;
 use Glory\Services\QueryProfiler;
 
 /*
@@ -32,7 +39,7 @@ if (Compatibility::avadaActivo()) {
 
 if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_activado')) {
     // Config base para la navegación AJAX, filtrable desde el tema
-    $glory_nav_config = [
+    $gloryNavConfig = [
         'enabled'            => true,
         'contentSelector'    => '#main',
         'mainScrollSelector' => '#main',
@@ -56,11 +63,11 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
             'fusion_form',
             'fusionAppConfig',
             'avadaVars',
-            'avadaMenuVars'
+            'avadaMenuVars',
         ] : [],
 
         // Sincronización agnóstica de SEO en navegación AJAX
-        'syncHeadSeo' => true,
+        'syncHeadSeo'   => true,
         'headSeoConfig' => [
             'canonicalSelector' => 'link[rel="canonical"]',
             'metaSelectors'     => ['meta[name="description"]'],
@@ -71,13 +78,13 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
 
     // Permite al tema modificar fácilmente esta configuración
     if (function_exists('apply_filters')) {
-        $glory_nav_config = apply_filters('glory/nav_config', $glory_nav_config);
+        $gloryNavConfig = apply_filters('glory/nav_config', $gloryNavConfig);
     }
 
     // Dependencias condicionales: fusionBuilderDetect solo si Avada está activo
-    $glory_nav_deps = ['jquery'];
+    $gloryNavDeps = ['jquery'];
     if (Compatibility::avadaActivo()) {
-        $glory_nav_deps[] = 'fusionBuilderDetect';
+        $gloryNavDeps[] = 'fusionBuilderDetect';
     }
 
     AssetManager::define(
@@ -85,19 +92,19 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
         'glory-gloryajaxnav',
         '/Glory/assets/js/genericAjax/gloryAjaxNav.js',
         [
-            'deps'      => $glory_nav_deps,
+            'deps'      => $gloryNavDeps,
             'in_footer' => true,
             'localize'  => [
                 'nombreObjeto' => 'gloryNavConfig',
-                'datos'        => $glory_nav_config,
-            ]
+                'datos'        => $gloryNavConfig,
+            ],
         ]
     );
 
     // Hook agnóstico para Fusion Builder: configurar hooks después de localizar datos
     if (Compatibility::avadaActivo()) {
         add_action('wp_footer', function () {
-?>
+            ?>
             <script>
                 (function() {
                     // Extender configuración de Glory Nav con hooks específicos de Fusion Builder
@@ -128,7 +135,7 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
                     }
                 })();
             </script>
-<?php
+            <?php
         }, 5); // Prioridad 5 para que se ejecute antes que el script principal
     }
 
@@ -189,7 +196,7 @@ AssetManager::defineFolder(
         'gloryCalendario.js',
         'masonryRowMajor.js',
         // Excluir el perfilador para definirlo de forma controlada abajo
-        'query-profiler.js'
+        'query-profiler.js',
     ]
 );
 
@@ -203,7 +210,7 @@ if (GloryFeatures::isActive('avadaIntegration') !== false) {
             'deps'      => [],
             'in_footer' => true,
             'area'      => 'frontend',
-            'feature'   => 'avadaIntegration'
+            'feature'   => 'avadaIntegration',
         ]
     );
 
@@ -215,7 +222,7 @@ if (GloryFeatures::isActive('avadaIntegration') !== false) {
             'deps'      => [],
             'in_footer' => true,
             'area'      => 'frontend',
-            'feature'   => 'avadaIntegration'
+            'feature'   => 'avadaIntegration',
         ]
     );
 }
@@ -242,7 +249,7 @@ AssetManager::define(
         'deps'      => ['highlightjs-cdn'],
         'in_footer' => true,
         'area'      => 'frontend',
-        'feature'   => 'highlight'
+        'feature'   => 'highlight',
     ]
 );
 
@@ -256,7 +263,7 @@ if (GloryFeatures::isActive('avadaIntegration') !== false) {
             'deps'      => ['jquery'],
             'in_footer' => true,
             'area'      => 'frontend',
-            'feature'   => 'avadaIntegration'
+            'feature'   => 'avadaIntegration',
         ]
     );
 
@@ -268,7 +275,7 @@ if (GloryFeatures::isActive('avadaIntegration') !== false) {
             'deps'      => [],
             'in_footer' => true,
             'area'      => 'frontend',
-            'feature'   => 'avadaIntegration'
+            'feature'   => 'avadaIntegration',
         ]
     );
 }
@@ -282,7 +289,7 @@ AssetManager::define(
         'deps'      => [],
         'in_footer' => true,
         'area'      => 'frontend',
-        'feature'   => 'gsap'
+        'feature'   => 'gsap',
     ]
 );
 
@@ -464,7 +471,7 @@ AssetManager::define(
         'in_footer' => false,      // cargar en <head>
         'defer'     => false,      // ejecutar inmediatamente
         'area'      => 'both',
-        'feature'   => 'gloryAjax'
+        'feature'   => 'gloryAjax',
     ]
 );
 
@@ -556,9 +563,9 @@ AssetManager::define(
     ]
 );
 
-$query_profiler_deps = ['jquery'];
+$queryProfilerDeps = ['jquery'];
 if (Compatibility::avadaActivo()) {
-    $query_profiler_deps[] = 'fusionBuilderDetect';
+    $queryProfilerDeps[] = 'fusionBuilderDetect';
 }
 
 AssetManager::define(
@@ -566,7 +573,7 @@ AssetManager::define(
     'glory-query-profiler',
     '/Glory/assets/js/query-profiler.js',
     [
-        'deps'      => $query_profiler_deps,
+        'deps'      => $queryProfilerDeps,
         'in_footer' => true,
         'area'      => 'both',
         'dev_mode'  => true,

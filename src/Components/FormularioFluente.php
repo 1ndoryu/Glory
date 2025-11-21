@@ -1,12 +1,22 @@
 <?php
 declare(strict_types=1);
 
+/**
+ * Constructor de Formularios Fluente
+ *
+ * Proporciona una interfaz fluida para construir formularios HTML dinámicamente.
+ * Permite encadenar métodos para agregar campos, contenido raw o callbacks,
+ * facilitando la creación de formularios complejos de manera programática.
+ *
+ * @package Glory\Components
+ */
+
 namespace Glory\Components;
 
 use Glory\Components\FormBuilder;
 
 /**
- * FormularioFluente
+ * Clase FormularioFluente.
  *
  * Pequeña clase reusable para construir formularios usando una API fluida o
  * a partir de una configuración (array). Soporta:
@@ -18,11 +28,15 @@ use Glory\Components\FormBuilder;
  */
 class FormularioFluente
 {
-    /** @var string[] */
+    /** @var string[] Almacena las partes HTML del formulario. */
     private array $partes = [];
 
     /**
-     * Agrega una pieza llamando a FormBuilder::<fn> con argumentos opcionales.
+     * Agrega una pieza llamando a un método estático de `FormBuilder`.
+     *
+     * @param string     $fn   Nombre del método de FormBuilder a llamar.
+     * @param array|null $args Argumentos para el método.
+     * @return self
      */
     public function agregar(string $fn, ?array $args = null): self
     {
@@ -35,7 +49,10 @@ class FormularioFluente
     }
 
     /**
-     * Agrega una cadena HTML sin procesar.
+     * Agrega una cadena HTML sin procesar al formulario.
+     *
+     * @param string $html Contenido HTML raw.
+     * @return self
      */
     public function agregarRaw(string $html): self
     {
@@ -45,6 +62,9 @@ class FormularioFluente
 
     /**
      * Agrega el resultado de ejecutar una callable (closure, función, etc.).
+     *
+     * @param callable $callable Función que retorna un string HTML.
+     * @return self
      */
     public function agregarCallable(callable $callable): self
     {
@@ -53,13 +73,16 @@ class FormularioFluente
     }
 
     /**
-     * Construye el formulario a partir de una configuración.
-     * Cada item puede ser:
+     * Construye el formulario a partir de un array de configuración.
+     *
+     * Estructura soportada para cada item:
      * - ['fn' => 'campoTexto', 'args' => [...]]
      * - ['callable' => fn() => '...']
      * - ['raw' => '<div>...']
+     * - '<div>...</div>' (string directo)
      *
-     * Retorna la misma instancia (fluente).
+     * @param array $config Configuración del formulario.
+     * @return self
      */
     public function agregarDesdeConfig(array $config): self
     {
@@ -90,17 +113,23 @@ class FormularioFluente
         return $this;
     }
 
-    /** Devuelve el HTML ensamblado. */
+    /**
+     * Devuelve el HTML ensamblado del formulario.
+     *
+     * @return string HTML completo.
+     */
     public function renderizar(): string
     {
         return implode('', $this->partes);
     }
 
-    /** Alias para renderizar — útil para pasar como callable. */
+    /**
+     * Alias para `renderizar`. Permite usar el objeto como string o callable.
+     *
+     * @return string HTML completo.
+     */
     public function __toString(): string
     {
         return $this->renderizar();
     }
 }
-
-

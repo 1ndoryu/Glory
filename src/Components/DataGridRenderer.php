@@ -1,4 +1,12 @@
 <?php
+/**
+ * Renderizador de Grillas de Datos (DataGrid)
+ *
+ * Componente flexible para mostrar datos tabulares (de WP_Query o arrays)
+ * con soporte integrado para ordenamiento, paginación, filtros y acciones masivas.
+ *
+ * @package Glory\Components
+ */
 
 namespace Glory\Components;
 
@@ -6,23 +14,46 @@ use WP_Query;
 use Glory\Components\PaginationRenderer;
 use WP_Post;
 
+/**
+ * Clase DataGridRenderer.
+ *
+ * Renderiza tablas de administración o frontend con funcionalidades avanzadas.
+ */
 class DataGridRenderer
 {
+    /** @var mixed Datos a renderizar (WP_Query o array). */
     private $datos;
+
+    /** @var array Configuración del grid. */
     private array $configuracion;
 
+    /**
+     * Constructor.
+     *
+     * @param mixed $datos         Fuente de datos (WP_Query o array).
+     * @param array $configuracion Opciones del grid.
+     */
     public function __construct($datos, array $configuracion)
     {
-        $this->datos = $datos;
+        $this->datos         = $datos;
         $this->configuracion = $this->normalizarConfiguracion($configuracion);
     }
 
+    /**
+     * Método estático para renderizar el grid directamente.
+     *
+     * @param mixed $datos         Fuente de datos.
+     * @param array $configuracion Opciones.
+     */
     public static function render($datos, array $configuracion): void
     {
         $instancia = new self($datos, $configuracion);
         $instancia->renderizarTabla();
     }
 
+    /**
+     * Renderiza la tabla HTML completa.
+     */
     public function renderizarTabla(): void
     {
         echo '<div class="gloryDataGridContenedor">';
@@ -42,6 +73,9 @@ class DataGridRenderer
         $this->renderizarPaginacion();
     }
 
+    /**
+     * Renderiza el selector de acciones masivas.
+     */
     private function renderizarAccionesMasivas(): void
     {
         if (empty($this->configuracion['seleccionMultiple']) || empty($this->configuracion['accionesMasivas'])) {
@@ -52,11 +86,13 @@ class DataGridRenderer
         echo '  <select id="gloryGridBulkSelect" class="gloryGridBulkSelect">';
         echo '    <option value="">' . esc_html__('Acciones masivas', 'glorytemplate') . '</option>';
         foreach ($this->configuracion['accionesMasivas'] as $accion) {
-            $id = esc_attr($accion['id'] ?? '');
-            $label = esc_html($accion['etiqueta'] ?? ucfirst($id));
-            $ajax = esc_attr($accion['ajax_action'] ?? '');
+            $id      = esc_attr($accion['id'] ?? '');
+            $label   = esc_html($accion['etiqueta'] ?? ucfirst($id));
+            $ajax    = esc_attr($accion['ajax_action'] ?? '');
             $confirm = esc_attr($accion['confirmacion'] ?? '');
-            if ($id === '' || $ajax === '') continue;
+            if ($id === '' || $ajax === '') {
+                continue;
+            }
             echo '    <option value="' . $id . '" data-ajax-action="' . $ajax . '" data-confirm="' . $confirm . '">' . $label . '</option>';
         }
         echo '  </select>';
@@ -64,39 +100,45 @@ class DataGridRenderer
         echo '</div>';
     }
 
+    /**
+     * Normaliza y rellena los valores por defecto de la configuración.
+     *
+     * @param array $configuracion Configuración de entrada.
+     * @return array Configuración completa.
+     */
     private function normalizarConfiguracion(array $configuracion): array
     {
         return wp_parse_args($configuracion, [
-            'columnas' => [],
-            'filtros' => [],
-            'paginacion' => true,
+            'columnas'                   => [],
+            'filtros'                    => [],
+            'paginacion'                 => true,
             // Paginación para arrays
-            'per_page' => 20,
-            'page_param' => 'paged',
+            'per_page'                   => 20,
+            'page_param'                 => 'paged',
             // Si se indica true, los filtros no se renderizarán dentro del contenedor principal
-            'filtros_separados' => false,
+            'filtros_separados'          => false,
             // Si se indica true, las acciones masivas no se renderizarán dentro del contenedor principal
             'acciones_masivas_separadas' => false,
             // Array de etiquetas/atributos permitidos para kses. Si es null, se usa wp_kses_post.
-            'allowed_html' => null,
+            'allowed_html'               => null,
             // Selección múltiple y acciones masivas (agnóstico)
-            'seleccionMultiple' => false,
+            'seleccionMultiple'          => false,
             // Cada acción: ['id' => 'eliminar', 'etiqueta' => 'Eliminar', 'ajax_action' => '...', 'confirmacion' => '...']
-            'accionesMasivas' => [],
+            'accionesMasivas'            => [],
         ]);
     }
 
     /**
-     * Renderiza el bloque de acciones masivas a partir de una configuración (para colocarlo fuera del contenedor principal).
+     * Renderiza el bloque de acciones masivas a partir de una configuración.
+     * Útil para colocarlo fuera del contenedor principal.
      *
-     * @param array $configuracion
-     * @return void
+     * @param array $configuracion Configuración de acciones.
      */
     public static function renderAccionesMasivasFromConfig(array $configuracion): void
     {
         $config = wp_parse_args($configuracion, [
             'seleccionMultiple' => false,
-            'accionesMasivas' => [],
+            'accionesMasivas'   => [],
         ]);
 
         if (empty($config['seleccionMultiple']) || empty($config['accionesMasivas'])) {
@@ -108,11 +150,13 @@ class DataGridRenderer
         echo '  <select id="gloryGridBulkSelect" class="gloryGridBulkSelect">';
         echo '    <option value="">' . esc_html__('Acciones masivas', 'glorytemplate') . '</option>';
         foreach ($config['accionesMasivas'] as $accion) {
-            $id = esc_attr($accion['id'] ?? '');
-            $label = esc_html($accion['etiqueta'] ?? ucfirst($id));
-            $ajax = esc_attr($accion['ajax_action'] ?? '');
+            $id      = esc_attr($accion['id'] ?? '');
+            $label   = esc_html($accion['etiqueta'] ?? ucfirst($id));
+            $ajax    = esc_attr($accion['ajax_action'] ?? '');
             $confirm = esc_attr($accion['confirmacion'] ?? '');
-            if ($id === '' || $ajax === '') continue;
+            if ($id === '' || $ajax === '') {
+                continue;
+            }
             echo '    <option value="' . $id . '" data-ajax-action="' . $ajax . '" data-confirm="' . $confirm . '">' . $label . '</option>';
         }
         echo '  </select>';
@@ -120,6 +164,9 @@ class DataGridRenderer
         echo '</div>';
     }
 
+    /**
+     * Renderiza los filtros de búsqueda.
+     */
     private function renderizarFiltros(): void
     {
         if (empty($this->configuracion['filtros']) || !empty($this->configuracion['filtros_separados'])) {
@@ -129,15 +176,16 @@ class DataGridRenderer
         echo '<div class="gloryDataGridFiltros">';
         echo '<form method="get" action="">';
 
+        // Preservar otros parámetros GET excepto los de control interno
         foreach ($_GET as $clave => $valor) {
-            if (strpos($clave, 'filtro_') !== 0 && !in_array($clave, ['submit', 'action'])) {
-                echo '<input type="hidden" name="' . esc_attr($clave) . '" value="' . esc_attr($valor) . '">';
+            if (strpos($clave, 'filtro_') !== 0 && !in_array($clave, ['submit', 'action'], true)) {
+                echo '<input type="hidden" name="' . esc_attr($clave) . '" value="' . esc_attr((string) $valor) . '">';
             }
         }
 
         foreach ($this->configuracion['filtros'] as $clave => $configuracionFiltro) {
             $valorActual = isset($_GET[$clave]) ? sanitize_text_field($_GET[$clave]) : '';
-            $etiqueta = esc_html($configuracionFiltro['etiqueta'] ?? ucfirst($clave));
+            $etiqueta    = esc_html($configuracionFiltro['etiqueta'] ?? ucfirst($clave));
             echo '<input type="search" name="' . esc_attr($clave) . '" value="' . esc_attr($valorActual) . '" placeholder="' . $etiqueta . '">';
         }
 
@@ -150,10 +198,10 @@ class DataGridRenderer
     }
 
     /**
-     * Renderiza los filtros a partir de una configuración (método estático útil para colocarlos fuera del contenedor principal).
+     * Renderiza los filtros a partir de una configuración.
+     * Útil para colocarlos fuera del contenedor principal.
      *
-     * @param array $configuracion
-     * @return void
+     * @param array $configuracion Configuración de filtros.
      */
     public static function renderFiltrosFromConfig(array $configuracion): void
     {
@@ -166,14 +214,14 @@ class DataGridRenderer
         echo '<form method="get" action="">';
 
         foreach ($_GET as $clave => $valor) {
-            if (strpos($clave, 'filtro_') !== 0 && !in_array($clave, ['submit', 'action'])) {
-                echo '<input type="hidden" name="' . esc_attr($clave) . '" value="' . esc_attr($valor) . '">';
+            if (strpos($clave, 'filtro_') !== 0 && !in_array($clave, ['submit', 'action'], true)) {
+                echo '<input type="hidden" name="' . esc_attr($clave) . '" value="' . esc_attr((string) $valor) . '">';
             }
         }
 
         foreach ($config['filtros'] as $clave => $configuracionFiltro) {
             $valorActual = isset($_GET[$clave]) ? sanitize_text_field($_GET[$clave]) : '';
-            $etiqueta = esc_html($configuracionFiltro['etiqueta'] ?? ucfirst($clave));
+            $etiqueta    = esc_html($configuracionFiltro['etiqueta'] ?? ucfirst($clave));
             echo '<input type="search" name="' . esc_attr($clave) . '" value="' . esc_attr($valorActual) . '" placeholder="' . $etiqueta . '">';
         }
 
@@ -185,6 +233,9 @@ class DataGridRenderer
         echo '</div>';
     }
 
+    /**
+     * Renderiza el encabezado de la tabla (thead).
+     */
     private function renderizarEncabezado(): void
     {
         if (empty($this->configuracion['columnas'])) {
@@ -193,7 +244,7 @@ class DataGridRenderer
 
         // Usar $_REQUEST para soportar tanto GET (navegación normal) como POST (respuestas AJAX)
         $ordenamientoActual = isset($_REQUEST['orderby']) ? sanitize_key((string) $_REQUEST['orderby']) : '';
-        $ordenActual = isset($_REQUEST['order']) && strtolower((string) $_REQUEST['order']) === 'desc' ? 'desc' : 'asc';
+        $ordenActual        = isset($_REQUEST['order']) && strtolower((string) $_REQUEST['order']) === 'desc' ? 'desc' : 'asc';
 
         echo '<thead><tr>';
 
@@ -205,8 +256,8 @@ class DataGridRenderer
         }
 
         foreach ($this->configuracion['columnas'] as $columna) {
-            $etiqueta = esc_html($columna['etiqueta'] ?? '');
-            $esOrdenable = isset($columna['ordenable']) && $columna['ordenable'] === true;
+            $etiqueta          = esc_html($columna['etiqueta'] ?? '');
+            $esOrdenable       = isset($columna['ordenable']) && $columna['ordenable'] === true;
             $claveOrdenamiento = $columna['clave'] ?? null;
 
             if (!$esOrdenable || !$claveOrdenamiento) {
@@ -215,17 +266,17 @@ class DataGridRenderer
             }
 
             $esColumnaActual = ($ordenamientoActual === $claveOrdenamiento);
-            $proximoOrden = ($esColumnaActual && $ordenActual === 'asc') ? 'desc' : 'asc';
+            $proximoOrden    = ($esColumnaActual && $ordenActual === 'asc') ? 'desc' : 'asc';
             $urlOrdenamiento = add_query_arg([
                 'orderby' => $claveOrdenamiento,
-                'order' => $proximoOrden,
+                'order'   => $proximoOrden,
             ]);
 
-            $clasesTh = ['columnaOrdenable'];
+            $clasesTh       = ['columnaOrdenable'];
             $indicadorOrden = '';
             if ($esColumnaActual) {
-                $clasesTh[] = 'ordenando';
-                $clasesTh[] = 'orden-' . $ordenActual;
+                $clasesTh[]     = 'ordenando';
+                $clasesTh[]     = 'orden-' . $ordenActual;
                 $indicadorOrden = ($ordenActual === 'asc') ? ' <span class="indicadorOrden">&uarr;</span>' : ' <span class="indicadorOrden">&darr;</span>';
             }
 
@@ -238,6 +289,9 @@ class DataGridRenderer
         echo '</tr></thead>';
     }
 
+    /**
+     * Renderiza el cuerpo de la tabla (tbody).
+     */
     private function renderizarCuerpo(): void
     {
         echo '<tbody>';
@@ -262,13 +316,13 @@ class DataGridRenderer
             wp_reset_postdata();
         } elseif (is_array($this->datos) && !empty($this->datos)) {
             $tieneDatos = true;
-            $datos = $this->datos;
+            $datos      = $this->datos;
             if (!empty($this->configuracion['paginacion'])) {
                 $pageParam = $this->configuracion['page_param'] ?? 'paged';
-                $perPage = max(1, intval($this->configuracion['per_page'] ?? 20));
-                $current = isset($_REQUEST[$pageParam]) ? max(1, intval($_REQUEST[$pageParam])) : 1;
-                $offset = ($current - 1) * $perPage;
-                $datos = array_slice($datos, $offset, $perPage);
+                $perPage   = max(1, intval($this->configuracion['per_page'] ?? 20));
+                $current   = isset($_REQUEST[$pageParam]) ? max(1, intval($_REQUEST[$pageParam])) : 1;
+                $offset    = ($current - 1) * $perPage;
+                $datos     = array_slice($datos, $offset, $perPage);
             }
             foreach ($datos as $fila) {
                 echo '<tr>';
@@ -293,10 +347,16 @@ class DataGridRenderer
         echo '</tbody>';
     }
 
+    /**
+     * Renderiza una celda individual.
+     *
+     * @param mixed $item    Objeto o array de datos.
+     * @param array $columna Configuración de la columna.
+     */
     private function renderizarCelda($item, array $columna): void
     {
-        $valor = '';
-        $clave = $columna['clave'] ?? null;
+        $valor           = '';
+        $clave           = $columna['clave'] ?? null;
         $funcionCallback = $columna['callback'] ?? null;
 
         if (is_callable($funcionCallback)) {
@@ -320,6 +380,9 @@ class DataGridRenderer
         }
     }
 
+    /**
+     * Renderiza los controles de paginación.
+     */
     private function renderizarPaginacion(): void
     {
         if (empty($this->configuracion['paginacion'])) {
@@ -330,47 +393,65 @@ class DataGridRenderer
             return;
         }
         if (is_array($this->datos)) {
-            $total = count($this->datos);
-            $perPage = max(1, intval($this->configuracion['per_page'] ?? 20));
+            $total     = count($this->datos);
+            $perPage   = max(1, intval($this->configuracion['per_page'] ?? 20));
             $pageParam = $this->configuracion['page_param'] ?? 'paged';
-            $current = isset($_REQUEST[$pageParam]) ? max(1, intval($_REQUEST[$pageParam])) : 1;
-            $maxPages = (int) ceil($total / $perPage);
-            if ($maxPages <= 1) return;
+            $current   = isset($_REQUEST[$pageParam]) ? max(1, intval($_REQUEST[$pageParam])) : 1;
+            $maxPages  = (int) ceil($total / $perPage);
+            if ($maxPages <= 1) {
+                return;
+            }
             echo '<div class="gloryPaginacion noAjax">';
             // Prev (solo si hay anterior)
             if ($current > 1) {
                 $prev = $current - 1;
-                echo '<a class="prev" data-page="' . esc_attr((string)$prev) . '">&laquo; Prev</a>';
+                echo '<a class="prev" data-page="' . esc_attr((string) $prev) . '">&laquo; Prev</a>';
             }
             // Numbers (simple)
             for ($i = 1; $i <= $maxPages; $i++) {
                 if ($i === $current) {
-                    echo '<span class="current">' . esc_html((string)$i) . '</span>';
+                    echo '<span class="current">' . esc_html((string) $i) . '</span>';
                 } else {
-                    echo '<a data-page="' . esc_attr((string)$i) . '">' . esc_html((string)$i) . '</a>';
+                    echo '<a data-page="' . esc_attr((string) $i) . '">' . esc_html((string) $i) . '</a>';
                 }
             }
             // Next (solo si hay siguiente)
             if ($current < $maxPages) {
                 $next = $current + 1;
-                echo '<a class="next" data-page="' . esc_attr((string)$next) . '">Next &raquo;</a>';
+                echo '<a class="next" data-page="' . esc_attr((string) $next) . '">Next &raquo;</a>';
             }
             echo '</div>';
         }
     }
 
+    /**
+     * Extrae un ID único del item para usar en selectores.
+     *
+     * @param mixed $item Objeto o array.
+     * @return mixed ID o cadena vacía.
+     */
     private function extraerId($item)
     {
         if ($item instanceof WP_Post) {
             return $item->ID;
         }
         if (is_array($item)) {
-            if (isset($item['ID'])) return $item['ID'];
-            if (isset($item['id'])) return $item['id'];
+            if (isset($item['ID'])) {
+                return $item['ID'];
+            }
+            if (isset($item['id'])) {
+                return $item['id'];
+            }
             // Soporte para términos/taxonomías u otras estructuras
-            if (isset($item['term_id'])) return $item['term_id'];
-            if (isset($item['termId'])) return $item['termId'];
-            if (isset($item['post_id'])) return $item['post_id'];
+            if (isset($item['term_id'])) {
+                return $item['term_id'];
+            }
+            if (isset($item['termId'])) {
+                return $item['termId'];
+            }
+            if (isset($item['post_id'])) {
+                return $item['post_id'];
+            }
         }
         return '';
     }

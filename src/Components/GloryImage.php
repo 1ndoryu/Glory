@@ -1,11 +1,37 @@
 <?php
+/**
+ * Componente de Imagen Inteligente
+ *
+ * Renderiza imágenes optimizadas con soporte para CDN (Jetpack Photon),
+ * atributos de estilo avanzados (aspect-ratio, object-fit) y clases únicas
+ * para evitar conflictos de estilo.
+ *
+ * @package Glory\Components
+ */
 
 namespace Glory\Components;
 
 use Glory\Utility\ImageUtility;
 
+/**
+ * Clase GloryImage.
+ *
+ * Genera etiquetas de imagen HTML altamente configurables y optimizadas.
+ */
 class GloryImage
 {
+    /**
+     * Renderiza el HTML de una imagen.
+     *
+     * @param array $args Argumentos de configuración:
+     *                    - 'attachment_id': ID del adjunto WP.
+     *                    - 'image_url': URL directa (fallback si no hay ID).
+     *                    - 'image_size': Tamaño WP (default 'full').
+     *                    - 'quality': Calidad JPEG (0-100).
+     *                    - 'aspect_ratio': CSS aspect-ratio.
+     *                    - 'object_fit': CSS object-fit.
+     * @return string HTML de la imagen.
+     */
     public static function render(array $args = []): string
     {
         $attachmentId = isset($args['attachment_id']) ? (int) $args['attachment_id'] : 0;
@@ -18,7 +44,7 @@ class GloryImage
 
         if ($attachmentId > 0 && function_exists('wp_get_attachment_image_src')) {
             $srcData = wp_get_attachment_image_src($attachmentId, $imageSize);
-            if (is_array($srcData) && ! empty($srcData[0])) {
+            if (is_array($srcData) && !empty($srcData[0])) {
                 $imageUrl = $srcData[0];
                 $width    = isset($srcData[1]) ? (int) $srcData[1] : '';
                 $height   = isset($srcData[2]) ? (int) $srcData[2] : '';
@@ -37,14 +63,14 @@ class GloryImage
 
         // Optimización básica vía CDN de Jetpack si está disponible.
         try {
-            $resize  = ($width && $height) ? $width . ',' . $height : null;
+            $resize   = ($width && $height) ? $width . ',' . $height : null;
             $imageUrl = ImageUtility::jetpack_photon_url($imageUrl, [
                 'quality' => isset($args['quality']) ? (int) $args['quality'] : 70,
                 'strip'   => 'all',
                 'resize'  => $resize,
             ]);
         } catch (\Throwable $t) {
-            // Silenciar cualquier error de optimización.
+            // Silenciar cualquier error de optimización para no romper la visualización.
         }
 
         $aspectRatio = isset($args['aspect_ratio']) ? trim((string) $args['aspect_ratio']) : '';
@@ -54,9 +80,10 @@ class GloryImage
         $fullWidth   = isset($args['full_width']) && 'yes' === (string) $args['full_width'];
         $align       = isset($args['align']) ? (string) $args['align'] : 'none';
 
-        $titleText   = isset($args['title_text']) ? (string) $args['title_text'] : '';
-        $showTitle   = isset($args['show_title']) && 'yes' === (string) $args['show_title'];
+        $titleText = isset($args['title_text']) ? (string) $args['title_text'] : '';
+        $showTitle = isset($args['show_title']) && 'yes' === (string) $args['show_title'];
 
+        // Generar clase única para estilos específicos de instancia si fuera necesario
         $instanceClass = isset($args['instance_class']) ? (string) $args['instance_class'] : 'glory-image-' . substr(md5(uniqid('', true)), 0, 8);
 
         $containerStyles = '';
@@ -91,5 +118,3 @@ class GloryImage
         return $html;
     }
 }
-
-

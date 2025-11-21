@@ -1,4 +1,13 @@
 <?php
+/**
+ * Renderizador de Logo
+ *
+ * Componente encargado de mostrar el logo del sitio, con soporte para lógica
+ * específica de integraciones (como Avada) y modos de visualización configurables
+ * (imagen, texto, SVG).
+ *
+ * @package Glory\Components
+ */
 
 namespace Glory\Components;
 
@@ -6,13 +15,27 @@ use Glory\Manager\OpcionManager;
 use Glory\Integration\Compatibility;
 use Glory\Utility\AssetsUtility;
 
+/**
+ * Clase LogoRenderer.
+ *
+ * Gestiona la visualización del logo mediante métodos directos y shortcodes.
+ */
 class LogoRenderer
 {
+    /**
+     * Registra el shortcode `[theme_logo]`.
+     */
     public static function register_shortcode(): void
     {
         add_shortcode('theme_logo', [self::class, 'render_shortcode']);
     }
 
+    /**
+     * Callback para el shortcode de logo.
+     *
+     * @param array|string $atts Atributos del shortcode (width, filter).
+     * @return string HTML del logo.
+     */
     public static function render_shortcode($atts): string
     {
         $atts = shortcode_atts(['width' => '', 'filter' => ''], $atts, 'theme_logo');
@@ -22,90 +45,101 @@ class LogoRenderer
         ]);
     }
 
+    /**
+     * Genera el HTML del logo según la configuración actual.
+     *
+     * Soporta modos: 'default' (Avada), 'image' (Media Library), 'text' (Texto simple) y 'none'.
+     *
+     * @param array $args Argumentos de visualización:
+     *                    - 'width': Ancho CSS opcional.
+     *                    - 'filter': Filtro CSS opcional (alias 'white', 'black' o valor raw).
+     * @return string HTML del logo.
+     */
     public static function get_html(array $args = []): string
     {
-        $default_mode = Compatibility::avadaActivo() ? 'default' : 'image';
-        $logo_mode = OpcionManager::get('glory_logo_mode', $default_mode);
-        $width  = $args['width'] ?? '';
-        $filter_input = $args['filter'] ?? '';
+        $defaultMode = Compatibility::avadaActivo() ? 'default' : 'image';
+        $logoMode    = OpcionManager::get('glory_logo_mode', $defaultMode);
+        $width       = $args['width'] ?? '';
+        $filterInput = $args['filter'] ?? '';
 
-        $filter_css = '';
-        $filter_alias = strtolower(trim($filter_input));
-        switch ($filter_alias) {
+        $filterCss   = '';
+        $filterAlias = strtolower(trim($filterInput));
+
+        switch ($filterAlias) {
             case 'white':
-                $filter_css = 'brightness(0) invert(1)';
+                $filterCss = 'brightness(0) invert(1)';
                 break;
             case 'black':
-                $filter_css = 'brightness(0)';
+                $filterCss = 'brightness(0)';
                 break;
             case '':
-                $filter_css = '';
+                $filterCss = '';
                 break;
             default:
-                $filter_css = $filter_input;
+                $filterCss = $filterInput;
         }
 
-        if ($logo_mode === 'none') {
+        if ($logoMode === 'none') {
             return '';
         }
 
         $style = '';
-        if ($width !== '' || $filter_css !== '') {
-            $style_content = '';
+        if ($width !== '' || $filterCss !== '') {
+            $styleContent = '';
             if (!empty($width)) {
-                $style_content .= 'width: ' . esc_attr($width) . '; height: auto;';
+                $styleContent .= 'width: ' . esc_attr($width) . '; height: auto;';
             }
-            if ($filter_css !== '') {
-                $style_content .= ' filter: ' . esc_attr($filter_css) . ';';
+            if ($filterCss !== '') {
+                $styleContent .= ' filter: ' . esc_attr($filterCss) . ';';
             }
-            $style = 'style="' . trim($style_content) . '"';
+            $style = 'style="' . trim($styleContent) . '"';
         }
-        $home_url = esc_url(home_url('/'));
-        $blog_name = esc_attr(get_bloginfo('name', 'display'));
-        $output = '';
+        $homeUrl  = esc_url(home_url('/'));
+        $blogName = esc_attr(get_bloginfo('name', 'display'));
+        $output   = '';
 
-        if ($logo_mode === 'text') {
-            $logo_text = OpcionManager::get('glory_logo_text', $blog_name);
-            $text_style_attr = '';
-            if ($filter_alias === 'white') {
-                $text_style_attr = ' style="color: #ffffff;"';
-            } elseif ($filter_alias === 'black') {
-                $text_style_attr = ' style="color: #000000;"';
+        if ($logoMode === 'text') {
+            $logoText      = OpcionManager::get('glory_logo_text', $blogName);
+            $textStyleAttr = '';
+            if ($filterAlias === 'white') {
+                $textStyleAttr = ' style="color: #ffffff;"';
+            } elseif ($filterAlias === 'black') {
+                $textStyleAttr = ' style="color: #000000;"';
             }
-            $output = '<a href="' . $home_url . '" rel="home" class="glory-logo-text"' . $text_style_attr . '>' . esc_html($logo_text) . '</a>';
+            $output = '<a href="' . $homeUrl . '" rel="home" class="glory-logo-text"' . $textStyleAttr . '>' . esc_html($logoText) . '</a>';
         } else {
-            $logo_html = '';
-            if (Compatibility::avadaActivo() && $logo_mode === 'default') {
+            $logoHtml = '';
+            if (Compatibility::avadaActivo() && $logoMode === 'default') {
                 if (function_exists('fusion_get_theme_option')) {
-                    $logo_url = fusion_get_theme_option('sticky_header_logo', 'url') ?: fusion_get_theme_option('logo', 'url');
-                    if ($logo_url) {
-                        $logo_html = '<a href="' . $home_url . '" rel="home"><img src="' . esc_url($logo_url) . '" alt="' . $blog_name . '" ' . $style . '></a>';
+                    $logoUrl = fusion_get_theme_option('sticky_header_logo', 'url') ?: fusion_get_theme_option('logo', 'url');
+                    if ($logoUrl) {
+                        $logoHtml = '<a href="' . $homeUrl . '" rel="home"><img src="' . esc_url($logoUrl) . '" alt="' . $blogName . '" ' . $style . '></a>';
                     }
                 }
-            } elseif (!Compatibility::avadaActivo() && $logo_mode === 'image') {
-                $image_id = OpcionManager::get('glory_logo_image');
-                if ($image_id && $image_url = wp_get_attachment_image_url($image_id, 'full')) {
-                    $logo_html = '<a href="' . $home_url . '" rel="home"><img src="' . esc_url($image_url) . '" alt="' . $blog_name . '" ' . $style . '></a>';
+            } elseif (!Compatibility::avadaActivo() && $logoMode === 'image') {
+                $imageId = OpcionManager::get('glory_logo_image');
+                if ($imageId && $imageUrl = wp_get_attachment_image_url($imageId, 'full')) {
+                    $logoHtml = '<a href="' . $homeUrl . '" rel="home"><img src="' . esc_url($imageUrl) . '" alt="' . $blogName . '" ' . $style . '></a>';
                 }
             }
 
-            if (empty($logo_html)) {
+            if (empty($logoHtml)) {
                 if (function_exists('get_custom_logo') && has_custom_logo()) {
-                    $logo_html = get_custom_logo();
-                    if (!empty($width) || $filter_css !== '') {
-                        $logo_html = str_replace('<img ', '<img ' . $style . ' ', $logo_html);
+                    $logoHtml = get_custom_logo();
+                    if (!empty($width) || $filterCss !== '') {
+                        $logoHtml = str_replace('<img ', '<img ' . $style . ' ', $logoHtml);
                     }
                 } else {
                     // Fallback al logo por defecto de Glory
-                    $default_logo_url = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
-                    if ($default_logo_url) {
-                         $logo_html = '<a href="' . $home_url . '" rel="home"><img src="' . esc_url($default_logo_url) . '" alt="' . $blog_name . '" ' . $style . '></a>';
+                    $defaultLogoUrl = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
+                    if ($defaultLogoUrl) {
+                        $logoHtml = '<a href="' . $homeUrl . '" rel="home"><img src="' . esc_url($defaultLogoUrl) . '" alt="' . $blogName . '" ' . $style . '></a>';
                     } else {
-                        $logo_html = '<a href="' . $home_url . '" rel="home" class="glory-logo-text">' . esc_html($blog_name) . '</a>';
+                        $logoHtml = '<a href="' . $homeUrl . '" rel="home" class="glory-logo-text">' . esc_html($blogName) . '</a>';
                     }
                 }
             }
-            $output = $logo_html;
+            $output = $logoHtml;
         }
 
         return '<div class="glory-logo-shortcode-wrapper">' . $output . '</div>';

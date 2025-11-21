@@ -1,25 +1,43 @@
 <?php
+/**
+ * Renderizador de Paginación
+ *
+ * Gestiona la renderización de controles de paginación para listados de posts,
+ * adaptando la salida para funcionar con navegación AJAX si es necesario.
+ *
+ * @package Glory\Components
+ */
 
 namespace Glory\Components;
 
 use WP_Query;
 use DOMDocument;
 
+/**
+ * Clase PaginationRenderer.
+ *
+ * Genera links de paginación compatibles con el sistema AJAX de Glory.
+ */
 class PaginationRenderer
 {
+    /**
+     * Renderiza la paginación basada en una consulta WP_Query.
+     *
+     * @param WP_Query $query La consulta de WordPress a paginar.
+     */
     public static function render(WP_Query $query): void
     {
         $big = 999999999;
-        
-        $current_page = $query->get('paged') ? absint($query->get('paged')) : 1;
-        if ($current_page === 0) {
-            $current_page = 1;
+
+        $currentPage = $query->get('paged') ? absint($query->get('paged')) : 1;
+        if ($currentPage === 0) {
+            $currentPage = 1;
         }
 
         $args = [
             'base'      => str_replace($big, '%#%', esc_url(get_pagenum_link($big))),
             'format'    => '?paged=%#%',
-            'current'   => $current_page,
+            'current'   => $currentPage,
             'total'     => $query->max_num_pages,
             'type'      => 'array',
             'prev_text' => __('&laquo; Prev'),
@@ -31,42 +49,43 @@ class PaginationRenderer
         if (is_array($pages)) {
             // Restauramos la clase original "gloryPaginacion noAjax" para que los estilos se apliquen.
             echo '<div class="gloryPaginacion noAjax">';
-            foreach ($pages as $page_html) {
-                if (strpos($page_html, '<a') === false) {
+            foreach ($pages as $pageHtml) {
+                if (strpos($pageHtml, '<a') === false) {
                     // Omitir spans de prev/next cuando no hay página previa/siguiente
-                    if (preg_match('/class=("|\')(?:[^"\']*)\b(prev|next)\b/i', $page_html)) {
+                    if (preg_match('/class=("|\')(?:[^"\']*)\b(prev|next)\b/i', $pageHtml)) {
                         continue;
                     }
-                    echo $page_html;
+                    echo $pageHtml;
                     continue;
                 }
 
                 $dom = new DOMDocument();
-                @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $page_html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
-                
+                // Suprimir errores de parsing HTML mal formado
+                @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $pageHtml, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+
                 $link = $dom->getElementsByTagName('a')->item(0);
 
                 if ($link) {
-                    $href = $link->getAttribute('href');
-                    $page_num = 1;
+                    $href    = $link->getAttribute('href');
+                    $pageNum = 1;
 
                     if (preg_match('/\/page\/(\d+)/', $href, $matches) || preg_match('/paged=(\d+)/', $href, $matches)) {
-                        $page_num = $matches[1];
+                        $pageNum = $matches[1];
                     } else {
                         if (strpos($link->nodeValue, 'Next') !== false) {
-                            $page_num = $current_page + 1;
+                            $pageNum = $currentPage + 1;
                         } elseif (strpos($link->nodeValue, 'Prev') !== false) {
-                            $page_num = $current_page - 1;
+                            $pageNum = $currentPage - 1;
                         }
                     }
 
                     $link->removeAttribute('href');
-                    $link->setAttribute('data-page', (string)$page_num);
+                    $link->setAttribute('data-page', (string)$pageNum);
                     $existingClass = trim((string)$link->getAttribute('class'));
                     $link->setAttribute('class', trim($existingClass . ' noAjax'));
                     echo $dom->saveHTML($link);
                 } else {
-                    echo $page_html;
+                    echo $pageHtml;
                 }
             }
             echo '</div>';

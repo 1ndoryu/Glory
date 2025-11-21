@@ -1,23 +1,37 @@
 <?php
+/**
+ * Sistema de Registro (Logging)
+ *
+ * Esta clase gestiona el registro centralizado de eventos, errores e información
+ * de depuración del framework. Implementa un sistema de buffer para optimizar
+ * el rendimiento y agrupar los mensajes por contexto de llamada.
+ *
+ * @package Glory\Core
+ */
 
 namespace Glory\Core;
 
 /**
  * Gestiona el registro de eventos y errores de la aplicación.
  * Utiliza `error_log` y un buffer para optimizar el rendimiento.
+ *
  * @author @wandorius
  */
 class GloryLogger
 {
     // Niveles de Log
+
     /** @var int Nivel de información general. */
-    const NIVEL_INFO        = 10;
+    const NIVEL_INFO = 10;
+
     /** @var int Nivel de advertencia para problemas no críticos. */
     const NIVEL_ADVERTENCIA = 20;
+
     /** @var int Nivel de error que puede afectar la funcionalidad. */
-    const NIVEL_ERROR       = 30;
+    const NIVEL_ERROR = 30;
+
     /** @var int Nivel crítico para errores que requieren atención inmediata. */
-    const NIVEL_CRITICO     = 50;
+    const NIVEL_CRITICO = 50;
 
     /** @var array Niveles de log válidos. */
     private static array $nivelesValidos = [
@@ -28,9 +42,11 @@ class GloryLogger
     ];
 
     /** @var int Nivel mínimo para guardar un mensaje. Por defecto: errores y superiores. */
-    private static int $nivelMinimoGuardado       = self::NIVEL_INFO;
+    private static int $nivelMinimoGuardado = self::NIVEL_INFO;
+
     /** @var array Buffer para logs acumulados. */
-    private static array $bufferLogs                = [];
+    private static array $bufferLogs = [];
+
     /** @var bool Indica si el hook de guardado ya fue registrado. */
     private static bool $hookGuardarLogsRegistrado = false;
 
@@ -60,6 +76,7 @@ class GloryLogger
 
     /**
      * Registra un mensaje informativo.
+     *
      * @param string $mensaje Mensaje del log.
      * @param array  $contexto Datos adicionales.
      */
@@ -70,6 +87,7 @@ class GloryLogger
 
     /**
      * Registra un mensaje de advertencia.
+     *
      * @param string $mensaje Mensaje del log.
      * @param array  $contexto Datos adicionales.
      */
@@ -80,6 +98,7 @@ class GloryLogger
 
     /**
      * Registra un mensaje de error.
+     *
      * @param string $mensaje Mensaje del log.
      * @param array  $contexto Datos adicionales.
      */
@@ -90,6 +109,7 @@ class GloryLogger
 
     /**
      * Registra un mensaje crítico.
+     *
      * @param string $mensaje Mensaje del log.
      * @param array  $contexto Datos adicionales.
      */
@@ -137,7 +157,7 @@ class GloryLogger
 
         // Genera una huella única para este mensaje específico (nivel, mensaje, contexto)
         // para prevenir la duplicación exacta de logs dentro del mismo grupo y ejecución.
-        $huellaLog      = md5($nivel . '|' . $mensaje . '|' . serialize($contexto));
+        $huellaLog = md5($nivel . '|' . $mensaje . '|' . serialize($contexto));
 
         // Si es la primera vez que se registra un log desde este llamador, inicializa su entrada en el buffer.
         if (!isset(self::$bufferLogs[$nombreLlamador])) {
@@ -154,7 +174,7 @@ class GloryLogger
         }
 
         self::$bufferLogs[$nombreLlamador]['hashesUnicos'][$huellaLog] = true;
-        self::$bufferLogs[$nombreLlamador]['mensajes'][]              = [
+        self::$bufferLogs[$nombreLlamador]['mensajes'][]               = [
             'marcaTiempo' => microtime(true),
             'nivel'       => $nivel,
             'mensaje'     => $mensaje,
