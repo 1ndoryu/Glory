@@ -164,7 +164,7 @@ final class AssetManager
             self::$cssCritico = \Glory\Services\GestorCssCritico::getParaPaginaActual();
         }
         $bytes = self::$cssCritico ? strlen((string) self::$cssCritico) : 0;
-        GloryLogger::info('AssetManager: hook wp_head -> imprimirCssCritico', [ 'has' => self::$cssCritico ? 1 : 0, 'bytes' => $bytes ]);
+        // GloryLogger::info('AssetManager: hook wp_head -> imprimirCssCritico', [ 'has' => self::$cssCritico ? 1 : 0, 'bytes' => $bytes ]);
         if (!empty(self::$cssCritico)) {
             echo '<style id="glory-css-critico">' . self::$cssCritico . '</style>';
         }

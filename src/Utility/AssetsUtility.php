@@ -26,6 +26,7 @@ class AssetsUtility
         self::registerAssetPath('colors', 'Glory/assets/images/colors');
         // Alias para logos de marcas
         self::registerAssetPath('logos', 'Glory/assets/images/logos');
+        self::registerAssetPath('tema', 'App/Assets/images');
         self::$isInitialized = true;
     }
 
@@ -48,7 +49,7 @@ class AssetsUtility
     private static function resolveAssetPath(string $alias, string $nombreArchivo): ?string
     {
         if (!isset(self::$assetPaths[$alias])) {
-            GloryLogger::warning("AssetsUtility: El alias de ruta '{$alias}' no está registrado.");
+            // GloryLogger::warning("AssetsUtility: El alias de ruta '{$alias}' no está registrado.");
             return null;
         }
         return self::$assetPaths[$alias] . '/' . ltrim($nombreArchivo, '/\\');
