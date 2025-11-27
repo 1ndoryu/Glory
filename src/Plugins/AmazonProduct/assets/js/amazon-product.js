@@ -4,6 +4,9 @@ jQuery(document).ready(function($) {
 
     const $gridContainer = $wrapper.find('.amazon-product-grid-container');
     const $loader = $wrapper.find('.amazon-loader');
+    const $filterPanel = $('#amazon-filter-panel');
+    const $toggleBtn = $('#amazon-toggle-filters');
+    const $totalCount = $('#amazon-total-count');
     
     // State
     let state = {
@@ -12,10 +15,14 @@ jQuery(document).ready(function($) {
         search: '',
         min_price: $wrapper.data('min-price'),
         max_price: $wrapper.data('max-price'),
+        min_rating: '',
         only_prime: $wrapper.data('only-prime'),
         orderby: $wrapper.data('orderby'),
         order: $wrapper.data('order')
     };
+
+    // Initialize Count
+    $totalCount.text($('.amazon-product-card').length);
 
     // Debounce function
     function debounce(func, wait) {
@@ -43,6 +50,9 @@ jQuery(document).ready(function($) {
             success: function(response) {
                 if (response.success) {
                     $gridContainer.html(response.data.html);
+                    if (response.data.count !== undefined) {
+                        $totalCount.text(response.data.count);
+                    }
                 }
             },
             complete: function() {
@@ -52,32 +62,91 @@ jQuery(document).ready(function($) {
         });
     }
 
-    // Event Listeners
+    // Toggle Filters
+    $toggleBtn.on('click', function() {
+        $filterPanel.toggleClass('open');
+        $(this).toggleClass('active');
+    });
+
+    // Search
     $('#amazon-search').on('input', debounce(function() {
         state.search = $(this).val();
         state.paged = 1;
         fetchProducts();
     }, 500));
 
-    $('#amazon-min-price, #amazon-max-price').on('input', debounce(function() {
-        state.min_price = $('#amazon-min-price').val();
-        state.max_price = $('#amazon-max-price').val();
+    // Price Range Slider
+    $('#amazon-max-price-range').on('input', function() {
+        $('#price-display').text($(this).val());
+    });
+
+    $('#amazon-max-price-range').on('change', function() {
+        state.max_price = $(this).val();
         state.paged = 1;
         fetchProducts();
-    }, 500));
+    });
 
+    // Rating Buttons
+    $('.amazon-rating-btn').on('click', function() {
+        const rating = $(this).data('rating');
+        
+        if ($(this).hasClass('active')) {
+            $(this).removeClass('active');
+            state.min_rating = '';
+        } else {
+            $('.amazon-rating-btn').removeClass('active');
+            $(this).addClass('active');
+            state.min_rating = rating;
+        }
+        
+        state.paged = 1;
+        fetchProducts();
+    });
+
+    // Prime Checkbox
     $('#amazon-prime').on('change', function() {
         state.only_prime = $(this).is(':checked') ? '1' : '';
         state.paged = 1;
         fetchProducts();
     });
 
+    // Sort Dropdown
     $('#amazon-sort').on('change', function() {
         const val = $(this).val().split('-');
         state.orderby = val[0];
         state.order = val[1];
         state.paged = 1;
         fetchProducts();
+    });
+
+    // Reset Filters
+    $('#amazon-reset-filters').on('click', function() {
+        // Reset UI
+        $('#amazon-search').val('');
+        $('#amazon-max-price-range').val(2000).trigger('input');
+        $('.amazon-rating-btn').removeClass('active');
+        $('#amazon-prime').prop('checked', false);
+        $('#amazon-sort').val('date-DESC');
+
+        // Reset State
+        state = {
+            limit: $wrapper.data('limit'),
+            paged: 1,
+            search: '',
+            min_price: '',
+            max_price: '',
+            min_rating: '',
+            only_prime: '',
+            orderby: 'date',
+            order: 'DESC'
+        };
+
+        fetchProducts();
+    });
+
+    // Clear Search (Empty State)
+    $(document).on('click', '#amazon-clear-search', function() {
+        $('#amazon-reset-filters').click();
     });
 
     // Pagination Click

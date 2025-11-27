@@ -288,9 +288,18 @@ class AdminController
         $region = get_option('amazon_api_region', 'us');
         $domain = \Glory\Plugins\AmazonProduct\Service\AmazonApiService::getDomain($region);
         
+        // Check for existing product with same ASIN
+        $existing = new \WP_Query([
+            'post_type' => 'amazon_product',
+            'meta_key' => 'asin',
+            'meta_value' => $data['asin'],
+            'posts_per_page' => 1,
+            'fields' => 'ids'
+        ]);
+
         $postData = [
             'post_title'   => $data['asin_name'],
-            'post_content' => $data['asin_name'], // Description could be fetched if available
+            'post_content' => $data['asin_name'],
             'post_status'  => 'publish',
             'post_type'    => 'amazon_product',
             'meta_input'   => [
@@ -304,11 +313,17 @@ class AdminController
             ]
         ];
 
-        $postId = wp_insert_post($postData);
+        if ($existing->have_posts()) {
+            // Update existing
+            $postData['ID'] = $existing->posts[0];
+            $postId = wp_update_post($postData);
+        } else {
+            // Insert new
+            $postId = wp_insert_post($postData);
+        }
 
         // Handle Image Import (simplified)
         if ($postId && !empty($data['asin_images'][0])) {
-            // Logic to download and attach image could go here
             update_post_meta($postId, '_thumbnail_url_external', $data['asin_images'][0]);
         }
     }
