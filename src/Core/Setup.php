@@ -31,6 +31,7 @@ use Glory\Services\GestorCssCritico;
 use Glory\Handler\ContentActionAjaxHandler;
 use Glory\Admin\PageContentModeMetabox;
 use Glory\Admin\SeoMetabox;
+use Glory\Plugins\AmazonProduct\AmazonProductPlugin;
 
 /**
  * Clase principal de inicialización del framework Glory.
@@ -263,6 +264,10 @@ class Setup
                 'GbnManager.bootstrap',
                 'gbn'
             );
+        }
+
+        if (GloryFeatures::isActive('amazonProduct') !== false) {
+            (new AmazonProductPlugin())->init();
         }
 
         PerformanceProfiler::end('Setup.constructor');

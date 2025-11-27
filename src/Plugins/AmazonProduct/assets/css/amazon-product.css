@@ -1,0 +1,248 @@
+/* Amazon Product Plugin Styles */
+
+:root {
+    --amazon-primary: #232f3e;
+    --amazon-secondary: #37475a;
+    --amazon-accent: #FFD814;
+    --amazon-accent-hover: #F7CA00;
+    --amazon-price: #B12704;
+    --amazon-prime: #00a8e1;
+    --amazon-bg: #fff;
+    --amazon-text: #333;
+    --amazon-meta: #555;
+    --amazon-border: #e1e1e1;
+    --amazon-filter-bg: #f5f5f5;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --amazon-bg: #1e1e1e;
+        --amazon-text: #e0e0e0;
+        --amazon-meta: #aaa;
+        --amazon-border: #333;
+        --amazon-filter-bg: #2a2a2a;
+        --amazon-price: #ff6b6b;
+    }
+}
+
+/* Dark Mode Class Support */
+body.dark-mode {
+    --amazon-bg: #1e1e1e;
+    --amazon-text: #e0e0e0;
+    --amazon-meta: #aaa;
+    --amazon-border: #333;
+    --amazon-filter-bg: #2a2a2a;
+    --amazon-price: #ff6b6b;
+}
+
+/* Grid */
+.amazon-product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+/* Card */
+.amazon-product-card {
+    border: 1px solid var(--amazon-border);
+    border-radius: 8px;
+    padding: 15px;
+    background: var(--amazon-bg);
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.amazon-product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.amazon-product-image {
+    width: 100%;
+    height: 200px;
+    object-fit: contain;
+    margin-bottom: 15px;
+    background: #fff;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.amazon-product-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: var(--amazon-text);
+    line-height: 1.4;
+}
+
+.amazon-product-price {
+    font-size: 1.2rem;
+    color: var(--amazon-price);
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.amazon-product-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: var(--amazon-meta);
+}
+
+.amazon-prime-badge {
+    color: var(--amazon-prime);
+    font-weight: bold;
+}
+
+.amazon-buy-button {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: var(--amazon-accent);
+    border: 1px solid #FCD200;
+    border-radius: 20px;
+    padding: 8px;
+    color: #111;
+    text-decoration: none;
+    font-weight: 500;
+    margin-top: 15px;
+    transition: background 0.2s;
+}
+
+.amazon-buy-button:hover {
+    background: var(--amazon-accent-hover);
+}
+
+/* Modern Filters */
+.amazon-product-filters {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--amazon-filter-bg);
+    border-radius: 8px;
+    border: 1px solid var(--amazon-border);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.amazon-filter-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.amazon-filter-group input[type="text"],
+.amazon-filter-group input[type="number"],
+.amazon-filter-group select {
+    padding: 8px 12px;
+    border: 1px solid var(--amazon-border);
+    border-radius: 4px;
+    background: var(--amazon-bg);
+    color: var(--amazon-text);
+    font-size: 0.9rem;
+    min-width: 120px;
+}
+
+.amazon-filter-group input[type="number"] {
+    width: 100px;
+    min-width: auto;
+}
+
+/* Custom Checkbox */
+.amazon-checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--amazon-text);
+    gap: 8px;
+}
+
+.amazon-checkbox-label input {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 2px solid var(--amazon-border);
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.2s;
+}
+
+.amazon-checkbox-label input:checked + .checkbox-custom {
+    background: var(--amazon-primary);
+    border-color: var(--amazon-primary);
+}
+
+.amazon-checkbox-label input:checked + .checkbox-custom::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 4px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Pagination */
+.amazon-pagination {
+    margin-top: 30px;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.amazon-pagination .page-numbers {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 35px;
+    height: 35px;
+    padding: 0 10px;
+    border: 1px solid var(--amazon-border);
+    border-radius: 4px;
+    text-decoration: none;
+    color: var(--amazon-text);
+    background: var(--amazon-bg);
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.amazon-pagination .page-numbers:hover,
+.amazon-pagination .page-numbers.current {
+    background: var(--amazon-primary);
+    color: white;
+    border-color: var(--amazon-primary);
+}
+
+/* Loader */
+.amazon-loader {
+    text-align: center;
+    padding: 20px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-left-color: var(--amazon-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

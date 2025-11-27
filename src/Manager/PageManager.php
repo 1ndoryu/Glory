@@ -322,7 +322,7 @@ class PageManager
 
     public static function renderHandlerParaCopiar(string $handler): string
     {
-        if (!function_exists($handler)) {
+        if (!is_callable($handler)) {
             return '';
         }
         $prev = $GLOBALS['gloryCopyContext'] ?? null;
