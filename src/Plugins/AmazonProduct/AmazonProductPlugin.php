@@ -32,6 +32,10 @@ class AmazonProductPlugin
         // AJAX Hooks
         add_action('wp_ajax_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
         add_action('wp_ajax_nopriv_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
+
+        // Cron Hooks
+        add_action('init', [$this, 'handleCronSchedule']);
+        add_action('amazon_product_sync_event', [$this, 'syncProducts']);
     }
 
     private function registerPostType(): void
@@ -53,7 +57,54 @@ class AmazonProductPlugin
                 'rating' => '',
                 'reviews' => '',
                 'prime' => '0',
+                'image_url' => '',
+                'product_url' => '',
             ]
         );
+    }
+
+    public function handleCronSchedule(): void
+    {
+        $freq = get_option('amazon_sync_frequency', 'off');
+        $hook = 'amazon_product_sync_event';
+
+        if ($freq === 'off') {
+            $timestamp = wp_next_scheduled($hook);
+            if ($timestamp) {
+                wp_unschedule_event($timestamp, $hook);
+            }
+        } else {
+            if (!wp_next_scheduled($hook)) {
+                wp_schedule_event(time(), $freq, $hook);
+            }
+        }
+    }
+
+    public function syncProducts(): void
+    {
+        // Placeholder for sync logic
+        // This would iterate over products and call AmazonApiService
+        \Glory\Core\GloryLogger::info('Amazon Product Sync Started');
+        
+        $args = [
+            'post_type' => 'amazon_product',
+            'posts_per_page' => -1,
+            'fields' => 'ids',
+        ];
+        $query = new \WP_Query($args);
+        
+        if ($query->have_posts()) {
+            $service = new \Glory\Plugins\AmazonProduct\Service\AmazonApiService();
+            foreach ($query->posts as $postId) {
+                $asin = get_post_meta($postId, 'asin', true);
+                if ($asin) {
+                    // Force update (bypass cache)
+                    // $data = $service->getProductByAsin($asin);
+                    // Update meta...
+                    // For now just log
+                    \Glory\Core\GloryLogger::info("Syncing Product ID: $postId, ASIN: $asin");
+                }
+            }
+        }
     }
 }

@@ -30,6 +30,8 @@ class AdminController
             <h2 class="nav-tab-wrapper">
                 <a href="?post_type=amazon_product&page=amazon-product-settings&tab=import" class="nav-tab <?php echo $active_tab == 'import' ? 'nav-tab-active' : ''; ?>">Import Products</a>
                 <a href="?post_type=amazon_product&page=amazon-product-settings&tab=settings" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>">API Settings</a>
+                <a href="?post_type=amazon_product&page=amazon-product-settings&tab=design" class="nav-tab <?php echo $active_tab == 'design' ? 'nav-tab-active' : ''; ?>">Design</a>
+                <a href="?post_type=amazon_product&page=amazon-product-settings&tab=updates" class="nav-tab <?php echo $active_tab == 'updates' ? 'nav-tab-active' : ''; ?>">Updates</a>
                 <a href="?post_type=amazon_product&page=amazon-product-settings&tab=help" class="nav-tab <?php echo $active_tab == 'help' ? 'nav-tab-active' : ''; ?>">Usage & Help</a>
             </h2>
             <div class="tab-content" style="background: #fff; padding: 20px; border: 1px solid #ccd0d4; border-top: none;">
@@ -40,6 +42,12 @@ class AdminController
                         break;
                     case 'settings':
                         $this->renderConfigTab();
+                        break;
+                    case 'design':
+                        $this->renderDesignTab();
+                        break;
+                    case 'updates':
+                        $this->renderUpdatesTab();
                         break;
                     case 'help':
                         $this->renderHelpTab();
@@ -112,6 +120,8 @@ class AdminController
             update_option('amazon_api_host', sanitize_text_field($_POST['amazon_api_host']));
             update_option('amazon_api_region', sanitize_text_field($_POST['amazon_api_region']));
             update_option('amazon_affiliate_tag', sanitize_text_field($_POST['amazon_affiliate_tag']));
+            update_option('amazon_sync_frequency', sanitize_text_field($_POST['amazon_sync_frequency']));
+            update_option('amazon_plugin_lang', sanitize_text_field($_POST['amazon_plugin_lang']));
             echo '<div class="notice notice-success inline"><p>Settings saved successfully.</p></div>';
         }
 
@@ -119,6 +129,8 @@ class AdminController
         $apiHost = get_option('amazon_api_host', 'amazon-data.p.rapidapi.com');
         $region = get_option('amazon_api_region', 'us');
         $affiliateTag = get_option('amazon_affiliate_tag', '');
+        $syncFreq = get_option('amazon_sync_frequency', 'off');
+        $lang = get_option('amazon_plugin_lang', 'default');
         ?>
         <h3>API Configuration</h3>
         <form method="post">
@@ -156,8 +168,95 @@ class AdminController
                         <p class="description">Your Amazon Associates Tag (e.g., <code>mytag-20</code>). It will be appended to all product links.</p>
                     </td>
                 </tr>
+                <tr>
+                    <th scope="row"><label for="amazon_sync_frequency">Sync Frequency</label></th>
+                    <td>
+                        <select name="amazon_sync_frequency" id="amazon_sync_frequency">
+                            <option value="off" <?php selected($syncFreq, 'off'); ?>>Off (Manual Only)</option>
+                            <option value="daily" <?php selected($syncFreq, 'daily'); ?>>Daily</option>
+                            <option value="weekly" <?php selected($syncFreq, 'weekly'); ?>>Weekly</option>
+                        </select>
+                        <p class="description">How often to automatically update product prices and data.</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="amazon_plugin_lang">Plugin Language</label></th>
+                    <td>
+                        <select name="amazon_plugin_lang" id="amazon_plugin_lang">
+                            <option value="default" <?php selected($lang, 'default'); ?>>Default (Site Language)</option>
+                            <option value="en" <?php selected($lang, 'en'); ?>>English</option>
+                            <option value="es" <?php selected($lang, 'es'); ?>>Español</option>
+                        </select>
+                    </td>
+                </tr>
             </table>
             <?php submit_button('Save Settings', 'primary', 'save_settings'); ?>
+        </form>
+        <?php
+    }
+
+    private function renderDesignTab(): void
+    {
+        if (isset($_POST['save_design']) && check_admin_referer('amazon_design_action', 'amazon_design_nonce')) {
+            update_option('amazon_btn_text', sanitize_text_field($_POST['amazon_btn_text']));
+            update_option('amazon_btn_bg', sanitize_hex_color($_POST['amazon_btn_bg']));
+            update_option('amazon_btn_color', sanitize_hex_color($_POST['amazon_btn_color']));
+            update_option('amazon_price_color', sanitize_hex_color($_POST['amazon_price_color']));
+            echo '<div class="notice notice-success inline"><p>Design settings saved.</p></div>';
+        }
+
+        $btnText = get_option('amazon_btn_text', 'View on Amazon');
+        $btnBg = get_option('amazon_btn_bg', '#FFD814');
+        $btnColor = get_option('amazon_btn_color', '#111111');
+        $priceColor = get_option('amazon_price_color', '#B12704');
+        ?>
+        <h3>Design Customization</h3>
+        <form method="post">
+            <?php wp_nonce_field('amazon_design_action', 'amazon_design_nonce'); ?>
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="amazon_btn_text">Button Text</label></th>
+                    <td>
+                        <input type="text" name="amazon_btn_text" id="amazon_btn_text" value="<?php echo esc_attr($btnText); ?>" class="regular-text">
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="amazon_btn_bg">Button Background</label></th>
+                    <td>
+                        <input type="color" name="amazon_btn_bg" id="amazon_btn_bg" value="<?php echo esc_attr($btnBg); ?>">
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="amazon_btn_color">Button Text Color</label></th>
+                    <td>
+                        <input type="color" name="amazon_btn_color" id="amazon_btn_color" value="<?php echo esc_attr($btnColor); ?>">
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="amazon_price_color">Price Color</label></th>
+                    <td>
+                        <input type="color" name="amazon_price_color" id="amazon_price_color" value="<?php echo esc_attr($priceColor); ?>">
+                    </td>
+                </tr>
+            </table>
+            <?php submit_button('Save Design', 'primary', 'save_design'); ?>
+        </form>
+        <?php
+    }
+
+    private function renderUpdatesTab(): void
+    {
+        if (isset($_POST['sync_now']) && check_admin_referer('amazon_sync_action', 'amazon_sync_nonce')) {
+            // Logic to sync all products would go here (using a background process or batching)
+            // For now, we'll just show a message or sync a few items
+            echo '<div class="notice notice-info inline"><p>Sync process started (simulated for now).</p></div>';
+        }
+        ?>
+        <h3>Product Updates</h3>
+        <p>Manually trigger an update for all Amazon products in your database.</p>
+        <form method="post">
+            <?php wp_nonce_field('amazon_sync_action', 'amazon_sync_nonce'); ?>
+            <?php submit_button('Sync All Products Now', 'secondary', 'sync_now'); ?>
         </form>
         <?php
     }

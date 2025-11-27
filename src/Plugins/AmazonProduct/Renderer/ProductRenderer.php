@@ -19,6 +19,24 @@ class ProductRenderer
             '1.1.0'
         );
 
+        // Dynamic CSS from Design Settings
+        $btnBg = get_option('amazon_btn_bg', '#FFD814');
+        $btnColor = get_option('amazon_btn_color', '#111111');
+        $priceColor = get_option('amazon_price_color', '#B12704');
+        $btnBgHover = $this->adjustBrightness($btnBg, -10); // Darken by 10%
+
+        $customCss = "
+            :root {
+                --amazon-accent: {$btnBg};
+                --amazon-accent-hover: {$btnBgHover};
+                --amazon-price: {$priceColor};
+            }
+            .amazon-buy-button {
+                color: {$btnColor};
+            }
+        ";
+        wp_add_inline_style('amazon-product-css', $customCss);
+
         wp_enqueue_script(
             'amazon-product-js',
             get_template_directory_uri() . '/Glory/src/Plugins/AmazonProduct/assets/js/amazon-product.js',
@@ -31,6 +49,62 @@ class ProductRenderer
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('amazon_product_nonce')
         ]);
+    }
+
+    private function adjustBrightness($hex, $steps) {
+        // Steps should be between -255 and 255. Negative = darker, Positive = lighter
+        $steps = max(-255, min(255, $steps));
+        $hex = str_replace('#', '', $hex);
+        if (strlen($hex) == 3) {
+            $hex = str_repeat(substr($hex, 0, 1), 2) . str_repeat(substr($hex, 1, 1), 2) . str_repeat(substr($hex, 2, 1), 2);
+        }
+        $color_parts = str_split($hex, 2);
+        $return = '#';
+        foreach ($color_parts as $color) {
+            $color   = hexdec($color);
+            $color   = max(0, min(255, $color + $steps));
+            $return .= str_pad(dechex($color), 2, '0', STR_PAD_LEFT);
+        }
+        return $return;
+    }
+
+    private function getLabel(string $key): string
+    {
+        $lang = get_option('amazon_plugin_lang', 'default');
+        if ($lang === 'default') {
+            $lang = substr(get_locale(), 0, 2);
+        }
+
+        $strings = [
+            'en' => [
+                'search_placeholder' => 'Search products...',
+                'min_price' => 'Min Price',
+                'max_price' => 'Max Price',
+                'prime_only' => 'Prime Only',
+                'newest' => 'Newest First',
+                'price_low' => 'Price: Low to High',
+                'price_high' => 'Price: High to Low',
+                'top_rated' => 'Top Rated',
+                'no_results' => 'No products found.',
+                'view_amazon' => 'View on Amazon',
+            ],
+            'es' => [
+                'search_placeholder' => 'Buscar productos...',
+                'min_price' => 'Precio Min',
+                'max_price' => 'Precio Max',
+                'prime_only' => 'Solo Prime',
+                'newest' => 'Más Recientes',
+                'price_low' => 'Precio: Bajo a Alto',
+                'price_high' => 'Precio: Alto a Bajo',
+                'top_rated' => 'Mejor Valorados',
+                'no_results' => 'No se encontraron productos.',
+                'view_amazon' => 'Ver en Amazon',
+            ]
+        ];
+
+        // Fallback to English if lang not found
+        $dict = $strings[$lang] ?? $strings['en'];
+        return $dict[$key] ?? $key;
     }
 
     public function renderShortcode($atts): string
@@ -57,25 +131,25 @@ class ProductRenderer
             
             <div class="amazon-product-filters">
                 <div class="amazon-filter-group">
-                    <input type="text" id="amazon-search" placeholder="Search products...">
+                    <input type="text" id="amazon-search" placeholder="<?php echo esc_attr($this->getLabel('search_placeholder')); ?>">
                 </div>
                 <div class="amazon-filter-group">
-                    <input type="number" id="amazon-min-price" placeholder="Min Price" value="<?php echo esc_attr($atts['min_price']); ?>">
-                    <input type="number" id="amazon-max-price" placeholder="Max Price" value="<?php echo esc_attr($atts['max_price']); ?>">
+                    <input type="number" id="amazon-min-price" placeholder="<?php echo esc_attr($this->getLabel('min_price')); ?>" value="<?php echo esc_attr($atts['min_price']); ?>">
+                    <input type="number" id="amazon-max-price" placeholder="<?php echo esc_attr($this->getLabel('max_price')); ?>" value="<?php echo esc_attr($atts['max_price']); ?>">
                 </div>
                 <div class="amazon-filter-group">
                     <label class="amazon-checkbox-label">
                         <input type="checkbox" id="amazon-prime" value="1" <?php checked('1', $atts['only_prime']); ?>> 
                         <span class="checkbox-custom"></span>
-                        Prime Only
+                        <?php echo esc_html($this->getLabel('prime_only')); ?>
                     </label>
                 </div>
                 <div class="amazon-filter-group">
                     <select id="amazon-sort">
-                        <option value="date-DESC" <?php selected($atts['orderby'] . '-' . $atts['order'], 'date-DESC'); ?>>Newest First</option>
-                        <option value="price-ASC" <?php selected($atts['orderby'] . '-' . $atts['order'], 'price-ASC'); ?>>Price: Low to High</option>
-                        <option value="price-DESC" <?php selected($atts['orderby'] . '-' . $atts['order'], 'price-DESC'); ?>>Price: High to Low</option>
-                        <option value="rating-DESC" <?php selected($atts['orderby'] . '-' . $atts['order'], 'rating-DESC'); ?>>Top Rated</option>
+                        <option value="date-DESC" <?php selected($atts['orderby'] . '-' . $atts['order'], 'date-DESC'); ?>><?php echo esc_html($this->getLabel('newest')); ?></option>
+                        <option value="price-ASC" <?php selected($atts['orderby'] . '-' . $atts['order'], 'price-ASC'); ?>><?php echo esc_html($this->getLabel('price_low')); ?></option>
+                        <option value="price-DESC" <?php selected($atts['orderby'] . '-' . $atts['order'], 'price-DESC'); ?>><?php echo esc_html($this->getLabel('price_high')); ?></option>
+                        <option value="rating-DESC" <?php selected($atts['orderby'] . '-' . $atts['order'], 'rating-DESC'); ?>><?php echo esc_html($this->getLabel('top_rated')); ?></option>
                     </select>
                 </div>
             </div>
@@ -165,7 +239,7 @@ class ProductRenderer
         $query = new \WP_Query($args);
 
         if (!$query->have_posts()) {
-            echo '<p class="amazon-no-results">No products found.</p>';
+            echo '<p class="amazon-no-results">' . esc_html($this->getLabel('no_results')) . '</p>';
         } else {
             echo '<div class="amazon-product-grid">';
             while ($query->have_posts()) {
@@ -211,6 +285,8 @@ class ProductRenderer
             $separator = (strpos($productUrl, '?') !== false) ? '&' : '?';
             $productUrl .= $separator . 'tag=' . esc_attr($affiliateTag);
         }
+
+        $btnText = get_option('amazon_btn_text', $this->getLabel('view_amazon'));
         ?>
         <div class="amazon-product-card">
             <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($post->post_title); ?>" class="amazon-product-image">
@@ -222,7 +298,7 @@ class ProductRenderer
                     <span class="amazon-prime-badge">Prime</span>
                 <?php endif; ?>
             </div>
-            <a href="<?php echo esc_url($productUrl); ?>" target="_blank" class="amazon-buy-button">View on Amazon</a>
+            <a href="<?php echo esc_url($productUrl); ?>" target="_blank" class="amazon-buy-button"><?php echo esc_html($btnText); ?></a>
         </div>
         <?php
     }
