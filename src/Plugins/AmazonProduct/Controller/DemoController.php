@@ -14,8 +14,6 @@ class DemoController
         ?>
         <div class="glory-container" style="padding: 40px 20px;">
             <header class="entry-header" style="margin-bottom: 40px; text-align: center;">
-                <h1 class="entry-title">Amazon Plugin Demo</h1>
-                <p>This page demonstrates the functionality of the Amazon Product Plugin.</p>
                 
                 <?php if (current_user_can('manage_options')): ?>
                     <form method="post" style="margin-top: 20px;">
@@ -50,15 +48,7 @@ class DemoController
 
         $count = 0;
         for ($i = 0; $i < 50; $i++) {
-            $base = $base_products[array_rand($base_products)];
-            $title = $base[0] . ' ' . ($i + 1);
             $asin = 'DEMO' . str_pad((string)$i, 6, '0', STR_PAD_LEFT);
-            
-            // Randomize data
-            $price = $base[2] + rand(-20, 50);
-            $rating = rand(30, 50) / 10; // 3.0 to 5.0
-            $reviews = rand(10, 5000);
-            $prime = rand(0, 1);
             
             $exists = get_posts([
                 'post_type' => 'amazon_product',
@@ -68,6 +58,16 @@ class DemoController
             ]);
 
             if (!$exists) {
+                // Create New
+                $base = $base_products[array_rand($base_products)];
+                $title = $base[0] . ' ' . ($i + 1);
+                
+                // Randomize data
+                $price = $base[2] + rand(-20, 50);
+                $rating = rand(30, 50) / 10; // 3.0 to 5.0
+                $reviews = rand(10, 5000);
+                $prime = rand(0, 1);
+
                 $post_id = wp_insert_post([
                     'post_title' => $title,
                     'post_content' => 'Demo product description for ' . $title,
@@ -82,10 +82,32 @@ class DemoController
                     update_post_meta($post_id, 'reviews', $reviews);
                     update_post_meta($post_id, 'prime', (string)$prime);
                     update_post_meta($post_id, 'image_url', $base[3]);
+                    
+                    self::assignCategory($post_id, $base[1]);
                     $count++;
+                }
+            } else {
+                // Update Existing (Backfill Category)
+                $post = $exists[0];
+                foreach ($base_products as $bp) {
+                    if (strpos($post->post_title, $bp[0]) !== false) {
+                        self::assignCategory($post->ID, $bp[1]);
+                        break;
+                    }
                 }
             }
         }
-        echo '<div class="notice notice-success inline"><p>Generated ' . $count . ' new demo products!</p></div>';
+        echo '<div class="notice notice-success inline"><p>Demo products processed. New: ' . $count . '</p></div>';
+    }
+
+    private static function assignCategory(int $postId, string $catName): void
+    {
+        $term = term_exists($catName, 'amazon_category');
+        if (!$term) {
+            $term = wp_insert_term($catName, 'amazon_category');
+        }
+        if (!is_wp_error($term)) {
+            wp_set_object_terms($postId, (int)$term['term_id'], 'amazon_category');
+        }
     }
 }

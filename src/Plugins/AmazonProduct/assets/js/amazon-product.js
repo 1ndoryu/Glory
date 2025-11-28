@@ -12,7 +12,9 @@ jQuery(document).ready(function($) {
     let state = {
         limit: $wrapper.data('limit'),
         paged: 1,
+        paged: 1,
         search: '',
+        category: $wrapper.data('category'),
         min_price: $wrapper.data('min-price'),
         max_price: $wrapper.data('max-price'),
         min_rating: '',
@@ -101,6 +103,24 @@ jQuery(document).ready(function($) {
         
         state.paged = 1;
         fetchProducts();
+        fetchProducts();
+    });
+
+    // Category Buttons
+    $('.amazon-category-btn').on('click', function() {
+        const slug = $(this).data('slug');
+        
+        if ($(this).hasClass('active')) {
+            $(this).removeClass('active');
+            state.category = '';
+        } else {
+            $('.amazon-category-btn').removeClass('active');
+            $(this).addClass('active');
+            state.category = slug;
+        }
+        
+        state.paged = 1;
+        fetchProducts();
     });
 
     // Prime Checkbox
@@ -124,7 +144,10 @@ jQuery(document).ready(function($) {
         // Reset UI
         $('#amazon-search').val('');
         $('#amazon-max-price-range').val(2000).trigger('input');
+        $('#amazon-search').val('');
+        $('#amazon-max-price-range').val(2000).trigger('input');
         $('.amazon-rating-btn').removeClass('active');
+        $('.amazon-category-btn').removeClass('active');
         $('#amazon-prime').prop('checked', false);
         $('#amazon-sort').val('date-DESC');
 
@@ -132,7 +155,9 @@ jQuery(document).ready(function($) {
         state = {
             limit: $wrapper.data('limit'),
             paged: 1,
+            paged: 1,
             search: '',
+            category: '',
             min_price: '',
             max_price: '',
             min_rating: '',

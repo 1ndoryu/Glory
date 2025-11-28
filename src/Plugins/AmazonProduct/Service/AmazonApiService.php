@@ -76,6 +76,27 @@ class AmazonApiService
         return $response;
     }
 
+    public function getDeals(int $page = 1): array
+    {
+        $cacheKey = 'amazon_deals_' . $this->region . '_' . $page;
+        $cached = get_transient($cacheKey);
+
+        if ($cached !== false) {
+            return $cached;
+        }
+
+        $response = $this->makeRequest('deal.php', ['region' => $this->region, 'page' => $page]);
+
+        if (empty($response)) {
+            return [];
+        }
+
+        // Cache deals for 2 hours to save API calls
+        set_transient($cacheKey, $response, 2 * HOUR_IN_SECONDS);
+
+        return $response;
+    }
+
     private function makeRequest(string $endpoint, array $params): array
     {
         $url = self::API_URL . '/' . $endpoint . '?' . http_build_query($params);

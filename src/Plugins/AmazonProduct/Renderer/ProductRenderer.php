@@ -7,6 +7,7 @@ class ProductRenderer
     public function init(): void
     {
         add_shortcode('amazon_products', [$this, 'renderShortcode']);
+        add_shortcode('amazon_deals', [$this, 'renderDealsShortcode']);
         add_action('wp_enqueue_scripts', [$this, 'enqueueAssets']);
     }
 
@@ -99,6 +100,7 @@ class ProductRenderer
                 'top_rated' => 'Mejor Valorados',
                 'no_results' => 'No se encontraron productos.',
                 'view_amazon' => 'Ver en Amazon',
+                'categories' => 'Categorías',
             ]
         ];
 
@@ -113,6 +115,7 @@ class ProductRenderer
             'limit' => 12,
             'min_price' => '',
             'max_price' => '',
+            'category'  => '',
             'only_prime' => '',
             'orderby' => 'date',
             'order' => 'DESC'
@@ -123,7 +126,9 @@ class ProductRenderer
         <div class="amazon-product-wrapper" 
              data-limit="<?php echo esc_attr($atts['limit']); ?>"
              data-min-price="<?php echo esc_attr($atts['min_price']); ?>"
+             data-min-price="<?php echo esc_attr($atts['min_price']); ?>"
              data-max-price="<?php echo esc_attr($atts['max_price']); ?>"
+             data-category="<?php echo esc_attr($atts['category']); ?>"
              data-only-prime="<?php echo esc_attr($atts['only_prime']); ?>"
              data-orderby="<?php echo esc_attr($atts['orderby']); ?>"
              data-order="<?php echo esc_attr($atts['order']); ?>">
@@ -146,6 +151,29 @@ class ProductRenderer
             <div id="amazon-filter-panel" class="amazon-filter-panel">
                 <div class="amazon-filter-grid">
                     
+                    <!-- Category Filter -->
+                    <div class="amazon-filter-col">
+                        <h3><?php echo esc_html($this->getLabel('categories')); ?></h3>
+                        <div class="amazon-category-list">
+                            <?php
+                            $terms = get_terms([
+                                'taxonomy' => 'amazon_category',
+                                'hide_empty' => true,
+                            ]);
+                            if (!empty($terms) && !is_wp_error($terms)) {
+                                foreach ($terms as $term) {
+                                    $isActive = ($atts['category'] == $term->slug) ? 'active' : '';
+                                    echo '<button class="amazon-category-btn ' . $isActive . '" data-slug="' . esc_attr($term->slug) . '">';
+                                    echo esc_html($term->name) . ' <span class="count">(' . $term->count . ')</span>';
+                                    echo '</button>';
+                                }
+                            } else {
+                                echo '<p class="amazon-no-cats">No hay categorías.</p>';
+                            }
+                            ?>
+                        </div>
+                    </div>
+
                     <!-- Price Filter -->
                     <div class="amazon-filter-col">
                         <h3><?php echo esc_html($this->getLabel('max_price')); ?>: <span id="price-display">2000</span>€</h3>
@@ -230,6 +258,7 @@ class ProductRenderer
             'limit'      => intval($_POST['limit'] ?? 12),
             'paged'      => intval($_POST['paged'] ?? 1),
             'search'     => sanitize_text_field($_POST['search'] ?? ''),
+            'category'   => sanitize_text_field($_POST['category'] ?? ''),
             'min_price'  => sanitize_text_field($_POST['min_price'] ?? ''),
             'max_price'  => sanitize_text_field($_POST['max_price'] ?? ''),
             'min_rating' => sanitize_text_field($_POST['min_rating'] ?? ''),
@@ -257,6 +286,17 @@ class ProductRenderer
         // Search
         if (!empty($params['search'])) {
             $args['s'] = $params['search'];
+        }
+
+        // Category Filter
+        if (!empty($params['category'])) {
+            $args['tax_query'] = [
+                [
+                    'taxonomy' => 'amazon_category',
+                    'field'    => 'slug',
+                    'terms'    => $params['category'],
+                ]
+            ];
         }
 
         // Price Filter
@@ -382,6 +422,94 @@ class ProductRenderer
                     <div class="amazon-price-block">
                         <span class="price-label">PRECIO</span>
                         <span class="price-value"><?php echo esc_html($price); ?>€</span>
+                    </div>
+                    <a href="<?php echo esc_url($productUrl); ?>" target="_blank" class="amazon-buy-btn-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+    public function renderDealsShortcode($atts): string
+    {
+        $atts = shortcode_atts([
+            'limit' => 12,
+            'page'  => 1,
+        ], $atts);
+
+        $service = new \Glory\Plugins\AmazonProduct\Service\AmazonApiService();
+        $deals = $service->getDeals((int)$atts['page']);
+
+        if (empty($deals)) {
+            return '<p class="amazon-no-deals">No hay ofertas disponibles en este momento.</p>';
+        }
+
+        // Limit results if needed (API returns paginated results, so limit is per page usually)
+        $deals = array_slice($deals, 0, $atts['limit']);
+
+        ob_start();
+        ?>
+        <div class="amazon-deals-wrapper">
+            <div class="amazon-results-header">
+                <h2>Ofertas del Día</h2>
+                <span class="amazon-count-badge">Amazon Deals</span>
+            </div>
+            
+            <div class="amazon-product-grid">
+                <?php foreach ($deals as $deal): ?>
+                    <?php $this->renderDealCard($deal); ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php
+        return ob_get_clean();
+    }
+
+    private function renderDealCard(array $deal): void
+    {
+        $asin = $deal['asin'];
+        $image = $deal['asin_image'];
+        $title = $deal['deal_title'];
+        $price = $deal['deal_min_price'];
+        $originalPrice = $deal['deal_min_list_price'];
+        $discount = $deal['deal_min_percent_off'];
+        $rating = $deal['asin_rating_star'];
+        $reviews = $deal['asin_total_review'];
+        
+        $region = get_option('amazon_api_region', 'us');
+        $domain = \Glory\Plugins\AmazonProduct\Service\AmazonApiService::getDomain($region);
+        $productUrl = 'https://www.' . $domain . '/dp/' . $asin;
+
+        $affiliateTag = get_option('amazon_affiliate_tag', '');
+        if (!empty($affiliateTag)) {
+            $productUrl .= '?tag=' . esc_attr($affiliateTag);
+        }
+        ?>
+        <div class="amazon-product-card group">
+            <div class="amazon-card-image-wrapper">
+                <span class="amazon-prime-badge" style="background: #cc0c39;">-<?php echo esc_html($discount); ?>%</span>
+                <img src="<?php echo esc_url($image); ?>" alt="<?php echo esc_attr($title); ?>" class="amazon-product-image">
+                <div class="amazon-card-overlay"></div>
+            </div>
+            
+            <div class="amazon-card-content">
+                <div class="amazon-card-cat">Oferta Flash</div>
+                <h3 class="amazon-card-title"><?php echo esc_html($title); ?></h3>
+                
+                <div class="amazon-card-rating">
+                    <div class="amazon-stars">
+                        <?php for($i=0; $i<5; $i++): ?>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="<?php echo $i < $rating ? 'currentColor' : 'none'; ?>" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="<?php echo $i < $rating ? 'star-filled' : 'star-empty'; ?>"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <?php endfor; ?>
+                    </div>
+                    <span class="rating-count">(<?php echo esc_html($reviews); ?>)</span>
+                </div>
+
+                <div class="amazon-card-footer">
+                    <div class="amazon-price-block">
+                        <span class="price-label" style="text-decoration: line-through; color: #737373; font-size: 10px;"><?php echo esc_html($originalPrice); ?>€</span>
+                        <span class="price-value" style="color: #B12704;"><?php echo esc_html($price); ?>€</span>
                     </div>
                     <a href="<?php echo esc_url($productUrl); ?>" target="_blank" class="amazon-buy-btn-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>

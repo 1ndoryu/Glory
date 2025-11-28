@@ -61,6 +61,37 @@ class AmazonProductPlugin
                 'product_url' => '',
             ]
         );
+
+        $this->registerTaxonomy();
+    }
+
+    private function registerTaxonomy(): void
+    {
+        $labels = [
+            'name'              => 'Categorías Amazon',
+            'singular_name'     => 'Categoría Amazon',
+            'search_items'      => 'Buscar Categorías',
+            'all_items'         => 'Todas las Categorías',
+            'parent_item'       => 'Categoría Padre',
+            'parent_item_colon' => 'Categoría Padre:',
+            'edit_item'         => 'Editar Categoría',
+            'update_item'       => 'Actualizar Categoría',
+            'add_new_item'      => 'Añadir Nueva Categoría',
+            'new_item_name'     => 'Nombre de Nueva Categoría',
+            'menu_name'         => 'Categorías',
+        ];
+
+        $args = [
+            'hierarchical'      => true,
+            'labels'            => $labels,
+            'show_ui'           => true,
+            'show_admin_column' => true,
+            'query_var'         => true,
+            'rewrite'           => ['slug' => 'categoria-amazon'],
+            'show_in_rest'      => true,
+        ];
+
+        register_taxonomy('amazon_category', ['amazon_product'], $args);
     }
 
     public function handleCronSchedule(): void

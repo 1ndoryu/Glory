@@ -326,5 +326,37 @@ class AdminController
         if ($postId && !empty($data['asin_images'][0])) {
             update_post_meta($postId, '_thumbnail_url_external', $data['asin_images'][0]);
         }
+
+        // Sync Categories
+        if (!empty($data['category_path'])) {
+            $this->syncCategories($postId, $data['category_path']);
+        }
+    }
+
+    private function syncCategories(int $postId, string $path): void
+    {
+        $parts = explode(' > ', $path);
+        $parentId = 0;
+        $termIds = [];
+
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if (empty($part)) continue;
+
+            $term = term_exists($part, 'amazon_category', $parentId);
+
+            if (!$term) {
+                $term = wp_insert_term($part, 'amazon_category', ['parent' => $parentId]);
+            }
+
+            if (!is_wp_error($term) && isset($term['term_id'])) {
+                $parentId = $term['term_id'];
+                $termIds[] = $parentId;
+            }
+        }
+
+        if (!empty($termIds)) {
+            wp_set_object_terms($postId, $termIds, 'amazon_category');
+        }
     }
 }
