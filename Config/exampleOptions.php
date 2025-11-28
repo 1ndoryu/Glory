@@ -1,4 +1,17 @@
 <?php
+/**
+ * Configuración de Ejemplo para Opciones
+ *
+ * Este archivo sirve como demostración de cómo registrar opciones personalizadas
+ * en el panel de administración de Glory. Contiene ejemplos de diversos tipos
+ * de campos soportados por `OpcionManager`.
+ *
+ * Actualmente el código está comentado para no afectar el entorno de producción,
+ * pero puede descomentarse para pruebas o desarrollo.
+ *
+ * @package Glory\Config
+ */
+
 /*
 use Glory\Manager\OpcionManager;
 
@@ -116,5 +129,4 @@ if (OpcionManager::get('glory_ejemplos_activo')) {
         'subSeccion'   => 'campos_avanzados',
     ]);
 }
-
 */

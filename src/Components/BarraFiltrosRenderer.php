@@ -1,7 +1,20 @@
 <?php
+/**
+ * Renderizador de Barra de Filtros
+ *
+ * Genera formularios de filtrado para listados, grids o tablas, soportando
+ * envío estándar GET o integración con AJAX.
+ *
+ * @package Glory\Components
+ */
 
 namespace Glory\Components;
 
+/**
+ * Clase BarraFiltrosRenderer.
+ *
+ * Componente para construir barras de filtros dinámicas.
+ */
 class BarraFiltrosRenderer
 {
     /**
@@ -26,6 +39,9 @@ class BarraFiltrosRenderer
      * - preservar_keys: array de claves GET a preservar como inputs ocultos (además de 'page')
      * - ajax_action: si se define, el formulario se marca para envío AJAX (data-glory-filters="ajax") y usa esta acción
      * - target_selector: selector CSS opcional para ubicar el contenedor a reemplazar con el HTML de respuesta
+     *
+     * @param array $campos   Definición de campos.
+     * @param array $opciones Configuración general.
      */
     public static function render(array $campos, array $opciones = []): void
     {
@@ -39,11 +55,11 @@ class BarraFiltrosRenderer
         $paginaActualKey = isset($_REQUEST['page']) ? sanitize_text_field((string) $_REQUEST['page']) : '';
         $limpiarUrl      = $opciones['limpiar_url'] ?? ($paginaActualKey !== '' ? admin_url('admin.php?page=' . $paginaActualKey) : '');
 
-        $ajaxAction = isset($opciones['ajax_action']) ? sanitize_key((string) $opciones['ajax_action']) : '';
+        $ajaxAction     = isset($opciones['ajax_action']) ? sanitize_key((string) $opciones['ajax_action']) : '';
         $targetSelector = isset($opciones['target_selector']) ? (string) $opciones['target_selector'] : '';
-        $scope = isset($opciones['scope']) ? sanitize_key((string) $opciones['scope']) : '';
+        $scope          = isset($opciones['scope']) ? sanitize_key((string) $opciones['scope']) : '';
 
-        $method = $ajaxAction ? 'POST' : 'GET';
+        $method     = $ajaxAction ? 'POST' : 'GET';
         $extraAttrs = '';
         if ($ajaxAction) {
             $extraAttrs .= ' data-glory-filters="ajax" data-ajax-action="' . esc_attr($ajaxAction) . '"';
@@ -65,16 +81,18 @@ class BarraFiltrosRenderer
         foreach ($preservarKeys as $k) {
             if (isset($_GET[$k]) || isset($_POST[$k])) {
                 $valFuente = isset($_POST[$k]) ? $_POST[$k] : $_GET[$k];
-                $val = is_array($valFuente) ? '' : (string) $valFuente;
+                $val       = is_array($valFuente) ? '' : (string) $valFuente;
                 echo '      <input type="hidden" name="' . esc_attr($k) . '" value="' . esc_attr(sanitize_text_field($val)) . '">';
             }
         }
 
         echo '      <div class="' . esc_attr($layoutRowClass) . '">';
         foreach ($campos as $campo) {
-            $tipo        = $campo['tipo'] ?? 'text';
-            $name        = $campo['name'] ?? '';
-            if ($name === '') { continue; }
+            $tipo = $campo['tipo'] ?? 'text';
+            $name = $campo['name'] ?? '';
+            if ($name === '') {
+                continue;
+            }
             $label       = $campo['label'] ?? '';
             $placeholder = $campo['placeholder'] ?? '';
             $valorActual = isset($_POST[$name]) ? (string) $_POST[$name] : (isset($_GET[$name]) ? (string) $_GET[$name] : '');
@@ -104,7 +122,7 @@ class BarraFiltrosRenderer
                 echo '          <input type="hidden" name="' . esc_attr($toName) . '" value="' . esc_attr($hastaVal) . '">';
                 echo '          <input type="text" readonly class="gloryDateRangeInput" id="' . esc_attr($idVis) . '"'
                     . ' data-from-name="' . esc_attr($fromName) . '" data-to-name="' . esc_attr($toName) . '"'
-                    . ' placeholder="' . esc_attr($placeholder ?: 'Selecciona rango') . '" value="' . esc_attr($display) . '">';
+                    . ' placeholder="' . esc_attr($placeholder ?: esc_html__('Selecciona rango', 'glory')) . '" value="' . esc_attr($display) . '">';
             } else {
                 $typeAttr = in_array($tipo, ['search', 'text', 'date'], true) ? $tipo : 'text';
                 echo '          <input type="' . esc_attr($typeAttr) . '" id="' . esc_attr($name) . '" name="' . esc_attr($name) . '" value="' . esc_attr($valorActual) . '" placeholder="' . esc_attr($placeholder) . '">';
@@ -125,5 +143,3 @@ class BarraFiltrosRenderer
         echo '</div>';
     }
 }
-
-

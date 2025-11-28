@@ -753,6 +753,8 @@
      * @param {Event} e - The click event.
      */
     function handleClick(e) {
+        if (e.defaultPrevented) return;
+
         // Ignore clicks if modifier keys are pressed (for opening in new tab/window)
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
             return;

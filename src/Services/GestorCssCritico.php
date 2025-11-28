@@ -47,7 +47,7 @@ class GestorCssCritico
         // Determinar clave de cache: por post (singular) o por URL (home/otros)
         $cssCacheado = null;
         $currentUrl = home_url(add_query_arg([], $_SERVER['REQUEST_URI'] ?? '/'));
-        GloryLogger::info('CssCritico: resolviendo para URL actual', ['url' => $currentUrl]);
+        // GloryLogger::info('CssCritico: resolviendo para URL actual', ['url' => $currentUrl]);
 
         if (is_singular()) {
             $postId = get_queried_object_id();
@@ -58,7 +58,7 @@ class GestorCssCritico
                     GloryLogger::info('CssCritico: cache HIT por postId', ['postId' => $postId, 'bytes' => strlen((string)$cssCacheado)]);
                     return $cssCacheado;
                 }
-                GloryLogger::info('CssCritico: cache MISS por postId', ['postId' => $postId]);
+                // GloryLogger::info('CssCritico: cache MISS por postId', ['postId' => $postId]);
             }
         } else {
             $claveCacheUrl = self::getClaveCacheParaUrl($currentUrl);
@@ -107,7 +107,7 @@ class GestorCssCritico
 
         // Respetar modo: solo generar automáticamente si la opción está activa
         if (!OpcionManager::get('glory_css_critico_auto')) {
-            GloryLogger::info('CssCritico: auto OFF, no se agenda generación');
+            // GloryLogger::info('CssCritico: auto OFF, no se agenda generación');
             return null;
         }
 

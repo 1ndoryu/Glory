@@ -9,14 +9,16 @@ use Glory\Core\OpcionRegistry;
 /**
  * Clase para controlar mediante programación la activación o desactivación de funcionalidades del tema.
  * Permite a los desarrolladores anular las opciones de la base de datos directamente desde el código.
- * jules refactor: proxima tarea, considerar unificar el nombre de las keys, por ejemplo, usar camelCase en todos lados o snake_case
  */
 class GloryFeatures
 {
+    /** @var array Almacena el estado de las features sobreescritas en tiempo de ejecución. */
     private static array $features = [];
+
     /**
      * Mapeo de alias para mantener compatibilidad entre nombres de features.
      * Las claves se comparan en minúsculas sin guiones/underscores.
+     * @var array
      */
     private static array $aliasMap = [
         'schedulemanager' => 'scheduler',
@@ -76,8 +78,8 @@ class GloryFeatures
     /**
      * Normaliza la clave para asegurar consistencia (camelCase).
      *
-     * @param string $key
-     * @return string
+     * @param string $key La clave a normalizar.
+     * @return string La clave en formato camelCase.
      */
     private static function normalizeKey(string $key): string
     {
@@ -94,23 +96,27 @@ class GloryFeatures
     }
 
     /**
-     * Comprueba si una feature está activa combinando el override por código (GloryFeatures)
-     * y la opción almacenada en la base de datos (OpcionManager).
+     * Comprueba si una feature está activa.
+     *
+     * Combina la configuración por código (Runtime Override) y la opción
+     * almacenada en la base de datos (OpcionManager).
      *
      * - Si el override por código es false => inactivo.
      * - Si el override por código es true => activo.
-     * - Si no hay override explícito, se consulta la opción en BD si se suministra la key.
-     * - Si no hay override ni opción, se devuelve el valor por defecto proporcionado.
+     * - Si no hay override explícito, se consulta la opción en BD.
+     * - Si no hay override ni opción, se devuelve el valor por defecto.
      *
-     * @param string $feature
-     * @param string|null $optionKey
-     * @param bool $defaultOption
-     * @return bool
+     * @param string      $feature       Nombre de la funcionalidad.
+     * @param string|null $optionKey     Clave específica de opción en BD (opcional).
+     * @param bool        $defaultOption Valor por defecto si no se encuentra configuración.
+     * @return bool True si la feature está activa.
      */
     public static function isActive(string $feature, ?string $optionKey = null, bool $defaultOption = true): bool
     {
         $normalized = self::normalizeKey($feature);
         $overridden = self::isEnabled($normalized);
+
+        // Verificar modo desarrollo
         $isDevMode = (method_exists(AssetManager::class, 'isGlobalDevMode') && AssetManager::isGlobalDevMode()) || (defined('WP_DEBUG') && WP_DEBUG);
 
         // En modo desarrollo, el override por código tiene máxima prioridad

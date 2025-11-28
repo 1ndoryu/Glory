@@ -27,9 +27,9 @@ class MediaIntegrityService
         $thumbId = (int) get_post_thumbnail_id($postId);
         if ($thumbId <= 0) {
             if (is_string($fallbackAssetRef) && $fallbackAssetRef !== '') {
-                // No importar; solo usar adjunto existente válido
                 if (AssetsUtility::assetExists($fallbackAssetRef)) {
-                    $aid = AssetsUtility::findExistingAttachmentIdForAsset($fallbackAssetRef);
+                    // Importar o reutilizar el adjunto para el asset definido (incluye SVG)
+                    $aid = AssetsUtility::get_attachment_id_from_asset($fallbackAssetRef);
                     if ($aid) {
                         set_post_thumbnail($postId, $aid);
                         return;
@@ -69,9 +69,9 @@ class MediaIntegrityService
         }
 
         if ($assetRef) {
-            // No reimportar si falta en uploads; solo usar adjunto válido
             if (AssetsUtility::assetExists($assetRef)) {
-                $aid = AssetsUtility::findExistingAttachmentIdForAsset($assetRef);
+                // Intentar obtener (o importar) el adjunto para el asset original
+                $aid = AssetsUtility::get_attachment_id_from_asset($assetRef);
                 if ($aid) {
                     // Asegurar que GUID apunte a URL válida (por si el adjunto existía con GUID roto)
                     $file = get_attached_file($aid);

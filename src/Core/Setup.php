@@ -31,9 +31,26 @@ use Glory\Services\GestorCssCritico;
 use Glory\Handler\ContentActionAjaxHandler;
 use Glory\Admin\PageContentModeMetabox;
 use Glory\Admin\SeoMetabox;
+use Glory\Plugins\AmazonProduct\AmazonProductPlugin;
 
+/**
+ * Clase principal de inicialización del framework Glory.
+ *
+ * Se encarga de orquestar la carga de todos los componentes, servicios y manejadores
+ * del sistema, basándose en la configuración de funcionalidades activas.
+ */
 class Setup
 {
+    /**
+     * Constructor de la clase Setup.
+     *
+     * Ejecuta la secuencia de arranque del framework:
+     * 1. Inicializa herramientas de diagnóstico y logging.
+     * 2. Instancia manejadores de peticiones (Handlers).
+     * 3. Inicializa managers y utilidades.
+     * 4. Registra hooks y componentes de administración.
+     * 5. Carga integraciones con terceros.
+     */
     public function __construct()
     {
         // Inicializar profiler de rendimiento (si está activo)
@@ -41,7 +58,7 @@ class Setup
 
         PerformanceProfiler::start('Setup.constructor', 'core');
 
-        // Inicializar logger solo si la feature no está desactivada
+        // Inicializar logger solo si la funcionalidad no está desactivada
         if (GloryFeatures::isActive('gloryLogger') !== false) {
             PerformanceProfiler::medirFuncion(
                 fn() => GloryLogger::init(),
@@ -55,8 +72,7 @@ class Setup
             //LicenseManager::init();
         }
 
-        // Formularios (FormHandler) - el propio constructor también checa la feature,
-        // pero evitamos instanciarlo si la feature está desactivada.
+        // Formularios (FormHandler) - Verificamos la feature antes de instanciar
         if (GloryFeatures::isActive('gloryForm') !== false) {
             PerformanceProfiler::medirFuncion(
                 fn() => new FormHandler(),
@@ -128,7 +144,7 @@ class Setup
             // CreditosManager::init();
         }
 
-        // Registro/registro de managers principales (condicionales para control de rendimiento)
+        // Registro de managers principales
         if (GloryFeatures::isActive('assetManager') !== false) {
             PerformanceProfiler::medirFuncion(
                 fn() => AssetManager::register(),
@@ -235,7 +251,6 @@ class Setup
             );
         }
 
-
         // Inicializar hooks de limpieza de caché para ContentRender
         PerformanceProfiler::medirFuncion(
             fn() => ContentRender::initHooks(),
@@ -249,6 +264,10 @@ class Setup
                 'GbnManager.bootstrap',
                 'gbn'
             );
+        }
+
+        if (GloryFeatures::isActive('amazonProduct') !== false) {
+            (new AmazonProductPlugin())->init();
         }
 
         PerformanceProfiler::end('Setup.constructor');

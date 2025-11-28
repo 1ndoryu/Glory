@@ -1,4 +1,13 @@
 <?php
+/**
+ * Renderizador de Contenido
+ *
+ * Esta clase se encarga de renderizar listados de posts y contenidos de forma
+ * eficiente, soportando caché, paginación AJAX, y opciones de configuración
+ * flexibles para el tema.
+ *
+ * @package Glory\Components
+ */
 
 namespace Glory\Components;
 
@@ -7,15 +16,22 @@ use Glory\Components\PaginationRenderer;
 use Glory\Utility\ImageUtility;
 use Glory\Core\GloryFeatures;
 
+/**
+ * Clase ContentRender.
+ *
+ * Gestiona la visualización de cuadrículas y listas de posts con soporte
+ * para caché de fragmentos HTML y paginación asíncrona.
+ */
 class ContentRender
 {
-    /** @var array<string,mixed> */
+    /** @var array<string,mixed> Configuración actual del renderizado. */
     private static $currentConfig = [];
-    /** @var bool */
+
+    /** @var bool Indica si los hooks de limpieza de caché ya fueron registrados. */
     private static $hooksRegistered = false;
 
     /**
-     * Devuelve la configuración predeterminada y el esquema para GBN.
+     * Devuelve la configuración predeterminada y el esquema para GBN (Glory Builder Native).
      *
      * @return array{config:array<string,mixed>,schema:array<int,array<string,mixed>>}
      */
@@ -24,40 +40,40 @@ class ContentRender
         return [
             'config' => [
                 'publicacionesPorPagina' => 6,
-                'claseContenedor' => 'gbn-content-grid',
-                'claseItem' => 'gbn-content-card',
-                'plantilla' => null,
-                'argumentosConsulta' => [],
-                'forzarSinCache' => false,
-                'paginacion' => false,
+                'claseContenedor'        => 'gbn-content-grid',
+                'claseItem'              => 'gbn-content-card',
+                'plantilla'              => null,
+                'argumentosConsulta'     => [],
+                'forzarSinCache'         => false,
+                'paginacion'             => false,
             ],
             'schema' => [
                 [
-                    'id' => 'publicacionesPorPagina',
-                    'tipo' => 'slider',
+                    'id'       => 'publicacionesPorPagina',
+                    'tipo'     => 'slider',
                     'etiqueta' => 'Entradas por página',
-                    'min' => 1,
-                    'max' => 20,
-                    'paso' => 1,
+                    'min'      => 1,
+                    'max'      => 20,
+                    'paso'     => 1,
                 ],
                 [
-                    'id' => 'claseContenedor',
-                    'tipo' => 'text',
+                    'id'       => 'claseContenedor',
+                    'tipo'     => 'text',
                     'etiqueta' => 'Clase del contenedor',
                 ],
                 [
-                    'id' => 'claseItem',
-                    'tipo' => 'text',
+                    'id'       => 'claseItem',
+                    'tipo'     => 'text',
                     'etiqueta' => 'Clase de cada item',
                 ],
                 [
-                    'id' => 'paginacion',
-                    'tipo' => 'toggle',
+                    'id'       => 'paginacion',
+                    'tipo'     => 'toggle',
                     'etiqueta' => 'Activar paginación AJAX',
                 ],
                 [
-                    'id' => 'forzarSinCache',
-                    'tipo' => 'toggle',
+                    'id'       => 'forzarSinCache',
+                    'tipo'     => 'toggle',
                     'etiqueta' => 'Ignorar caché',
                 ],
             ],
@@ -65,7 +81,7 @@ class ContentRender
     }
 
     /**
-     * Inicializa los hooks para limpieza de caché
+     * Inicializa los hooks para limpieza de caché.
      */
     public static function initHooks(): void
     {
@@ -82,7 +98,9 @@ class ContentRender
     }
 
     /**
-     * Limpia la caché de ContentRender cuando se modifica un post
+     * Limpia la caché de ContentRender cuando se modifica un post.
+     *
+     * @param int $postId ID del post modificado.
      */
     public static function clearCacheOnPostChange(int $postId): void
     {
@@ -105,26 +123,28 @@ class ContentRender
     }
 
     /**
-     * Limpia todas las caches de ContentRender para un tipo de post específico
+     * Limpia todas las caches de ContentRender para un tipo de post específico.
+     *
+     * @param string $postType El tipo de post.
      */
     public static function clearCacheForPostType(string $postType): void
     {
         global $wpdb;
 
-        $prefix = '_transient_glory_content_';
-        $timeout_prefix = '_transient_timeout_glory_content_';
+        $prefix        = '_transient_glory_content_';
+        $timeoutPrefix = '_transient_timeout_glory_content_';
 
         // Escapar el prefijo para evitar SQL injection
-        $escaped_prefix = $wpdb->esc_like($prefix . '%');
-        $escaped_timeout_prefix = $wpdb->esc_like($timeout_prefix . '%');
+        $escapedPrefix        = $wpdb->esc_like($prefix . '%');
+        $escapedTimeoutPrefix = $wpdb->esc_like($timeoutPrefix . '%');
 
         // Eliminar transients relacionados con ContentRender
         $sql = $wpdb->prepare(
             "DELETE FROM {$wpdb->options}
              WHERE (option_name LIKE %s OR option_name LIKE %s)
              AND option_name LIKE %s",
-            $escaped_prefix,
-            $escaped_timeout_prefix,
+            $escapedPrefix,
+            $escapedTimeoutPrefix,
             '%' . $wpdb->esc_like($postType) . '%'
         );
 
@@ -132,25 +152,25 @@ class ContentRender
     }
 
     /**
-     * Limpia todas las caches de ContentRender
+     * Limpia todas las caches de ContentRender.
      */
     public static function clearAllContentCaches(): void
     {
         global $wpdb;
 
-        $prefix = '_transient_glory_content_';
-        $timeout_prefix = '_transient_timeout_glory_content_';
+        $prefix        = '_transient_glory_content_';
+        $timeoutPrefix = '_transient_timeout_glory_content_';
 
         // Escapar los prefijos
-        $escaped_prefix = $wpdb->esc_like($prefix . '%');
-        $escaped_timeout_prefix = $wpdb->esc_like($timeout_prefix . '%');
+        $escapedPrefix        = $wpdb->esc_like($prefix . '%');
+        $escapedTimeoutPrefix = $wpdb->esc_like($timeoutPrefix . '%');
 
         // Eliminar todos los transients de ContentRender
         $sql = $wpdb->prepare(
             "DELETE FROM {$wpdb->options}
              WHERE option_name LIKE %s OR option_name LIKE %s",
-            $escaped_prefix,
-            $escaped_timeout_prefix
+            $escapedPrefix,
+            $escapedTimeoutPrefix
         );
 
         $wpdb->query($sql);
@@ -160,31 +180,31 @@ class ContentRender
      * Imprime una lista de contenidos con opción de caché.
      *
      * @param string $postType El tipo de post a consultar.
-     * @param array $opciones Opciones de configuración.
+     * @param array  $opciones Opciones de configuración.
      */
     public static function print(string $postType, array $opciones = []): void
     {
         $defaults = [
             'publicacionesPorPagina' => 10,
-            'claseContenedor'      => 'glory-content-list',
-            'claseItem'            => 'glory-content-item',
-            'paginacion'           => false,
-            'plantillaCallback'    => [self::class, 'defaultTemplate'],
-            'argumentosConsulta'   => [],
-            'orden'                => 'fecha',
-            'metaKey'              => null,
-            'minPaginas'           => 1,
-            'tiempoCache'          => HOUR_IN_SECONDS, // Cache por 1 hora por defecto
-            'forzarSinCache'       => false, // Permite forzar la no-cache para un llamado específico
+            'claseContenedor'        => 'glory-content-list',
+            'claseItem'              => 'glory-content-item',
+            'paginacion'             => false,
+            'plantillaCallback'      => [self::class, 'defaultTemplate'],
+            'argumentosConsulta'     => [],
+            'orden'                  => 'fecha',
+            'metaKey'                => null,
+            'minPaginas'             => 1,
+            'tiempoCache'            => HOUR_IN_SECONDS, // Cache por 1 hora por defecto
+            'forzarSinCache'         => false, // Permite forzar la no-cache para un llamado específico
             // Opciones UI agnósticas
-            'acciones'             => [],     // ej: ['eliminar']
-            'submenu'              => false,  // habilita data-submenu-enabled
-            'eventoAccion'         => 'dblclick', // click | dblclick | longpress
-            'selectorItem'         => '[id^="post-"]', // selector CSS para identificar el item clicado
+            'acciones'               => [],     // ej: ['eliminar']
+            'submenu'                => false,  // habilita data-submenu-enabled
+            'eventoAccion'           => 'dblclick', // click | dblclick | longpress
+            'selectorItem'           => '[id^="post-"]', // selector CSS para identificar el item clicado
             // Orden preferido (IDs que deben aparecer primero, en este orden)
-            'idsPreferidos'        => [],
+            'idsPreferidos'          => [],
         ];
-        $config = wp_parse_args($opciones, $defaults);
+        $config   = wp_parse_args($opciones, $defaults);
 
         // Usar la constante global de WordPress para el modo desarrollo.
         // Si WP_DEBUG es true, no se usará la caché.
@@ -195,15 +215,15 @@ class ContentRender
             echo self::renderizarContenido($postType, $config);
             return;
         }
-        
+
         // 1. Crear una clave única para esta consulta específica.
         // Incluir la página actual para evitar reutilizar HTML entre páginas distintas.
         // Se ignoran los callbacks para la generación de la clave.
-        $pagedForCache = isset($config['argumentosConsulta']['paged']) ? (int) $config['argumentosConsulta']['paged'] : ( get_query_var('paged') ? (int) get_query_var('paged') : 1 );
-        $opcionesParaCache = $config;
+        $pagedForCache         = isset($config['argumentosConsulta']['paged']) ? (int) $config['argumentosConsulta']['paged'] : (get_query_var('paged') ? (int) get_query_var('paged') : 1);
+        $opcionesParaCache     = $config;
         unset($opcionesParaCache['plantillaCallback']);
         $opcionesParaCache['__paged'] = $pagedForCache;
-        $cacheKey = 'glory_content_' . md5($postType . serialize($opcionesParaCache));
+        $cacheKey              = 'glory_content_' . md5($postType . serialize($opcionesParaCache));
 
         // 2. Intentar obtener el contenido desde la caché.
         $cachedHtml = get_transient($cacheKey);
@@ -228,19 +248,19 @@ class ContentRender
      * Lógica de renderizado separada para poder cachear su salida.
      *
      * @param string $postType El tipo de post.
-     * @param array $config La configuración completa.
+     * @param array  $config   La configuración completa.
      * @return string El HTML renderizado.
      */
     private static function renderizarContenido(string $postType, array $config): string
     {
         ob_start(); // Iniciar el buffer de salida para capturar todo el HTML.
 
-        $paged = isset($config['argumentosConsulta']['paged']) ? (int) $config['argumentosConsulta']['paged'] : ( get_query_var('paged') ? (int) get_query_var('paged') : 1 );
+        $paged = isset($config['argumentosConsulta']['paged']) ? (int) $config['argumentosConsulta']['paged'] : (get_query_var('paged') ? (int) get_query_var('paged') : 1);
 
         $args = [
-            'post_type'      => $postType,
-            'posts_per_page' => $config['publicacionesPorPagina'],
-            'paged'          => $paged,
+            'post_type'           => $postType,
+            'posts_per_page'      => $config['publicacionesPorPagina'],
+            'paged'               => $paged,
             'ignore_sticky_posts' => true,
         ];
 
@@ -259,10 +279,10 @@ class ContentRender
                 $seed = (int) $config['argumentosConsulta']['glory_rand_seed'];
             } else {
                 $seedSource = (string) ($_SERVER['HTTP_REFERER'] ?? ($_SERVER['REQUEST_URI'] ?? ''));
-                $seed = (int) (crc32($seedSource . '|' . $postType) & 0x7fffffff);
+                $seed       = (int) (crc32($seedSource . '|' . $postType) & 0x7fffffff);
             }
             $args['glory_rand_seed'] = $seed;
-            $orderbyFilter = function ($orderby, $q) use ($seed) {
+            $orderbyFilter           = function ($orderby, $q) use ($seed) {
                 if ((string) $q->get('glory_rand_seed') !== '') {
                     if (stripos((string) $orderby, 'rand()') !== false) {
                         $orderby = (string) preg_replace('/RAND\s*\(\s*\)/i', 'RAND(' . $seed . ')', (string) $orderby);
@@ -284,11 +304,11 @@ class ContentRender
         $gloryFilterPostsDistinct = function ($distinct, $q) {
             return 'DISTINCT';
         };
-        $gloryFilterThePosts = function ($posts, $q) {
+        $gloryFilterThePosts      = function ($posts, $q) {
             if (!is_array($posts)) {
                 return $posts;
             }
-            $seen = [];
+            $seen    = [];
             $deduped = [];
             foreach ($posts as $post) {
                 $id = is_object($post) && isset($post->ID) ? (int) $post->ID : (int) $post;
@@ -311,56 +331,56 @@ class ContentRender
                 $query->max_num_pages = (int) $config['minPaginas'];
             }
 
-            $contenedorClass = trim($config['claseContenedor'] . ' ' . sanitize_html_class($postType));
-            $itemClass       = trim($config['claseItem'] . ' ' . sanitize_html_class($postType) . '-item');
-            $is_ajax_pagination = $config['paginacion'];
+            $contenedorClass  = trim($config['claseContenedor'] . ' ' . sanitize_html_class($postType));
+            $itemClass        = trim($config['claseItem'] . ' ' . sanitize_html_class($postType) . '-item');
+            $isAjaxPagination = $config['paginacion'];
 
-            if ($is_ajax_pagination) {
-                $content_target_class = 'glory-content-target';
-                $pagination_target_class = 'glory-pagination-target';
+            if ($isAjaxPagination) {
+                $contentTargetClass    = 'glory-content-target';
+                $paginationTargetClass = 'glory-pagination-target';
                 // Representación segura del callback para atributos data-* (omite closures)
-                $callback_str = null;
+                $callbackStr = null;
                 if (is_array($config['plantillaCallback'])) {
                     $parts = [];
                     foreach ($config['plantillaCallback'] as $p) {
                         $parts[] = is_object($p) ? get_class($p) : (string) $p;
                     }
-                    $callback_str = implode('::', $parts);
+                    $callbackStr = implode('::', $parts);
                 } elseif (is_string($config['plantillaCallback'])) {
-                    $callback_str = $config['plantillaCallback'];
+                    $callbackStr = $config['plantillaCallback'];
                 } elseif (is_object($config['plantillaCallback']) && !($config['plantillaCallback'] instanceof \Closure)) {
-                    $callback_str = get_class($config['plantillaCallback']);
+                    $callbackStr = get_class($config['plantillaCallback']);
                 }
 
                 echo '<div class="glory-pagination-container"
                          data-nonce="' . esc_attr(wp_create_nonce('glory_pagination_nonce')) . '"
                          data-post-type="' . esc_attr($postType) . '"
                          data-posts-per-page="' . esc_attr($config['publicacionesPorPagina']) . '"
-                         ' . (!empty($callback_str) ? 'data-template-callback="' . esc_attr($callback_str) . '"' : '') . '
+                         ' . (!empty($callbackStr) ? 'data-template-callback="' . esc_attr($callbackStr) . '"' : '') . '
                          data-container-class="' . esc_attr($config['claseContenedor']) . '"
                          data-item-class="' . esc_attr($config['claseItem']) . '"
-                         data-content-target=".' . esc_attr($content_target_class) . '"
-                         data-pagination-target=".' . esc_attr($pagination_target_class) . '">';
+                         data-content-target=".' . esc_attr($contentTargetClass) . '"
+                         data-pagination-target=".' . esc_attr($paginationTargetClass) . '">';
 
-            echo '<div class="' . esc_attr($content_target_class) . '">';
+                echo '<div class="' . esc_attr($contentTargetClass) . '">';
             }
-            
+
             // Data attributes para JS/UI agnóstico
-            $acciones = is_array($config['acciones']) ? implode(',', array_map('sanitize_key', $config['acciones'])) : sanitize_text_field(strval($config['acciones']));
+            $acciones       = is_array($config['acciones']) ? implode(',', array_map('sanitize_key', $config['acciones'])) : sanitize_text_field(strval($config['acciones']));
             $submenuEnabled = !empty($config['submenu']);
-            $eventoAccion = sanitize_key($config['eventoAccion']);
+            $eventoAccion   = sanitize_key($config['eventoAccion']);
             // Representación segura del callback (omite closures)
-            $callback_str = null;
+            $callbackStr = null;
             if (is_array($config['plantillaCallback'])) {
                 $parts = [];
                 foreach ($config['plantillaCallback'] as $p) {
                     $parts[] = is_object($p) ? get_class($p) : (string) $p;
                 }
-                $callback_str = implode('::', $parts);
+                $callbackStr = implode('::', $parts);
             } elseif (is_string($config['plantillaCallback'])) {
-                $callback_str = $config['plantillaCallback'];
+                $callbackStr = $config['plantillaCallback'];
             } elseif (is_object($config['plantillaCallback']) && !($config['plantillaCallback'] instanceof \Closure)) {
-                $callback_str = get_class($config['plantillaCallback']);
+                $callbackStr = get_class($config['plantillaCallback']);
             }
             // Exponer config actual a las plantillas
             self::$currentConfig = $config;
@@ -375,22 +395,22 @@ class ContentRender
                     }
                 }
                 $ordered = [];
-                $added = [];
+                $added   = [];
                 foreach ($preferredIds as $pid) {
                     if (isset($byId[$pid])) {
-                        $ordered[] = $byId[$pid];
+                        $ordered[]   = $byId[$pid];
                         $added[$pid] = true;
                     }
                 }
                 foreach ($query->posts as $p) {
                     $pid = (is_object($p) && isset($p->ID)) ? (int) $p->ID : 0;
                     if ($pid && empty($added[$pid])) {
-                        $ordered[] = $p;
+                        $ordered[]   = $p;
                         $added[$pid] = true;
                     }
                 }
                 if (!empty($ordered)) {
-                    $query->posts = $ordered;
+                    $query->posts      = $ordered;
                     $query->post_count = count($ordered);
                     $query->rewind_posts();
                 }
@@ -398,10 +418,10 @@ class ContentRender
 
             $gbnAttrs = '';
             if (class_exists(GloryFeatures::class) && GloryFeatures::isActive('gbn', 'glory_gbn_activado') !== false) {
-                $gbnRole = self::gbnDefaults();
+                $gbnRole    = self::gbnDefaults();
                 $configAttr = esc_attr(wp_json_encode($gbnRole['config'] ?? []));
                 $schemaAttr = esc_attr(wp_json_encode($gbnRole['schema'] ?? []));
-                $gbnAttrs = ' data-gbn-content="1" data-gbn-role="content"'
+                $gbnAttrs   = ' data-gbn-content="1" data-gbn-role="content"'
                     . ' data-gbn-config="' . $configAttr . '"'
                     . ' data-gbn-schema="' . $schemaAttr . '"';
             }
@@ -418,15 +438,15 @@ class ContentRender
                 . ' data-clase-item="' . esc_attr($config['claseItem']) . '"'
                 . ' data-img-optimize="' . (!empty($config['imgOptimize']) ? '1' : '0') . '"'
                 . ' data-img-quality="' . esc_attr((string) ($config['imgQuality'] ?? '')) . '"'
-                . (!empty($callback_str) ? ' data-template-callback="' . esc_attr($callback_str) . '"' : '')
+                . (!empty($callbackStr) ? ' data-template-callback="' . esc_attr($callbackStr) . '"' : '')
                 . '>';
             $indiceGlobal = 0;
             while ($query->have_posts()) {
                 $query->the_post();
                 $indiceGlobal++;
-                $clasesExtras  = ' post-id-' . get_the_ID();
-                $clasesExtras .= ' posicion-' . $indiceGlobal;
-                $clasesExtras .= ($indiceGlobal % 2 === 0) ? ' par' : ' impar';
+                $clasesExtras     = ' post-id-' . get_the_ID();
+                $clasesExtras    .= ' posicion-' . $indiceGlobal;
+                $clasesExtras    .= ($indiceGlobal % 2 === 0) ? ' par' : ' impar';
                 $currentItemClass = trim($itemClass . $clasesExtras);
                 self::setCurrentOption('indiceItem', $indiceGlobal);
                 call_user_func($config['plantillaCallback'], get_post(), $currentItemClass);
@@ -434,17 +454,17 @@ class ContentRender
             self::setCurrentOption('indiceItem', null);
             echo '</div>';
 
-            if ($is_ajax_pagination) {
-                echo '</div>'; 
-                echo '<div class="' . esc_attr($pagination_target_class) . '">';
+            if ($isAjaxPagination) {
+                echo '</div>';
+                echo '<div class="' . esc_attr($paginationTargetClass) . '">';
                 PaginationRenderer::render($query);
-                echo '</div>'; 
-                echo '</div>'; 
+                echo '</div>';
+                echo '</div>';
             } elseif ($config['paginacion']) {
                 PaginationRenderer::render($query);
             }
         }
-        
+
         // Limpiar filtros locales
         remove_filter('posts_distinct', $gloryFilterPostsDistinct, 10);
         remove_filter('the_posts', $gloryFilterThePosts, 10);
@@ -465,8 +485,8 @@ class ContentRender
     /**
      * Plantilla por defecto para un item.
      *
-     * @param \WP_Post $post El objeto del post.
-     * @param string $itemClass Las clases CSS para el contenedor.
+     * @param \WP_Post $post      El objeto del post.
+     * @param string   $itemClass Las clases CSS para el contenedor.
      */
     public static function defaultTemplate(\WP_Post $post, string $itemClass): void
     {
@@ -476,13 +496,13 @@ class ContentRender
                 <div class="glory-cr__stack">
                     <h2 class="glory-cr__title"><?php echo esc_html(get_the_title($post)); ?></h2>
                     <?php
-                    if ( has_post_thumbnail($post) ) :
+                    if (has_post_thumbnail($post)) :
                         $optimize = (bool) (self::$currentConfig['imgOptimize'] ?? true);
-                        $quality  = (int)  (self::$currentConfig['imgQuality']  ?? 60);
-                        $size = (string) (self::$currentConfig['imgSize'] ?? 'medium');
-                        if ( $optimize ) {
+                        $quality  = (int) (self::$currentConfig['imgQuality'] ?? 60);
+                        $size     = (string) (self::$currentConfig['imgSize'] ?? 'medium');
+                        if ($optimize) {
                             $imgHtml = ImageUtility::optimizar($post, $size, $quality);
-                            if ( is_string($imgHtml) && $imgHtml !== '' ) {
+                            if (is_string($imgHtml) && $imgHtml !== '') {
                                 // Inyectar clase para que el CSS por instancia aplique
                                 $imgHtml = preg_replace('/^<img\s+/i', '<img class="glory-cr__image" ', $imgHtml);
                                 echo $imgHtml; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
@@ -504,15 +524,21 @@ class ContentRender
     /**
      * Devuelve la opción actual del render (para usar en plantillas externas).
      *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
+     * @param string $key     Clave de la opción.
+     * @param mixed  $default Valor por defecto si no existe.
+     * @return mixed Valor de la opción.
      */
     public static function getCurrentOption(string $key, $default = null)
     {
         return array_key_exists($key, self::$currentConfig) ? self::$currentConfig[$key] : $default;
     }
 
+    /**
+     * Establece una opción de configuración actual.
+     *
+     * @param string $key   Clave de la opción.
+     * @param mixed  $value Valor. Si es null, se elimina la clave.
+     */
     public static function setCurrentOption(string $key, $value): void
     {
         if ($value === null) {
@@ -527,8 +553,8 @@ class ContentRender
      * Plantilla mínima que imprime el contenido completo del post.
      * No imprime el título ni la imagen para usos tipo "detalle".
      *
-     * @param \WP_Post $post
-     * @param string $itemClass
+     * @param \WP_Post $post      El objeto del post.
+     * @param string   $itemClass Clases CSS.
      */
     public static function fullContentTemplate(\WP_Post $post, string $itemClass): void
     {

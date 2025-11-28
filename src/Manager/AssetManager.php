@@ -164,7 +164,7 @@ final class AssetManager
             self::$cssCritico = \Glory\Services\GestorCssCritico::getParaPaginaActual();
         }
         $bytes = self::$cssCritico ? strlen((string) self::$cssCritico) : 0;
-        GloryLogger::info('AssetManager: hook wp_head -> imprimirCssCritico', [ 'has' => self::$cssCritico ? 1 : 0, 'bytes' => $bytes ]);
+        // GloryLogger::info('AssetManager: hook wp_head -> imprimirCssCritico', [ 'has' => self::$cssCritico ? 1 : 0, 'bytes' => $bytes ]);
         if (!empty(self::$cssCritico)) {
             echo '<style id="glory-css-critico">' . self::$cssCritico . '</style>';
         }
@@ -201,9 +201,9 @@ final class AssetManager
             $asyncResto = ($optAsync === null) ? true : (bool) $optAsync;
             if ($asyncResto) {
                 add_filter('style_loader_tag', [self::class, 'hacerEstilosAsincronos'], 999, 2);
-                GloryLogger::info('AssetManager: CSS crítico activo; estilos pasarán a async');
+                //GloryLogger::info('AssetManager: CSS crítico activo; estilos pasarán a async');
             } else {
-                GloryLogger::info('AssetManager: CSS crítico activo; estilos se mantienen síncronos (compatibilidad)');
+                //GloryLogger::info('AssetManager: CSS crítico activo; estilos se mantienen síncronos (compatibilidad)');
             }
         } else {
         // GloryLogger::info('AssetManager: sin CSS crítico para esta vista');
