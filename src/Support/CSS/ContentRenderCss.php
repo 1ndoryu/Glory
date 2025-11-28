@@ -664,6 +664,19 @@ class ContentRenderCss
 			$flex_wrap = 'nowrap';
 		}
 
+		// Ajustar layout global cuando hay patrones especiales de layout.
+		$layout_pattern_raw = $args['layout_pattern'] ?? 'none';
+		$pattern_l = is_array( $layout_pattern_raw ) ? (string) ( $layout_pattern_raw['large'] ?? reset( $layout_pattern_raw ) ?? 'none' ) : (string) $layout_pattern_raw;
+		if ( 'alternado_lr' === $pattern_l ) {
+			// Para el patrón L/R forzamos un listado vertical simple donde cada item
+			// ocupa una fila completa y el stack interno controla la orientación
+			// izquierda/derecha. Así la opción "Display" del builder pasa a ser irrelevante.
+			$display_mode   = 'flex';
+			$flex_direction = 'column';
+			$flex_wrap      = 'nowrap';
+			// El gap vertical principal lo controla pattern_row_gap en la capa de patrón.
+		}
+
 		return [
 			'modo_interaccion'         => $modo_interaccion,
 			'display_mode'             => $display_mode,
