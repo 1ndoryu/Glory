@@ -356,10 +356,15 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 \Glory\Components\ContentRender::setCurrentOption('toggleSeparator', $toggle_separator);
                 \Glory\Components\ContentRender::setCurrentOption('toggleSeparatorColor', $toggle_separator_color);
                 \Glory\Components\ContentRender::setCurrentOption('toggleAutoOpen', $toggle_auto_open);
-                // Propagar opción específica de plantilla (portafolio)
+                // Propagar opciones específicas de plantilla (portafolio)
                 $raw_mostrar = isset($this->args['portafolio_mostrar_categorias']) ? (string) $this->args['portafolio_mostrar_categorias'] : '(missing)';
                 $mostrar_categorias = ('yes' === $raw_mostrar);
                 \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarCategorias', $mostrar_categorias);
+                $raw_porta_contenido = isset($this->args['portafolio_mostrar_contenido']) ? (string) $this->args['portafolio_mostrar_contenido'] : 'no';
+                \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarContenido', ('yes' === strtolower($raw_porta_contenido)));
+                $raw_porta_len = isset($this->args['portafolio_contenido_max_palabras']) ? (string) $this->args['portafolio_contenido_max_palabras'] : '40';
+                $len_val = is_numeric($raw_porta_len) ? (int) $raw_porta_len : 40;
+                \Glory\Components\ContentRender::setCurrentOption('portafolioContenidoMaxPalabras', max(0, $len_val));
                 // Propagar opciones de plantilla Team
                 $raw_team_role = isset($this->args['team_show_role']) ? (string) $this->args['team_show_role'] : 'yes';
                 $raw_team_prof = isset($this->args['team_show_profession']) ? (string) $this->args['team_show_profession'] : 'yes';
@@ -419,6 +424,8 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                     \Glory\Components\ContentRender::setCurrentOption('toggleSeparatorColor', null);
                     \Glory\Components\ContentRender::setCurrentOption('toggleAutoOpen', null);
                     \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarCategorias', null);
+                    \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarContenido', null);
+                    \Glory\Components\ContentRender::setCurrentOption('portafolioContenidoMaxPalabras', null);
                     \Glory\Components\ContentRender::setCurrentOption('teamShowRole', null);
                     \Glory\Components\ContentRender::setCurrentOption('teamShowProfession', null);
                     \Glory\Components\ContentRender::setCurrentOption('serviceKuraBorderShow', null);
