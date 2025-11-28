@@ -187,6 +187,8 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'servicio_contenido_max_width_small'  => '',
                 // Opciones específicas de plantillas
                 'portafolio_mostrar_categorias'     => 'no',
+                'portafolio_mostrar_contenido'      => 'no',
+                'portafolio_contenido_max_palabras' => '40',
                 // Team template
                 'team_show_role'                    => 'yes',
                 'team_show_profession'              => 'yes',
