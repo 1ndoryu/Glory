@@ -360,11 +360,9 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 $raw_mostrar = isset($this->args['portafolio_mostrar_categorias']) ? (string) $this->args['portafolio_mostrar_categorias'] : '(missing)';
                 $mostrar_categorias = ('yes' === $raw_mostrar);
                 \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarCategorias', $mostrar_categorias);
-                $raw_porta_contenido = isset($this->args['portafolio_mostrar_contenido']) ? (string) $this->args['portafolio_mostrar_contenido'] : 'no';
-                \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarContenido', ('yes' === strtolower($raw_porta_contenido)));
-                $raw_porta_len = isset($this->args['portafolio_contenido_max_palabras']) ? (string) $this->args['portafolio_contenido_max_palabras'] : '40';
-                $len_val = is_numeric($raw_porta_len) ? (int) $raw_porta_len : 40;
-                \Glory\Components\ContentRender::setCurrentOption('portafolioContenidoMaxPalabras', max(0, $len_val));
+                // Pasar valores crudos para que la plantilla los interprete
+                \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarContenido', $this->args['portafolio_mostrar_contenido'] ?? 'no');
+                \Glory\Components\ContentRender::setCurrentOption('portafolioContenidoMaxPalabras', $this->args['portafolio_contenido_max_palabras'] ?? '40');
                 // Propagar opciones de plantilla Team
                 $raw_team_role = isset($this->args['team_show_role']) ? (string) $this->args['team_show_role'] : 'yes';
                 $raw_team_prof = isset($this->args['team_show_profession']) ? (string) $this->args['team_show_profession'] : 'yes';

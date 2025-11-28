@@ -457,7 +457,8 @@ class ContentRenderCss
 			$css .= $itemClass . '{width:100%;box-sizing:border-box;margin-bottom:' . esc_attr( $pattern_row_gap ) . ';}';
 
 			// Desktop: imagen/texto en fila, alternando orientación por item.
-			$desktop_rules  = $itemClass . ' .glory-cr__stack{display:flex;flex-direction:row;align-items:stretch;}';
+			// No tocamos display aquí para no interferir con "Internal layout".
+			$desktop_rules  = $itemClass . ' .glory-cr__stack{flex-direction:row;align-items:stretch;}';
 			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;}';
 			$css .= '@media (min-width: 980px){' . $desktop_rules . '}';
 		} elseif ( 'alternado_slls' === $pattern_l ) {
