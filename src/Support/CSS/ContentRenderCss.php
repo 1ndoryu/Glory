@@ -457,10 +457,8 @@ class ContentRenderCss
 			$css .= $itemClass . '{width:100%;box-sizing:border-box;margin-bottom:' . esc_attr( $pattern_row_gap ) . ';}';
 
 			// Desktop: imagen/texto en fila, alternando orientación por item.
-			// Fila impar: imagen izquierda, texto derecha (row-reverse sobre el HTML actual).
-			// Fila par: texto izquierda, imagen derecha.
-			$desktop_rules  = $itemClass . ' .glory-cr__stack{display:flex;flex-direction:row-reverse;align-items:stretch;}';
-			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row;}';
+			$desktop_rules  = $itemClass . ' .glory-cr__stack{display:flex;flex-direction:row;align-items:stretch;}';
+			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;}';
 			$css .= '@media (min-width: 980px){' . $desktop_rules . '}';
 		} elseif ( 'alternado_slls' === $pattern_l ) {
 			$small_w_l = (int) ( $args['pattern_small_width_percent'] ?? 40 );
