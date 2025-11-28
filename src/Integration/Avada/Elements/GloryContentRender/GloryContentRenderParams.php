@@ -92,8 +92,12 @@ class GloryContentRenderParams
             [ 'type' => 'textfield', 'heading' => 'Title maximum width', 'param_name' => 'title_max_width', 'default' => '', 'description' => 'E.g.: 300px, 40ch, 90%', 'group' => 'Design' ],
             [ 'type' => 'radio_button_set', 'heading' => 'Show title only on hover', 'param_name' => 'title_show_on_hover', 'default' => 'no', 'value' => [ 'yes' => 'Yes', 'no' => 'No' ], 'group' => 'Design' ],
             [ 'type' => 'radio_button_set', 'heading' => 'Title position', 'param_name' => 'title_position', 'default' => 'top', 'value' => [ 'top' => 'Top', 'bottom' => 'Bottom' ], 'group' => 'Design' ],
-			// Layout pattern (alternating S-LL-S) - responsive
-			[ 'type' => 'radio_button_set', 'heading' => 'Layout pattern', 'param_name' => 'layout_pattern', 'default' => 'none', 'value' => [ 'none' => 'None', 'alternado_slls' => 'Alternating S-LL-S' ], 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ] ],
+			// Layout pattern (alternating) - responsive
+			[ 'type' => 'radio_button_set', 'heading' => 'Layout pattern', 'param_name' => 'layout_pattern', 'default' => 'none', 'value' => [
+				'none'          => 'None',
+				'alternado_slls'=> 'Alternating S-LL-S',
+				'alternado_lr'  => 'Alternating L/R rows',
+			], 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ] ],
 			[ 'type' => 'textfield', 'heading' => 'Row gap (pattern)', 'param_name' => 'pattern_row_gap', 'default' => '40px', 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ], 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'none', 'operator' => '!=' ] ] ],
 			[ 'type' => 'range', 'heading' => 'Small width %', 'param_name' => 'pattern_small_width_percent', 'value' => [ 'large' => 40, 'medium' => '', 'small' => '' ], 'default' => 40, 'min' => 10, 'max' => 90, 'step' => 1, 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ], 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'none', 'operator' => '!=' ] ] ],
 			[ 'type' => 'range', 'heading' => 'Large width %', 'param_name' => 'pattern_large_width_percent', 'value' => [ 'large' => 60, 'medium' => '', 'small' => '' ], 'default' => 60, 'min' => 10, 'max' => 90, 'step' => 1, 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ], 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'none', 'operator' => '!=' ] ] ],

@@ -440,12 +440,35 @@ class ContentRenderCss
 
 		$css .= $containerClass . ' ' . $itemClass . '.servicio-item--toggle > .servicio-separador{display:block !important;height:1px !important;width:100% !important;margin:8px 0 !important;opacity:1 !important;pointer-events:none !important;}';
 
-		// Patrón alternado de tamaños (S-LL-S) por nth-child, usando porcentajes de ancho
+		// Patrón alternado de tamaños y orientación
 		$layout_pattern_raw = $args['layout_pattern'] ?? 'none';
 		$pattern_l = is_array( $layout_pattern_raw ) ? (string) ( $layout_pattern_raw['large'] ?? reset( $layout_pattern_raw ) ?? 'none' ) : (string) $layout_pattern_raw;
 		$pattern_m = is_array( $layout_pattern_raw ) ? (string) ( $layout_pattern_raw['medium'] ?? $pattern_l ) : '';
 		$pattern_s = is_array( $layout_pattern_raw ) ? (string) ( $layout_pattern_raw['small'] ?? $pattern_m ) : '';
-		if ( in_array( $pattern_l, [ 'alternado_slls' ], true ) ) {
+		if ( 'alternado_lr' === $pattern_l ) {
+			// Nuevo patrón: filas alternando imagen a la izquierda / derecha,
+			// asumiendo imágenes de tamaño similar. Sólo afecta al stack interno,
+			// no a los anchos de las tarjetas.
+			$pattern_row_gap_raw = $args['pattern_row_gap'] ?? '40px';
+			$pattern_row_gap = is_array( $pattern_row_gap_raw ) ? (string) ( $pattern_row_gap_raw['large'] ?? reset( $pattern_row_gap_raw ) ?? '40px' ) : (string) $pattern_row_gap_raw;
+			if ( '' === trim( $pattern_row_gap ) ) { $pattern_row_gap = '40px'; }
+
+			// Desktop: imagen/texto en fila, alternando orientación por item.
+			$desktop_rules  = $itemClass . ' .glory-cr__stack{flex-direction:row;align-items:stretch;}';
+			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;}';
+			if ( 'flex' === $display_mode ) {
+				// Mantenemos el layout global definido por display_mode,
+				// solo ajustamos el espacio vertical entre filas.
+				$desktop_rules .= $containerClass . ' > *{margin-bottom:' . esc_attr( $pattern_row_gap ) . ';}';
+			} elseif ( 'grid' === $display_mode ) {
+				// En grid usamos row-gap para separar filas.
+				$desktop_rules .= $containerClass . '{row-gap:' . esc_attr( $pattern_row_gap ) . ';}';
+			}
+			$css .= '@media (min-width: 980px){' . $desktop_rules . '}';
+
+			// En tablet/mobile dejamos el stack en columna (ya es el valor por defecto),
+			// por legibilidad; no añadimos reglas extra.
+		} elseif ( 'alternado_slls' === $pattern_l ) {
 			$small_w_l = (int) ( $args['pattern_small_width_percent'] ?? 40 );
 			$large_w_l = (int) ( $args['pattern_large_width_percent'] ?? 60 );
 			$small_w_m = (string) ( $args['pattern_small_width_percent_medium'] ?? '' );
