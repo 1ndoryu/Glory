@@ -491,7 +491,6 @@ class ContentRenderCss
 				] );
 				$css .= '@media (min-width: 980px){'
 					. $evenTextSelectors . '{text-align:right;}'
-					. $itemClass . ':nth-child(2n) .glory-cr__internal{align-items:flex-end;}'
 					. '}';
 			}
 		} elseif ( 'alternado_slls' === $pattern_l ) {
