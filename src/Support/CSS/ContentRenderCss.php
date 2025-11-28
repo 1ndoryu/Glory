@@ -187,6 +187,8 @@ class ContentRenderCss
 		$title_min_width = isset( $args['title_min_width'] ) ? (string) $args['title_min_width'] : '';
 		$title_width = isset( $args['title_width'] ) ? (string) $args['title_width'] : '';
 		$title_max_width = isset( $args['title_max_width'] ) ? (string) $args['title_max_width'] : '';
+		$title_margin_top = isset( $args['title_margin_top'] ) ? (string) $args['title_margin_top'] : '';
+		$title_margin_bottom = isset( $args['title_margin_bottom'] ) ? (string) $args['title_margin_bottom'] : '';
 
 		// Variables para anchos del contenido
 		$content_min_width = isset( $args['content_min_width'] ) ? (string) $args['content_min_width'] : '';
@@ -194,6 +196,23 @@ class ContentRenderCss
 		$content_max_width = isset( $args['content_max_width'] ) ? (string) $args['content_max_width'] : '';
 		if ( '' !== $title_transform ) {
 			$title_styles .= 'text-transform:' . esc_attr( $title_transform ) . ';';
+		}
+		$title_margin_styles = '';
+		if ( '' !== $title_margin_top ) {
+			if ( $sanitizer ) {
+				$title_margin_top = $sanitizer->get_value_with_unit( $title_margin_top );
+			}
+			if ( '' !== $title_margin_top ) {
+				$title_margin_styles .= 'margin-top:' . esc_attr( $title_margin_top ) . ';';
+			}
+		}
+		if ( '' !== $title_margin_bottom ) {
+			if ( $sanitizer ) {
+				$title_margin_bottom = $sanitizer->get_value_with_unit( $title_margin_bottom );
+			}
+			if ( '' !== $title_margin_bottom ) {
+				$title_margin_styles .= 'margin-bottom:' . esc_attr( $title_margin_bottom ) . ';';
+			}
 		}
 
 		$css = '';
@@ -378,7 +397,7 @@ class ContentRenderCss
 			$title_styles .= 'color:' . esc_attr( $title_color_l ) . ';';
 		}
 
-		$css .= $containerClass . ' .glory-cr__title,' . $itemClass . ' .glory-cr__title{display:' . ( $title_show ? 'block' : 'none' ) . ';' . $title_styles;
+		$css .= $containerClass . ' .glory-cr__title,' . $itemClass . ' .glory-cr__title{display:' . ( $title_show ? 'block' : 'none' ) . ';' . $title_styles . $title_margin_styles;
 		if ( '' !== $title_min_width ) { $css .= 'min-width:' . esc_attr( $title_min_width ) . ';'; }
 		if ( '' !== $title_width ) { $css .= 'width:' . esc_attr( $title_width ) . ';'; }
 		if ( '' !== $title_max_width ) { $css .= 'max-width:' . esc_attr( $title_max_width ) . ';'; }
@@ -461,6 +480,20 @@ class ContentRenderCss
 			$desktop_rules  = $itemClass . ' .glory-cr__stack{flex-direction:row;align-items:stretch;}';
 			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;}';
 			$css .= '@media (min-width: 980px){' . $desktop_rules . '}';
+			$pattern_lr_align = isset( $args['pattern_lr_align_text'] ) ? (string) $args['pattern_lr_align_text'] : 'yes';
+			if ( 'yes' === $pattern_lr_align ) {
+				$evenTextSelectors = implode( ',', [
+					$itemClass . ':nth-child(2n) .glory-cr__title',
+					$itemClass . ':nth-child(2n) .glory-cr__content',
+					$itemClass . ':nth-child(2n) .glory-cr__internal',
+					$itemClass . ':nth-child(2n) .post-info',
+					$itemClass . ':nth-child(2n) .portafolio-info',
+				] );
+				$css .= '@media (min-width: 980px){'
+					. $evenTextSelectors . '{text-align:right;}'
+					. $itemClass . ':nth-child(2n) .glory-cr__internal{align-items:flex-end;}'
+					. '}';
+			}
 		} elseif ( 'alternado_slls' === $pattern_l ) {
 			$small_w_l = (int) ( $args['pattern_small_width_percent'] ?? 40 );
 			$large_w_l = (int) ( $args['pattern_large_width_percent'] ?? 60 );

@@ -90,6 +90,8 @@ class GloryContentRenderParams
             [ 'type' => 'textfield', 'heading' => 'Title minimum width', 'param_name' => 'title_min_width', 'default' => '', 'description' => 'E.g.: 100px, 20ch, 50%', 'group' => 'Design' ],
             [ 'type' => 'textfield', 'heading' => 'Title width', 'param_name' => 'title_width', 'default' => '', 'description' => 'E.g.: 200px, 30ch, 80%', 'group' => 'Design' ],
             [ 'type' => 'textfield', 'heading' => 'Title maximum width', 'param_name' => 'title_max_width', 'default' => '', 'description' => 'E.g.: 300px, 40ch, 90%', 'group' => 'Design' ],
+            [ 'type' => 'textfield', 'heading' => 'Title margin top', 'param_name' => 'title_margin_top', 'default' => '', 'description' => 'CSS length, e.g.: 10px', 'group' => 'Design' ],
+            [ 'type' => 'textfield', 'heading' => 'Title margin bottom', 'param_name' => 'title_margin_bottom', 'default' => '', 'description' => 'CSS length, e.g.: 10px', 'group' => 'Design' ],
             [ 'type' => 'radio_button_set', 'heading' => 'Show title only on hover', 'param_name' => 'title_show_on_hover', 'default' => 'no', 'value' => [ 'yes' => 'Yes', 'no' => 'No' ], 'group' => 'Design' ],
             [ 'type' => 'radio_button_set', 'heading' => 'Title position', 'param_name' => 'title_position', 'default' => 'top', 'value' => [ 'top' => 'Top', 'bottom' => 'Bottom' ], 'group' => 'Design' ],
 			// Layout pattern (alternating) - responsive
@@ -101,6 +103,7 @@ class GloryContentRenderParams
 			[ 'type' => 'textfield', 'heading' => 'Row gap (pattern)', 'param_name' => 'pattern_row_gap', 'default' => '40px', 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ], 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'none', 'operator' => '!=' ] ] ],
 			[ 'type' => 'range', 'heading' => 'Small width %', 'param_name' => 'pattern_small_width_percent', 'value' => [ 'large' => 40, 'medium' => '', 'small' => '' ], 'default' => 40, 'min' => 10, 'max' => 90, 'step' => 1, 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ], 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'none', 'operator' => '!=' ] ] ],
 			[ 'type' => 'range', 'heading' => 'Large width %', 'param_name' => 'pattern_large_width_percent', 'value' => [ 'large' => 60, 'medium' => '', 'small' => '' ], 'default' => 60, 'min' => 10, 'max' => 90, 'step' => 1, 'group' => 'Design', 'responsive' => [ 'state' => 'large', 'default_value' => true, 'additional_states' => [ 'medium', 'small' ] ], 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'none', 'operator' => '!=' ] ] ],
+            [ 'type' => 'radio_button_set', 'heading' => 'Mirror text alignment (LR pattern)', 'param_name' => 'pattern_lr_align_text', 'default' => 'yes', 'value' => [ 'yes' => 'Enabled', 'no' => 'Disabled' ], 'group' => 'Design', 'dependency' => [ [ 'element' => 'layout_pattern', 'value' => 'alternado_lr', 'operator' => '==' ] ] ],
 
             // Internal content typography
             [ 'type' => 'radio_button_set', 'heading' => 'Enable internal typography', 'param_name' => 'internal_typography_enable', 'default' => 'no', 'value' => [ 'yes' => 'Yes', 'no' => 'No' ], 'group' => 'Design' ],

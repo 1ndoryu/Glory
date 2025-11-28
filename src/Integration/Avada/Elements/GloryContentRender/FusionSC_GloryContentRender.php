@@ -122,6 +122,8 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'title_min_width'                => '',
                 'title_width'                    => '',
                 'title_max_width'                => '',
+                'title_margin_top'               => '',
+                'title_margin_bottom'            => '',
                 // Ancho del contenido (.glory-cr__content)
                 'content_min_width'              => '',
                 'content_width'                  => '',
@@ -143,6 +145,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
 				'pattern_large_width_percent'    => 60,
 				'pattern_large_width_percent_medium' => '',
 				'pattern_large_width_percent_small'  => '',
+                'pattern_lr_align_text'          => 'yes',
                 // Tipografía interna (por instancia) - mismas opciones del título pero separadas
                 'internal_typography_enable'           => 'no',
                 'internal_bold'                        => 'no',
