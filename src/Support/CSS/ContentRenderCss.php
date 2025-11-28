@@ -446,28 +446,20 @@ class ContentRenderCss
 		$pattern_m = is_array( $layout_pattern_raw ) ? (string) ( $layout_pattern_raw['medium'] ?? $pattern_l ) : '';
 		$pattern_s = is_array( $layout_pattern_raw ) ? (string) ( $layout_pattern_raw['small'] ?? $pattern_m ) : '';
 		if ( 'alternado_lr' === $pattern_l ) {
-			// Nuevo patrón: filas alternando imagen a la izquierda / derecha,
-			// asumiendo imágenes de tamaño similar. Sólo afecta al stack interno,
-			// no a los anchos de las tarjetas.
+			// Nuevo patrón: una fila = un post, alternando imagen a la izquierda/derecha.
+			// Forzamos que cada item ocupe el 100% del ancho y se apile en vertical.
 			$pattern_row_gap_raw = $args['pattern_row_gap'] ?? '40px';
 			$pattern_row_gap = is_array( $pattern_row_gap_raw ) ? (string) ( $pattern_row_gap_raw['large'] ?? reset( $pattern_row_gap_raw ) ?? '40px' ) : (string) $pattern_row_gap_raw;
 			if ( '' === trim( $pattern_row_gap ) ) { $pattern_row_gap = '40px'; }
 
-			// Desktop: imagen/texto en fila, alternando orientación por item.
-			$desktop_rules  = $itemClass . ' .glory-cr__stack{flex-direction:row;align-items:stretch;}';
-			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;}';
-			if ( 'flex' === $display_mode ) {
-				// Mantenemos el layout global definido por display_mode,
-				// solo ajustamos el espacio vertical entre filas.
-				$desktop_rules .= $containerClass . ' > *{margin-bottom:' . esc_attr( $pattern_row_gap ) . ';}';
-			} elseif ( 'grid' === $display_mode ) {
-				// En grid usamos row-gap para separar filas.
-				$desktop_rules .= $containerClass . '{row-gap:' . esc_attr( $pattern_row_gap ) . ';}';
-			}
-			$css .= '@media (min-width: 980px){' . $desktop_rules . '}';
+			// Base para todos los breakpoints: lista vertical de items a ancho completo.
+			$css .= $containerClass . '{display:block;}';
+			$css .= $itemClass . '{width:100%;box-sizing:border-box;margin-bottom:' . esc_attr( $pattern_row_gap ) . ';}';
 
-			// En tablet/mobile dejamos el stack en columna (ya es el valor por defecto),
-			// por legibilidad; no añadimos reglas extra.
+			// Desktop: imagen/texto en fila, alternando orientación por item.
+			$desktop_rules  = $itemClass . ' .glory-cr__stack{display:flex;flex-direction:row;align-items:stretch;}';
+			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;}';
+			$css .= '@media (min-width: 980px){' . $desktop_rules . '}';
 		} elseif ( 'alternado_slls' === $pattern_l ) {
 			$small_w_l = (int) ( $args['pattern_small_width_percent'] ?? 40 );
 			$large_w_l = (int) ( $args['pattern_large_width_percent'] ?? 60 );
