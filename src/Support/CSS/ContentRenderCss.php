@@ -621,8 +621,6 @@ class ContentRenderCss
 			$lrAlign = $lrAlignMap[ $lrAlignRaw ] ?? 'flex-start';
 			$desktop_rules  = $itemClass . ' .glory-cr__stack{flex-direction:row;align-items:' . esc_attr( $lrAlign ) . ';}';
 			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;align-items:' . esc_attr( $lrAlign ) . ';}';
-			$desktop_rules .= $itemClass . '.glory-cr__item--lr-left .glory-cr__stack{flex-direction:row;align-items:' . esc_attr( $lrAlign ) . ';}';
-			$desktop_rules .= $itemClass . '.glory-cr__item--lr-right .glory-cr__stack{flex-direction:row-reverse;align-items:' . esc_attr( $lrAlign ) . ';}';
 			$css .= '@media (min-width: 980px){' . $desktop_rules . '}';
 			$pattern_lr_align = isset( $args['pattern_lr_align_text'] ) ? (string) $args['pattern_lr_align_text'] : 'yes';
 			if ( 'yes' === $pattern_lr_align ) {
@@ -673,6 +671,39 @@ class ContentRenderCss
 					. $leftTextSelectors . '{text-align:left;}'
 					. $rightActionsSelectors . '{justify-content:flex-end;margin-left:auto;margin-right:0;}'
 					. $leftActionsSelectors . '{justify-content:flex-start;margin-right:auto;margin-left:0;text-align:left;}'
+					. '}';
+			}
+			$dynamicContainer = $containerClass . '.glory-cr--lr-dynamic';
+			$dynamicStackRules  = $dynamicContainer . ' ' . $itemClass . ' .glory-cr__stack{flex-direction:row;align-items:' . esc_attr( $lrAlign ) . ';}';
+			$dynamicStackRules .= $dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__stack{flex-direction:row-reverse;align-items:' . esc_attr( $lrAlign ) . ';}';
+			$dynamicStackRules .= $dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__stack{flex-direction:row;align-items:' . esc_attr( $lrAlign ) . ';}';
+			$css .= '@media (min-width: 980px){' . $dynamicStackRules . '}';
+			if ( 'yes' === $pattern_lr_align ) {
+				$dynRightSelectors = [
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__title',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__content',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__internal',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .post-info',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .portafolio-info',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__actions',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__button',
+				];
+				$dynLeftSelectors = [
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__title',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__content',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__internal',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .post-info',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .portafolio-info',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__actions',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__button',
+				];
+				$dynRightSelectors = implode( ',', $dynRightSelectors );
+				$dynLeftSelectors  = implode( ',', $dynLeftSelectors );
+				$css .= '@media (min-width: 980px){'
+					. $dynRightSelectors . '{text-align:right;}'
+					. $dynLeftSelectors . '{text-align:left;}'
+					. $dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__actions{justify-content:flex-end;margin-left:auto;margin-right:0;}'
+					. $dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__actions{justify-content:flex-start;margin-right:auto;margin-left:0;text-align:left;}'
 					. '}';
 			}
 		} elseif ( 'alternado_slls' === $pattern_l ) {
