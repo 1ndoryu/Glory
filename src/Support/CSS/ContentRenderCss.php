@@ -643,6 +643,23 @@ class ContentRenderCss
 					$itemClass . '.glory-cr__item--lr-right .glory-cr__button',
 				];
 				$rightTextSelectors = implode( ',', $rightTextSelectors );
+				$leftTextSelectors = [
+					$itemClass . ':nth-child(2n+1) .glory-cr__title',
+					$itemClass . ':nth-child(2n+1) .glory-cr__content',
+					$itemClass . ':nth-child(2n+1) .glory-cr__internal',
+					$itemClass . ':nth-child(2n+1) .post-info',
+					$itemClass . ':nth-child(2n+1) .portafolio-info',
+					$itemClass . ':nth-child(2n+1) .glory-cr__actions',
+					$itemClass . ':nth-child(2n+1) .glory-cr__button',
+					$itemClass . '.glory-cr__item--lr-left .glory-cr__title',
+					$itemClass . '.glory-cr__item--lr-left .glory-cr__content',
+					$itemClass . '.glory-cr__item--lr-left .glory-cr__internal',
+					$itemClass . '.glory-cr__item--lr-left .post-info',
+					$itemClass . '.glory-cr__item--lr-left .portafolio-info',
+					$itemClass . '.glory-cr__item--lr-left .glory-cr__actions',
+					$itemClass . '.glory-cr__item--lr-left .glory-cr__button',
+				];
+				$leftTextSelectors = implode( ',', $leftTextSelectors );
 				$rightActionsSelectors = implode( ',', [
 					$itemClass . ':nth-child(2n) .glory-cr__actions',
 					$itemClass . '.glory-cr__item--lr-right .glory-cr__actions',
@@ -653,6 +670,7 @@ class ContentRenderCss
 				] );
 				$css .= '@media (min-width: 980px){'
 					. $rightTextSelectors . '{text-align:right;}'
+					. $leftTextSelectors . '{text-align:left;}'
 					. $rightActionsSelectors . '{justify-content:flex-end;margin-left:auto;margin-right:0;}'
 					. $leftActionsSelectors . '{justify-content:flex-start;margin-right:auto;margin-left:0;text-align:left;}'
 					. '}';
