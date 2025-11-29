@@ -650,6 +650,7 @@ class ContentRenderCss
 					$itemClass . ':nth-child(2n) .glory-cr__internal',
 					$itemClass . ':nth-child(2n) .post-info',
 					$itemClass . ':nth-child(2n) .portafolio-info',
+					$itemClass . ':nth-child(2n) .portafolio-categorias',
 					$itemClass . ':nth-child(2n) .glory-cr__actions',
 					$itemClass . ':nth-child(2n) .glory-cr__button',
 					$itemClass . '.glory-cr__item--lr-right .glory-cr__title',
@@ -657,6 +658,7 @@ class ContentRenderCss
 					$itemClass . '.glory-cr__item--lr-right .glory-cr__internal',
 					$itemClass . '.glory-cr__item--lr-right .post-info',
 					$itemClass . '.glory-cr__item--lr-right .portafolio-info',
+					$itemClass . '.glory-cr__item--lr-right .portafolio-categorias',
 					$itemClass . '.glory-cr__item--lr-right .glory-cr__actions',
 					$itemClass . '.glory-cr__item--lr-right .glory-cr__button',
 				];
@@ -667,6 +669,7 @@ class ContentRenderCss
 					$itemClass . ':nth-child(2n+1) .glory-cr__internal',
 					$itemClass . ':nth-child(2n+1) .post-info',
 					$itemClass . ':nth-child(2n+1) .portafolio-info',
+					$itemClass . ':nth-child(2n+1) .portafolio-categorias',
 					$itemClass . ':nth-child(2n+1) .glory-cr__actions',
 					$itemClass . ':nth-child(2n+1) .glory-cr__button',
 					$itemClass . '.glory-cr__item--lr-left .glory-cr__title',
@@ -674,6 +677,7 @@ class ContentRenderCss
 					$itemClass . '.glory-cr__item--lr-left .glory-cr__internal',
 					$itemClass . '.glory-cr__item--lr-left .post-info',
 					$itemClass . '.glory-cr__item--lr-left .portafolio-info',
+					$itemClass . '.glory-cr__item--lr-left .portafolio-categorias',
 					$itemClass . '.glory-cr__item--lr-left .glory-cr__actions',
 					$itemClass . '.glory-cr__item--lr-left .glory-cr__button',
 				];
@@ -705,6 +709,7 @@ class ContentRenderCss
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__internal',
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .post-info',
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .portafolio-info',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .portafolio-categorias',
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__actions',
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__button',
 				];
@@ -714,6 +719,7 @@ class ContentRenderCss
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__internal',
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .post-info',
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .portafolio-info',
+					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .portafolio-categorias',
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__actions',
 					$dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__button',
 				];
