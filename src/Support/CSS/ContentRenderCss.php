@@ -408,7 +408,141 @@ class ContentRenderCss
 		if ( '' !== $content_width ) { $css .= 'width:' . esc_attr( $content_width ) . ';'; }
 		if ( '' !== $content_max_width ) { $css .= 'max-width:' . esc_attr( $content_max_width ) . ';'; }
 		$css .= $title_styles . '}';
+		$css .= $containerClass . ' .glory-cr__link--disabled,' . $itemClass . ' .glory-cr__link--disabled{pointer-events:none;cursor:default;}';
 
+		$categoryStyles = '';
+		$categorySelector = $itemClass . ' .portafolio-categorias';
+		$catColor = isset( $args['portafolio_categoria_color'] ) ? (string) $args['portafolio_categoria_color'] : '';
+		if ( '' !== $catColor ) {
+			$categoryStyles .= 'color:' . esc_attr( $catColor ) . ';';
+		}
+		$catTransform = isset( $args['portafolio_categoria_text_transform'] ) ? (string) $args['portafolio_categoria_text_transform'] : '';
+		if ( '' !== $catTransform ) {
+			$categoryStyles .= 'text-transform:' . esc_attr( $catTransform ) . ';';
+		}
+		$catTypographyEnabled = isset( $args['portafolio_categoria_typography_enable'] ) && 'yes' === (string) $args['portafolio_categoria_typography_enable'];
+		if ( $catTypographyEnabled ) {
+			$catFamily = isset( $args['fusion_font_family_portafolio_categoria_font'] ) ? (string) $args['fusion_font_family_portafolio_categoria_font'] : '';
+			if ( '' !== $catFamily ) {
+				$categoryStyles .= 'font-family:' . esc_attr( $catFamily ) . ';';
+			}
+			$catVariant = isset( $args['fusion_font_variant_portafolio_categoria_font'] ) ? (string) $args['fusion_font_variant_portafolio_categoria_font'] : '';
+			if ( '' !== $catVariant ) {
+				$categoryStyles .= 'font-weight:' . esc_attr( $catVariant ) . ';';
+			}
+			$catFontSize = isset( $args['portafolio_categoria_font_size'] ) ? (string) $args['portafolio_categoria_font_size'] : '';
+			if ( '' !== $catFontSize ) {
+				$value = $sanitizer ? $sanitizer->get_value_with_unit( $catFontSize ) : $catFontSize;
+				if ( '' !== $value ) {
+					$categoryStyles .= 'font-size:' . esc_attr( $value ) . ';';
+				}
+			}
+			$catLineHeight = isset( $args['portafolio_categoria_line_height'] ) ? (string) $args['portafolio_categoria_line_height'] : '';
+			if ( '' !== $catLineHeight ) {
+				$value = $sanitizer ? $sanitizer->size( $catLineHeight ) : $catLineHeight;
+				if ( '' !== $value ) {
+					$categoryStyles .= 'line-height:' . esc_attr( $value ) . ';';
+				}
+			}
+			$catLetterSpacing = isset( $args['portafolio_categoria_letter_spacing'] ) ? (string) $args['portafolio_categoria_letter_spacing'] : '';
+			if ( '' !== $catLetterSpacing ) {
+				$value = $sanitizer ? $sanitizer->get_value_with_unit( $catLetterSpacing ) : $catLetterSpacing;
+				if ( '' !== $value ) {
+					$categoryStyles .= 'letter-spacing:' . esc_attr( $value ) . ';';
+				}
+			}
+		}
+		if ( '' !== $categoryStyles ) {
+			$css .= $categorySelector . '{' . $categoryStyles . '}';
+		}
+		$css .= $itemClass . ' .glory-cr__actions{margin-top:1.25rem;display:flex;flex-wrap:wrap;gap:10px;}';
+		$buttonSelector = $itemClass . ' .glory-cr__button';
+		$buttonStyles = 'display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;cursor:pointer;text-decoration:none;transition:color .2s ease,background-color .2s ease,border-color .2s ease;';
+		$buttonHover = '';
+		$btnPadding = isset( $args['portafolio_boton_padding'] ) ? trim( (string) $args['portafolio_boton_padding'] ) : '';
+		if ( '' !== $btnPadding ) {
+			$buttonStyles .= 'padding:' . esc_attr( $btnPadding ) . ';';
+		}
+		$btnRadius = isset( $args['portafolio_boton_border_radius'] ) ? (string) $args['portafolio_boton_border_radius'] : '';
+		if ( '' !== $btnRadius ) {
+			$value = $sanitizer ? $sanitizer->get_value_with_unit( $btnRadius ) : $btnRadius;
+			if ( '' !== $value ) {
+				$buttonStyles .= 'border-radius:' . esc_attr( $value ) . ';';
+			}
+		}
+		$btnBorderWidth = isset( $args['portafolio_boton_border_width'] ) ? (string) $args['portafolio_boton_border_width'] : '';
+		if ( '' !== $btnBorderWidth ) {
+			$value = $sanitizer ? $sanitizer->get_value_with_unit( $btnBorderWidth ) : $btnBorderWidth;
+			if ( '' !== $value ) {
+				$buttonStyles .= 'border-width:' . esc_attr( $value ) . ';';
+			}
+		}
+		$btnTextColor = isset( $args['portafolio_boton_text_color'] ) ? (string) $args['portafolio_boton_text_color'] : '';
+		if ( '' !== $btnTextColor ) {
+			$buttonStyles .= 'color:' . esc_attr( $btnTextColor ) . ';';
+		}
+		$btnTextHover = isset( $args['portafolio_boton_text_color_hover'] ) ? (string) $args['portafolio_boton_text_color_hover'] : '';
+		if ( '' !== $btnTextHover ) {
+			$buttonHover .= 'color:' . esc_attr( $btnTextHover ) . ';';
+		}
+		$btnBg = isset( $args['portafolio_boton_background'] ) ? (string) $args['portafolio_boton_background'] : '';
+		if ( '' !== $btnBg ) {
+			$buttonStyles .= 'background-color:' . esc_attr( $btnBg ) . ';';
+		}
+		$btnBgHover = isset( $args['portafolio_boton_background_hover'] ) ? (string) $args['portafolio_boton_background_hover'] : '';
+		if ( '' !== $btnBgHover ) {
+			$buttonHover .= 'background-color:' . esc_attr( $btnBgHover ) . ';';
+		}
+		$btnBorderColor = isset( $args['portafolio_boton_border_color'] ) ? (string) $args['portafolio_boton_border_color'] : '';
+		if ( '' !== $btnBorderColor ) {
+			$buttonStyles .= 'border-color:' . esc_attr( $btnBorderColor ) . ';';
+		}
+		$btnBorderColorHover = isset( $args['portafolio_boton_border_color_hover'] ) ? (string) $args['portafolio_boton_border_color_hover'] : '';
+		if ( '' !== $btnBorderColorHover ) {
+			$buttonHover .= 'border-color:' . esc_attr( $btnBorderColorHover ) . ';';
+		}
+		$btnTypographyEnabled = isset( $args['portafolio_boton_typography_enable'] ) && 'yes' === (string) $args['portafolio_boton_typography_enable'];
+		if ( $btnTypographyEnabled ) {
+			$btnFamily = isset( $args['fusion_font_family_portafolio_boton_font'] ) ? (string) $args['fusion_font_family_portafolio_boton_font'] : '';
+			if ( '' !== $btnFamily ) {
+				$buttonStyles .= 'font-family:' . esc_attr( $btnFamily ) . ';';
+			}
+			$btnVariant = isset( $args['fusion_font_variant_portafolio_boton_font'] ) ? (string) $args['fusion_font_variant_portafolio_boton_font'] : '';
+			if ( '' !== $btnVariant ) {
+				$buttonStyles .= 'font-weight:' . esc_attr( $btnVariant ) . ';';
+			}
+			$btnFontSize = isset( $args['portafolio_boton_font_size'] ) ? (string) $args['portafolio_boton_font_size'] : '';
+			if ( '' !== $btnFontSize ) {
+				$value = $sanitizer ? $sanitizer->get_value_with_unit( $btnFontSize ) : $btnFontSize;
+				if ( '' !== $value ) {
+					$buttonStyles .= 'font-size:' . esc_attr( $value ) . ';';
+				}
+			}
+			$btnLineHeight = isset( $args['portafolio_boton_line_height'] ) ? (string) $args['portafolio_boton_line_height'] : '';
+			if ( '' !== $btnLineHeight ) {
+				$value = $sanitizer ? $sanitizer->size( $btnLineHeight ) : $btnLineHeight;
+				if ( '' !== $value ) {
+					$buttonStyles .= 'line-height:' . esc_attr( $value ) . ';';
+				}
+			}
+			$btnLetterSpacing = isset( $args['portafolio_boton_letter_spacing'] ) ? (string) $args['portafolio_boton_letter_spacing'] : '';
+			if ( '' !== $btnLetterSpacing ) {
+				$value = $sanitizer ? $sanitizer->get_value_with_unit( $btnLetterSpacing ) : $btnLetterSpacing;
+				if ( '' !== $value ) {
+					$buttonStyles .= 'letter-spacing:' . esc_attr( $value ) . ';';
+				}
+			}
+		}
+		$btnTransform = isset( $args['portafolio_boton_text_transform'] ) ? (string) $args['portafolio_boton_text_transform'] : '';
+		if ( '' !== $btnTransform ) {
+			$buttonStyles .= 'text-transform:' . esc_attr( $btnTransform ) . ';';
+		}
+		if ( '' !== $buttonStyles ) {
+			$css .= $buttonSelector . '{' . $buttonStyles . '}';
+		}
+		if ( '' !== $buttonHover ) {
+			$css .= $buttonSelector . ':hover{' . $buttonHover . '}';
+		}
 		$toggleSeparatorEnabled = ! empty( $currentConfig['toggleSeparator'] );
 		if ( $toggleSeparatorEnabled ) {
 			$sepColor = isset( $currentConfig['toggleSeparatorColor'] ) ? (string) $currentConfig['toggleSeparatorColor'] : 'rgba(0,0,0,0.1)';
@@ -477,8 +611,16 @@ class ContentRenderCss
 
 			// Desktop: imagen/texto en fila, alternando orientación por item.
 			// No tocamos display aquí para no interferir con "Internal layout".
-			$desktop_rules  = $itemClass . ' .glory-cr__stack{flex-direction:row;align-items:stretch;}';
-			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;}';
+			$lrAlignRaw = isset( $args['pattern_lr_vertical_align'] ) ? (string) $args['pattern_lr_vertical_align'] : 'start';
+			$lrAlignMap = [
+				'start'   => 'flex-start',
+				'center'  => 'center',
+				'end'     => 'flex-end',
+				'stretch' => 'stretch',
+			];
+			$lrAlign = $lrAlignMap[ $lrAlignRaw ] ?? 'flex-start';
+			$desktop_rules  = $itemClass . ' .glory-cr__stack{flex-direction:row;align-items:' . esc_attr( $lrAlign ) . ';}';
+			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;align-items:' . esc_attr( $lrAlign ) . ';}';
 			$css .= '@media (min-width: 980px){' . $desktop_rules . '}';
 			$pattern_lr_align = isset( $args['pattern_lr_align_text'] ) ? (string) $args['pattern_lr_align_text'] : 'yes';
 			if ( 'yes' === $pattern_lr_align ) {
@@ -632,6 +774,111 @@ class ContentRenderCss
 			// Evitar que los elementos internos interfieran con el arrastre
 			$css .= $itemClass . '{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;flex-shrink:0;}';
 			$css .= $itemClass . ' a{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}';
+		}
+
+		$filterEnabled = isset( $args['category_filter_enable'] ) && 'yes' === (string) $args['category_filter_enable'];
+		if ( $filterEnabled ) {
+			$filtersSelector = '.' . $instanceClass . '__filters';
+			$tabsSelector    = $filtersSelector . ' .glory-cr__filter';
+			$gapValue        = isset( $args['category_filter_gap'] ) ? (string) $args['category_filter_gap'] : '12px';
+			$marginTopValue  = isset( $args['category_filter_margin_top'] ) ? (string) $args['category_filter_margin_top'] : '0px';
+			$marginBottomValue = isset( $args['category_filter_margin_bottom'] ) ? (string) $args['category_filter_margin_bottom'] : '20px';
+			if ( $sanitizer ) {
+				$gapValue = '' !== $gapValue ? $sanitizer->get_value_with_unit( $gapValue ) : $gapValue;
+				$marginTopValue = '' !== $marginTopValue ? $sanitizer->get_value_with_unit( $marginTopValue ) : $marginTopValue;
+				$marginBottomValue = '' !== $marginBottomValue ? $sanitizer->get_value_with_unit( $marginBottomValue ) : $marginBottomValue;
+			}
+			$justify = isset( $args['category_filter_justify'] ) ? (string) $args['category_filter_justify'] : 'center';
+			$textAlign = isset( $args['category_filter_text_align'] ) ? (string) $args['category_filter_text_align'] : 'center';
+			$css .= $filtersSelector . '{display:flex;flex-wrap:wrap;gap:' . esc_attr( $gapValue ) . ';justify-content:' . esc_attr( $justify ) . ';margin-top:' . esc_attr( $marginTopValue ) . ';margin-bottom:' . esc_attr( $marginBottomValue ) . ';}';
+			$tabStyles = 'display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;cursor:pointer;transition:color .2s ease,background-color .2s ease,border-color .2s ease;text-decoration:none;';
+			$tabStyles .= 'text-align:' . esc_attr( $textAlign ) . ';';
+			$filterPadding = isset( $args['category_filter_padding'] ) ? trim( (string) $args['category_filter_padding'] ) : '';
+			if ( '' !== $filterPadding ) {
+				$tabStyles .= 'padding:' . esc_attr( $filterPadding ) . ';';
+			}
+			$filterRadius = isset( $args['category_filter_border_radius'] ) ? (string) $args['category_filter_border_radius'] : '';
+			if ( '' !== $filterRadius ) {
+				$value = $sanitizer ? $sanitizer->get_value_with_unit( $filterRadius ) : $filterRadius;
+				if ( '' !== $value ) {
+					$tabStyles .= 'border-radius:' . esc_attr( $value ) . ';';
+				}
+			}
+			$filterBorderWidth = isset( $args['category_filter_border_width'] ) ? (string) $args['category_filter_border_width'] : '';
+			if ( '' !== $filterBorderWidth ) {
+				$value = $sanitizer ? $sanitizer->get_value_with_unit( $filterBorderWidth ) : $filterBorderWidth;
+				if ( '' !== $value ) {
+					$tabStyles .= 'border-width:' . esc_attr( $value ) . ';';
+				}
+			}
+			$tabColor = isset( $args['category_filter_text_color'] ) ? (string) $args['category_filter_text_color'] : '';
+			if ( '' !== $tabColor ) {
+				$tabStyles .= 'color:' . esc_attr( $tabColor ) . ';';
+			}
+			$tabBg = isset( $args['category_filter_background'] ) ? (string) $args['category_filter_background'] : '';
+			if ( '' !== $tabBg ) {
+				$tabStyles .= 'background-color:' . esc_attr( $tabBg ) . ';';
+			}
+			$tabBorderColor = isset( $args['category_filter_border_color'] ) ? (string) $args['category_filter_border_color'] : '';
+			if ( '' !== $tabBorderColor ) {
+				$tabStyles .= 'border-color:' . esc_attr( $tabBorderColor ) . ';';
+			}
+			$tabTypographyEnabled = isset( $args['category_filter_typography_enable'] ) && 'yes' === (string) $args['category_filter_typography_enable'];
+			if ( $tabTypographyEnabled ) {
+				$tabFamily = isset( $args['fusion_font_family_category_filter_font'] ) ? (string) $args['fusion_font_family_category_filter_font'] : '';
+				if ( '' !== $tabFamily ) {
+					$tabStyles .= 'font-family:' . esc_attr( $tabFamily ) . ';';
+				}
+				$tabVariant = isset( $args['fusion_font_variant_category_filter_font'] ) ? (string) $args['fusion_font_variant_category_filter_font'] : '';
+				if ( '' !== $tabVariant ) {
+					$tabStyles .= 'font-weight:' . esc_attr( $tabVariant ) . ';';
+				}
+				$tabFontSize = isset( $args['category_filter_font_size'] ) ? (string) $args['category_filter_font_size'] : '';
+				if ( '' !== $tabFontSize ) {
+					$value = $sanitizer ? $sanitizer->get_value_with_unit( $tabFontSize ) : $tabFontSize;
+					if ( '' !== $value ) {
+						$tabStyles .= 'font-size:' . esc_attr( $value ) . ';';
+					}
+				}
+				$tabLineHeight = isset( $args['category_filter_line_height'] ) ? (string) $args['category_filter_line_height'] : '';
+				if ( '' !== $tabLineHeight ) {
+					$value = $sanitizer ? $sanitizer->size( $tabLineHeight ) : $tabLineHeight;
+					if ( '' !== $value ) {
+						$tabStyles .= 'line-height:' . esc_attr( $value ) . ';';
+					}
+				}
+				$tabLetterSpacing = isset( $args['category_filter_letter_spacing'] ) ? (string) $args['category_filter_letter_spacing'] : '';
+				if ( '' !== $tabLetterSpacing ) {
+					$value = $sanitizer ? $sanitizer->get_value_with_unit( $tabLetterSpacing ) : $tabLetterSpacing;
+					if ( '' !== $value ) {
+						$tabStyles .= 'letter-spacing:' . esc_attr( $value ) . ';';
+					}
+				}
+			}
+			$tabTransform = isset( $args['category_filter_text_transform'] ) ? (string) $args['category_filter_text_transform'] : '';
+			if ( '' !== $tabTransform ) {
+				$tabStyles .= 'text-transform:' . esc_attr( $tabTransform ) . ';';
+			}
+			if ( '' !== $tabStyles ) {
+				$css .= $tabsSelector . '{' . $tabStyles . '}';
+			}
+			$activeStyles = '';
+			$tabActiveColor = isset( $args['category_filter_active_text_color'] ) ? (string) $args['category_filter_active_text_color'] : '';
+			if ( '' !== $tabActiveColor ) {
+				$activeStyles .= 'color:' . esc_attr( $tabActiveColor ) . ';';
+			}
+			$tabActiveBg = isset( $args['category_filter_active_background'] ) ? (string) $args['category_filter_active_background'] : '';
+			if ( '' !== $tabActiveBg ) {
+				$activeStyles .= 'background-color:' . esc_attr( $tabActiveBg ) . ';';
+			}
+			$tabActiveBorder = isset( $args['category_filter_active_border_color'] ) ? (string) $args['category_filter_active_border_color'] : '';
+			if ( '' !== $tabActiveBorder ) {
+				$activeStyles .= 'border-color:' . esc_attr( $tabActiveBorder ) . ';';
+			}
+			if ( '' !== $activeStyles ) {
+				$css .= $tabsSelector . '.is-active{' . $activeStyles . '}';
+			}
+			$css .= $itemClass . '.glory-cr__filter-hidden{display:none !important;}';
 		}
 
 		return $css;

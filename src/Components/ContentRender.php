@@ -335,6 +335,13 @@ class ContentRender
             $itemClass        = trim($config['claseItem'] . ' ' . sanitize_html_class($postType) . '-item');
             $isAjaxPagination = $config['paginacion'];
 
+            $instanceClass = isset( $config['instanceClass'] ) ? (string) $config['instanceClass'] : '';
+            $categoryFilterConfig  = is_array( $config['categoryFilter'] ?? [] ) ? $config['categoryFilter'] : [];
+            $categoryFilterRuntime = self::prepareCategoryFilterRuntime( $postType, $categoryFilterConfig, $instanceClass, $query->posts );
+            if ( $categoryFilterRuntime['enabled'] && '' !== $categoryFilterRuntime['markup'] ) {
+                echo $categoryFilterRuntime['markup']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+            }
+
             if ($isAjaxPagination) {
                 $contentTargetClass    = 'glory-content-target';
                 $paginationTargetClass = 'glory-pagination-target';
@@ -449,9 +456,18 @@ class ContentRender
                 $clasesExtras    .= ($indiceGlobal % 2 === 0) ? ' par' : ' impar';
                 $currentItemClass = trim($itemClass . $clasesExtras);
                 self::setCurrentOption('indiceItem', $indiceGlobal);
+                if ( $categoryFilterRuntime['enabled'] ) {
+                    $currentCategories = $categoryFilterRuntime['map'][ get_the_ID() ] ?? [];
+                    self::setCurrentOption( 'currentCategories', $currentCategories );
+                } else {
+                    self::setCurrentOption( 'currentCategories', null );
+                }
                 call_user_func($config['plantillaCallback'], get_post(), $currentItemClass);
             }
             self::setCurrentOption('indiceItem', null);
+            if ( $categoryFilterRuntime['enabled'] ) {
+                self::setCurrentOption( 'currentCategories', null );
+            }
             echo '</div>';
 
             if ($isAjaxPagination) {
@@ -565,5 +581,144 @@ class ContentRender
             </div>
         </div>
         <?php
+    }
+
+    /**
+     * Prepara la data necesaria para el filtro por categorías.
+     *
+     * @param string   $postType     Tipo de post.
+     * @param array    $config       Configuración del filtro.
+     * @param string   $instanceClass Clase única de la instancia.
+     * @param \WP_Post[] $posts      Lista de posts consultados.
+     * @return array{enabled:bool,markup:string,map:array<int,array<int,array{slug:string,label:string}>>}
+     */
+    private static function prepareCategoryFilterRuntime(string $postType, array $config, string $instanceClass, array $posts): array
+    {
+        $response = [
+            'enabled' => false,
+            'markup'  => '',
+            'map'     => [],
+        ];
+        if (empty($config['enabled']) || empty($instanceClass) || empty($posts)) {
+            return $response;
+        }
+        $labels = [];
+        $map    = [];
+        foreach ($posts as $post) {
+            if (!($post instanceof \WP_Post)) {
+                continue;
+            }
+            $detected = self::extractCategoriesForPost($post, $postType);
+            if (empty($detected)) {
+                continue;
+            }
+            foreach ($detected as $labelRaw) {
+                $label = trim(wp_strip_all_tags((string) $labelRaw));
+                if ('' === $label) {
+                    continue;
+                }
+                $slug = sanitize_title($label);
+                if ('' === $slug) {
+                    continue;
+                }
+                $labels[$slug] = $label;
+                $map[$post->ID][] = [
+                    'slug'  => $slug,
+                    'label' => $label,
+                ];
+            }
+        }
+        if (empty($labels)) {
+            return $response;
+        }
+        $filterId = 'glory-cr-filter-' . wp_generate_password(8, false, false);
+        $allLabel = isset($config['allLabel']) && '' !== trim((string) $config['allLabel'])
+            ? (string) $config['allLabel']
+            : \__('All', 'glory-ab');
+        $markup = self::buildCategoryFilterMarkup($filterId, $labels, $allLabel, $instanceClass);
+        $response['enabled'] = true;
+        $response['markup']  = $markup;
+        $response['map']     = $map;
+        return $response;
+    }
+
+    /**
+     * Obtiene categorías asociadas a un post.
+     *
+     * @param \WP_Post $post     Post actual.
+     * @param string   $postType Tipo de post.
+     * @return array<int,string>
+     */
+    private static function extractCategoriesForPost(\WP_Post $post, string $postType): array
+    {
+        $detected = [];
+        $metaCategories = get_post_meta($post->ID, 'category', true);
+        if (is_array($metaCategories)) {
+            foreach ($metaCategories as $metaCat) {
+                $label = trim((string) $metaCat);
+                if ('' !== $label) {
+                    $detected[] = $label;
+                }
+            }
+        }
+        $taxonomy = 'category';
+        if (in_array($postType, ['portfolio', 'portafolio'], true) && taxonomy_exists('portfolio_category')) {
+            $taxonomy = 'portfolio_category';
+        }
+        $terms = get_the_terms($post->ID, $taxonomy);
+        if (!is_wp_error($terms) && is_array($terms)) {
+            foreach ($terms as $term) {
+                $label = trim((string) $term->name);
+                if ('' !== $label) {
+                    $detected[] = $label;
+                }
+            }
+        }
+        return $detected;
+    }
+
+    /**
+     * Construye el HTML del filtro por categorías y su script asociado.
+     *
+     * @param string $filterId      ID único del filtro.
+     * @param array  $labels        Lista de categorías slug => label.
+     * @param string $allLabel      Etiqueta para la pestaña "All".
+     * @param string $instanceClass Clase única de la instancia.
+     * @return string
+     */
+    private static function buildCategoryFilterMarkup(string $filterId, array $labels, string $allLabel, string $instanceClass): string
+    {
+        $wrapClasses = trim('glory-cr__filters ' . $instanceClass . '__filters');
+        $targetSelector = '.' . $instanceClass . '__item';
+        $html  = '<div class="' . esc_attr($wrapClasses) . '" id="' . esc_attr($filterId) . '" data-target="' . esc_attr($targetSelector) . '">';
+        $html .= '<button type="button" class="glory-cr__filter is-active" data-filter-value="*" aria-pressed="true">' . esc_html($allLabel) . '</button>';
+        foreach ($labels as $slug => $label) {
+            $html .= '<button type="button" class="glory-cr__filter" data-filter-value="' . esc_attr($slug) . '" aria-pressed="false">' . esc_html($label) . '</button>';
+        }
+        $html .= '</div>';
+        $html .= self::buildCategoryFilterScript($filterId);
+        return $html;
+    }
+
+    /**
+     * Genera el script del filtro por categorías.
+     *
+     * @param string $filterId ID del contenedor del filtro.
+     * @return string
+     */
+    private static function buildCategoryFilterScript(string $filterId): string
+    {
+        $filterIdJson = function_exists('wp_json_encode') ? wp_json_encode($filterId) : json_encode($filterId);
+        $hiddenClass  = 'glory-cr__filter-hidden';
+        $hiddenClassJson = function_exists('wp_json_encode') ? wp_json_encode($hiddenClass) : json_encode($hiddenClass);
+        $js  = '(function(){var root=document.getElementById(' . $filterIdJson . ');if(!root){return;}';
+        $js .= 'var target=root.getAttribute("data-target")||"";';
+        $js .= 'var items=target?Array.prototype.slice.call(document.querySelectorAll(target)):[];
+';
+        $js .= 'function applyFilter(value){var slug="*"===value?"*":value;items.forEach(function(item){var raw=(item.getAttribute("data-glory-categories")||"").trim();var cats=raw?raw.split(/\s+/):[];var match="*"===slug||cats.indexOf(slug)!==-1;item.classList.toggle(' . $hiddenClassJson . ', !match);});}';
+        $js .= 'applyFilter("*");';
+        $js .= 'root.addEventListener("click",function(evt){var btn=evt.target.closest(".glory-cr__filter");if(!btn){return;}evt.preventDefault();var value=btn.getAttribute("data-filter-value")||"*";root.querySelectorAll(".glory-cr__filter").forEach(function(el){el.classList.remove("is-active");el.setAttribute("aria-pressed","false");});btn.classList.add("is-active");btn.setAttribute("aria-pressed","true");applyFilter(value);});';
+        $js .= '})();';
+        return '<script id="' . esc_attr($filterId) . '-script">' . $js . '</script>';
     }
 }
