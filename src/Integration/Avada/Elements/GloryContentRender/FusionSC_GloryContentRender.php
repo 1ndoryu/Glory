@@ -136,7 +136,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'title_position'                 => 'top', // top | bottom
 				// Color del título
 				'title_color'                    => '',
-                'content_opacity'                => 0.8,
+                'content_opacity'                => 0.9,
 				// Patrón de layout alternado
 				'layout_pattern'                 => 'none', // responsive: large/medium/small
 			'pattern_small_width_percent'    => 40,
@@ -457,7 +457,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 \Glory\Components\ContentRender::setCurrentOption('toggleSeparator', $toggle_separator);
                 \Glory\Components\ContentRender::setCurrentOption('toggleSeparatorColor', $toggle_separator_color);
                 \Glory\Components\ContentRender::setCurrentOption('toggleAutoOpen', $toggle_auto_open);
-                $contentOpacityRaw = isset($this->args['content_opacity']) ? (float) $this->args['content_opacity'] : 0.8;
+                $contentOpacityRaw = isset($this->args['content_opacity']) ? (float) $this->args['content_opacity'] : 0.9;
                 if ($contentOpacityRaw < 0) { $contentOpacityRaw = 0; }
                 if ($contentOpacityRaw > 1) { $contentOpacityRaw = 1; }
                 \Glory\Components\ContentRender::setCurrentOption('contentOpacity', $contentOpacityRaw);

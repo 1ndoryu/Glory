@@ -403,7 +403,7 @@ class ContentRenderCss
 		if ( '' !== $title_max_width ) { $css .= 'max-width:' . esc_attr( $title_max_width ) . ';'; }
 		$css .= '}';
 
-		$content_opacity = isset( $args['content_opacity'] ) ? (float) $args['content_opacity'] : 0.8;
+		$content_opacity = isset( $args['content_opacity'] ) ? (float) $args['content_opacity'] : 0.9;
 		if ( $content_opacity < 0 ) { $content_opacity = 0; }
 		if ( $content_opacity > 1 ) { $content_opacity = 1; }
 

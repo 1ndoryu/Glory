@@ -94,7 +94,7 @@ class GloryContentRenderParams
             [ 'type' => 'textfield', 'heading' => 'Title margin bottom', 'param_name' => 'title_margin_bottom', 'default' => '', 'description' => 'CSS length, e.g.: 10px', 'group' => 'Design' ],
             [ 'type' => 'radio_button_set', 'heading' => 'Show title only on hover', 'param_name' => 'title_show_on_hover', 'default' => 'no', 'value' => [ 'yes' => 'Yes', 'no' => 'No' ], 'group' => 'Design' ],
             [ 'type' => 'radio_button_set', 'heading' => 'Title position', 'param_name' => 'title_position', 'default' => 'top', 'value' => [ 'top' => 'Top', 'bottom' => 'Bottom' ], 'group' => 'Design' ],
-            [ 'type' => 'range', 'heading' => 'Content opacity', 'param_name' => 'content_opacity', 'default' => 0.8, 'min' => 0, 'max' => 1, 'step' => 0.05, 'group' => 'Design' ],
+            [ 'type' => 'range', 'heading' => 'Content opacity', 'param_name' => 'content_opacity', 'default' => 0.9, 'min' => 0, 'max' => 1, 'step' => 0.05, 'group' => 'Design' ],
 			// Layout pattern (alternating) - responsive
 			[ 'type' => 'radio_button_set', 'heading' => 'Layout pattern', 'param_name' => 'layout_pattern', 'default' => 'none', 'value' => [
 				'none'          => 'None',
