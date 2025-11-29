@@ -732,6 +732,11 @@ class ContentRenderCss
 				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack{display:flex;align-items:center;justify-content:center;gap:0;}';
 				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack > *{flex:0 0 50%;max-width:50%;min-width:50%;box-sizing:border-box;}';
 				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack > *:not(.glory-cr__image){display:flex;flex-direction:column;justify-content:center;align-items:flex-end;text-align:right;padding:2rem;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack > *:not(.glory-cr__image) > *{width:100%;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack > *:not(.glory-cr__image) > .glory-cr__title{order:1;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack > *:not(.glory-cr__image) > .portafolio-categorias{order:2;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack > *:not(.glory-cr__image) > .glory-cr__content{order:3;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack > *:not(.glory-cr__image) > .glory-cr__actions{order:4;}';
 				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack img.glory-cr__image{width:100%;height:100%;object-fit:cover;}';
 				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack .glory-cr__actions{justify-content:flex-end;margin-left:auto;margin-right:0;}';
 				$splitSelectors .= $balancedContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__stack > *:not(.glory-cr__image){align-items:flex-end;text-align:right;}';
