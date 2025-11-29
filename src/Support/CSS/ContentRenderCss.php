@@ -420,6 +420,20 @@ class ContentRenderCss
 		if ( '' !== $catTransform ) {
 			$categoryStyles .= 'text-transform:' . esc_attr( $catTransform ) . ';';
 		}
+		$catMarginTop = isset( $args['portafolio_categoria_margin_top'] ) ? (string) $args['portafolio_categoria_margin_top'] : '';
+		if ( '' !== $catMarginTop ) {
+			$value = $sanitizer ? $sanitizer->get_value_with_unit( $catMarginTop ) : $catMarginTop;
+			if ( '' !== $value ) {
+				$categoryStyles .= 'margin-top:' . esc_attr( $value ) . ';';
+			}
+		}
+		$catMarginBottom = isset( $args['portafolio_categoria_margin_bottom'] ) ? (string) $args['portafolio_categoria_margin_bottom'] : '';
+		if ( '' !== $catMarginBottom ) {
+			$value = $sanitizer ? $sanitizer->get_value_with_unit( $catMarginBottom ) : $catMarginBottom;
+			if ( '' !== $value ) {
+				$categoryStyles .= 'margin-bottom:' . esc_attr( $value ) . ';';
+			}
+		}
 		$catTypographyEnabled = isset( $args['portafolio_categoria_typography_enable'] ) && 'yes' === (string) $args['portafolio_categoria_typography_enable'];
 		if ( $catTypographyEnabled ) {
 			$catFamily = isset( $args['fusion_font_family_portafolio_categoria_font'] ) ? (string) $args['fusion_font_family_portafolio_categoria_font'] : '';

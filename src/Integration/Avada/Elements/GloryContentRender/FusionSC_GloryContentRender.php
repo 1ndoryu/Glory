@@ -223,6 +223,8 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'portafolio_categoria_letter_spacing' => '',
                 'portafolio_categoria_color'        => '',
                 'portafolio_categoria_text_transform' => '',
+                'portafolio_categoria_margin_top'   => '',
+                'portafolio_categoria_margin_bottom'=> '',
                 'portafolio_mostrar_contenido'      => 'no',
                 'portafolio_contenido_max_palabras' => '40',
                 'portafolio_boton_mostrar'          => 'yes',
@@ -452,6 +454,8 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                     'letter_spacing'    => $this->args['portafolio_categoria_letter_spacing'] ?? '',
                     'color'             => $this->args['portafolio_categoria_color'] ?? '',
                     'text_transform'    => $this->args['portafolio_categoria_text_transform'] ?? '',
+                    'margin_top'        => $this->args['portafolio_categoria_margin_top'] ?? '',
+                    'margin_bottom'     => $this->args['portafolio_categoria_margin_bottom'] ?? '',
                 ];
                 \Glory\Components\ContentRender::setCurrentOption('portafolioCategoryOptions', $categoryOptions);
                 $config['portafolioCategoryOptions'] = $categoryOptions;
