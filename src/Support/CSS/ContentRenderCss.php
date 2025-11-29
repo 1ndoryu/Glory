@@ -621,18 +621,40 @@ class ContentRenderCss
 			$lrAlign = $lrAlignMap[ $lrAlignRaw ] ?? 'flex-start';
 			$desktop_rules  = $itemClass . ' .glory-cr__stack{flex-direction:row;align-items:' . esc_attr( $lrAlign ) . ';}';
 			$desktop_rules .= $itemClass . ':nth-child(2n) .glory-cr__stack{flex-direction:row-reverse;align-items:' . esc_attr( $lrAlign ) . ';}';
+			$desktop_rules .= $itemClass . '.glory-cr__item--lr-left .glory-cr__stack{flex-direction:row;align-items:' . esc_attr( $lrAlign ) . ';}';
+			$desktop_rules .= $itemClass . '.glory-cr__item--lr-right .glory-cr__stack{flex-direction:row-reverse;align-items:' . esc_attr( $lrAlign ) . ';}';
 			$css .= '@media (min-width: 980px){' . $desktop_rules . '}';
 			$pattern_lr_align = isset( $args['pattern_lr_align_text'] ) ? (string) $args['pattern_lr_align_text'] : 'yes';
 			if ( 'yes' === $pattern_lr_align ) {
-				$evenTextSelectors = implode( ',', [
+				$rightTextSelectors = [
 					$itemClass . ':nth-child(2n) .glory-cr__title',
 					$itemClass . ':nth-child(2n) .glory-cr__content',
 					$itemClass . ':nth-child(2n) .glory-cr__internal',
 					$itemClass . ':nth-child(2n) .post-info',
 					$itemClass . ':nth-child(2n) .portafolio-info',
+					$itemClass . ':nth-child(2n) .glory-cr__actions',
+					$itemClass . ':nth-child(2n) .glory-cr__button',
+					$itemClass . '.glory-cr__item--lr-right .glory-cr__title',
+					$itemClass . '.glory-cr__item--lr-right .glory-cr__content',
+					$itemClass . '.glory-cr__item--lr-right .glory-cr__internal',
+					$itemClass . '.glory-cr__item--lr-right .post-info',
+					$itemClass . '.glory-cr__item--lr-right .portafolio-info',
+					$itemClass . '.glory-cr__item--lr-right .glory-cr__actions',
+					$itemClass . '.glory-cr__item--lr-right .glory-cr__button',
+				];
+				$rightTextSelectors = implode( ',', $rightTextSelectors );
+				$rightActionsSelectors = implode( ',', [
+					$itemClass . ':nth-child(2n) .glory-cr__actions',
+					$itemClass . '.glory-cr__item--lr-right .glory-cr__actions',
+				] );
+				$leftActionsSelectors = implode( ',', [
+					$itemClass . ':nth-child(2n+1) .glory-cr__actions',
+					$itemClass . '.glory-cr__item--lr-left .glory-cr__actions',
 				] );
 				$css .= '@media (min-width: 980px){'
-					. $evenTextSelectors . '{text-align:right;}'
+					. $rightTextSelectors . '{text-align:right;}'
+					. $rightActionsSelectors . '{justify-content:flex-end;}'
+					. $leftActionsSelectors . '{justify-content:flex-start;text-align:left;}'
 					. '}';
 			}
 		} elseif ( 'alternado_slls' === $pattern_l ) {

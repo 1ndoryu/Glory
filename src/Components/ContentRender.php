@@ -433,6 +433,16 @@ class ContentRender
                     . ' data-gbn-schema="' . $schemaAttr . '"';
             }
 
+            $layoutPatternAttrs = '';
+            if (!empty($config['layoutPattern']) && is_array($config['layoutPattern'])) {
+                $patternLg = (string) ($config['layoutPattern']['large'] ?? 'none');
+                $patternMd = (string) ($config['layoutPattern']['medium'] ?? $patternLg);
+                $patternSm = (string) ($config['layoutPattern']['small'] ?? $patternMd);
+                $layoutPatternAttrs .= ' data-layout-pattern-lg="' . esc_attr($patternLg) . '"';
+                $layoutPatternAttrs .= ' data-layout-pattern-md="' . esc_attr($patternMd) . '"';
+                $layoutPatternAttrs .= ' data-layout-pattern-sm="' . esc_attr($patternSm) . '"';
+            }
+
             echo '<div class="' . esc_attr($contenedorClass) . '"'
                 . $gbnAttrs
                 . ' data-post-type="' . esc_attr($postType) . '"'
@@ -446,6 +456,7 @@ class ContentRender
                 . ' data-img-optimize="' . (!empty($config['imgOptimize']) ? '1' : '0') . '"'
                 . ' data-img-quality="' . esc_attr((string) ($config['imgQuality'] ?? '')) . '"'
                 . (!empty($callbackStr) ? ' data-template-callback="' . esc_attr($callbackStr) . '"' : '')
+                . $layoutPatternAttrs
                 . '>';
             $indiceGlobal = 0;
             while ($query->have_posts()) {
@@ -715,9 +726,18 @@ class ContentRender
         $js .= 'var target=root.getAttribute("data-target")||"";';
         $js .= 'var items=target?Array.prototype.slice.call(document.querySelectorAll(target)):[];
 ';
-        $js .= 'function applyFilter(value){var slug="*"===value?"*":value;items.forEach(function(item){var raw=(item.getAttribute("data-glory-categories")||"").trim();var cats=raw?raw.split(/\s+/):[];var match="*"===slug||cats.indexOf(slug)!==-1;item.classList.toggle(' . $hiddenClassJson . ', !match);});}';
+        $js .= 'var hiddenClass=' . $hiddenClassJson . ';';
+        $js .= 'var lrLeftClass="glory-cr__item--lr-left";var lrRightClass="glory-cr__item--lr-right";';
+        $js .= 'var instanceClass="";if(target.charAt(0)==="."){instanceClass=target.slice(1);}';
+        $js .= 'if(instanceClass.indexOf("__item")>-1){instanceClass=instanceClass.replace(/__item$/,"");}';
+        $js .= 'var container=instanceClass?document.querySelector("."+instanceClass):null;';
+        $js .= 'function patternForViewport(){if(!container){return"";}var w=window.innerWidth||document.documentElement.clientWidth||0;var lg=container.getAttribute("data-layout-pattern-lg")||"";var md=container.getAttribute("data-layout-pattern-md")||"";var sm=container.getAttribute("data-layout-pattern-sm")||"";if(w>=980){return lg||"";}if(w>=768){return md||lg||"";}return sm||md||lg||"";}';
+        $js .= 'function resetLrClasses(){items.forEach(function(item){item.classList.remove(lrLeftClass);item.classList.remove(lrRightClass);});}';
+        $js .= 'function reflowAlternado(){if("alternado_lr"!==patternForViewport()){resetLrClasses();return;}var visibles=[];items.forEach(function(item){if(!item.classList.contains(hiddenClass)){visibles.push(item);}});visibles.forEach(function(item,idx){item.classList.remove(lrLeftClass);item.classList.remove(lrRightClass);if(idx%2===0){item.classList.add(lrLeftClass);}else{item.classList.add(lrRightClass);}});}';
+        $js .= 'function applyFilter(value){var slug="*"===value?"*":value;items.forEach(function(item){var raw=(item.getAttribute("data-glory-categories")||"").trim();var cats=raw?raw.split(/\s+/):[];var match="*"===slug||cats.indexOf(slug)!==-1;item.classList.toggle(' . $hiddenClassJson . ', !match);});reflowAlternado();}';
         $js .= 'applyFilter("*");';
         $js .= 'root.addEventListener("click",function(evt){var btn=evt.target.closest(".glory-cr__filter");if(!btn){return;}evt.preventDefault();var value=btn.getAttribute("data-filter-value")||"*";root.querySelectorAll(".glory-cr__filter").forEach(function(el){el.classList.remove("is-active");el.setAttribute("aria-pressed","false");});btn.classList.add("is-active");btn.setAttribute("aria-pressed","true");applyFilter(value);});';
+        $js .= 'var resizeTimer=null;window.addEventListener("resize",function(){if(!container){return;}if(resizeTimer){clearTimeout(resizeTimer);}resizeTimer=setTimeout(reflowAlternado,150);});';
         $js .= '})();';
         return '<script id="' . esc_attr($filterId) . '-script">' . $js . '</script>';
     }

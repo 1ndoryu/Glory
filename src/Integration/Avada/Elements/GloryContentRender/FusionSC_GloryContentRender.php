@@ -397,6 +397,23 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                     'allLabel' => $categoryFilterLabel,
                 ];
 
+                $layoutPatternRaw = $this->args['layout_pattern'] ?? 'none';
+                if (is_array($layoutPatternRaw)) {
+                    $firstPattern   = reset($layoutPatternRaw);
+                    $patternLarge   = (string) ($layoutPatternRaw['large'] ?? $firstPattern ?? 'none');
+                    $patternMedium  = (string) ($layoutPatternRaw['medium'] ?? $patternLarge);
+                    $patternSmall   = (string) ($layoutPatternRaw['small'] ?? $patternMedium);
+                } else {
+                    $patternLarge  = (string) $layoutPatternRaw;
+                    $patternMedium = $patternLarge;
+                    $patternSmall  = $patternMedium;
+                }
+                $config['layoutPattern'] = [
+                    'large'  => $patternLarge,
+                    'medium' => $patternMedium,
+                    'small'  => $patternSmall,
+                ];
+
                 // Opciones específicas de plantilla (Posts): mapear directamente a config
                 $mostrarContenidoArg = isset($this->args['mostrar_contenido']) ? (string) $this->args['mostrar_contenido'] : 'yes';
                 $mostrarFechaArg     = isset($this->args['mostrar_fecha']) ? (string) $this->args['mostrar_fecha'] : 'yes';
