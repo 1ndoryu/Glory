@@ -612,6 +612,12 @@ class ContentRenderCss
 		$pattern_l = is_array( $layout_pattern_raw ) ? (string) ( $layout_pattern_raw['large'] ?? reset( $layout_pattern_raw ) ?? 'none' ) : (string) $layout_pattern_raw;
 		$pattern_m = is_array( $layout_pattern_raw ) ? (string) ( $layout_pattern_raw['medium'] ?? $pattern_l ) : '';
 		$pattern_s = is_array( $layout_pattern_raw ) ? (string) ( $layout_pattern_raw['small'] ?? $pattern_m ) : '';
+		$pattern_lr_split_raw = $args['pattern_lr_split_mode'] ?? ( $instanceConfig['patternLrSplit'] ?? 'no' );
+		if ( is_array( $pattern_lr_split_raw ) ) {
+			$pattern_lr_split_raw = reset( $pattern_lr_split_raw );
+		}
+		$pattern_lr_split_enabled = in_array( strtolower( (string) $pattern_lr_split_raw ), [ 'yes', 'true', '1' ], true );
+
 		if ( 'alternado_lr' === $pattern_l ) {
 			// Nuevo patrón: una fila = un post, alternando imagen a la izquierda/derecha.
 			// Forzamos que cada item ocupe el 100% del ancho y se apile en vertical.
@@ -719,6 +725,18 @@ class ContentRenderCss
 					. $dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__actions{justify-content:flex-end;margin-left:auto;margin-right:0;}'
 					. $dynamicContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__actions{justify-content:flex-start;margin-right:auto;margin-left:0;text-align:left;}'
 					. '}';
+			}
+			if ( $pattern_lr_split_enabled ) {
+				$balancedContainer = $containerClass . '.glory-cr--lr-split';
+				$splitSelectors = '';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack{display:flex;align-items:center;justify-content:center;gap:0;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack > *{flex:0 0 50%;max-width:50%;min-width:50%;box-sizing:border-box;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack > *:not(.glory-cr__image){display:flex;flex-direction:column;justify-content:center;align-items:flex-end;text-align:right;padding:2rem;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack img.glory-cr__image{width:100%;height:100%;object-fit:cover;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . ' .glory-cr__stack .glory-cr__actions{justify-content:flex-end;margin-left:auto;margin-right:0;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . '.glory-cr__item--lr-left .glory-cr__stack > *:not(.glory-cr__image){align-items:flex-end;text-align:right;}';
+				$splitSelectors .= $balancedContainer . ' ' . $itemClass . '.glory-cr__item--lr-right .glory-cr__stack > *:not(.glory-cr__image){align-items:flex-end;text-align:right;}';
+				$css .= '@media (min-width: 980px){' . $splitSelectors . '}';
 			}
 		} elseif ( 'alternado_slls' === $pattern_l ) {
 			$small_w_l = (int) ( $args['pattern_small_width_percent'] ?? 40 );

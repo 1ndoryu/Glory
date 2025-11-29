@@ -147,6 +147,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
 				'pattern_large_width_percent_small'  => '',
                 'pattern_lr_align_text'          => 'yes',
                 'pattern_lr_vertical_align'      => 'start',
+                'pattern_lr_split_mode'           => 'no',
                 // Filtro por categorías
                 'category_filter_enable'        => 'no',
                 'category_filter_all_label'     => 'All',
@@ -415,6 +416,9 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                     'medium' => $patternMedium,
                     'small'  => $patternSmall,
                 ];
+                $patternSplitRaw = $this->args['pattern_lr_split_mode'] ?? 'no';
+                $patternSplitEnabled = in_array(strtolower((string) $patternSplitRaw), ['yes', 'true', '1'], true) && ('alternado_lr' === $patternLarge || 'alternado_lr' === $patternMedium || 'alternado_lr' === $patternSmall);
+                $config['patternLrSplit'] = $patternSplitEnabled;
 
                 // Opciones específicas de plantilla (Posts): mapear directamente a config
                 $mostrarContenidoArg = isset($this->args['mostrar_contenido']) ? (string) $this->args['mostrar_contenido'] : 'yes';
@@ -428,6 +432,9 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 // Clase única por instancia para poder aplicar CSS aislado
                 $instanceClass = 'glory-cr-' . substr(md5(uniqid('', true)), 0, 8);
                 $config['claseContenedor'] = trim((string) ($config['claseContenedor'] ?? 'glory-content-list') . ' ' . $instanceClass);
+                if ($patternSplitEnabled) {
+                    $config['claseContenedor'] = trim($config['claseContenedor'] . ' glory-cr--lr-split');
+                }
                 $config['claseItem'] = trim((string) ($config['claseItem'] ?? 'glory-content-item') . ' ' . $instanceClass . '__item');
                 $config['instanceClass'] = $instanceClass;
 
@@ -444,6 +451,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 $raw_mostrar = isset($this->args['portafolio_mostrar_categorias']) ? (string) $this->args['portafolio_mostrar_categorias'] : 'yes';
                 $mostrar_categorias = in_array(strtolower($raw_mostrar), ['yes', 'true', '1'], true);
                 \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarCategorias', $mostrar_categorias);
+                $config['portafolioMostrarCategorias'] = $mostrar_categorias;
                 $catTypoEnableRaw = isset($this->args['portafolio_categoria_typography_enable']) ? (string) $this->args['portafolio_categoria_typography_enable'] : 'no';
                 $categoryOptions = [
                     'typographyEnabled' => in_array(strtolower($catTypoEnableRaw), ['yes', 'true', '1'], true),
