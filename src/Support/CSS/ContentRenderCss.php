@@ -653,8 +653,8 @@ class ContentRenderCss
 				] );
 				$css .= '@media (min-width: 980px){'
 					. $rightTextSelectors . '{text-align:right;}'
-					. $rightActionsSelectors . '{justify-content:flex-end;}'
-					. $leftActionsSelectors . '{justify-content:flex-start;text-align:left;}'
+					. $rightActionsSelectors . '{justify-content:flex-end;margin-left:auto;margin-right:0;}'
+					. $leftActionsSelectors . '{justify-content:flex-start;margin-right:auto;margin-left:0;text-align:left;}'
 					. '}';
 			}
 		} elseif ( 'alternado_slls' === $pattern_l ) {
