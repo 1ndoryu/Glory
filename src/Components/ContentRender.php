@@ -336,7 +336,13 @@ class ContentRender
             $isAjaxPagination = $config['paginacion'];
 
             $instanceClass = isset( $config['instanceClass'] ) ? (string) $config['instanceClass'] : '';
-            $categoryFilterConfig  = is_array( $config['categoryFilter'] ?? [] ) ? $config['categoryFilter'] : [];
+            if ( ! isset( $config['categoryFilter'] ) || ! is_array( $config['categoryFilter'] ) ) {
+                $config['categoryFilter'] = [
+                    'enabled'  => false,
+                    'allLabel' => __( 'All', 'glory-ab' ),
+                ];
+            }
+            $categoryFilterConfig  = $config['categoryFilter'];
             $categoryFilterRuntime = self::prepareCategoryFilterRuntime( $postType, $categoryFilterConfig, $instanceClass, $query->posts );
             if ( $categoryFilterRuntime['enabled'] && '' !== $categoryFilterRuntime['markup'] ) {
                 echo $categoryFilterRuntime['markup']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
