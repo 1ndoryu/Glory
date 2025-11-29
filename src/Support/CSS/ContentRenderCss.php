@@ -813,7 +813,7 @@ class ContentRenderCss
 			$justify = isset( $args['category_filter_justify'] ) ? (string) $args['category_filter_justify'] : 'center';
 			$textAlign = isset( $args['category_filter_text_align'] ) ? (string) $args['category_filter_text_align'] : 'center';
 			$css .= $filtersSelector . '{display:flex;flex-wrap:wrap;gap:' . esc_attr( $gapValue ) . ';justify-content:' . esc_attr( $justify ) . ';margin-top:' . esc_attr( $marginTopValue ) . ';margin-bottom:' . esc_attr( $marginBottomValue ) . ';}';
-			$tabStyles = 'display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;cursor:pointer;transition:color .2s ease,background-color .2s ease,border-color .2s ease;text-decoration:none;';
+			$tabStyles = 'display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;cursor:pointer;transition:color .2s ease,background-color .2s ease,border-color .2s ease;text-decoration:none;font:inherit;background-color:transparent;';
 			$tabStyles .= 'text-align:' . esc_attr( $textAlign ) . ';';
 			$filterPadding = isset( $args['category_filter_padding'] ) ? trim( (string) $args['category_filter_padding'] ) : '';
 			if ( '' !== $filterPadding ) {
