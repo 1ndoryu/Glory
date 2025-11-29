@@ -403,10 +403,17 @@ class ContentRenderCss
 		if ( '' !== $title_max_width ) { $css .= 'max-width:' . esc_attr( $title_max_width ) . ';'; }
 		$css .= '}';
 
-		$css .= $containerClass . ' .glory-cr__content,' . $itemClass . ' .glory-cr__content{';
+		$content_opacity = isset( $args['content_opacity'] ) ? (float) $args['content_opacity'] : 0.8;
+		if ( $content_opacity < 0 ) { $content_opacity = 0; }
+		if ( $content_opacity > 1 ) { $content_opacity = 1; }
+
+		$css .= $containerClass . ' .glory-cr__content,' . $itemClass . ' .glory-cr__content,' . $itemClass . ' .post-info{';
 		if ( '' !== $content_min_width ) { $css .= 'min-width:' . esc_attr( $content_min_width ) . ';'; }
 		if ( '' !== $content_width ) { $css .= 'width:' . esc_attr( $content_width ) . ';'; }
 		if ( '' !== $content_max_width ) { $css .= 'max-width:' . esc_attr( $content_max_width ) . ';'; }
+		if ( $content_opacity < 1 ) {
+			$css .= 'opacity:' . esc_attr( (string) $content_opacity ) . ';';
+		}
 		$css .= $title_styles . '}';
 		$css .= $containerClass . ' .glory-cr__link--disabled,' . $itemClass . ' .glory-cr__link--disabled{pointer-events:none;cursor:default;}';
 
@@ -468,6 +475,52 @@ class ContentRenderCss
 		}
 		if ( '' !== $categoryStyles ) {
 			$css .= $categorySelector . '{' . $categoryStyles . '}';
+		}
+		// Meta (fecha, etc.)
+		$metaSelector = $itemClass . ' .post-info';
+		$metaStyles   = '';
+		$metaColor    = isset( $args['post_meta_color'] ) ? (string) $args['post_meta_color'] : '';
+		if ( '' !== $metaColor ) {
+			$metaStyles .= 'color:' . esc_attr( $metaColor ) . ';';
+		}
+		$metaTransform = isset( $args['post_meta_text_transform'] ) ? (string) $args['post_meta_text_transform'] : '';
+		if ( '' !== $metaTransform ) {
+			$metaStyles .= 'text-transform:' . esc_attr( $metaTransform ) . ';';
+		}
+		$metaTypographyEnabled = isset( $args['post_meta_typography_enable'] ) && 'yes' === (string) $args['post_meta_typography_enable'];
+		if ( $metaTypographyEnabled ) {
+			$metaFamily = isset( $args['fusion_font_family_post_meta_font'] ) ? (string) $args['fusion_font_family_post_meta_font'] : '';
+			if ( '' !== $metaFamily ) {
+				$metaStyles .= 'font-family:' . esc_attr( $metaFamily ) . ';';
+			}
+			$metaVariant = isset( $args['fusion_font_variant_post_meta_font'] ) ? (string) $args['fusion_font_variant_post_meta_font'] : '';
+			if ( '' !== $metaVariant ) {
+				$metaStyles .= 'font-weight:' . esc_attr( $metaVariant ) . ';';
+			}
+			$metaFontSize = isset( $args['post_meta_font_size'] ) ? (string) $args['post_meta_font_size'] : '';
+			if ( '' !== $metaFontSize ) {
+				$value = $sanitizer ? $sanitizer->get_value_with_unit( $metaFontSize ) : $metaFontSize;
+				if ( '' !== $value ) {
+					$metaStyles .= 'font-size:' . esc_attr( $value ) . ';';
+				}
+			}
+			$metaLineHeight = isset( $args['post_meta_line_height'] ) ? (string) $args['post_meta_line_height'] : '';
+			if ( '' !== $metaLineHeight ) {
+				$value = $sanitizer ? $sanitizer->size( $metaLineHeight ) : $metaLineHeight;
+				if ( '' !== $value ) {
+					$metaStyles .= 'line-height:' . esc_attr( $value ) . ';';
+				}
+			}
+			$metaLetterSpacing = isset( $args['post_meta_letter_spacing'] ) ? (string) $args['post_meta_letter_spacing'] : '';
+			if ( '' !== $metaLetterSpacing ) {
+				$value = $sanitizer ? $sanitizer->get_value_with_unit( $metaLetterSpacing ) : $metaLetterSpacing;
+				if ( '' !== $value ) {
+					$metaStyles .= 'letter-spacing:' . esc_attr( $value ) . ';';
+				}
+			}
+		}
+		if ( '' !== $metaStyles ) {
+			$css .= $metaSelector . '{' . $metaStyles . '}';
 		}
 		$css .= $itemClass . ' .glory-cr__actions{margin-top:1.25rem;display:flex;flex-wrap:wrap;gap:10px;}';
 		$buttonSelector = $itemClass . ' .glory-cr__button';

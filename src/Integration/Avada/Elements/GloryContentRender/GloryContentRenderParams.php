@@ -94,6 +94,7 @@ class GloryContentRenderParams
             [ 'type' => 'textfield', 'heading' => 'Title margin bottom', 'param_name' => 'title_margin_bottom', 'default' => '', 'description' => 'CSS length, e.g.: 10px', 'group' => 'Design' ],
             [ 'type' => 'radio_button_set', 'heading' => 'Show title only on hover', 'param_name' => 'title_show_on_hover', 'default' => 'no', 'value' => [ 'yes' => 'Yes', 'no' => 'No' ], 'group' => 'Design' ],
             [ 'type' => 'radio_button_set', 'heading' => 'Title position', 'param_name' => 'title_position', 'default' => 'top', 'value' => [ 'top' => 'Top', 'bottom' => 'Bottom' ], 'group' => 'Design' ],
+            [ 'type' => 'range', 'heading' => 'Content opacity', 'param_name' => 'content_opacity', 'default' => 0.8, 'min' => 0, 'max' => 1, 'step' => 0.05, 'group' => 'Design' ],
 			// Layout pattern (alternating) - responsive
 			[ 'type' => 'radio_button_set', 'heading' => 'Layout pattern', 'param_name' => 'layout_pattern', 'default' => 'none', 'value' => [
 				'none'          => 'None',
@@ -112,6 +113,11 @@ class GloryContentRenderParams
             [ 'type' => 'typography', 'heading' => 'Content typography', 'param_name' => 'internal_typography', 'remove_from_atts' => true, 'group' => 'Design', 'choices' => [ 'font-family' => 'internal_font', 'variant' => 'internal_font', 'font-size' => 'internal_font_size', 'line-height' => 'internal_line_height', 'letter-spacing' => 'internal_letter_spacing' ], 'default' => [ 'font-family' => '', 'variant' => '', 'font-size' => '', 'line-height' => '', 'letter-spacing' => '' ], 'dependency' => [ [ 'element' => 'internal_typography_enable', 'value' => 'yes', 'operator' => '==' ] ] ],
             [ 'type' => 'radio_button_set', 'heading' => 'Content bold', 'param_name' => 'internal_bold', 'default' => 'no', 'value' => [ 'yes' => 'Enabled', 'no' => 'Disabled' ], 'group' => 'Design', 'dependency' => [ [ 'element' => 'internal_typography_enable', 'value' => 'yes', 'operator' => '==' ] ] ],
             [ 'type' => 'radio_button_set', 'heading' => 'Text transformation (content)', 'param_name' => 'internal_text_transform', 'default' => '', 'value' => [ ''=>'None','uppercase'=>'uppercase','capitalize'=>'capitalize','lowercase'=>'lowercase' ], 'group' => 'Design', 'dependency' => [ [ 'element' => 'internal_typography_enable', 'value' => 'yes', 'operator' => '==' ] ] ],
+            // Meta (date, etc.) typography
+            [ 'type' => 'radio_button_set', 'heading' => 'Meta typography override', 'param_name' => 'post_meta_typography_enable', 'default' => 'no', 'value' => [ 'yes' => 'Enabled', 'no' => 'Disabled' ], 'group' => 'Design' ],
+            [ 'type' => 'typography', 'heading' => 'Meta typography', 'param_name' => 'post_meta_typography', 'remove_from_atts' => true, 'group' => 'Design', 'choices' => [ 'font-family' => 'post_meta_font', 'variant' => 'post_meta_font', 'font-size' => 'post_meta_font_size', 'line-height' => 'post_meta_line_height', 'letter-spacing' => 'post_meta_letter_spacing' ], 'default' => [ 'font-family' => '', 'variant' => '', 'font-size' => '', 'line-height' => '', 'letter-spacing' => '' ], 'dependency' => [ [ 'element' => 'post_meta_typography_enable', 'value' => 'yes', 'operator' => '==' ] ] ],
+            [ 'type' => 'colorpickeralpha', 'heading' => 'Meta color', 'param_name' => 'post_meta_color', 'default' => '', 'group' => 'Design' ],
+            [ 'type' => 'radio_button_set', 'heading' => 'Meta text transform', 'param_name' => 'post_meta_text_transform', 'default' => '', 'value' => [ ''=>'Default','uppercase'=>'Uppercase','lowercase'=>'Lowercase','capitalize'=>'Capitalize' ], 'group' => 'Design' ],
 
             // Link
             [ 'type' => 'radio_button_set', 'heading' => 'Enable link', 'param_name' => 'link_enabled', 'default' => 'yes', 'value' => [ 'yes' => 'Yes', 'no' => 'No' ], 'group' => 'General' ],

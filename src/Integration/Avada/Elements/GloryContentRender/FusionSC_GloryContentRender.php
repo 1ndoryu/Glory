@@ -136,6 +136,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'title_position'                 => 'top', // top | bottom
 				// Color del título
 				'title_color'                    => '',
+                'content_opacity'                => 0.8,
 				// Patrón de layout alternado
 				'layout_pattern'                 => 'none', // responsive: large/medium/small
 			'pattern_small_width_percent'    => 40,
@@ -187,6 +188,15 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'internal_letter_spacing_medium'       => '',
                 'internal_letter_spacing_small'        => '',
                 'internal_text_transform'              => '',
+                // Meta (fecha, etc.)
+                'post_meta_typography_enable'          => 'no',
+                'fusion_font_family_post_meta_font'    => '',
+                'fusion_font_variant_post_meta_font'   => '',
+                'post_meta_font_size'                  => '',
+                'post_meta_line_height'                => '',
+                'post_meta_letter_spacing'             => '',
+                'post_meta_color'                      => '',
+                'post_meta_text_transform'             => '',
                 // Enlace
                 'link_enabled'             => 'yes',
                 'internal_display_mode'    => '',
@@ -447,6 +457,10 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 \Glory\Components\ContentRender::setCurrentOption('toggleSeparator', $toggle_separator);
                 \Glory\Components\ContentRender::setCurrentOption('toggleSeparatorColor', $toggle_separator_color);
                 \Glory\Components\ContentRender::setCurrentOption('toggleAutoOpen', $toggle_auto_open);
+                $contentOpacityRaw = isset($this->args['content_opacity']) ? (float) $this->args['content_opacity'] : 0.8;
+                if ($contentOpacityRaw < 0) { $contentOpacityRaw = 0; }
+                if ($contentOpacityRaw > 1) { $contentOpacityRaw = 1; }
+                \Glory\Components\ContentRender::setCurrentOption('contentOpacity', $contentOpacityRaw);
                 // Propagar opciones específicas de plantilla (portafolio)
                 $raw_mostrar = isset($this->args['portafolio_mostrar_categorias']) ? (string) $this->args['portafolio_mostrar_categorias'] : 'yes';
                 $mostrar_categorias = in_array(strtolower($raw_mostrar), ['yes', 'true', '1'], true);
