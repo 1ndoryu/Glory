@@ -15,13 +15,13 @@
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     border-left: 1px solid var(--border-color, #e6e6e6);
     border-radius: 0;
-    font-family: var(--font-family);
+    font-family: 'Source Sans 3', sans-serif;
 }
 
 /* Aplicar fuente Source Sans 3 a todos los elementos del panel GBN */
 #gbn-panel,
 #gbn-panel * {
-    font-family: var(--font-family);
+    font-family: 'Source Sans 3', sans-serif;
     box-sizing: border-box;
 }
 

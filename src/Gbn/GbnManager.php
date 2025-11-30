@@ -68,10 +68,23 @@ class GbnManager
 
         $baseDir = get_template_directory() . '/Glory/src/Gbn/assets';
         $baseUrl = get_template_directory_uri() . '/Glory/src/Gbn/assets';
-        $cssPath = $baseDir . '/css/gbn.css';
-        $verCss  = self::resolveVersion($cssPath);
 
-        wp_enqueue_style('glory-gbn', $baseUrl . '/css/gbn.css', [], $verCss);
+        $cssFiles = [
+            'variables'   => 'variables.css',
+            'layout'      => 'layout.css',
+            'components'  => 'components.css',
+            'forms'       => 'forms.css',
+            'interactive' => 'interactive.css',
+            'modals'      => 'modals.css',
+            'theme-styles'=> 'theme-styles.css',
+            'gbn'         => 'gbn.css'
+        ];
+
+        foreach ($cssFiles as $handle => $file) {
+            $path = $baseDir . '/css/' . $file;
+            $ver  = self::resolveVersion($path);
+            wp_enqueue_style('glory-gbn-' . $handle, $baseUrl . '/css/' . $file, [], $ver);
+        }
 
         if (!wp_script_is('glory-ajax', 'enqueued')) {
             if (!wp_script_is('glory-ajax', 'registered')) {

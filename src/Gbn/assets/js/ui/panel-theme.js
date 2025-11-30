@@ -72,7 +72,8 @@
     }
 
     function applyThemeSettings(settings) {
-        var root = document.documentElement;
+        // Use data-gbn-root for scoping, fallback to documentElement if not found (but prefer root)
+        var root = document.querySelector('[data-gbn-root]') || document.documentElement;
         if (!settings) return;
         
         // Text Settings
@@ -82,10 +83,13 @@
                 if (settings.text.p.size) root.style.setProperty('--gbn-text-size', toCssValue(settings.text.p.size));
                 if (settings.text.p.font && settings.text.p.font !== 'System') root.style.setProperty('--gbn-text-font', settings.text.p.font);
             }
-            if (settings.text.h1) {
-                if (settings.text.h1.color) root.style.setProperty('--gbn-h1-color', settings.text.h1.color);
-                if (settings.text.h1.size) root.style.setProperty('--gbn-h1-size', toCssValue(settings.text.h1.size));
-            }
+            // Headers h1-h6
+            ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(function(tag) {
+                if (settings.text[tag]) {
+                    if (settings.text[tag].color) root.style.setProperty('--gbn-' + tag + '-color', settings.text[tag].color);
+                    if (settings.text[tag].size) root.style.setProperty('--gbn-' + tag + '-size', toCssValue(settings.text[tag].size));
+                }
+            });
         }
         
         // Color Settings
@@ -96,7 +100,7 @@
             if (settings.colors.background) root.style.setProperty('--gbn-bg', settings.colors.background);
         }
         
-        // Page Defaults (handled by applyPageSettings usually, but if global defaults...)
+        // Page Defaults
         if (settings.pages) {
             if (settings.pages.background) root.style.setProperty('--gbn-page-bg', settings.pages.background);
         }
@@ -194,19 +198,23 @@
                     { tipo: 'header', etiqueta: 'Párrafos (p)' },
                     { tipo: 'select', id: 'text.p.font', etiqueta: 'Fuente', opciones: [{valor: 'Inter'}, {valor: 'Roboto'}, {valor: 'Open Sans'}, {valor: 'System'}] },
                     { tipo: 'text', id: 'text.p.size', etiqueta: 'Tamaño Base (px)', defecto: '16' },
-                    { tipo: 'color', id: 'text.p.color', etiqueta: 'Color Texto', defecto: '#333333' },
-                    
-                    { tipo: 'header', etiqueta: 'Encabezados (h1)' },
-                    { tipo: 'text', id: 'text.h1.size', etiqueta: 'Tamaño H1 (px)', defecto: '32' },
-                    { tipo: 'color', id: 'text.h1.color', etiqueta: 'Color H1', defecto: '#111111' }
+                    { tipo: 'color', id: 'text.p.color', etiqueta: 'Color Texto', defecto: '#333333' }
                 ];
+                
+                // Add headers h1-h6
+                ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(function(tag) {
+                    schema.push({ tipo: 'header', etiqueta: tag.toUpperCase() });
+                    schema.push({ tipo: 'text', id: 'text.' + tag + '.size', etiqueta: 'Tamaño ' + tag.toUpperCase() + ' (px)', defecto: '' });
+                    schema.push({ tipo: 'color', id: 'text.' + tag + '.color', etiqueta: 'Color ' + tag.toUpperCase(), defecto: '' });
+                });
+                
             } else if (sectionId === 'colors') {
                 schema = [
                     { tipo: 'header', etiqueta: 'Paleta Global' },
-                    { tipo: 'color', id: 'colors.primary', etiqueta: 'Primario', defecto: '#007bff' },
-                    { tipo: 'color', id: 'colors.secondary', etiqueta: 'Secundario', defecto: '#6c757d' },
-                    { tipo: 'color', id: 'colors.accent', etiqueta: 'Acento', defecto: '#28a745' },
-                    { tipo: 'color', id: 'colors.background', etiqueta: 'Fondo Body', defecto: '#f8f9fa' }
+                    { tipo: 'color', id: 'colors.primary', etiqueta: 'Primario', defecto: '#007bff', hidePalette: true },
+                    { tipo: 'color', id: 'colors.secondary', etiqueta: 'Secundario', defecto: '#6c757d', hidePalette: true },
+                    { tipo: 'color', id: 'colors.accent', etiqueta: 'Acento', defecto: '#28a745', hidePalette: true },
+                    { tipo: 'color', id: 'colors.background', etiqueta: 'Fondo Body', defecto: '#f8f9fa', hidePalette: true }
                 ];
             } else if (sectionId === 'pages') {
                 schema = [

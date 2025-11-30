@@ -1,9 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap');
 
 /* GBN Modular CSS */
-@import 'variables.css';
-@import 'layout.css';
-@import 'components.css';
-@import 'forms.css';
-@import 'interactive.css';
-@import 'modals.css';
+/* GBN Modular CSS - Imports handled by GbnManager.php for dynamic versioning */

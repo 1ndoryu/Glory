@@ -275,7 +275,10 @@
         container.appendChild(inputColor);
         container.appendChild(inputText);
         wrapper.appendChild(container);
-        wrapper.appendChild(palette);
+        
+        if (!field.hidePalette) {
+            wrapper.appendChild(palette);
+        }
         
         appendFieldDescription(wrapper, field); 
         return wrapper;
