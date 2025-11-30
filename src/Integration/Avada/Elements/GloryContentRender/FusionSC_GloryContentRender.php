@@ -122,6 +122,8 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'title_min_width'                => '',
                 'title_width'                    => '',
                 'title_max_width'                => '',
+                'title_margin_top'               => '',
+                'title_margin_bottom'            => '',
                 // Ancho del contenido (.glory-cr__content)
                 'content_min_width'              => '',
                 'content_width'                  => '',
@@ -134,6 +136,7 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'title_position'                 => 'top', // top | bottom
 				// Color del título
 				'title_color'                    => '',
+                'content_opacity'                => 0.9,
 				// Patrón de layout alternado
 				'layout_pattern'                 => 'none', // responsive: large/medium/small
 			'pattern_small_width_percent'    => 40,
@@ -143,6 +146,33 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
 				'pattern_large_width_percent'    => 60,
 				'pattern_large_width_percent_medium' => '',
 				'pattern_large_width_percent_small'  => '',
+                'pattern_lr_align_text'          => 'yes',
+                'pattern_lr_vertical_align'      => 'start',
+                'pattern_lr_split_mode'           => 'no',
+                // Filtro por categorías
+                'category_filter_enable'        => 'no',
+                'category_filter_all_label'     => 'All',
+                'category_filter_gap'           => '12px',
+                'category_filter_margin_top'    => '0px',
+                'category_filter_margin_bottom' => '20px',
+                'category_filter_justify'       => 'center',
+                'category_filter_text_align'    => 'center',
+                'category_filter_padding'       => '',
+                'category_filter_border_radius' => '',
+                'category_filter_typography_enable' => 'no',
+                'category_filter_text_color'    => '',
+                'category_filter_active_text_color' => '',
+                'category_filter_background'    => '',
+                'category_filter_active_background' => '',
+                'category_filter_border_color'  => '',
+                'category_filter_active_border_color' => '',
+                'category_filter_border_width'  => '',
+                'fusion_font_family_category_filter_font' => '',
+                'fusion_font_variant_category_filter_font'  => '',
+                'category_filter_font_size'     => '',
+                'category_filter_line_height'   => '',
+                'category_filter_letter_spacing'=> '',
+                'category_filter_text_transform'=> '',
                 // Tipografía interna (por instancia) - mismas opciones del título pero separadas
                 'internal_typography_enable'           => 'no',
                 'internal_bold'                        => 'no',
@@ -158,6 +188,15 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'internal_letter_spacing_medium'       => '',
                 'internal_letter_spacing_small'        => '',
                 'internal_text_transform'              => '',
+                // Meta (fecha, etc.)
+                'post_meta_typography_enable'          => 'no',
+                'fusion_font_family_post_meta_font'    => '',
+                'fusion_font_variant_post_meta_font'   => '',
+                'post_meta_font_size'                  => '',
+                'post_meta_line_height'                => '',
+                'post_meta_letter_spacing'             => '',
+                'post_meta_color'                      => '',
+                'post_meta_text_transform'             => '',
                 // Enlace
                 'link_enabled'             => 'yes',
                 'internal_display_mode'    => '',
@@ -186,7 +225,37 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 'servicio_contenido_max_width_medium' => '',
                 'servicio_contenido_max_width_small'  => '',
                 // Opciones específicas de plantillas
-                'portafolio_mostrar_categorias'     => 'no',
+                'portafolio_mostrar_categorias'     => 'yes',
+                'portafolio_categoria_typography_enable' => 'no',
+                'fusion_font_family_portafolio_categoria_font' => '',
+                'fusion_font_variant_portafolio_categoria_font' => '',
+                'portafolio_categoria_font_size'    => '',
+                'portafolio_categoria_line_height'  => '',
+                'portafolio_categoria_letter_spacing' => '',
+                'portafolio_categoria_color'        => '',
+                'portafolio_categoria_text_transform' => '',
+                'portafolio_categoria_margin_top'   => '',
+                'portafolio_categoria_margin_bottom'=> '',
+                'portafolio_mostrar_contenido'      => 'no',
+                'portafolio_contenido_max_palabras' => '40',
+                'portafolio_boton_mostrar'          => 'yes',
+                'portafolio_boton_text'             => 'View project',
+                'portafolio_boton_typography_enable'=> 'no',
+                'fusion_font_family_portafolio_boton_font' => '',
+                'fusion_font_variant_portafolio_boton_font' => '',
+                'portafolio_boton_font_size'        => '',
+                'portafolio_boton_line_height'      => '',
+                'portafolio_boton_letter_spacing'   => '',
+                'portafolio_boton_text_transform'   => '',
+                'portafolio_boton_text_color'       => '',
+                'portafolio_boton_text_color_hover' => '',
+                'portafolio_boton_background'       => '',
+                'portafolio_boton_background_hover' => '',
+                'portafolio_boton_border_color'     => '',
+                'portafolio_boton_border_color_hover' => '',
+                'portafolio_boton_border_width'     => '',
+                'portafolio_boton_border_radius'    => '',
+                'portafolio_boton_padding'          => '',
                 // Team template
                 'team_show_role'                    => 'yes',
                 'team_show_profession'              => 'yes',
@@ -332,6 +401,34 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
 					'gridRotateFade'         => $grid_rotate_fade,
 					'gridRotateOffset'       => $grid_rotate_offset,
                 ];
+                $categoryFilterEnabled = (isset($this->args['category_filter_enable']) && 'yes' === $this->args['category_filter_enable']);
+                $categoryFilterLabel = isset($this->args['category_filter_all_label']) && '' !== trim((string) $this->args['category_filter_all_label'])
+                    ? (string) $this->args['category_filter_all_label']
+                    : __('All', 'glory-ab');
+                $config['categoryFilter'] = [
+                    'enabled'  => $categoryFilterEnabled,
+                    'allLabel' => $categoryFilterLabel,
+                ];
+
+                $layoutPatternRaw = $this->args['layout_pattern'] ?? 'none';
+                if (is_array($layoutPatternRaw)) {
+                    $firstPattern   = reset($layoutPatternRaw);
+                    $patternLarge   = (string) ($layoutPatternRaw['large'] ?? $firstPattern ?? 'none');
+                    $patternMedium  = (string) ($layoutPatternRaw['medium'] ?? $patternLarge);
+                    $patternSmall   = (string) ($layoutPatternRaw['small'] ?? $patternMedium);
+                } else {
+                    $patternLarge  = (string) $layoutPatternRaw;
+                    $patternMedium = $patternLarge;
+                    $patternSmall  = $patternMedium;
+                }
+                $config['layoutPattern'] = [
+                    'large'  => $patternLarge,
+                    'medium' => $patternMedium,
+                    'small'  => $patternSmall,
+                ];
+                $patternSplitRaw = $this->args['pattern_lr_split_mode'] ?? 'no';
+                $patternSplitEnabled = in_array(strtolower((string) $patternSplitRaw), ['yes', 'true', '1'], true) && ('alternado_lr' === $patternLarge || 'alternado_lr' === $patternMedium || 'alternado_lr' === $patternSmall);
+                $config['patternLrSplit'] = $patternSplitEnabled;
 
                 // Opciones específicas de plantilla (Posts): mapear directamente a config
                 $mostrarContenidoArg = isset($this->args['mostrar_contenido']) ? (string) $this->args['mostrar_contenido'] : 'yes';
@@ -345,7 +442,11 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 // Clase única por instancia para poder aplicar CSS aislado
                 $instanceClass = 'glory-cr-' . substr(md5(uniqid('', true)), 0, 8);
                 $config['claseContenedor'] = trim((string) ($config['claseContenedor'] ?? 'glory-content-list') . ' ' . $instanceClass);
+                if ($patternSplitEnabled) {
+                    $config['claseContenedor'] = trim($config['claseContenedor'] . ' glory-cr--lr-split');
+                }
                 $config['claseItem'] = trim((string) ($config['claseItem'] ?? 'glory-content-item') . ' ' . $instanceClass . '__item');
+                $config['instanceClass'] = $instanceClass;
 
                 $this->currentInstanceConfig = $config;
                 $this->currentInstanceConfig['internalLayoutOptionsResponsive'] = $internal_layout_options;
@@ -356,10 +457,73 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                 \Glory\Components\ContentRender::setCurrentOption('toggleSeparator', $toggle_separator);
                 \Glory\Components\ContentRender::setCurrentOption('toggleSeparatorColor', $toggle_separator_color);
                 \Glory\Components\ContentRender::setCurrentOption('toggleAutoOpen', $toggle_auto_open);
-                // Propagar opción específica de plantilla (portafolio)
-                $raw_mostrar = isset($this->args['portafolio_mostrar_categorias']) ? (string) $this->args['portafolio_mostrar_categorias'] : '(missing)';
-                $mostrar_categorias = ('yes' === $raw_mostrar);
+                $contentOpacityRaw = isset($this->args['content_opacity']) ? (float) $this->args['content_opacity'] : 0.9;
+                if ($contentOpacityRaw < 0) { $contentOpacityRaw = 0; }
+                if ($contentOpacityRaw > 1) { $contentOpacityRaw = 1; }
+                \Glory\Components\ContentRender::setCurrentOption('contentOpacity', $contentOpacityRaw);
+                // Propagar opciones específicas de plantilla (portafolio)
+                $raw_mostrar = isset($this->args['portafolio_mostrar_categorias']) ? (string) $this->args['portafolio_mostrar_categorias'] : 'yes';
+                $mostrar_categorias = in_array(strtolower($raw_mostrar), ['yes', 'true', '1'], true);
                 \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarCategorias', $mostrar_categorias);
+                $config['portafolioMostrarCategorias'] = $mostrar_categorias;
+                $catTypoEnableRaw = isset($this->args['portafolio_categoria_typography_enable']) ? (string) $this->args['portafolio_categoria_typography_enable'] : 'no';
+                $categoryOptions = [
+                    'typographyEnabled' => in_array(strtolower($catTypoEnableRaw), ['yes', 'true', '1'], true),
+                    'font_family'       => $this->args['fusion_font_family_portafolio_categoria_font'] ?? '',
+                    'font_variant'      => $this->args['fusion_font_variant_portafolio_categoria_font'] ?? '',
+                    'font_size'         => $this->args['portafolio_categoria_font_size'] ?? '',
+                    'line_height'       => $this->args['portafolio_categoria_line_height'] ?? '',
+                    'letter_spacing'    => $this->args['portafolio_categoria_letter_spacing'] ?? '',
+                    'color'             => $this->args['portafolio_categoria_color'] ?? '',
+                    'text_transform'    => $this->args['portafolio_categoria_text_transform'] ?? '',
+                    'margin_top'        => $this->args['portafolio_categoria_margin_top'] ?? '',
+                    'margin_bottom'     => $this->args['portafolio_categoria_margin_bottom'] ?? '',
+                ];
+                \Glory\Components\ContentRender::setCurrentOption('portafolioCategoryOptions', $categoryOptions);
+                $config['portafolioCategoryOptions'] = $categoryOptions;
+                // Pasar valores crudos para que la plantilla los interprete
+                $raw_porta_contenido = isset($this->args['portafolio_mostrar_contenido']) ? (string) $this->args['portafolio_mostrar_contenido'] : 'no';
+                $raw_porta_len       = isset($this->args['portafolio_contenido_max_palabras']) ? (string) $this->args['portafolio_contenido_max_palabras'] : '40';
+                \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarContenido', $raw_porta_contenido);
+                \Glory\Components\ContentRender::setCurrentOption('portafolioContenidoMaxPalabras', $raw_porta_len);
+                // Incluir opciones de portafolio en config para que afecten a la clave de caché
+                $config['portafolioMostrarContenido']     = $raw_porta_contenido;
+                $config['portafolioContenidoMaxPalabras'] = $raw_porta_len;
+                $rawButtonShow = isset($this->args['portafolio_boton_mostrar']) ? (string) $this->args['portafolio_boton_mostrar'] : 'yes';
+                $defaultButtonLabel = __('View project', 'glory-ab');
+                $buttonText = isset($this->args['portafolio_boton_text']) && '' !== trim((string) $this->args['portafolio_boton_text'])
+                    ? (string) $this->args['portafolio_boton_text']
+                    : $defaultButtonLabel;
+                $buttonTypographyEnabled = in_array(strtolower((string) ($this->args['portafolio_boton_typography_enable'] ?? 'no')), ['yes', 'true', '1'], true);
+                $buttonConfig = [
+                    'show'            => in_array(strtolower($rawButtonShow), ['yes', 'true', '1'], true),
+                    'text'            => $buttonText,
+                    'typography'      => [
+                        'enabled'        => $buttonTypographyEnabled,
+                        'font_family'    => $this->args['fusion_font_family_portafolio_boton_font'] ?? '',
+                        'font_variant'   => $this->args['fusion_font_variant_portafolio_boton_font'] ?? '',
+                        'font_size'      => $this->args['portafolio_boton_font_size'] ?? '',
+                        'line_height'    => $this->args['portafolio_boton_line_height'] ?? '',
+                        'letter_spacing' => $this->args['portafolio_boton_letter_spacing'] ?? '',
+                        'text_transform' => $this->args['portafolio_boton_text_transform'] ?? '',
+                    ],
+                    'colors'         => [
+                        'text'       => $this->args['portafolio_boton_text_color'] ?? '',
+                        'textHover'  => $this->args['portafolio_boton_text_color_hover'] ?? '',
+                        'background' => $this->args['portafolio_boton_background'] ?? '',
+                        'backgroundHover' => $this->args['portafolio_boton_background_hover'] ?? '',
+                        'border'     => $this->args['portafolio_boton_border_color'] ?? '',
+                        'borderHover'=> $this->args['portafolio_boton_border_color_hover'] ?? '',
+                    ],
+                    'borders'        => [
+                        'width'  => $this->args['portafolio_boton_border_width'] ?? '',
+                        'radius' => $this->args['portafolio_boton_border_radius'] ?? '',
+                    ],
+                    'padding'        => $this->args['portafolio_boton_padding'] ?? '',
+                ];
+                \Glory\Components\ContentRender::setCurrentOption('portafolioButton', $buttonConfig);
+                $config['portafolioButton'] = $buttonConfig;
+                $config['portafolioMostrarCategorias'] = $mostrar_categorias ? 'yes' : 'no';
                 // Propagar opciones de plantilla Team
                 $raw_team_role = isset($this->args['team_show_role']) ? (string) $this->args['team_show_role'] : 'yes';
                 $raw_team_prof = isset($this->args['team_show_profession']) ? (string) $this->args['team_show_profession'] : 'yes';
@@ -419,6 +583,8 @@ if (! class_exists('FusionSC_GloryContentRender') && class_exists('Fusion_Elemen
                     \Glory\Components\ContentRender::setCurrentOption('toggleSeparatorColor', null);
                     \Glory\Components\ContentRender::setCurrentOption('toggleAutoOpen', null);
                     \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarCategorias', null);
+                    \Glory\Components\ContentRender::setCurrentOption('portafolioMostrarContenido', null);
+                    \Glory\Components\ContentRender::setCurrentOption('portafolioContenidoMaxPalabras', null);
                     \Glory\Components\ContentRender::setCurrentOption('teamShowRole', null);
                     \Glory\Components\ContentRender::setCurrentOption('teamShowProfession', null);
                     \Glory\Components\ContentRender::setCurrentOption('serviceKuraBorderShow', null);
