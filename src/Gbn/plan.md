@@ -126,11 +126,9 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 - [x] Implementar el dispatcher AJAX (`gbn_save_config`) que reciba la estructura de bloques, valide permisos y escriba los metadatos `gbn_config`/`gbn_styles` por página.
 - [x] Cliente JS de persistencia y botón Guardar conectado al dispatcher.
 - [x] Restauración básica: endpoint `gbn_restore_page` que limpia `gbn_config`/`gbn_styles` y regenera `post_content` cuando el modo es `editor`.
-- [ ] (no se si esto ya esta resuelto hay revisar primero) Integrar la lectura/escritura con `PageManager`: respetar `content_mode = code`, actualizar `post_content` sólo cuando el modo sea `editor` y mantener el hash `_glory_content_hash` para detectar ediciones manuales.
-- [ ] (no se si esto ya esta resuelto hay revisar primero) Definir el flujo de restauración que recupere el markup baseline, limpie metadatos y vuelva a sincronizar `data-gbnConfig` con la versión guardada o la del tema.
 
 ### Etapa 4 · Manipulación del DOM y Estructura (PRIORIDAD ACTUAL)
-- [ ] **Rediseño Drag & Drop**: Implementar sistema moderno con indicadores visuales (líneas de inserción), mejor UX y soporte para reordenamiento fluido.
+- [x] **Rediseño Drag & Drop**: Implementar sistema moderno con indicadores visuales (líneas de inserción), mejor UX y soporte para reordenamiento fluido.
 - [x] **Inserción de Bloques**: Crear modal/panel "Biblioteca" para insertar nuevos contenedores y componentes. *(Implementado con ui/library.js)*.
 - [x] **Eliminación de Bloques**: Agregar opción para eliminar nodos desde la UI del constructor. *(Implementado con botón directo)*.
 - [x] **Sincronización Bidireccional**: Asegurar que los cambios en el DOM (movimientos, inserciones) se reflejen en `Gbn.state` y viceversa en tiempo real. *(Cubierto por persistence.js que lee el DOM y eventos de sincronización)*.
@@ -160,12 +158,6 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 
 [solucionado] Problema de estilos inline vs GBN: ahora los estilos escritos en HTML (style="padding-top: 100px") se cargan automáticamente en el panel la primera vez, y al borrar valores regresan al valor inline original. ----> Actualización, la primera vez no carga los estilos escrito en el html, los carga dejar vacío la opcion en el panel o al restaurar default, no representa un problema grave pero si se puede ajustar en el futuro sería lo ideal, no es urgente resolverlo ahora, solo tenerlo en cuenta para el futuro.
 
-[NUEVO] Prioridad: Hacer un constructor esencial con bases sólidas que permita mover contenedores, columnas entre columnas, agregar más componentes, eliminar componentes y actualizar el código en tiempo real.
-
-[NOTA] El Drag & Drop es funcional pero "complicado" de usar. Se debe mejorar la UX para que sea más intuitivo (mejor feedback visual, zonas de drop más claras).
-- [ ] Implementar el panel de configuración del tema (colores, fuentes, `init.css`) con almacenamiento centralizado.
-- [ ] Implementar el panel de configuración de la página (fondo, padding del `main`, overrides locales).
-- [ ] Conectar la opción de restaurar valores por defecto con las configuraciones de tema y página.
 
 ### Etapa 6 · Adaptación de Componentes (Pospuesto)
 - [ ] Ajustar componentes agnósticos (`TermRender`, `GloryImage`, etc.) para exponer `gbnDefaults`.
@@ -232,7 +224,7 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 - Solución: Se modificó `utils.js` y `ContentHandler.php` para ignorar la etiqueta `<main>` al calcular la ruta del DOM. Se actualizó el prefijo de ID a `gbn-v3-` para invalidar caché.
 - Estado: Deletions persist correctly.
 
-[PENDIENTE] Requerimiento: La opción "Restaurar" debe devolver el contenido al estado original del código (PHP/HTML base).
+[SOLUCIONADO] Requerimiento: La opción "Restaurar" debe devolver el contenido al estado original del código (PHP/HTML base).
 - Objetivo: Limpiar `gbn_config` y `gbn_styles`, y resetear el modo de página a `code`.
 
 [SOLUCIONADO] Problema de persistencia de orden: El orden de los elementos no se guardaba correctamente.
