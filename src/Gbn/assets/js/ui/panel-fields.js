@@ -219,23 +219,55 @@
         // Palette
         var palette = document.createElement('div');
         palette.className = 'gbn-color-palette';
-        var defaultColors = ['#007bff', '#6c757d', '#28a745', '#dc3545', '#ffc107', '#17a2b8', '#f8f9fa', '#343a40', '#ffffff', '#000000'];
+        
+        // Default colors with names
+        var defaultColors = [
+            { val: '#007bff', name: 'Primary' },
+            { val: '#6c757d', name: 'Secondary' },
+            { val: '#28a745', name: 'Success' },
+            { val: '#dc3545', name: 'Danger' },
+            { val: '#ffc107', name: 'Warning' },
+            { val: '#17a2b8', name: 'Info' },
+            { val: '#f8f9fa', name: 'Light' },
+            { val: '#343a40', name: 'Dark' },
+            { val: '#ffffff', name: 'White' },
+            { val: '#000000', name: 'Black' }
+        ];
         
         // Try to get theme colors if available
-        if (Gbn.config && Gbn.config.theme && Gbn.config.theme.colors) {
-            // Merge or replace
+        // We use gloryGbnCfg.themeSettings if available (localized from PHP)
+        var themeSettings = (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.themeSettings) ? gloryGbnCfg.themeSettings : (Gbn.config && Gbn.config.themeSettings ? Gbn.config.themeSettings : null);
+        var themeColors = (themeSettings && themeSettings.colors) ? themeSettings.colors : null;
+        
+        // If themeColors is an object like { primary: '#...', secondary: '#...' }
+        if (themeColors) {
+            // Override defaults or prepend?
+            // Let's map them to the format
+            var mapped = [];
+            Object.keys(themeColors).forEach(function(key) {
+                if (themeColors[key]) {
+                    mapped.push({ val: themeColors[key], name: key.charAt(0).toUpperCase() + key.slice(1) });
+                }
+            });
+            if (mapped.length) {
+                // Use theme colors as priority, maybe append some basics if needed
+                defaultColors = mapped.concat(defaultColors.filter(function(d) {
+                    // Avoid duplicates
+                    return !mapped.some(function(m) { return m.val.toLowerCase() === d.val.toLowerCase(); });
+                }));
+            }
         }
 
         defaultColors.forEach(function(c) {
             var swatch = document.createElement('button');
             swatch.type = 'button';
             swatch.className = 'gbn-color-swatch';
-            swatch.style.backgroundColor = c;
-            swatch.title = c;
+            swatch.style.backgroundColor = c.val;
+            swatch.title = c.name + ' (' + c.val + ')'; // Show name and hex
             swatch.addEventListener('click', function() {
-                inputColor.value = c;
-                inputText.value = c;
-                update(c);
+                inputColor.value = c.val;
+                inputText.value = c.val;
+                update(c.val);
             });
             palette.appendChild(swatch);
         });

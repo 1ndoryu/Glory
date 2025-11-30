@@ -24,16 +24,18 @@
         panelBody.innerHTML = '<div class="gbn-panel-empty">' + text + '</div>';
         if (panelFooter) {
             // Re-query to ensure we have the current attached element
-            var currentFooter = panelRoot.querySelector('.gbn-footer-primary');
-            if (currentFooter) {
-                panelFooter = currentFooter;
+            if (panelRoot) {
+                var currentFooter = panelRoot.querySelector('.gbn-footer-primary');
+                if (currentFooter) {
+                    panelFooter = currentFooter;
+                }
             }
             
             panelFooter.disabled = true;
             panelFooter.textContent = 'Guardar (próximamente)';
             // Remove listeners? Cloning is safer.
-            var newFooterBtn = panelFooter.cloneNode(true);
             if (panelFooter.parentNode) {
+                var newFooterBtn = panelFooter.cloneNode(true);
                 panelFooter.parentNode.replaceChild(newFooterBtn, panelFooter);
                 panelFooter = newFooterBtn;
             }
@@ -199,6 +201,9 @@
                             var settings = res.data || {};
                             // Delegate to panelTheme
                             if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.renderThemeSettingsForm) {
+                                // Ensure footer is fresh
+                                var currentFooter = panelRoot.querySelector('.gbn-footer-primary');
+                                if (currentFooter) panelFooter = currentFooter;
                                 Gbn.ui.panelTheme.renderThemeSettingsForm(settings, panelBody, panelFooter);
                             } else {
                                 panelBody.innerHTML = 'Error: panelTheme no disponible';
@@ -239,6 +244,9 @@
                             var settings = res.data || {};
                             // Delegate to panelTheme
                             if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.renderPageSettingsForm) {
+                                // Ensure footer is fresh
+                                var currentFooter = panelRoot.querySelector('.gbn-footer-primary');
+                                if (currentFooter) panelFooter = currentFooter;
                                 Gbn.ui.panelTheme.renderPageSettingsForm(settings, panelBody, panelFooter);
                             } else {
                                 panelBody.innerHTML = 'Error: panelTheme no disponible';

@@ -188,6 +188,7 @@ class GbnManager
             'contentMode' => method_exists(\Glory\Manager\PageManager::class, 'getModoContenidoParaPagina') && $pageId 
                 ? \Glory\Manager\PageManager::getModoContenidoParaPagina($pageId) 
                 : 'code',
+            'themeSettings' => get_option('gbn_theme_settings', []),
         ];
         // Asegurar que la config esté disponible antes de cualquier script consumidor
         wp_localize_script('glory-gbn-core', 'gloryGbnCfg', $localizedData);

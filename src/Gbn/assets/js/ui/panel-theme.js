@@ -55,7 +55,7 @@
 
         container.appendChild(form);
         
-        if (footer) {
+        if (footer && footer.parentNode) {
             var newFooterBtn = footer.cloneNode(true);
             footer.parentNode.replaceChild(newFooterBtn, footer);
             footer = newFooterBtn;
@@ -266,7 +266,7 @@
         
         render();
         
-        if (footer) {
+        if (footer && footer.parentNode) {
             var newFooterBtn = footer.cloneNode(true);
             footer.parentNode.replaceChild(newFooterBtn, footer);
             footer = newFooterBtn;
@@ -295,6 +295,12 @@
                     cursor = cursor[segments[i]];
                 }
                 cursor[segments[segments.length - 1]] = value;
+                
+                // Update global config for color picker to pick up changes immediately
+                if (!Gbn.config) Gbn.config = {};
+                if (!Gbn.config.themeSettings) Gbn.config.themeSettings = {};
+                Gbn.config.themeSettings = mockBlock.config;
+                
                 applyThemeSettings(mockBlock.config);
                 return;
             }

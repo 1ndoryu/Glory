@@ -221,7 +221,8 @@
                  if (pct) {
                      styles.width = pct;
                      styles['flex-basis'] = pct; // Ensure it works in flex containers
-                     // styles['flex-grow'] = '0'; // Optional: prevent growing beyond width?
+                     styles['flex-shrink'] = '0'; // Prevent shrinking
+                     styles['flex-grow'] = '0'; // Prevent growing
                  }
             }
 
@@ -303,8 +304,9 @@
              if (path === 'size') {
                  var sizeVal = value;
                  if (sizeVal && !isNaN(parseFloat(sizeVal)) && isFinite(sizeVal)) {
-                     // Check if it already has units
-                     if (!/^[0-9.]+[a-z%]+$/.test(sizeVal)) {
+                     // Check if it already has units. If it's just a number string "22", add px.
+                     // If it is "22px" or "1.5rem", leave it.
+                     if (!/^[0-9.]+[a-z%]+$/i.test(sizeVal)) {
                          sizeVal += 'px';
                      }
                  }
