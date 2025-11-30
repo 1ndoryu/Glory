@@ -253,11 +253,23 @@
         
         if (themeColors) {
             var mapped = [];
+            
+            // Standard colors
             Object.keys(themeColors).forEach(function(key) {
-                if (themeColors[key]) {
+                if (key !== 'custom' && themeColors[key]) {
                     mapped.push({ val: themeColors[key], name: key.charAt(0).toUpperCase() + key.slice(1) });
                 }
             });
+            
+            // Custom colors
+            if (themeColors.custom && Array.isArray(themeColors.custom)) {
+                themeColors.custom.forEach(function(c) {
+                    if (c.value && c.name) {
+                        mapped.push({ val: c.value, name: c.name });
+                    }
+                });
+            }
+            
             if (mapped.length) {
                 defaultColors = mapped.concat(defaultColors.filter(function(d) {
                     return !mapped.some(function(m) { return m.val.toLowerCase() === d.val.toLowerCase(); });

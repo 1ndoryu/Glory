@@ -510,6 +510,134 @@
     color: #374151;
 }
 
-.gbn-rich-text-editor:focus {
-    background: #fdfdfd;
+
+/* Custom Colors UI */
+.gbn-custom-colors-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.gbn-custom-color-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    transition: border-color 0.2s ease;
+}
+
+.gbn-custom-color-item:hover {
+    border-color: #d1d5db;
+}
+
+.gbn-custom-color-preview {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.gbn-custom-color-preview::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.gbn-custom-color-preview::-webkit-color-swatch {
+    border: 1px solid rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+
+.gbn-custom-color-name {
+    flex: 1;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 4px 8px;
+    font-size: 13px;
+    color: #333;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.gbn-custom-color-name:hover {
+    background: #f9fafb;
+}
+
+.gbn-custom-color-name:focus {
+    background: #fff;
+    border-color: #1d8ff1;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.1);
+}
+
+.gbn-custom-color-delete {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-size: 18px;
+    line-height: 1;
+}
+
+.gbn-custom-color-delete:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.gbn-add-color-form {
+    background: #f9fafb;
+    border: 1px dashed #d1d5db;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gbn-add-color-row {
+    display: flex;
+    gap: 10px;
+}
+
+.gbn-add-color-input {
+    flex: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 13px;
+}
+
+.gbn-add-color-input:focus {
+    border-color: #1d8ff1;
+    outline: none;
+}
+
+.gbn-add-btn-primary {
+    background: #1d8ff1;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    width: 100%;
+}
+
+.gbn-add-btn-primary:hover {
+    background: #0b76d1;
 }

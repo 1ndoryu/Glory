@@ -100,6 +100,19 @@
             if (settings.colors.secondary) root.style.setProperty('--gbn-secondary', settings.colors.secondary);
             if (settings.colors.accent) root.style.setProperty('--gbn-accent', settings.colors.accent);
             if (settings.colors.background) root.style.setProperty('--gbn-bg', settings.colors.background);
+            
+            // Custom Colors
+            if (settings.colors.custom && Array.isArray(settings.colors.custom)) {
+                settings.colors.custom.forEach(function(c, i) {
+                    if (c.value) {
+                        // We can set by index or name. Let's set by index for stability if names change?
+                        // Or maybe we don't need CSS vars for custom colors if they are just for the palette?
+                        // But if we want to use them in CSS, we might need them.
+                        // Let's set them just in case.
+                        root.style.setProperty('--gbn-custom-' + i, c.value);
+                    }
+                });
+            }
         }
         
         // Page Defaults
@@ -217,6 +230,126 @@
                     { tipo: 'color', id: 'colors.accent', etiqueta: 'Acento', defecto: '#28a745', hidePalette: true },
                     { tipo: 'color', id: 'colors.background', etiqueta: 'Fondo Body', defecto: '#f8f9fa', hidePalette: true }
                 ];
+                
+                // Custom Colors Section
+                var customHeader = document.createElement('div');
+                customHeader.className = 'gbn-field-header-separator';
+                customHeader.innerHTML = '<h4>Colores Personalizados</h4>';
+                
+                // Container for custom colors list
+                var customList = document.createElement('div');
+                customList.className = 'gbn-custom-colors-list';
+                
+                var customColors = (mockBlock.config.colors && mockBlock.config.colors.custom) ? mockBlock.config.colors.custom : [];
+                
+                function renderCustomList() {
+                    customList.innerHTML = '';
+                    customColors.forEach(function(c, index) {
+                        var item = document.createElement('div');
+                        item.className = 'gbn-custom-color-item';
+                        
+                        var colorInput = document.createElement('input');
+                        colorInput.type = 'color';
+                        colorInput.className = 'gbn-custom-color-preview';
+                        colorInput.value = c.value;
+                        colorInput.title = 'Cambiar color';
+                        colorInput.oninput = function() {
+                            c.value = colorInput.value;
+                            updateCustomColors(true); // true = skip render to keep focus
+                        };
+                        
+                        var nameInput = document.createElement('input');
+                        nameInput.type = 'text';
+                        nameInput.className = 'gbn-custom-color-name';
+                        nameInput.value = c.name;
+                        nameInput.placeholder = 'Nombre';
+                        nameInput.oninput = function() {
+                            c.name = nameInput.value;
+                            updateCustomColors(true);
+                        };
+                        
+                        var delBtn = document.createElement('button');
+                        delBtn.type = 'button';
+                        delBtn.className = 'gbn-custom-color-delete';
+                        delBtn.innerHTML = '&times;';
+                        delBtn.title = 'Eliminar color';
+                        delBtn.onclick = function() {
+                            // No confirmation as requested
+                            customColors.splice(index, 1);
+                            updateCustomColors();
+                        };
+                        
+                        item.appendChild(colorInput);
+                        item.appendChild(nameInput);
+                        item.appendChild(delBtn);
+                        customList.appendChild(item);
+                    });
+                }
+                
+                function updateCustomColors(skipRender) {
+                    // Update config
+                    var api = Gbn.ui && Gbn.ui.panelApi;
+                    if (api && api.updateConfigValue) {
+                        if (!mockBlock.config.colors) mockBlock.config.colors = {};
+                        api.updateConfigValue(mockBlock, 'colors.custom', customColors);
+                    }
+                    if (!skipRender) {
+                        renderCustomList();
+                    }
+                }
+                
+                renderCustomList();
+                
+                // Add New Color Form
+                var addForm = document.createElement('div');
+                addForm.className = 'gbn-add-color-form';
+                
+                var row1 = document.createElement('div');
+                row1.className = 'gbn-add-color-row';
+                
+                var nameInput = document.createElement('input');
+                nameInput.type = 'text';
+                nameInput.className = 'gbn-add-color-input';
+                nameInput.placeholder = 'Nombre del nuevo color';
+                
+                var colorInput = document.createElement('input');
+                colorInput.type = 'color';
+                colorInput.className = 'gbn-custom-color-preview'; // Reuse preview style
+                colorInput.style.height = '38px'; // Match input height
+                colorInput.style.width = '38px';
+                colorInput.value = '#000000';
+                
+                row1.appendChild(colorInput);
+                row1.appendChild(nameInput);
+                
+                var addBtn = document.createElement('button');
+                addBtn.type = 'button';
+                addBtn.className = 'gbn-add-btn-primary';
+                addBtn.textContent = 'Añadir Color';
+                addBtn.onclick = function() {
+                    var name = nameInput.value.trim();
+                    var val = colorInput.value;
+                    if (!name) {
+                        alert('Por favor ingresa un nombre para el color.');
+                        return;
+                    }
+                    customColors.push({ name: name, value: val });
+                    nameInput.value = '';
+                    updateCustomColors();
+                };
+                
+                addForm.appendChild(row1);
+                addForm.appendChild(addBtn);
+                
+                // Append to schema via a custom wrapper since builder expects fields
+                // We can append directly to content
+                setTimeout(function() {
+                    if (content) {
+                        content.appendChild(customHeader);
+                        content.appendChild(customList);
+                        content.appendChild(addForm);
+                    }
+                }, 0);
             } else if (sectionId === 'pages') {
                 schema = [
                     { tipo: 'header', etiqueta: 'Defaults de Página' },
