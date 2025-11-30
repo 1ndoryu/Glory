@@ -27,6 +27,11 @@ final class ContainerRegistry
                     'alineacion' => 'inherit',
                     'maxAncho' => null,
                     'fondo' => null,
+                    'layout' => 'flex',
+                    'flexDirection' => 'row',
+                    'flexWrap' => 'wrap',
+                    'flexJustify' => 'flex-start',
+                    'flexAlign' => 'stretch',
                 ],
                 'schema' => [
                     [
