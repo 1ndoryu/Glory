@@ -134,9 +134,9 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 - [x] **Sincronización Bidireccional**: Asegurar que los cambios en el DOM (movimientos, inserciones) se reflejen en `Gbn.state` y viceversa en tiempo real. *(Cubierto por persistence.js que lee el DOM y eventos de sincronización)*.
 
 ### Etapa 5 · Configuraciones globales
-- [ ] Implementar el panel de configuración del tema (colores, fuentes, `init.css`) con almacenamiento centralizado.
-- [ ] Implementar el panel de configuración de la página (fondo, padding del `main`, overrides locales).
-- [ ] Conectar la opción de restaurar valores por defecto con las configuraciones de tema y página.
+- [x] Implementar el panel de configuración del tema (colores, fuentes, `init.css`) con almacenamiento centralizado.
+- [x] Implementar el panel de configuración de la página (fondo, padding del `main`, overrides locales).
+
 
 ### Etapa 6 · Adaptación de Componentes (Pospuesto)
 - [ ] Ajustar componentes agnósticos (`TermRender`, `GloryImage`, etc.) para exponer `gbnDefaults`.
@@ -222,5 +222,19 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 - Solución: Se actualizó `persistence.js` para ordenar los bloques basándose en `element.compareDocumentPosition` antes de asignar el índice `order` en el payload.
 - Backend: `ConfigHandler` y `DomProcessor` ahora reciben el `order` correcto y reordenan los nodos DOM antes de guardar el HTML final.
 - Hash: Se elimina `_glory_content_hash` al guardar para evitar que `PageManager` sobrescriba los cambios manuales.
+
+[SOLUCIONADO] Persistencia y Actualización en Tiempo Real de Configuración de Tema/Página (Noviembre 30)
+- Problema: Los cambios en el panel de tema y página no se guardaban ni se reflejaban en tiempo real. El botón "Guardar" global no detectaba estos cambios.
+- Solución:
+    - Se centralizó la lógica de actualización en `panel-render.js` y `dock.js`.
+    - El botón "Guardar" del Dock ahora guarda concurrentemente `PageConfig`, `PageSettings` y `ThemeSettings`.
+    - Se arregló la aplicación de estilos en tiempo real usando variables CSS (`--gbn-*`) y un helper `toCssValue` para unidades.
+
+[MEJORA] UI de Configuración de Tema y CSS (Noviembre 30)
+- **Typography Field**: Nuevo control compuesto con Familia, Grid (Size/LineHeight/Spacing) y Transform (iconos).
+- **Color Picker**: Toggle para mostrar/ocultar la paleta global (icono de mundo).
+- **Scope de Estilos**: Se aisló la fuente del panel (`layout.css`) para que no herede la del tema. Se creó `theme-styles.css` para aplicar variables GBN solo al contenido dentro de `[data-gbn-root]`.
+- **Arquitectura CSS**: Refactorización de `GbnManager.php` para encolar archivos CSS individuales (`forms.css`, `layout.css`, etc.) con versionado dinámico, eliminando `@import` estáticos.
+
 
 

@@ -467,6 +467,65 @@
         
         wrapper.appendChild(container);
         appendFieldDescription(wrapper, field);
+        wrapper.appendChild(container);
+        appendFieldDescription(wrapper, field);
+        return wrapper;
+    }
+
+    function buildRichTextField(block, field) {
+        var wrapper = document.createElement('div'); wrapper.className = 'gbn-field gbn-field-rich-text';
+        var label = document.createElement('label'); label.className = 'gbn-field-label'; label.textContent = field.etiqueta || field.id; wrapper.appendChild(label);
+        
+        var container = document.createElement('div');
+        container.className = 'gbn-rich-text-container';
+        
+        // Toolbar
+        var toolbar = document.createElement('div');
+        toolbar.className = 'gbn-rich-text-toolbar';
+        
+        var actions = [
+            { cmd: 'bold', icon: '<b>B</b>', title: 'Negrita' },
+            { cmd: 'italic', icon: '<i>I</i>', title: 'Cursiva' }
+        ];
+        
+        actions.forEach(function(action) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'gbn-rich-text-btn';
+            btn.innerHTML = action.icon;
+            btn.title = action.title;
+            btn.addEventListener('click', function() {
+                document.execCommand(action.cmd, false, null);
+                // Sync content after command
+                var content = editor.innerHTML;
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, content); }
+            });
+            toolbar.appendChild(btn);
+        });
+        
+        container.appendChild(toolbar);
+        
+        // Editor Area
+        var editor = document.createElement('div');
+        editor.className = 'gbn-rich-text-editor';
+        editor.contentEditable = true;
+        
+        var current = getConfigValue(block, field.id);
+        if (current === undefined || current === null) { current = field.defecto || ''; }
+        editor.innerHTML = current;
+        
+        editor.addEventListener('input', function() {
+            var content = editor.innerHTML;
+            var api = Gbn.ui && Gbn.ui.panelApi;
+            if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, content); }
+        });
+        
+        // Paste handling to strip styles? For now let it be.
+        
+        container.appendChild(editor);
+        wrapper.appendChild(container);
+        appendFieldDescription(wrapper, field);
         return wrapper;
     }
 
@@ -505,6 +564,7 @@
             case 'typography': return buildTypographyField(block, field);
             case 'icon_group': return buildIconGroupField(block, field);
             case 'fraction': return buildFractionSelectorField(block, field);
+            case 'rich_text': return buildRichTextField(block, field);
             case 'text':
             default: return buildTextField(block, field);
         }

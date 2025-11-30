@@ -27,6 +27,8 @@
             container.classList.add('gbn-controls-principal');
         } else if (block.role === 'secundario') {
             container.classList.add('gbn-controls-secundario');
+        } else {
+            container.classList.add('gbn-controls-centered');
         }
 
         // Config Button

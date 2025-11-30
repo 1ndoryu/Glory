@@ -136,15 +136,15 @@
                     { valor: 'span', etiqueta: 'Span' },
                     { valor: 'div', etiqueta: 'Div' }
                 ]},
-                { id: 'texto', tipo: 'text', etiqueta: 'Contenido' },
-                { id: 'alineacion', tipo: 'select', etiqueta: 'Alineación', opciones: [
-                    { valor: 'left', etiqueta: 'Izquierda' },
-                    { valor: 'center', etiqueta: 'Centro' },
-                    { valor: 'right', etiqueta: 'Derecha' },
-                    { valor: 'justify', etiqueta: 'Justificado' }
+                { id: 'texto', tipo: 'rich_text', etiqueta: 'Contenido' },
+                { id: 'typography', tipo: 'typography', etiqueta: 'Tipografía' },
+                { id: 'alineacion', tipo: 'icon_group', etiqueta: 'Alineación', opciones: [
+                    { valor: 'left', icon: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M17 9.5H3M21 4.5H3M21 14.5H3M17 19.5H3"/></svg>', etiqueta: 'Izquierda' },
+                    { valor: 'center', icon: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 9.5H5M21 4.5H3M21 14.5H3M19 19.5H5"/></svg>', etiqueta: 'Centro' },
+                    { valor: 'right', icon: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9.5H7M21 4.5H3M21 14.5H3M21 19.5H7"/></svg>', etiqueta: 'Derecha' },
+                    { valor: 'justify', icon: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9.5H3M21 4.5H3M21 14.5H3M21 19.5H3"/></svg>', etiqueta: 'Justificado' }
                 ]},
-                { id: 'color', tipo: 'color', etiqueta: 'Color' },
-                { id: 'size', tipo: 'text', etiqueta: 'Tamaño Fuente' }
+                { id: 'color', tipo: 'color', etiqueta: 'Color' }
             ]
         };
     }
@@ -526,17 +526,24 @@
         // Pre-process text content for text role
         if (role === 'text') {
             var existingConfig = readJsonAttribute(el, 'data-gbn-config');
-            if (!existingConfig || !existingConfig.texto) {
-                var currentText = el.innerText;
-                if (currentText && currentText.trim() !== '') {
-                    // Create a temporary config to merge later or set attribute
-                    // Setting attribute is safest to ensure state.register picks it up or we merge it.
-                    // But we don't want to overwrite if there is partial config.
-                    if (!existingConfig) existingConfig = {};
-                    existingConfig.texto = currentText;
-                    el.setAttribute('data-gbn-config', JSON.stringify(existingConfig));
-                }
+            // Prioritize existing content in DOM if config is missing or if we want to sync
+            var currentText = el.innerHTML; // Use innerHTML to preserve basic formatting if any
+            
+            if (!existingConfig) {
+                existingConfig = {};
             }
+            
+            // If config has no text, or if we want to ensure what's on screen is what's in config
+            // (Usually what's on screen is the source of truth initially)
+            if (currentText && currentText.trim() !== '') {
+                 existingConfig.texto = currentText;
+            } else if (!existingConfig.texto) {
+                 // Fallback if both are empty?
+                 existingConfig.texto = 'Nuevo texto';
+                 el.innerHTML = 'Nuevo texto';
+            }
+            
+            el.setAttribute('data-gbn-config', JSON.stringify(existingConfig));
         }
 
         var block = state.register(role, el, meta);

@@ -444,13 +444,14 @@
     border-radius: 6px;
     border: 1px solid #e0e0e0;
     width: fit-content;
+    width: -webkit-fill-available;
+    justify-content: space-around;
 }
-
 .gbn-icon-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
+    width: 100%;
     height: 32px;
     border: 1px solid transparent;
     background: transparent;

@@ -134,6 +134,36 @@
     background: rgba(255, 255, 255, 0.2);
 }
 
+/* Centered Controls (Components) */
+.gbn-controls-centered {
+    top: 50%;
+    left: 50%;
+    right: auto;
+    transform: translate(-50%, -50%) scale(0.9);
+    background: rgba(107, 33, 168, 0.95); /* Purple for components */
+    border-color: rgba(107, 33, 168, 0.2);
+    opacity: 0;
+    pointer-events: none; /* Prevent blocking when hidden */
+}
+
+.gbn-active .gbn-show-controls > .gbn-controls-centered {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    pointer-events: auto;
+}
+
+.gbn-controls-centered .gbn-config-btn,
+.gbn-controls-centered .gbn-add-btn,
+.gbn-controls-centered .gbn-delete-btn {
+    color: #fff;
+}
+
+.gbn-controls-centered .gbn-config-btn:hover,
+.gbn-controls-centered .gbn-add-btn:hover,
+.gbn-controls-centered .gbn-delete-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 .gbn-active .gbn-show-controls > .gbn-controls-group {
     opacity: 1;
     transform: translateY(-2px);
@@ -438,4 +468,48 @@
     letter-spacing: 0.05em;
     color: #1d8ff1;
     font-weight: 700;
+}
+
+/* Rich Text Editor */
+.gbn-rich-text-container {
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.gbn-rich-text-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 4px;
+    background: #f9fafb;
+    border-bottom: 1px solid #eee;
+}
+
+.gbn-rich-text-btn {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    color: #4b5563;
+    font-size: 13px;
+}
+
+.gbn-rich-text-btn:hover {
+    background: #e5e7eb;
+    color: #111;
+}
+
+.gbn-rich-text-editor {
+    padding: 10px;
+    min-height: 80px;
+    font-size: 14px;
+    line-height: 1.5;
+    outline: none;
+    color: #374151;
+}
+
+.gbn-rich-text-editor:focus {
+    background: #fdfdfd;
 }
