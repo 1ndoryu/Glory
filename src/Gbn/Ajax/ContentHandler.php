@@ -278,19 +278,35 @@ class ContentHandler
                     self::log('Valid IDs sample: ' . print_r(array_slice($validIds, 0, 5), true));
                     
                     // Log client paths for debugging
-                    $clientPaths = [];
-                    foreach (array_slice($blocks, 0, 5) as $b) {
-                        if (isset($b['clientPath'])) {
-                            $clientPaths[] = $b['id'] . ': ' . $b['clientPath'];
-                        }
-                    }
-                    self::log('Client Paths Sample: ' . print_r($clientPaths, true));
+                    // $clientPaths = [];
+                    // foreach (array_slice($blocks, 0, 5) as $b) {
+                    //     if (isset($b['domPath'])) {
+                    //         $clientPaths[] = $b['id'] . ': ' . $b['domPath'];
+                    //     }
+                    // }
+                    // self::log('Client Paths Sample: ' . print_r($clientPaths, true));
 
+                    // self::log('HTML Length Before: ' . strlen($html));
                     $html = self::processHtmlForPersistence($html, $validIds);
+                    // self::log('HTML Length After: ' . strlen($html));
 
                     remove_filter('content_save_pre', 'wp_filter_post_kses');
-                    wp_update_post(['ID' => $pageId, 'post_content' => $html]);
-                    update_post_meta($pageId, '_glory_content_hash', self::hashContenidoLocal($html));
+                    $updateResult = wp_update_post(['ID' => $pageId, 'post_content' => $html]);
+                    
+                    // if (is_wp_error($updateResult)) {
+                    //     self::log('wp_update_post FAILED: ' . $updateResult->get_error_message());
+                    // } elseif ($updateResult === 0) {
+                    //     self::log('wp_update_post returned 0 (no change or failure)');
+                    // } else {
+                    //     self::log('wp_update_post SUCCESS. ID: ' . $updateResult);
+                    // }
+
+                    // IMPORTANTE: No actualizar el hash (o borrarlo) para que PageManager
+                    // detecte que el contenido ha sido "editado manualmente" (por GBN) y no
+                    // lo sobrescriba automáticamente con el contenido del código.
+                    delete_post_meta($pageId, '_glory_content_hash');
+                    // update_post_meta($pageId, '_glory_content_hash', self::hashContenidoLocal($html));
+                    
                     $contentUpdated = true;
                 }
             }
@@ -481,7 +497,7 @@ class ContentHandler
         $nodes = $xpath->query($query);
         $toRemove = [];
         
-        // self::log('Nodes found: ' . $nodes->length);
+        self::log('Nodes found: ' . $nodes->length);
 
         foreach ($nodes as $node) {
             // Generate ID
@@ -490,7 +506,7 @@ class ContentHandler
                 $path = self::computeDomPath($node);
                 $id = self::generateId($node);
                 $node->setAttribute('data-gbn-id', $id);
-                // self::log("Generated ID: $id | Path: $path");
+                self::log("Generated ID: $id | Path: $path");
             }
             
             // self::log('Node ID: ' . $id . ' | Valid: ' . (in_array($id, $validIds) ? 'YES' : 'NO'));
@@ -498,10 +514,11 @@ class ContentHandler
             // Check if valid
             if (!in_array($id, $validIds)) {
                 $toRemove[] = $node;
+                self::log("Marked for removal: $id");
             }
         }
         
-        // self::log('Nodes to remove: ' . count($toRemove));
+        self::log('Nodes to remove: ' . count($toRemove));
 
         foreach ($toRemove as $node) {
             $node->parentNode->removeChild($node);

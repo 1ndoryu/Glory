@@ -58,6 +58,17 @@ class PageManager
     public static function register(): void
     {
         add_filter('template_include', [self::class, 'interceptarPlantilla'], 99);
+        add_filter('the_content', [self::class, 'disableAutoPForManagedPages'], 1);
+    }
+
+    public static function disableAutoPForManagedPages($content)
+    {
+        global $post;
+        if ($post && get_post_meta($post->ID, self::CLAVE_META_GESTION, true)) {
+            remove_filter('the_content', 'wpautop');
+            remove_filter('the_content', 'wptexturize');
+        }
+        return $content;
     }
 
     /**
