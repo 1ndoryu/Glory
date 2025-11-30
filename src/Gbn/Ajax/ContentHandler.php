@@ -315,29 +315,35 @@ class ContentHandler
         if (!$pageId) { wp_send_json_error(['message' => 'Datos inválidos']); }
         if (!current_user_can('edit_post', $pageId)) { wp_send_json_error(['message' => 'Sin permisos']); }
 
+        // 1. Limpiar metadatos de GBN
         delete_post_meta($pageId, 'gbn_config');
         delete_post_meta($pageId, 'gbn_styles');
 
-        $updatedContent = false;
-        $mode = method_exists(PageManager::class, 'getModoContenidoParaPagina')
-            ? PageManager::getModoContenidoParaPagina($pageId)
-            : 'code';
+        // 2. Resetear modo a 'code'
+        update_post_meta($pageId, '_glory_content_mode', 'code');
 
-        if ($mode === 'editor' && method_exists(PageManager::class, 'getDefinicionPorSlug')) {
+        $updatedContent = false;
+
+        // 3. Regenerar contenido desde el código base si es posible
+        if (method_exists(PageManager::class, 'getDefinicionPorSlug')) {
             $slug = (string) get_post_field('post_name', $pageId);
             $def  = PageManager::getDefinicionPorSlug($slug);
             if (is_array($def) && !empty($def['funcion']) && method_exists(PageManager::class, 'renderHandlerParaCopiar')) {
                 $html = PageManager::renderHandlerParaCopiar((string) $def['funcion']);
-                if ($html !== '') {
-                    remove_filter('content_save_pre', 'wp_filter_post_kses');
-                    wp_update_post(['ID' => $pageId, 'post_content' => $html]);
-                    update_post_meta($pageId, '_glory_content_hash', self::hashContenidoLocal($html));
-                    $updatedContent = true;
-                }
+                
+                // Aunque esté vacío, si es lo que devuelve el código, eso es lo que debe haber.
+                // Pero generalmente evitamos borrar contenido si algo falla, así que validamos no vacío o explícito.
+                // En este caso, "Restaurar" implica volver a lo que diga el código.
+                
+                remove_filter('content_save_pre', 'wp_filter_post_kses');
+                wp_update_post(['ID' => $pageId, 'post_content' => $html]);
+                update_post_meta($pageId, '_glory_content_hash', self::hashContenidoLocal($html));
+                $updatedContent = true;
+                self::log('[restorePage] Contenido restaurado desde código para page ' . $pageId);
             }
         }
 
-        wp_send_json_success(['ok' => true, 'mode' => $mode, 'contentUpdated' => $updatedContent]);
+        wp_send_json_success(['ok' => true, 'mode' => 'code', 'contentUpdated' => $updatedContent]);
     }
 
     private static function hashContenidoLocal(string $content): string

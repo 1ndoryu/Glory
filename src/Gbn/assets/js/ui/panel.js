@@ -426,8 +426,67 @@
             ensurePanelMounted(); setActiveBlock(null); panelMode = 'restore';
             if (panelRoot) { panelRoot.classList.add('is-open'); panelRoot.setAttribute('aria-hidden', 'false'); }
             if (panelTitle) { panelTitle.textContent = 'Restaurar valores'; }
-            if (panelBody) { panelBody.innerHTML = '<div class="gbn-panel-empty">La restauración devolverá el marcado original escrito en código. Esta acción se conectará en la etapa de persistencia.</div>'; panelForm = null; }
-            setPanelStatus('Próximamente');
+            
+            if (panelBody) {
+                panelBody.innerHTML = '';
+                
+                var container = document.createElement('div');
+                container.className = 'gbn-panel-restore';
+                container.style.padding = '20px';
+                
+                var desc = document.createElement('p');
+                desc.textContent = 'Esta acción eliminará todas las configuraciones personalizadas de GBN para esta página y restaurará el contenido original definido en el código. Esta acción no se puede deshacer.';
+                desc.style.marginBottom = '20px';
+                desc.style.fontSize = '13px';
+                desc.style.lineHeight = '1.5';
+                desc.style.color = '#666';
+                
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'gbn-btn-primary gbn-btn-danger';
+                btn.textContent = 'Restaurar Defaults';
+                btn.style.width = '100%';
+                btn.style.padding = '10px';
+                btn.style.backgroundColor = '#d9534f';
+                btn.style.color = '#fff';
+                btn.style.border = 'none';
+                btn.style.borderRadius = '4px';
+                btn.style.cursor = 'pointer';
+                
+                btn.addEventListener('click', function() {
+                    // Confirmación eliminada por solicitud del usuario
+                    
+                    btn.disabled = true;
+                    btn.textContent = 'Restaurando...';
+                    setPanelStatus('Restaurando...');
+                    
+                    if (Gbn.persistence && typeof Gbn.persistence.restorePage === 'function') {
+                        Gbn.persistence.restorePage().then(function(res) {
+                            if (res && res.success) {
+                                setPanelStatus('Restaurado. Recargando...');
+                                setTimeout(function() {
+                                    window.location.reload();
+                                }, 500);
+                            } else {
+                                setPanelStatus('Error al restaurar');
+                                btn.disabled = false;
+                                btn.textContent = 'Restaurar Defaults';
+                            }
+                        }).catch(function() {
+                            setPanelStatus('Error de conexión');
+                            btn.disabled = false;
+                            btn.textContent = 'Restaurar Defaults';
+                        });
+                    }
+                });
+                
+                container.appendChild(desc);
+                container.appendChild(btn);
+                panelBody.appendChild(container);
+            }
+            
+            panelForm = null;
+            setPanelStatus('Esperando confirmación');
         },
         close: function () {
             if (panelRoot) { panelRoot.classList.remove('is-open'); panelRoot.setAttribute('aria-hidden', 'true'); }
