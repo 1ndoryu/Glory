@@ -48,14 +48,20 @@ class ContentRender
                 'paginacion'             => false,
             ],
             'schema' => [
-                [
-                    'id'       => 'publicacionesPorPagina',
-                    'tipo'     => 'slider',
-                    'etiqueta' => 'Entradas por página',
-                    'min'      => 1,
-                    'max'      => 20,
                     'paso'     => 1,
                 ],
+                [
+                    'id'       => 'postType',
+                    'tipo'     => 'select',
+                    'etiqueta' => 'Tipo de contenido',
+                    'opciones' => [
+                        ['valor' => 'post', 'etiqueta' => 'Entradas'],
+                        ['valor' => 'page', 'etiqueta' => 'Páginas'],
+                        ['valor' => 'libro', 'etiqueta' => 'Libros'],
+                    ],
+                ],
+                [
+                    'id'       => 'publicacionesPorPagina',
                 [
                     'id'       => 'claseContenedor',
                     'tipo'     => 'text',
@@ -212,7 +218,7 @@ class ContentRender
 
         if ($isDevMode || $config['forzarSinCache']) {
             // Si es modo desarrollo o se fuerza, renderiza directamente.
-            echo self::renderizarContenido($postType, $config);
+            echo self::renderizarContenido($config['postType'] ?? $postType, $config);
             return;
         }
 
@@ -223,7 +229,8 @@ class ContentRender
         $opcionesParaCache     = $config;
         unset($opcionesParaCache['plantillaCallback']);
         $opcionesParaCache['__paged'] = $pagedForCache;
-        $cacheKey              = 'glory_content_' . md5($postType . serialize($opcionesParaCache));
+        $effectivePostType     = $config['postType'] ?? $postType;
+        $cacheKey              = 'glory_content_' . md5($effectivePostType . serialize($opcionesParaCache));
 
         // 2. Intentar obtener el contenido desde la caché.
         $cachedHtml = get_transient($cacheKey);
@@ -235,7 +242,7 @@ class ContentRender
         }
 
         // 4. Si no está en caché, generarlo.
-        $htmlGenerado = self::renderizarContenido($postType, $config);
+        $htmlGenerado = self::renderizarContenido($effectivePostType, $config);
 
         // 5. Guardar el HTML generado en la caché.
         set_transient($cacheKey, $htmlGenerado, $config['tiempoCache']);

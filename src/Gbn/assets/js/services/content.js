@@ -49,9 +49,29 @@
                 padding: '20px'
             },
             schema: [
-                { id: 'layout', tipo: 'select', etiqueta: 'Layout', opciones: [{valor: 'flex', etiqueta: 'Flexbox'}, {valor: 'grid', etiqueta: 'Grid'}] },
+
                 { 
-                    id: 'direction', 
+                    id: 'layout', 
+                    tipo: 'icon_group', 
+                    etiqueta: 'Layout', 
+                    opciones: [
+                        {valor: 'block', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>', etiqueta: 'Bloque'},
+                        {valor: 'flex', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>', etiqueta: 'Flexbox'},
+                        {valor: 'grid', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>', etiqueta: 'Grid'}
+                    ] 
+                },
+                { 
+                    id: 'gap', 
+                    tipo: 'slider', 
+                    etiqueta: 'Separación (Gap)', 
+                    unidad: 'px', 
+                    min: 0, 
+                    max: 120, 
+                    paso: 2,
+                    condicion: ['layout', 'flex'] // Also for grid, logic handled in panel-render
+                },
+                { 
+                    id: 'direction', // Note: PHP uses flexDirection, JS defaults used direction. Let's align to PHP if possible, but panel-render handles both.
                     tipo: 'icon_group', 
                     etiqueta: 'Dirección', 
                     condicion: ['layout', 'flex'],
@@ -93,6 +113,25 @@
                         { valor: 'flex-end', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 14h16M4 18h16"/></svg>', etiqueta: 'End' },
                         { valor: 'stretch', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>', etiqueta: 'Stretch' }
                     ]
+                },
+                {
+                    id: 'gridColumns',
+                    tipo: 'slider',
+                    etiqueta: 'Columnas Grid',
+                    min: 1,
+                    max: 12,
+                    paso: 1,
+                    condicion: ['layout', 'grid']
+                },
+                {
+                    id: 'gridGap',
+                    tipo: 'slider',
+                    etiqueta: 'Separación Grid',
+                    unidad: 'px',
+                    min: 0,
+                    max: 120,
+                    paso: 2,
+                    condicion: ['layout', 'grid']
                 },
                 { id: 'padding', tipo: 'spacing', etiqueta: 'Padding' },
                 { id: 'background', tipo: 'color', etiqueta: 'Fondo' }
@@ -709,7 +748,7 @@
             claseContenedor: 'glory-content-list',
             claseItem: 'glory-content-item',
             argumentosConsulta: {}
-        }, block.meta.options || {});
+        }, block.meta.options || {}, block.config || {});
         var payload = {
             postType: block.meta.postType || opts.postType || 'post',
             publicacionesPorPagina: opts.publicacionesPorPagina,
@@ -745,5 +784,16 @@
         hydrate: hydrate,
         parseOptionsString: parseOptionsString,
     };
+
+    if (typeof global.addEventListener === 'function') {
+        global.addEventListener('gbn:configChanged', function(e) {
+            var id = e.detail && e.detail.id;
+            if (!id) return;
+            var block = state.get(id);
+            if (block && block.role === 'content') {
+                requestContent(block);
+            }
+        });
+    }
 })(window);
 

@@ -191,6 +191,7 @@
                         styles['grid-template-rows'] = config.gridRows;
                     }
                     if (config.gridGap) { styles.gap = config.gridGap + 'px'; }
+                    else if (config.gap) { styles.gap = config.gap + 'px'; }
                 } else if (config.layout === 'flex') {
                     styles.display = 'flex';
                     if (config.direction) { styles['flex-direction'] = config.direction; } // Note: schema uses 'direction'

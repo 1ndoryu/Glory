@@ -60,6 +60,7 @@ class AssetsUtility
 	 * Intenta resolver la ruta relativa REAL del asset dentro del alias, aceptando:
 	 * - Referencias sin extensión (probará varias extensiones comunes)
 	 * - Diferencias de mayúsculas/minúsculas en el nombre del archivo
+	 * - Archivos dentro de subdirectorios (ej: 'libros/mi-libro.png')
 	 * Retorna la ruta relativa con el nombre de archivo real si existe; de lo contrario null.
 	 */
 	private static function resolveActualRelativeAssetPath(string $alias, string $nombreArchivo): ?string
@@ -67,9 +68,26 @@ class AssetsUtility
 		if (!isset(self::$assetPaths[$alias])) {
 			return null;
 		}
-		$dirRel = self::$assetPaths[$alias];
-		$baseDir = trailingslashit(get_template_directory() . '/' . $dirRel);
+
+		// Normalizar para manejar subdirectorios correctamente
+		$nombreArchivo = wp_normalize_path($nombreArchivo);
+		$subDir = dirname($nombreArchivo);
 		$basenameSolicitado = basename($nombreArchivo);
+
+		$dirRel = self::$assetPaths[$alias];
+		
+		// Si hay subdirectorio, lo agregamos a la ruta relativa base
+		if ($subDir !== '.' && $subDir !== '') {
+			$dirRel .= '/' . $subDir;
+		}
+
+		$baseDir = trailingslashit(get_template_directory() . '/' . $dirRel);
+		
+		// Si el directorio resultante no existe, no podemos buscar nada
+		if (!is_dir($baseDir)) {
+			return null;
+		}
+
 		$extensiones = ['svg', 'png', 'jpg', 'jpeg', 'webp', 'gif'];
 
 		// 1) Si viene con extensión exacta y coincide con el sistema de archivos
