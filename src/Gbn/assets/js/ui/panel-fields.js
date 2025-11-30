@@ -32,6 +32,13 @@
         return { valor: match[1], unidad: match[2] || fallbackUnit || 'px' };
     }
 
+    var ICONS = {
+        superior: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke-opacity="0.3"></rect><path d="M4 6h16"></path></svg>',
+        derecha: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke-opacity="0.3"></rect><path d="M18 4v16"></path></svg>',
+        inferior: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke-opacity="0.3"></rect><path d="M4 18h16"></path></svg>',
+        izquierda: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke-opacity="0.3"></rect><path d="M6 4v16"></path></svg>'
+    };
+
     function buildSpacingField(block, field) {
         var wrapper = document.createElement('fieldset');
         wrapper.className = 'gbn-field gbn-field-spacing';
@@ -57,12 +64,19 @@
         campos.forEach(function (nombre) {
             var parsed = parseSpacingValue(baseConfig[nombre], unitSelect.value);
             var item = document.createElement('label'); item.className = 'gbn-spacing-input'; item.setAttribute('data-field', nombre);
-            var title = document.createElement('span'); title.textContent = nombre.charAt(0).toUpperCase() + nombre.slice(1); item.appendChild(title);
+            
+            // Icono en lugar de texto
+            var iconSpan = document.createElement('span');
+            iconSpan.className = 'gbn-spacing-icon';
+            iconSpan.title = nombre.charAt(0).toUpperCase() + nombre.slice(1);
+            iconSpan.innerHTML = ICONS[nombre] || nombre.charAt(0);
+            item.appendChild(iconSpan);
+
             var input = document.createElement('input'); input.type = 'number';
             if (field.min !== undefined) { input.min = field.min; }
             if (field.max !== undefined) { input.max = field.max; }
             if (field.paso !== undefined) { input.step = field.paso; }
-            input.value = parsed.valor; input.placeholder = 'auto'; input.dataset.configPath = field.id + '.' + nombre; input.addEventListener('input', handleSpacingInput);
+            input.value = parsed.valor; input.placeholder = '-'; input.dataset.configPath = field.id + '.' + nombre; input.addEventListener('input', handleSpacingInput);
             item.appendChild(input);
             var unitLabel = document.createElement('span'); unitLabel.className = 'gbn-spacing-unit-label'; unitLabel.textContent = unitSelect.value; input.__gbnUnit = unitLabel; item.appendChild(unitLabel);
             grid.appendChild(item);
@@ -151,17 +165,54 @@
     }
 
     function buildColorField(block, field) {
-        var wrapper = document.createElement('div'); wrapper.className = 'gbn-field';
+        var wrapper = document.createElement('div'); wrapper.className = 'gbn-field gbn-field-color';
         var label = document.createElement('label'); label.className = 'gbn-field-label'; label.textContent = field.etiqueta || field.id; wrapper.appendChild(label);
-        var input = document.createElement('input'); input.type = 'color'; input.className = 'gbn-input-color';
+        
+        var container = document.createElement('div');
+        container.className = 'gbn-color-container';
+
+        var inputColor = document.createElement('input'); 
+        inputColor.type = 'color'; 
+        inputColor.className = 'gbn-color-picker';
+        
+        var inputText = document.createElement('input');
+        inputText.type = 'text';
+        inputText.className = 'gbn-color-text gbn-input'; // Added gbn-input for base styling
+        inputText.placeholder = '#RRGGBB';
+
         var current = getConfigValue(block, field.id);
-        if (typeof current === 'string' && current.trim() !== '') { input.value = current; } else { input.value = '#ffffff'; }
-        input.addEventListener('input', function () {
-            var value = input.value.trim();
+        var initialColor = (typeof current === 'string' && current.trim() !== '') ? current : '#ffffff';
+        
+        inputColor.value = initialColor;
+        inputText.value = initialColor;
+
+        // Sincronizar inputs
+        function update(value) {
             var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
             if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, value === '' ? null : value); }
+        }
+
+        inputColor.addEventListener('input', function() {
+            inputText.value = inputColor.value;
+            update(inputColor.value);
         });
-        wrapper.appendChild(input); appendFieldDescription(wrapper, field); return wrapper;
+
+        inputText.addEventListener('input', function() {
+            var val = inputText.value.trim();
+            if (/^#[0-9A-F]{6}$/i.test(val)) {
+                inputColor.value = val;
+                update(val);
+            } else if (val === '') {
+                update(null);
+            }
+        });
+
+        container.appendChild(inputColor);
+        container.appendChild(inputText);
+        wrapper.appendChild(container);
+        
+        appendFieldDescription(wrapper, field); 
+        return wrapper;
     }
 
     function shouldShowField(block, field) {

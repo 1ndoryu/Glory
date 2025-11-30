@@ -189,3 +189,38 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 
 [NUEVO] Prioridad: Hacer un constructor esencial con bases sólidas que permita mover contenedores, columnas entre columnas, agregar más componentes, eliminar componentes y actualizar el código en tiempo real.
 
+## Contexto Técnico y Aprendizajes (Actualización)
+
+### Sistema de Eventos
+La comunicación entre módulos se realiza a través de eventos globales en `window`:
+- `gbn:layoutChanged`: Se dispara cuando cambia la estructura (mover, insertar, borrar).
+- `gbn:contentHydrated`: Se dispara cuando el contenido se carga o recarga.
+- `gbn:configChanged`: Se dispara cuando se edita la configuración de un bloque en el panel.
+- **Uso**: El módulo `dock.js` escucha estos eventos para habilitar el botón de "Guardar".
+
+### UI Components
+- **Dock (`dock.js`)**: Barra flotante minimalista. Usa iconos SVG. Centraliza las acciones de guardar y configuración global.
+- **Panel (`panel.js`)**: Panel lateral derecho. Se abre al seleccionar un bloque.
+  - Usa `panel-fields.js` para renderizar controles basados en el esquema del bloque.
+  - Estilos minimalistas definidos en `gbn.css` (ancho 280px, inputs compactos).
+- **Inspector (`inspector.js`)**: Maneja la interacción directa con el DOM (hover, click en bloques).
+
+### Persistencia
+- Los datos se guardan como un JSON en la base de datos (o meta post).
+- `persistence.js` maneja las llamadas AJAX.
+- Al guardar, se envía el estado actual (`Gbn.state.all()`).
+
+### Estilos y CSS
+- **Glassmorphism**: Usado en el Dock (`backdrop-filter: blur`).
+- **Variables CSS**: Se usan para colores y fuentes (`--bg`, `--text`, `--primary-bg`).
+- **Selectores**: `#gbn-panel` para el panel, `.gbn-dock` para la barra inferior.
+- **Inputs**: Personalizados para ser compactos (`height: 28px`). El selector de color es un círculo (`.gbn-color-picker`) + texto hexadecimal.
+
+### Drag & Drop
+- Implementado nativamente con HTML5 Drag and Drop API.
+- `drag-drop.js` gestiona `dragstart`, `dragover`, `drop`.
+- Usa `Gbn.state.move()` para actualizar el modelo de datos.
+
+### Inserción de Bloques
+- Se realiza a través de `Gbn.library` (no visible en este resumen pero parte del sistema).
+- `inspector.js` coordina la inserción y llama a `ensureBlockSetup`.

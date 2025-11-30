@@ -223,7 +223,122 @@
         }
     }
 
-    // ... (rest of functions)
+    function extractSpacingStyles(spacingConfig) {
+        var styles = {};
+        if (!spacingConfig || typeof spacingConfig !== 'object') { return styles; }
+        var map = { superior: 'padding-top', derecha: 'padding-right', inferior: 'padding-bottom', izquierda: 'padding-left' };
+        Object.keys(map).forEach(function (key) {
+            var raw = spacingConfig[key];
+            if (raw === null || raw === undefined || raw === '') { return; }
+            if (typeof raw === 'number') { styles[map[key]] = raw + 'px'; }
+            else { styles[map[key]] = raw; }
+        });
+        return styles;
+    }
+
+    var styleResolvers = {
+        principal: function (config) {
+            var styles = extractSpacingStyles(config.padding);
+            if (config.height && config.height !== 'auto') {
+                if (config.height === 'min-content') {
+                    styles['height'] = 'min-content';
+                } else if (config.height === '100vh') {
+                    styles['height'] = '100vh';
+                }
+            }
+            if (config.alineacion && config.alineacion !== 'inherit') { styles['text-align'] = config.alineacion; }
+            if (config.maxAncho !== null && config.maxAncho !== undefined && config.maxAncho !== '') {
+                var max = parseFloat(config.maxAncho);
+                styles['max-width'] = !isNaN(max) ? max + 'px' : String(config.maxAncho);
+            }
+            if (config.fondo) { styles.background = config.fondo; }
+            return styles;
+        },
+        secundario: function (config) {
+            var styles = extractSpacingStyles(config.padding);
+            if (config.height && config.height !== 'auto') {
+                if (config.height === 'min-content') {
+                    styles['height'] = 'min-content';
+                } else if (config.height === '100vh') {
+                    styles['height'] = '100vh';
+                }
+            }
+            if (config.gap !== null && config.gap !== undefined && config.gap !== '') {
+                var gap = parseFloat(config.gap);
+                if (!isNaN(gap)) { styles.gap = gap + 'px'; }
+            }
+            if (config.layout) {
+                if (config.layout === 'grid') {
+                    styles.display = 'grid';
+                    if (config.gridColumns) {
+                        styles['grid-template-columns'] = 'repeat(' + config.gridColumns + ', 1fr)';
+                    }
+                    if (config.gridRows && config.gridRows !== 'auto') {
+                        styles['grid-template-rows'] = config.gridRows;
+                    }
+                } else if (config.layout === 'flex') {
+                    styles.display = 'flex';
+                    if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
+                    if (config.flexWrap) { styles['flex-wrap'] = config.flexWrap; }
+                    if (config.flexJustify) { styles['justify-content'] = config.flexJustify; }
+                    if (config.flexAlign) { styles['align-items'] = config.flexAlign; }
+                } else {
+                    styles.display = 'block';
+                }
+            }
+            return styles;
+        },
+        content: function () { return {}; }
+    };
+
+    function applyBlockStyles(block) {
+        if (!block || !styleManager || !styleManager.update) { return; }
+        var resolver = styleResolvers[block.role] || function () { return {}; };
+        var computedStyles = resolver(block.config || {}, block) || {};
+        styleManager.update(block, computedStyles);
+    }
+
+    function createSummary(block) {
+        var summary = document.createElement('div');
+        summary.className = 'gbn-panel-block-summary';
+        var idLabel = document.createElement('p');
+        idLabel.className = 'gbn-panel-block-id';
+        idLabel.innerHTML = 'ID: <code>' + block.id + '</code>';
+        summary.appendChild(idLabel);
+        var roleLabel = document.createElement('p');
+        roleLabel.className = 'gbn-panel-block-role';
+        roleLabel.innerHTML = 'Rol: <strong>' + (block.role || 'block') + '</strong>';
+        summary.appendChild(roleLabel);
+        if (block.meta && block.meta.postType) {
+            var typeLabel = document.createElement('p');
+            typeLabel.className = 'gbn-panel-block-type';
+            typeLabel.textContent = 'Contenido: ' + block.meta.postType;
+            summary.appendChild(typeLabel);
+        }
+        return summary;
+    }
+
+    function renderBlockControls(block) {
+        if (!panelBody) { return; }
+        panelBody.innerHTML = ''; panelForm = null; panelBody.appendChild(createSummary(block));
+        var schema = Array.isArray(block.schema) ? block.schema : [];
+        if (!schema.length) {
+            var empty = document.createElement('div'); empty.className = 'gbn-panel-coming-soon'; empty.textContent = 'Este bloque aún no expone controles editables.';
+            panelBody.appendChild(empty); setPanelStatus('Sin controles disponibles'); return;
+        }
+        panelForm = document.createElement('form'); panelForm.className = 'gbn-panel-form';
+        var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
+        schema.forEach(function (field) { var control = builder ? builder(block, field) : null; if (control) { panelForm.appendChild(control); } });
+        panelBody.appendChild(panelForm); setPanelStatus('Edita las opciones y se aplicarán al instante');
+    }
+
+    function handleUnsavedChanges() {
+        // Esta función ya no es necesaria aquí porque dock.js maneja el estado del botón guardar
+        // Pero la mantendré vacía o la eliminaré si no se usa.
+        // Se usaba en los listeners globales que eliminé en el paso anterior.
+        // Pero espera, en el paso 266 eliminé los listeners globales de panel.js también.
+        // Así que no necesito handleUnsavedChanges aquí.
+    }
 
     function ensurePanelMounted() {
         if (panelRoot) { return panelRoot; }

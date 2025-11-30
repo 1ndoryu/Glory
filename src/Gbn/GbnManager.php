@@ -176,6 +176,9 @@ class GbnManager
             'containers' => ContainerRegistry::all(),
             'devMode' => self::shouldBustVersion(),
             'presets' => $presets,
+            'contentMode' => method_exists(\Glory\Manager\PageManager::class, 'getModoContenidoParaPagina') && $pageId 
+                ? \Glory\Manager\PageManager::getModoContenidoParaPagina($pageId) 
+                : 'code',
         ];
         // Asegurar que la config esté disponible antes de cualquier script consumidor
         wp_localize_script('glory-gbn-core', 'gloryGbnCfg', $localizedData);

@@ -240,6 +240,8 @@ class ContentHandler
         $mode = method_exists(PageManager::class, 'getModoContenidoParaPagina')
             ? PageManager::getModoContenidoParaPagina($pageId)
             : 'code';
+        
+        error_log('[GBN][saveConfig] PageID: ' . $pageId . ' Mode: ' . $mode);
 
         $manualEditDetected = false;
         $contentUpdated = false;
