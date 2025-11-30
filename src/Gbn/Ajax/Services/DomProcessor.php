@@ -6,7 +6,7 @@ use Glory\Gbn\Logger;
 
 class DomProcessor
 {
-    public static function processHtmlForPersistence(string $html, array $validIds): string
+    public static function processHtmlForPersistence(string $html, array $configById): string
     {
         if (trim($html) === '') {
             return '';
@@ -28,6 +28,7 @@ class DomProcessor
 
         $nodes = $xpath->query($query);
         $toRemove = [];
+        $nodesByParent = [];
         
         Logger::log('Nodes found: ' . $nodes->length);
 
@@ -41,12 +42,44 @@ class DomProcessor
                 Logger::log("Generated ID: $id | Path: $path");
             }
             
-            // Logger::log('Node ID: ' . $id . ' | Valid: ' . (in_array($id, $validIds) ? 'YES' : 'NO'));
-
             // Check if valid
-            if (!in_array($id, $validIds)) {
+            if (!isset($configById[$id])) {
                 $toRemove[] = $node;
                 Logger::log("Marked for removal: $id");
+            } else {
+                // Store for reordering
+                $parentId = spl_object_hash($node->parentNode);
+                if (!isset($nodesByParent[$parentId])) {
+                    $nodesByParent[$parentId] = ['parent' => $node->parentNode, 'children' => []];
+                }
+                $nodesByParent[$parentId]['children'][] = [
+                    'node' => $node,
+                    'order' => isset($configById[$id]['order']) ? (int) $configById[$id]['order'] : 9999
+                ];
+            }
+        }
+        
+        // Reorder nodes
+        foreach ($nodesByParent as $parentId => $group) {
+            $parent = $group['parent'];
+            $children = $group['children'];
+            
+            // Log before sort
+            $orders = array_map(function($c) { return $c['order']; }, $children);
+            Logger::log("Parent $parentId - Orders before: " . implode(', ', $orders));
+
+            // Sort by order
+            usort($children, function($a, $b) {
+                return $a['order'] - $b['order'];
+            });
+            
+            // Log after sort
+            $orders = array_map(function($c) { return $c['order']; }, $children);
+            Logger::log("Parent $parentId - Orders after: " . implode(', ', $orders));
+
+            // Re-append in correct order
+            foreach ($children as $child) {
+                $parent->appendChild($child['node']);
             }
         }
         

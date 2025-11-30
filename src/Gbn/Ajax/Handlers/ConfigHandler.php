@@ -49,6 +49,10 @@ class ConfigHandler
                 'children' => $children,
                 'clientPath' => isset($b['domPath']) ? $b['domPath'] : '',
             ];
+            
+            // Debug raw order
+            Logger::log("Block $id - Order: $order");
+
             if (!empty($styles)) {
                 $stylesById[$id] = $styles;
             }
@@ -91,12 +95,10 @@ class ConfigHandler
             if (is_array($def) && !empty($def['funcion']) && method_exists(PageManager::class, 'renderHandlerParaCopiar')) {
                 $html = PageManager::renderHandlerParaCopiar((string) $def['funcion']);
                 if ($html !== '') {
-                    // Procesar HTML para inyectar IDs y eliminar bloques borrados
-                    $validIds = array_keys($configById);
-                    Logger::log('Valid IDs count: ' . count($validIds));
-                    Logger::log('Valid IDs sample: ' . print_r(array_slice($validIds, 0, 5), true));
+                    // Procesar HTML para inyectar IDs, eliminar bloques borrados y reordenar
+                    Logger::log('Config items count: ' . count($configById));
                     
-                    $html = DomProcessor::processHtmlForPersistence($html, $validIds);
+                    $html = DomProcessor::processHtmlForPersistence($html, $configById);
 
                     remove_filter('content_save_pre', 'wp_filter_post_kses');
                     $updateResult = wp_update_post(['ID' => $pageId, 'post_content' => $html]);

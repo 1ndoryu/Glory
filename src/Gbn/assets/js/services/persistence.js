@@ -36,7 +36,18 @@
             else { rootChildren.push(b.id); }
         });
 
-        function assignOrder(ids) { return ids.map(function (id, i) { return { id: id, order: i }; }); }
+        function sortByDom(ids) {
+            return ids.sort(function (idA, idB) {
+                var elA = index.byId[idA].element;
+                var elB = index.byId[idB].element;
+                if (!elA || !elB) return 0;
+                return (elA.compareDocumentPosition(elB) & 4) ? -1 : 1;
+            });
+        }
+
+        function assignOrder(ids) { 
+            return sortByDom(ids).map(function (id, i) { return { id: id, order: i }; }); 
+        }
 
         return {
             root: assignOrder(rootChildren),
