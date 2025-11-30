@@ -130,7 +130,7 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 - [ ] (no se si esto ya esta resuelto hay revisar primero) Definir el flujo de restauración que recupere el markup baseline, limpie metadatos y vuelva a sincronizar `data-gbnConfig` con la versión guardada o la del tema.
 
 ### Etapa 4 · Manipulación del DOM y Estructura (PRIORIDAD ACTUAL)
-- [x] **Drag & Drop**: Implementar sistema para mover `divPrincipal` (secciones) y `divSecundario` (columnas/contenedores). *(Funcional, mejorado con UX y validación)*.
+- [ ] **Rediseño Drag & Drop**: Implementar sistema moderno con indicadores visuales (líneas de inserción), mejor UX y soporte para reordenamiento fluido.
 - [x] **Inserción de Bloques**: Crear modal/panel "Biblioteca" para insertar nuevos contenedores y componentes. *(Implementado con ui/library.js)*.
 - [x] **Eliminación de Bloques**: Agregar opción para eliminar nodos desde la UI del constructor. *(Implementado con botón directo)*.
 - [x] **Sincronización Bidireccional**: Asegurar que los cambios en el DOM (movimientos, inserciones) se reflejen en `Gbn.state` y viceversa en tiempo real. *(Cubierto por persistence.js que lee el DOM y eventos de sincronización)*.

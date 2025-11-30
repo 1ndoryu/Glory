@@ -156,6 +156,10 @@
         return output;
     }
 
+    function isGbnActive() {
+        return document.documentElement.classList.contains('gbn-active');
+    }
+
     var utils = {
         consoleLevels: consoleLevels,
         debug: function () { output('log', arguments); },
@@ -169,6 +173,7 @@
         hashString: hashString,
         generateId: generateId,
         isBuilderActive: isBuilderActive,
+        isGbnActive: isGbnActive,
         hasDocumentBody: hasDocumentBody,
         assign: assign,
         qs: function (selector, root) { return (root || document).querySelector(selector); },

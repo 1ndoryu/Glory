@@ -1297,3 +1297,46 @@ button#gbn-close {
     padding: 5px; /* Smaller padding when only one button */
     border-radius: 50%; /* Circle shape */
 }
+/* Drag & Drop Indicators */
+.gbn-drop-line {
+    position: absolute;
+    background-color: #3b82f6; /* Blue-500 */
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 9999;
+    transition: all 0.1s ease-out;
+    box-shadow: 0 0 4px rgba(59, 130, 246, 0.5);
+}
+
+.gbn-drop-line.horizontal {
+    height: 4px;
+    left: 0;
+    right: 0;
+    margin-top: -2px; /* Center on the edge */
+}
+
+.gbn-drop-line.vertical {
+    width: 4px;
+    top: 0;
+    bottom: 0;
+    margin-left: -2px; /* Center on the edge */
+}
+
+.gbn-node.is-dragging {
+    opacity: 0.4;
+    cursor: grabbing;
+}
+
+.gbn-node.gbn-drag-over {
+    /* Optional: highlight the container being hovered */
+    /* outline: 2px dashed #3b82f6; */
+    /* outline-offset: -2px; */
+}
+.gbn-drag-proxy {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    z-index: 100000;
+    pointer-events: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
