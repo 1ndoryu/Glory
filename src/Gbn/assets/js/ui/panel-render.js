@@ -261,7 +261,7 @@
             
             if (config.typography) {
                 var t = config.typography;
-                if (t.font && t.font !== 'System') { styles['font-family'] = t.font; }
+                if (t.font && t.font !== 'System' && t.font !== 'Default') { styles['font-family'] = t.font; }
                 if (t.size) { styles['font-size'] = t.size; }
                 if (t.lineHeight) { styles['line-height'] = t.lineHeight; }
                 if (t.letterSpacing) { styles['letter-spacing'] = t.letterSpacing; }
@@ -308,7 +308,11 @@
              
              // Apply inline styles directly for text
              if (path === 'texto') {
+                 var controls = block.element.querySelector('.gbn-controls-group');
                  block.element.innerHTML = value; // Use innerHTML for rich text
+                 if (controls) {
+                     block.element.appendChild(controls);
+                 }
              }
              if (path === 'alineacion') {
                  block.element.style.textAlign = value;

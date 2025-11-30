@@ -19,7 +19,7 @@
         var container = block.element.__gbnControls;
         if (container) { return container; }
         
-        container = document.createElement('div');
+        container = document.createElement('span');
         container.className = 'gbn-controls-group';
         
         // Add specific class based on role

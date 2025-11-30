@@ -310,7 +310,7 @@
         // 1. Font Family (Full Width)
         var fontRow = document.createElement('div'); fontRow.className = 'gbn-typo-row';
         var fontSelect = document.createElement('select'); fontSelect.className = 'gbn-select';
-        var fonts = ['System', 'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat'];
+        var fonts = ['Default', 'System', 'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat'];
         fonts.forEach(function(f) {
             var opt = document.createElement('option'); opt.value = f; opt.textContent = f; fontSelect.appendChild(opt);
         });

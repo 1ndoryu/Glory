@@ -579,6 +579,28 @@
                 block.styles.current = utils.assign({}, presets.styles[block.id]);
             }
         } catch (_) {}
+        
+        // Ensure text content is applied from config if it exists (persistence fix)
+        if (role === 'text' && block.config && block.config.texto) {
+             // Only update if different to avoid unnecessary DOM touches, 
+             // but we must trust config over initial HTML if config exists and we are in editor mode
+             // actually, we should just apply it.
+             var currentHTML = el.innerHTML;
+             if (block.config.texto !== currentHTML) {
+                 // Check for controls to preserve them
+                 var controls = el.querySelector('.gbn-controls-group');
+                 el.innerHTML = block.config.texto;
+                 if (controls) {
+                     el.appendChild(controls);
+                 }
+             }
+             
+             // Also apply typography styles if present in config but not in inline styles
+             // This is a bit redundant if presets.styles handled it, but good for safety
+             if (block.config.typography && Gbn.ui && Gbn.ui.panelApi && Gbn.ui.panelApi.applyBlockStyles) {
+                 Gbn.ui.panelApi.applyBlockStyles(block);
+             }
+        }
 
         // Solo aplicar baseline si no hay presets
         if (!presets.styles || !presets.styles[block.id]) {
