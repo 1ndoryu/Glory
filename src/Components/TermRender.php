@@ -33,6 +33,61 @@ class TermRender
      *                         - 'argumentosConsulta' (array)  : Parámetros extra para WP_Term_Query.
      *                         - 'ordenRandom' (bool)          : Si true, se devuelve en orden aleatorio.
      */
+    /**
+     * Devuelve la configuración predeterminada y el esquema para GBN.
+     *
+     * @return array
+     */
+    public static function gbnDefaults(): array
+    {
+        return [
+            'config' => [
+                'numero'          => 0,
+                'claseContenedor' => 'glory-term-list',
+                'claseItem'       => 'glory-term-item',
+                'ordenRandom'     => false,
+            ],
+            'schema' => [
+                [
+                    'id'       => 'numero',
+                    'tipo'     => 'slider',
+                    'etiqueta' => 'Número de términos',
+                    'min'      => 0,
+                    'max'      => 50,
+                    'paso'     => 1,
+                    'ayuda'    => '0 para mostrar todos',
+                ],
+                [
+                    'id'       => 'claseContenedor',
+                    'tipo'     => 'text',
+                    'etiqueta' => 'Clase del contenedor',
+                ],
+                [
+                    'id'       => 'claseItem',
+                    'tipo'     => 'text',
+                    'etiqueta' => 'Clase de cada item',
+                ],
+                [
+                    'id'       => 'ordenRandom',
+                    'tipo'     => 'toggle',
+                    'etiqueta' => 'Orden aleatorio',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Imprime una lista de términos.
+     *
+     * @param string $taxonomy Taxonomía a consultar (ej. 'category').
+     * @param array  $opciones Opciones de configuración:
+     *                         - 'numero' (int)                : Número máximo de términos, 0 = sin límite.
+     *                         - 'claseContenedor' (string)    : Clase CSS para el contenedor principal.
+     *                         - 'claseItem' (string)          : Clase CSS para cada término.
+     *                         - 'plantillaCallback' (callable): Función que renderiza cada término.
+     *                         - 'argumentosConsulta' (array)  : Parámetros extra para WP_Term_Query.
+     *                         - 'ordenRandom' (bool)          : Si true, se devuelve en orden aleatorio.
+     */
     public static function print(string $taxonomy, array $opciones = []): void
     {
         $defaults = [
@@ -79,7 +134,17 @@ class TermRender
         $contenedorClass = trim($config['claseContenedor'] . ' ' . sanitize_html_class($taxonomy));
         $itemClass       = trim($config['claseItem'] . ' ' . sanitize_html_class($taxonomy) . '-item');
 
-        echo '<div class="' . esc_attr($contenedorClass) . '">';
+        $gbnAttrs = '';
+        if (class_exists(\Glory\Core\GloryFeatures::class) && \Glory\Core\GloryFeatures::isActive('gbn', 'glory_gbn_activado') !== false) {
+            $gbnRole    = self::gbnDefaults();
+            $configAttr = esc_attr(wp_json_encode($gbnRole['config'] ?? []));
+            $schemaAttr = esc_attr(wp_json_encode($gbnRole['schema'] ?? []));
+            $gbnAttrs   = ' data-gbn-term-list="1" data-gbn-role="term_list"'
+                . ' data-gbn-config="' . $configAttr . '"'
+                . ' data-gbn-schema="' . $schemaAttr . '"';
+        }
+
+        echo '<div class="' . esc_attr($contenedorClass) . '"' . $gbnAttrs . '>';
         foreach ($terms as $term) {
             if ($term instanceof WP_Term) {
                 call_user_func($config['plantillaCallback'], $term, $itemClass);

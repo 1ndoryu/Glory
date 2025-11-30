@@ -103,9 +103,25 @@
         usedIds.clear();
     }
 
+    function deleteBlock(id) {
+        var block = registry.get(id);
+        if (!block) return false;
+        
+        if (block.element) {
+            elementsIndex.delete(block.element);
+            if (block.element.parentNode) {
+                block.element.parentNode.removeChild(block.element);
+            }
+        }
+        registry.delete(id);
+        usedIds.delete(id);
+        return true;
+    }
+
     Gbn.state = {
         register: registerBlock,
         updateConfig: updateConfig,
+        deleteBlock: deleteBlock,
         all: all,
         getByElement: getByElement,
         get: get,

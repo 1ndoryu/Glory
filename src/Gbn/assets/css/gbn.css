@@ -95,20 +95,34 @@
     position: relative;
 }
 
-.gbn-active [data-gbnPrincipal],
-.gbn-active [data-gbnSecundario] {
+.gbn-active [data-gbnPrincipal] {
     min-height: 40px;
     position: relative;
-    outline: 1px dashed rgba(29, 143, 241, 0.35);
+    outline: 1px dashed rgba(29, 143, 241, 0.35); /* Azul */
     outline-offset: 2px;
     transition: outline-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.gbn-active [data-gbnPrincipal]:hover,
-.gbn-active [data-gbnSecundario]:hover {
+.gbn-active [data-gbnSecundario] {
+    min-height: 40px;
+    position: relative;
+    outline: 1px dashed rgba(245, 158, 11, 0.35); /* Naranja */
+    outline-offset: 2px;
+    transition: outline-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gbn-active [data-gbnPrincipal]:hover {
     outline-color: rgba(29, 143, 241, 0.9);
     background-color: rgba(29, 143, 241, 0.08);
     box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.18);
+    z-index: 10;
+}
+
+.gbn-active [data-gbnSecundario]:hover {
+    outline-color: rgba(245, 158, 11, 0.9);
+    background-color: rgba(245, 158, 11, 0.08);
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
+    z-index: 11;
 }
 
 .gbn-block {
@@ -134,10 +148,30 @@
     animation: gbn-spin 0.8s linear infinite;
 }
 
-.gbn-config-btn {
+.gbn-controls-group {
     position: absolute;
     top: 8px;
     right: 8px;
+    display: none;
+    align-items: center;
+    gap: 4px;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.gbn-active [data-gbn-role]:hover > .gbn-controls-group {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.gbn-active .gbn-block-active > .gbn-controls-group {
+    opacity: 1;
+    transform: translateY(-2px);
+}
+
+.gbn-config-btn,
+.gbn-delete-btn {
     border: none;
     border-radius: 999px;
     background: #111827;
@@ -147,35 +181,31 @@
     text-transform: uppercase;
     padding: 6px 12px;
     cursor: pointer;
-    display: none;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    opacity: 0;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    z-index: 20;
+    justify-content: center;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
-.gbn-config-btn:focus {
+.gbn-delete-btn {
+    padding: 6px 10px;
+    background: #dc2626;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.gbn-config-btn:hover {
+    background: #1d8ff1;
+}
+
+.gbn-delete-btn:hover {
+    background: #ef4444;
+}
+
+.gbn-config-btn:focus,
+.gbn-delete-btn:focus {
     outline: none;
     box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.5);
-}
-
-.gbn-active .gbn-config-btn {
-    display: inline-flex;
-}
-
-.gbn-active [data-gbn-role]:hover > .gbn-config-btn {
-    opacity: 1;
-    transform: translateY(-2px);
-}
-
-.gbn-active .gbn-block-active > .gbn-config-btn,
-.gbn-config-btn.is-active {
-    display: inline-flex;
-    opacity: 1;
-    transform: translateY(-2px);
-    background: #1d8ff1;
-    box-shadow: 0 12px 24px rgba(29, 143, 241, 0.28);
 }
 
 .gbn-config-btn[disabled] {
@@ -949,4 +979,257 @@ button#gbn-close {
     to {
         transform: rotate(360deg);
     }
+}
+/* Drag & Drop Styles */
+.gbn-sortable-placeholder {
+    background-color: rgba(29, 143, 241, 0.1);
+    border: 2px dashed rgba(29, 143, 241, 0.5);
+    margin: 10px 0;
+    border-radius: 4px;
+    pointer-events: none;
+}
+
+.gbn-node[draggable="true"] {
+    cursor: grab;
+}
+
+.gbn-node[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+.gbn-node.is-dragging {
+    opacity: 0.4;
+}
+
+/* Library Modal Styles */
+.gbn-modal {
+    display: none;
+    position: fixed;
+    z-index: 100000;
+    inset: 0;
+}
+
+.gbn-modal.is-open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gbn-modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.gbn-modal-content {
+    position: relative;
+    background: #fff;
+    width: 600px;
+    max-width: 90vw;
+    max-height: 80vh;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.gbn-modal-header {
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.gbn-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.gbn-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+    color: #666;
+}
+
+.gbn-modal-body {
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.gbn-library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 16px;
+}
+
+.gbn-library-item {
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 20px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.gbn-library-item:hover {
+    background: #fff;
+    border-color: #1d8ff1;
+    box-shadow: 0 4px 12px rgba(29, 143, 241, 0.15);
+    transform: translateY(-2px);
+    color: #1d8ff1;
+}
+
+.gbn-add-btn {
+    padding: 6px 10px;
+    background: #10b981; /* Green */
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.gbn-add-btn:hover {
+    background: #059669;
+}
+
+/* Dock Styles */
+.gbn-dock {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    z-index: 99999;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.gbn-dock-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+    padding: 0;
+}
+
+.gbn-dock-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #1d8ff1;
+    transform: translateY(-1px);
+}
+
+.gbn-dock-btn svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+}
+
+/* Tooltip */
+.gbn-dock-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    background: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s ease;
+    margin-bottom: 10px;
+}
+
+.gbn-dock-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
+
+.gbn-dock-btn:hover .gbn-dock-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Active State for Toggle Button */
+.gbn-active .gbn-dock-main {
+    background: #1d8ff1;
+    color: #fff;
+    box-shadow: 0 4px 10px rgba(29, 143, 241, 0.3);
+}
+
+.gbn-active .gbn-dock-main:hover {
+    background: #1578cf;
+    color: #fff;
+}
+
+/* Save Button States */
+.gbn-dock-save:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.gbn-dock-save.has-changes {
+    color: #f59e0b; /* Orange for warning/changes */
+    position: relative;
+}
+
+.gbn-dock-save.has-changes::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 8px;
+    height: 8px;
+    background: #f59e0b;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.gbn-dock-save.is-loading svg {
+    animation: gbn-spin 1s linear infinite;
+}
+
+/* Hide other buttons when inactive if desired, or keep them disabled/dimmed */
+/* User asked for "floating where those buttons are". 
+   Let's hide the secondary buttons when GBN is inactive to keep it clean, 
+   showing only the main toggle. */
+.gbn-dock:not(.is-active) .gbn-dock-btn:not(.gbn-dock-main) {
+    display: none;
+}
+
+.gbn-dock:not(.is-active) {
+    padding: 5px; /* Smaller padding when only one button */
+    border-radius: 50%; /* Circle shape */
 }

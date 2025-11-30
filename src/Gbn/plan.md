@@ -7,6 +7,7 @@ Los componentes de Glory deberan de mantener su propias configuaciones compatibl
 - Al apagar GBN (no cargar scripts ni estilos) la página debe comportarse igual gracias a que el marcado mantiene estilos renderizados.
 - Código minimalista, ordenado y fácil de escalar.
 - Los componentes de Glory deben aceptar progresivamente la capa GBN sin romper su uso independiente.
+- Evitar repetir el error de Avada Constructor, donde el codigo se repite una y otra vez, no, aquí hay que seguir los principios solid a como de lugar, centralizar cosas y no de repetir nada.
 
 ## Contexto Glory, tema y PageManager
 - `Glory/` actúa como micro–framework agnóstico: provee managers (assets, páginas, menús), componentes reutilizables y utilidades base. No debe incluir lógica específica del proyecto.
@@ -128,22 +129,22 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 - [ ] (no se si esto ya esta resuelto hay revisar primero) Integrar la lectura/escritura con `PageManager`: respetar `content_mode = code`, actualizar `post_content` sólo cuando el modo sea `editor` y mantener el hash `_glory_content_hash` para detectar ediciones manuales.
 - [ ] (no se si esto ya esta resuelto hay revisar primero) Definir el flujo de restauración que recupere el markup baseline, limpie metadatos y vuelva a sincronizar `data-gbnConfig` con la versión guardada o la del tema.
 
-### Etapa 4 · Configuraciones globales
+### Etapa 4 · Manipulación del DOM y Estructura (PRIORIDAD ACTUAL)
+- [x] **Drag & Drop**: Implementar sistema para mover `divPrincipal` (secciones) y `divSecundario` (columnas/contenedores). *(Funcional, mejorado con UX y validación)*.
+- [x] **Inserción de Bloques**: Crear modal/panel "Biblioteca" para insertar nuevos contenedores y componentes. *(Implementado con ui/library.js)*.
+- [x] **Eliminación de Bloques**: Agregar opción para eliminar nodos desde la UI del constructor. *(Implementado con botón directo)*.
+- [x] **Sincronización Bidireccional**: Asegurar que los cambios en el DOM (movimientos, inserciones) se reflejen en `Gbn.state` y viceversa en tiempo real. *(Cubierto por persistence.js que lee el DOM y eventos de sincronización)*.
+
+### Etapa 5 · Configuraciones globales
 - [ ] Implementar el panel de configuración del tema (colores, fuentes, `init.css`) con almacenamiento centralizado.
 - [ ] Implementar el panel de configuración de la página (fondo, padding del `main`, overrides locales).
 - [ ] Conectar la opción de restaurar valores por defecto con las configuraciones de tema y página.
 
-### Etapa 5 · Documentación y extensión
-- [ ] Documentar cómo registrar nuevos elementos/controles y cómo extender las opciones por proyecto.
-- [ ] Documentar el flujo de configuraciones globales, restauración y dependencias entre builder y componentes.
+### Etapa 6 · Adaptación de Componentes (Pospuesto)
+- [ ] Ajustar componentes agnósticos (`TermRender`, `GloryImage`, etc.) para exponer `gbnDefaults`.
+- [ ] Documentar cómo registrar nuevos elementos/controles.
 
-### Etapa 6 · Inserción y reorganización de bloques (fase final)
-- [ ] Permitir añadir `divSecundario` dentro de cada `divPrincipal` mediante un modal con componentes disponibles.
-- [ ] Permitir añadir nuevos `divPrincipal` y arrastrarlos para reordenar secciones completas.
-- [ ] Habilitar que los `divSecundario` se muevan dentro de su `divPrincipal` y que los componentes internos puedan cambiar de posición.
-
-###
-Comentarios del usuario 
+### Comentarios del usuario 
 
 [solucionado] Actualmente al entrar a la pagina "constructor.php" donde estamos haciendo los test, no veo el boton, tampoco veo que algún script de gbn este cargando. Al activivar el constructor los elementos editables deben ser identificables facilmente al pasar el mouse.
 
@@ -155,7 +156,36 @@ Comentarios del usuario
 
 [solucionado] Refactor AJAX: `GbnAjaxHandler` dividido en `Ajax/Registrar` + `OrderHandler`, `ContentHandler`, `PageSettingsHandler`, `LibraryHandler`, `DeleteHandler`.
 
-[pendiente] Repasar los componentes agnósticos sin `gbnDefaults()` y conectar la persistencia antes de habilitar la inserción/reordenamiento de bloques (Etapa 6).
+[pendiente] Repasar los componentes agnósticos sin `gbnDefaults()` y conectar la persistencia antes de habilitar la inserción/reordenamiento de bloques (Etapa 6). -> **POSPUESTO**
 
 [solucionado] Problema de estilos inline vs GBN: ahora los estilos escritos en HTML (style="padding-top: 100px") se cargan automáticamente en el panel la primera vez, y al borrar valores regresan al valor inline original. ----> Actualización, la primera vez no carga los estilos escrito en el html, los carga dejar vacío la opcion en el panel o al restaurar default, no representa un problema grave pero si se puede ajustar en el futuro sería lo ideal, no es urgente resolverlo ahora, solo tenerlo en cuenta para el futuro.
+
+[NUEVO] Prioridad: Hacer un constructor esencial con bases sólidas que permita mover contenedores, columnas entre columnas, agregar más componentes, eliminar componentes y actualizar el código en tiempo real.
+
+[NOTA] El Drag & Drop es funcional pero "complicado" de usar. Se debe mejorar la UX para que sea más intuitivo (mejor feedback visual, zonas de drop más claras).
+- [ ] Implementar el panel de configuración del tema (colores, fuentes, `init.css`) con almacenamiento centralizado.
+- [ ] Implementar el panel de configuración de la página (fondo, padding del `main`, overrides locales).
+- [ ] Conectar la opción de restaurar valores por defecto con las configuraciones de tema y página.
+
+### Etapa 6 · Adaptación de Componentes (Pospuesto)
+- [ ] Ajustar componentes agnósticos (`TermRender`, `GloryImage`, etc.) para exponer `gbnDefaults`.
+- [ ] Documentar cómo registrar nuevos elementos/controles.
+
+### Comentarios del usuario 
+
+[solucionado] Actualmente al entrar a la pagina "constructor.php" donde estamos haciendo los test, no veo el boton, tampoco veo que algún script de gbn este cargando. Al activivar el constructor los elementos editables deben ser identificables facilmente al pasar el mouse.
+
+[solucionado] El boton aparece pero no hace nada, los script aparecen con version 1.0, deben de tener el versionado de assetmanager de cuando el modo local o dev este activo, supongo yo que hay que preparar las configuraciones para los divs? y adaptar gloryContentRender el primer componente que va a soportar gbn
+
+[solucionado] Al activar GBN el panel lateral debe mostrarse y el contenido principal debe desplazarse (padding-top: 100px) para que sea visible.
+
+[solucionado] Refactor UI: `overlay.js` dividido en `ui/panel.js`, `ui/panel-fields.js` y `ui/inspector.js`. `overlay.js` eliminado.
+
+[solucionado] Refactor AJAX: `GbnAjaxHandler` dividido en `Ajax/Registrar` + `OrderHandler`, `ContentHandler`, `PageSettingsHandler`, `LibraryHandler`, `DeleteHandler`.
+
+[pendiente] Repasar los componentes agnósticos sin `gbnDefaults()` y conectar la persistencia antes de habilitar la inserción/reordenamiento de bloques (Etapa 6). -> **POSPUESTO**
+
+[solucionado] Problema de estilos inline vs GBN: ahora los estilos escritos en HTML (style="padding-top: 100px") se cargan automáticamente en el panel la primera vez, y al borrar valores regresan al valor inline original. ----> Actualización, la primera vez no carga los estilos escrito en el html, los carga dejar vacío la opcion en el panel o al restaurar default, no representa un problema grave pero si se puede ajustar en el futuro sería lo ideal, no es urgente resolverlo ahora, solo tenerlo en cuenta para el futuro.
+
+[NUEVO] Prioridad: Hacer un constructor esencial con bases sólidas que permita mover contenedores, columnas entre columnas, agregar más componentes, eliminar componentes y actualizar el código en tiempo real.
 

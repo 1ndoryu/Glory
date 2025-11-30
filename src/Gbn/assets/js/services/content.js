@@ -11,7 +11,9 @@
     var FALLBACK_SELECTORS = {
         principal: { attribute: 'gloryDiv', dataAttribute: 'data-gbnPrincipal' },
         secundario: { attribute: 'gloryDivSecundario', dataAttribute: 'data-gbnSecundario' },
-        content: { attribute: 'gloryContentRender', dataAttribute: 'data-gbnContent' }
+        content: { attribute: 'gloryContentRender', dataAttribute: 'data-gbnContent' },
+        term_list: { attribute: 'gloryTermRender', dataAttribute: 'data-gbn-term-list' },
+        image: { attribute: 'gloryImage', dataAttribute: 'data-gbn-image' }
     };
 
     function ensureSelector(role, selector) {

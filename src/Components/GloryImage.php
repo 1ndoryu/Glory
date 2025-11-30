@@ -32,6 +32,75 @@ class GloryImage
      *                    - 'object_fit': CSS object-fit.
      * @return string HTML de la imagen.
      */
+    /**
+     * Devuelve la configuración predeterminada y el esquema para GBN.
+     *
+     * @return array
+     */
+    public static function gbnDefaults(): array
+    {
+        return [
+            'config' => [
+                'aspect_ratio' => '',
+                'object_fit'   => 'cover',
+                'align'        => 'none',
+                'full_width'   => 'no',
+                'height'       => '',
+            ],
+            'schema' => [
+                [
+                    'id'       => 'aspect_ratio',
+                    'tipo'     => 'text',
+                    'etiqueta' => 'Aspect Ratio (ej: 16/9)',
+                ],
+                [
+                    'id'       => 'object_fit',
+                    'tipo'     => 'select',
+                    'etiqueta' => 'Ajuste de imagen',
+                    'opciones' => [
+                        'cover'   => 'Cubrir (Cover)',
+                        'contain' => 'Contener (Contain)',
+                        'fill'    => 'Llenar (Fill)',
+                        'none'    => 'Ninguno',
+                    ],
+                ],
+                [
+                    'id'       => 'align',
+                    'tipo'     => 'select',
+                    'etiqueta' => 'Alineación',
+                    'opciones' => [
+                        'none'   => 'Ninguna',
+                        'left'   => 'Izquierda',
+                        'center' => 'Centro',
+                        'right'  => 'Derecha',
+                    ],
+                ],
+                [
+                    'id'       => 'full_width',
+                    'tipo'     => 'toggle',
+                    'etiqueta' => 'Ancho completo',
+                ],
+                [
+                    'id'       => 'height',
+                    'tipo'     => 'text',
+                    'etiqueta' => 'Altura (ej: 300px)',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Renderiza el HTML de una imagen.
+     *
+     * @param array $args Argumentos de configuración:
+     *                    - 'attachment_id': ID del adjunto WP.
+     *                    - 'image_url': URL directa (fallback si no hay ID).
+     *                    - 'image_size': Tamaño WP (default 'full').
+     *                    - 'quality': Calidad JPEG (0-100).
+     *                    - 'aspect_ratio': CSS aspect-ratio.
+     *                    - 'object_fit': CSS object-fit.
+     * @return string HTML de la imagen.
+     */
     public static function render(array $args = []): string
     {
         $attachmentId = isset($args['attachment_id']) ? (int) $args['attachment_id'] : 0;
@@ -108,7 +177,17 @@ class GloryImage
             $imgStyles .= 'height:auto;';
         }
 
-        $html  = '<div class="glory-image ' . esc_attr($instanceClass) . '" style="' . esc_attr($containerStyles) . '">';
+        $gbnAttrs = '';
+        if (class_exists(\Glory\Core\GloryFeatures::class) && \Glory\Core\GloryFeatures::isActive('gbn', 'glory_gbn_activado') !== false) {
+            $gbnRole    = self::gbnDefaults();
+            $configAttr = esc_attr(wp_json_encode($gbnRole['config'] ?? []));
+            $schemaAttr = esc_attr(wp_json_encode($gbnRole['schema'] ?? []));
+            $gbnAttrs   = ' data-gbn-image="1" data-gbn-role="image"'
+                . ' data-gbn-config="' . $configAttr . '"'
+                . ' data-gbn-schema="' . $schemaAttr . '"';
+        }
+
+        $html  = '<div class="glory-image ' . esc_attr($instanceClass) . '" style="' . esc_attr($containerStyles) . '"' . $gbnAttrs . '>';
         $html .= '<img class="glory-image__image" src="' . esc_url($imageUrl) . '" alt="' . esc_attr($alt) . '" loading="lazy" style="' . esc_attr($imgStyles) . '" />';
         if ($showTitle && $titleText !== '') {
             $html .= '<div class="glory-image__title">' . esc_html($titleText) . '</div>';

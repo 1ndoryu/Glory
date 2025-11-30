@@ -117,9 +117,21 @@ class GbnManager
                 'file' => '/js/ui/panel.js',
                 'deps' => ['glory-gbn-ui-panel-fields'],
             ],
+            'glory-gbn-ui-dragdrop' => [
+                'file' => '/js/ui/drag-drop.js',
+                'deps' => ['glory-gbn-ui-panel'],
+            ],
+            'glory-gbn-ui-library' => [
+                'file' => '/js/ui/library.js',
+                'deps' => ['glory-gbn-ui-panel'],
+            ],
+            'glory-gbn-ui-dock' => [
+                'file' => '/js/ui/dock.js',
+                'deps' => ['glory-gbn-ui-panel'],
+            ],
             'glory-gbn-ui-inspector' => [
                 'file' => '/js/ui/inspector.js',
-                'deps' => ['glory-gbn-ui-panel'],
+                'deps' => ['glory-gbn-ui-dragdrop', 'glory-gbn-ui-library', 'glory-gbn-ui-dock'],
             ],
             'glory-gbn' => [
                 'file' => '/js/gbn.js',
