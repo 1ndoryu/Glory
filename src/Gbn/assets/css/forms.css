@@ -1,0 +1,436 @@
+/* Forms & Inputs */
+
+#gbn-panel .gbn-panel-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Reduced gap */
+}
+
+#gbn-panel .gbn-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+}
+
+#gbn-panel .gbn-field-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 10px; /* Smaller label */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin-bottom: 2px;
+}
+
+#gbn-panel .gbn-field-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+}
+
+#gbn-panel .gbn-field-value {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text, #111111);
+}
+
+#gbn-panel .gbn-field-hint {
+    font-size: 10px;
+    color: #999;
+    line-height: 1.3;
+    margin-top: 2px;
+}
+
+#gbn-panel .gbn-input,
+#gbn-panel .gbn-select,
+#gbn-panel .gbn-input-color,
+#gbn-panel .gbn-panel-form input[type="number"],
+#gbn-panel .gbn-panel-form input[type="text"] {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px; /* Smaller radius */
+    padding: 4px 8px; /* Compact padding */
+    font-size: 12px;
+    background: #ffffff;
+    color: var(--text, #111111);
+    transition: all 0.2s ease;
+    height: 28px; /* Fixed compact height */
+    width: 100%;
+}
+
+#gbn-panel .gbn-input:focus,
+#gbn-panel .gbn-select:focus,
+#gbn-panel .gbn-panel-form input[type="number"]:focus,
+#gbn-panel .gbn-panel-form input[type="text"]:focus,
+#gbn-panel .gbn-panel-form select:focus {
+    outline: none;
+    border-color: #1d8ff1;
+    box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.1);
+}
+
+#gbn-panel .gbn-field-range input[type="range"] {
+    width: 100%;
+    height: 4px;
+    margin: 8px 0;
+}
+
+#gbn-panel .gbn-field-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+#gbn-panel .gbn-field-toggle input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+}
+
+#gbn-panel .gbn-field-spacing {
+    border: 1px solid #f0f0f0;
+    border-radius: 6px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #fafafa;
+}
+
+#gbn-panel .gbn-field-spacing legend {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin-bottom: 4px;
+}
+
+#gbn-panel .gbn-spacing-unit {
+    align-self: flex-end;
+    border: 1px solid #e0e0e0;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-size: 10px;
+    background: #fff;
+    height: 20px;
+    line-height: 14px;
+}
+
+#gbn-panel .gbn-spacing-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+}
+
+#gbn-panel .gbn-spacing-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    font-size: 10px;
+    padding: 0 6px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background: #ffffff;
+    height: 26px;
+}
+
+#gbn-panel .gbn-spacing-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    width: 16px;
+    height: 16px;
+}
+
+#gbn-panel .gbn-spacing-icon svg {
+    display: block;
+}
+
+#gbn-panel .gbn-spacing-input input[type="number"] {
+    width: 40px;
+    margin-left: auto;
+    border: none !important;
+    height: 24px !important;
+    padding: 0 !important;
+    text-align: right;
+    font-size: 11px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+/* Color Picker Styles */
+#gbn-panel .gbn-color-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#gbn-panel .gbn-color-picker {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    background: none;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+}
+
+#gbn-panel .gbn-color-picker::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+#gbn-panel .gbn-color-picker::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+}
+
+#gbn-panel .gbn-color-text {
+    flex: 1;
+    font-family: monospace;
+    text-transform: uppercase;
+}
+
+#gbn-panel .gbn-spacing-unit-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+}
+
+/* Controles del panel */
+.gbn-control {
+    margin-bottom: 16px;
+}
+
+.gbn-select-search-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.gbn-select-search {
+    padding: 6px 10px;
+    border: none;
+    font-size: 12px;
+}
+.gbn-select {
+    padding: 6px 8px;
+    border: 1px solid var(--border-color, #e6e6e6);
+}
+
+.gbn-control label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text, #111111);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Inputs, selects, textareas - estilo minimalista con borde inferior */
+.gbn-control input[type='range'],
+.gbn-control input[type='text'],
+.gbn-control input[type='number'],
+.gbn-control input[type='url'],
+.gbn-control select,
+.gbn-control textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-color, #e6e6e6);
+    padding: 8px 0;
+    font-size: 12px;
+    color: var(--text, #111111);
+    outline: none;
+    transition: border-color 0.2s ease;
+    border-radius: 0px;
+    height: 40px;
+}
+
+.gbn-control input[type='range']:focus,
+.gbn-control input[type='text']:focus,
+.gbn-control input[type='number']:focus,
+.gbn-control input[type='url']:focus,
+.gbn-control select:focus,
+.gbn-control textarea:focus {
+    border-bottom-color: var(--text, #111111);
+}
+
+/* Placeholder styling */
+.gbn-control input[type='text']::placeholder,
+.gbn-control input[type='number']::placeholder,
+.gbn-control input[type='url']::placeholder,
+.gbn-control textarea::placeholder,
+.gbn-select-search::placeholder,
+.gbn-select-display::placeholder {
+    opacity: 0.5;
+}
+
+/* Color picker */
+.gbn-control input[type='color'] {
+    width: 50px;
+    height: 32px;
+    border: none;
+    border-radius: 0;
+    cursor: pointer;
+    background: transparent;
+}
+
+/* Radio buttons (reemplazo para toggles) */
+.gbn-control .radio-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.gbn-control .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text, #111111);
+}
+
+.gbn-control .radio-group input[type='radio'] {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+}
+
+/* Range slider con valor (inspirado en FormBuilder) */
+.gbn-control .range-container {
+    position: relative;
+}
+
+.gbn-control .range-value {
+    position: absolute;
+    right: 0;
+    top: -20px;
+    font-size: 12px;
+    color: var(--muted, #6b6b6b);
+    font-weight: 500;
+}
+
+/* Select styling adicional */
+.gbn-control select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    padding-right: 32px;
+    border-radius: 0px;
+    font-size: 12px;
+    height: 40px;
+}
+
+.gbn-control select option {
+    color: var(--text, #111111);
+    background: var(--bg, #ffffff);
+    padding: 8px;
+}
+
+/* Select personalizado con buscador interno */
+.gbn-select-custom {
+    position: relative;
+}
+.gbn-select-display {
+    width: 100%;
+    text-align: left;
+    padding: 12px 0px;
+    border: unset;
+    border-bottom: 1px solid var(--border-color, #e6e6e6);
+    background: transparent;
+    cursor: pointer;
+}
+.gbn-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg, #fff);
+    border: 1px solid var(--border-color, #e6e6e6);
+    max-height: 260px;
+    overflow: auto;
+    z-index: 100000;
+    display: none;
+}
+.gbn-select-custom.is-open .gbn-select-dropdown {
+    display: block;
+}
+.gbn-select-search {
+    width: 100%;
+    padding: 6px 10px !important;
+    border: none !important;
+    border-bottom: none !important;
+    outline: none;
+}
+.gbn-select-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+}
+.gbn-select-option {
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.gbn-select-option:hover {
+    background: #f5f5f5;
+}
+.gbn-select-option.is-selected {
+    background: #efefef;
+}
+
+/* Range slider styling (inspirado en FormBuilder) */
+.gbn-control input[type='range'] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+}
+
+.gbn-control input[type='range']::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 0;
+    background: var(--text, #111111);
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.gbn-control input[type='range']::-moz-range-thumb {
+    height: 16px;
+    width: 16px;
+    border-radius: 0;
+    background: var(--text, #111111);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.gbn-control input[type='range']::-webkit-slider-track {
+    height: 2px;
+    background: var(--border-color, #e6e6e6);
+    border-radius: 0;
+}
+
+.gbn-control input[type='range']::-moz-range-track {
+    height: 2px;
+    background: var(--border-color, #e6e6e6);
+    border-radius: 0;
+    border: none;
+}
