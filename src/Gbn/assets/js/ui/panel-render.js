@@ -314,6 +314,74 @@
              }
         }
         
+        // Handle Page Settings
+        if (block.id === 'page-settings') {
+            var current = cloneConfig(block.config);
+            var segments = path.split('.');
+            var cursor = current;
+            for (var i = 0; i < segments.length - 1; i++) {
+                if (!cursor[segments[i]]) cursor[segments[i]] = {};
+                cursor = cursor[segments[i]];
+            }
+            cursor[segments[segments.length - 1]] = value;
+            
+            // Update block config reference (it's a mock block but we need to keep it updated)
+            block.config = current;
+            
+            // Sync to global config
+            if (!Gbn.config) Gbn.config = {};
+            Gbn.config.pageSettings = current;
+            
+            if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.applyPageSettings) {
+                Gbn.ui.panelTheme.applyPageSettings(current);
+            }
+            
+            // Dispatch event
+            var event;
+            if (typeof global.CustomEvent === 'function') {
+                event = new CustomEvent('gbn:configChanged', { detail: { id: 'page-settings' } });
+            } else {
+                event = document.createEvent('CustomEvent');
+                event.initCustomEvent('gbn:configChanged', false, false, { id: 'page-settings' });
+            }
+            global.dispatchEvent(event);
+            return current;
+        }
+        
+        // Handle Theme Settings
+        if (block.id === 'theme-settings') {
+            var current = cloneConfig(block.config);
+            var segments = path.split('.');
+            var cursor = current;
+            for (var i = 0; i < segments.length - 1; i++) {
+                if (!cursor[segments[i]]) cursor[segments[i]] = {};
+                cursor = cursor[segments[i]];
+            }
+            cursor[segments[segments.length - 1]] = value;
+            
+            // Update block config reference
+            block.config = current;
+            
+            // Sync to global config
+            if (!Gbn.config) Gbn.config = {};
+            Gbn.config.themeSettings = current;
+            
+            if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.applyThemeSettings) {
+                Gbn.ui.panelTheme.applyThemeSettings(current);
+            }
+            
+            // Dispatch event
+            var event;
+            if (typeof global.CustomEvent === 'function') {
+                event = new CustomEvent('gbn:configChanged', { detail: { id: 'theme-settings' } });
+            } else {
+                event = document.createEvent('CustomEvent');
+                event.initCustomEvent('gbn:configChanged', false, false, { id: 'theme-settings' });
+            }
+            global.dispatchEvent(event);
+            return current;
+        }
+        
         return baseUpdateConfigValue(block, path, value);
     };
 

@@ -4,6 +4,13 @@
     var Gbn = global.Gbn = global.Gbn || {};
     var utils = Gbn.utils;
 
+    function toCssValue(val, defaultUnit) {
+        if (val === null || val === undefined || val === '') return '';
+        if (typeof val === 'string' && /^[0-9.]+[a-z%]+$/i.test(val)) return val;
+        if (!isNaN(parseFloat(val))) return val + (defaultUnit || 'px');
+        return val;
+    }
+
     function applyPageSettings(settings) {
         var root = document.querySelector('[data-gbn-root]');
         if (!root) return;
@@ -13,12 +20,12 @@
         }
         if (settings.padding) {
             if (typeof settings.padding === 'object') {
-                root.style.paddingTop = settings.padding.superior + 'px';
-                root.style.paddingRight = settings.padding.derecha + 'px';
-                root.style.paddingBottom = settings.padding.inferior + 'px';
-                root.style.paddingLeft = settings.padding.izquierda + 'px';
+                root.style.paddingTop = toCssValue(settings.padding.superior);
+                root.style.paddingRight = toCssValue(settings.padding.derecha);
+                root.style.paddingBottom = toCssValue(settings.padding.inferior);
+                root.style.paddingLeft = toCssValue(settings.padding.izquierda);
             } else {
-                root.style.padding = settings.padding + 'px';
+                root.style.padding = toCssValue(settings.padding);
             }
         }
     }
@@ -55,56 +62,13 @@
 
         container.appendChild(form);
         
-        if (footer && footer.parentNode) {
-            var newFooterBtn = footer.cloneNode(true);
-            footer.parentNode.replaceChild(newFooterBtn, footer);
-            footer = newFooterBtn;
-            
-            footer.disabled = false;
-            footer.textContent = 'Guardar Configuración';
-            footer.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (Gbn.ui.panel && Gbn.ui.panel.setStatus) Gbn.ui.panel.setStatus('Guardando...');
-                
-                Gbn.persistence.savePageSettings(mockBlock.config).then(function(res) {
-                    if (res && res.success) {
-                        if (Gbn.ui.panel && Gbn.ui.panel.setStatus) Gbn.ui.panel.setStatus('Guardado');
-                        applyPageSettings(mockBlock.config);
-                    } else {
-                        if (Gbn.ui.panel && Gbn.ui.panel.setStatus) Gbn.ui.panel.setStatus('Error al guardar');
-                    }
-                });
-            });
+        // Disable panel footer button as we use global dock save
+        if (footer) {
+            footer.disabled = true;
+            footer.textContent = 'Usa Guardar en el Dock';
         }
         
-        // Monkey-patch updateConfigValue locally for this context
-        // We need to ensure panelRender uses this override if we are in page settings mode.
-        // But panelRender is global.
-        // Better approach: panelRender.updateConfigValue checks the block ID.
-        // Or we can rely on the fact that panelRender.updateConfigValue is what panelFields calls.
-        // So we can override it on Gbn.ui.panelRender or Gbn.ui.panelApi.
-        // Let's assume panel-core sets up the delegation.
-        
-        // For now, we can define a specific update handler for page settings
-        // and register it? No, panelFields calls a global API.
-        // We will handle the special logic in panel-render.js or panel-core.js by checking block.id
-        // OR we can override it here if we are careful.
-        
-        var originalUpdate = Gbn.ui.panelApi.updateConfigValue;
-        Gbn.ui.panelApi.updateConfigValue = function(block, path, value) {
-            if (block.id === 'page-settings') {
-                var segments = path.split('.');
-                var cursor = mockBlock.config;
-                for (var i = 0; i < segments.length - 1; i++) {
-                    if (!cursor[segments[i]]) cursor[segments[i]] = {};
-                    cursor = cursor[segments[i]];
-                }
-                cursor[segments[segments.length - 1]] = value;
-                applyPageSettings(mockBlock.config);
-                return;
-            }
-            return originalUpdate(block, path, value);
-        };
+        // Monkey-patching removed. Logic moved to panel-render.js
     }
 
     function applyThemeSettings(settings) {
@@ -115,12 +79,12 @@
         if (settings.text) {
             if (settings.text.p) {
                 if (settings.text.p.color) root.style.setProperty('--gbn-text-color', settings.text.p.color);
-                if (settings.text.p.size) root.style.setProperty('--gbn-text-size', settings.text.p.size + 'px');
+                if (settings.text.p.size) root.style.setProperty('--gbn-text-size', toCssValue(settings.text.p.size));
                 if (settings.text.p.font && settings.text.p.font !== 'System') root.style.setProperty('--gbn-text-font', settings.text.p.font);
             }
             if (settings.text.h1) {
                 if (settings.text.h1.color) root.style.setProperty('--gbn-h1-color', settings.text.h1.color);
-                if (settings.text.h1.size) root.style.setProperty('--gbn-h1-size', settings.text.h1.size + 'px');
+                if (settings.text.h1.size) root.style.setProperty('--gbn-h1-size', toCssValue(settings.text.h1.size));
             }
         }
         
@@ -266,53 +230,47 @@
         
         render();
         
-        if (footer && footer.parentNode) {
-            var newFooterBtn = footer.cloneNode(true);
-            footer.parentNode.replaceChild(newFooterBtn, footer);
-            footer = newFooterBtn;
-            
-            footer.disabled = false;
-            footer.textContent = 'Guardar Tema';
-            footer.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (Gbn.ui.panel && Gbn.ui.panel.setStatus) Gbn.ui.panel.setStatus('Guardando...');
-                
-                Gbn.persistence.saveThemeSettings(mockBlock.config).then(function(res) {
-                    if (res && res.success) {
-                        if (Gbn.ui.panel && Gbn.ui.panel.setStatus) Gbn.ui.panel.setStatus('Tema Guardado');
-                    }
-                });
-            });
+        // Disable panel footer button as we use global dock save
+        if (footer) {
+            footer.disabled = true;
+            footer.textContent = 'Usa Guardar en el Dock';
         }
         
-        var originalUpdate = Gbn.ui.panelApi.updateConfigValue;
-        Gbn.ui.panelApi.updateConfigValue = function(block, path, value) {
-            if (block.id === 'theme-settings') {
-                var segments = path.split('.');
-                var cursor = mockBlock.config;
-                for (var i = 0; i < segments.length - 1; i++) {
-                    if (!cursor[segments[i]]) cursor[segments[i]] = {};
-                    cursor = cursor[segments[i]];
-                }
-                cursor[segments[segments.length - 1]] = value;
-                
-                // Update global config for color picker to pick up changes immediately
-                if (!Gbn.config) Gbn.config = {};
-                if (!Gbn.config.themeSettings) Gbn.config.themeSettings = {};
-                Gbn.config.themeSettings = mockBlock.config;
-                
-                applyThemeSettings(mockBlock.config);
-                return;
-            }
-            return originalUpdate(block, path, value);
-        };
+        // Monkey-patching removed. Logic moved to panel-render.js
     }
 
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.panelTheme = {
         renderPageSettingsForm: renderPageSettingsForm,
         renderThemeSettingsForm: renderThemeSettingsForm,
-        applyThemeSettings: applyThemeSettings
+        applyThemeSettings: applyThemeSettings,
+        applyPageSettings: applyPageSettings
     };
 
 })(window);
+// Initialize Settings on Load
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Identify Root
+    var root = document.querySelector('main') || document.body;
+    if (root && !root.hasAttribute('data-gbn-root')) {
+        root.setAttribute('data-gbn-root', 'true');
+    }
+    
+    // 2. Load Config
+    var config = window.gloryGbnCfg || {};
+    if (window.Gbn) {
+        if (!window.Gbn.config) window.Gbn.config = {};
+        if (config.themeSettings) window.Gbn.config.themeSettings = config.themeSettings;
+        if (config.pageSettings) window.Gbn.config.pageSettings = config.pageSettings;
+    }
+    
+    // 3. Apply Settings
+    if (window.Gbn && window.Gbn.ui && window.Gbn.ui.panelTheme) {
+        if (config.themeSettings) {
+            window.Gbn.ui.panelTheme.applyThemeSettings(config.themeSettings);
+        }
+        if (config.pageSettings) {
+            window.Gbn.ui.panelTheme.applyPageSettings(config.pageSettings);
+        }
+    }
+});

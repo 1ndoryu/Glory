@@ -69,15 +69,42 @@
         
         saveBtn.addEventListener('click', function() {
             if (saveBtn.disabled) return;
-            if (Gbn.persistence && typeof Gbn.persistence.savePageConfig === 'function') {
+            if (Gbn.persistence) {
                 saveBtn.classList.add('is-loading');
-                Gbn.persistence.savePageConfig().then(function(res) {
+                
+                var promises = [];
+                
+                // 1. Save Block Config
+                if (typeof Gbn.persistence.savePageConfig === 'function') {
+                    promises.push(Gbn.persistence.savePageConfig());
+                }
+                
+                // 2. Save Page Settings (if modified/present)
+                if (Gbn.config && Gbn.config.pageSettings && typeof Gbn.persistence.savePageSettings === 'function') {
+                    promises.push(Gbn.persistence.savePageSettings(Gbn.config.pageSettings));
+                }
+                
+                // 3. Save Theme Settings (if modified/present)
+                if (Gbn.config && Gbn.config.themeSettings && typeof Gbn.persistence.saveThemeSettings === 'function') {
+                    promises.push(Gbn.persistence.saveThemeSettings(Gbn.config.themeSettings));
+                }
+                
+                Promise.all(promises).then(function(results) {
                     saveBtn.classList.remove('is-loading');
                     saveBtn.classList.remove('has-changes');
                     saveBtn.disabled = true; // Deshabilitar tras guardar
-                    // Feedback visual extra si se desea
+                    
+                    // Check if any failed
+                    var anyError = results.some(function(r) { return !r || !r.success; });
+                    if (anyError) {
+                        // Optional: show error feedback
+                        if (Gbn.ui.panel && Gbn.ui.panel.flashStatus) Gbn.ui.panel.flashStatus('Error al guardar algunos datos');
+                    } else {
+                        if (Gbn.ui.panel && Gbn.ui.panel.flashStatus) Gbn.ui.panel.flashStatus('Guardado correctamente');
+                    }
                 }).catch(function() {
                     saveBtn.classList.remove('is-loading');
+                    if (Gbn.ui.panel && Gbn.ui.panel.flashStatus) Gbn.ui.panel.flashStatus('Error de conexión');
                 });
             }
         });

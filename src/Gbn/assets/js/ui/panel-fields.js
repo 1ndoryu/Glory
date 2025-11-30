@@ -65,8 +65,8 @@
             if (input.__gbnUnit) { input.__gbnUnit.textContent = unit; }
             var path = input.dataset.configPath;
             var finalValue = value === '' ? null : (isNaN(parseFloat(value)) ? null : value + unit);
-            var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, path, finalValue); }
+            var api = Gbn.ui && Gbn.ui.panelApi; 
+            if (api && api.updateConfigValue && block) { api.updateConfigValue(block, path, finalValue); }
         }
         campos.forEach(function (nombre) {
             var parsed = parseSpacingValue(baseConfig[nombre], unitSelect.value);
@@ -93,10 +93,10 @@
             var inputs = grid.querySelectorAll('input[data-config-path]');
             inputs.forEach(function (input) {
                 if (input.__gbnUnit) { input.__gbnUnit.textContent = unitSelect.value; }
-                var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-                if (!api || !api.updateConfigValue || !blk) { return; }
-                if (input.value === '') { api.updateConfigValue(blk, input.dataset.configPath, null); }
-                else { api.updateConfigValue(blk, input.dataset.configPath, input.value + unitSelect.value); }
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (!api || !api.updateConfigValue || !block) { return; }
+                if (input.value === '') { api.updateConfigValue(block, input.dataset.configPath, null); }
+                else { api.updateConfigValue(block, input.dataset.configPath, input.value + unitSelect.value); }
             });
         });
         wrapper.appendChild(unitSelect);
@@ -121,12 +121,12 @@
             var numeric = parseFloat(value);
             if (isNaN(numeric) || value === '') {
                 valueBadge.textContent = 'auto';
-                var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-                if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, null); }
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, null); }
             } else {
                 valueBadge.textContent = numeric + (field.unidad ? field.unidad : '');
-                var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-                if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, numeric); }
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, numeric); }
             }
         });
         wrapper.appendChild(input); appendFieldDescription(wrapper, field); return wrapper;
@@ -140,8 +140,8 @@
         opciones.forEach(function (opt) { var option = document.createElement('option'); option.value = opt.valor; option.textContent = opt.etiqueta || opt.valor; select.appendChild(option); });
         var current = getConfigValue(block, field.id); if (current !== undefined && current !== null && current !== '') { select.value = current; }
         select.addEventListener('change', function () {
-            var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, select.value); }
+            var api = Gbn.ui && Gbn.ui.panelApi;
+            if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, select.value); }
         });
         wrapper.appendChild(select); appendFieldDescription(wrapper, field); return wrapper;
     }
@@ -151,8 +151,8 @@
         var input = document.createElement('input'); input.type = 'checkbox'; input.className = 'gbn-toggle';
         var current = !!getConfigValue(block, field.id); input.checked = current;
         input.addEventListener('change', function () {
-            var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, !!input.checked); }
+            var api = Gbn.ui && Gbn.ui.panelApi;
+            if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, !!input.checked); }
         });
         var span = document.createElement('span'); span.textContent = field.etiqueta || field.id; wrapper.appendChild(input); wrapper.appendChild(span);
         appendFieldDescription(wrapper, field); return wrapper;
@@ -167,8 +167,8 @@
         if (current !== undefined && current !== null) { input.value = current; }
         input.addEventListener('input', function () {
             var value = input.value.trim();
-            var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, value === '' ? null : value); }
+            var api = Gbn.ui && Gbn.ui.panelApi;
+            if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, value === '' ? null : value); }
         });
         wrapper.appendChild(input); appendFieldDescription(wrapper, field); return wrapper;
     }
@@ -197,8 +197,8 @@
         inputText.value = initialColor;
 
         function update(value) {
-            var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-            if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, value === '' ? null : value); }
+            var api = Gbn.ui && Gbn.ui.panelApi;
+            if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, value === '' ? null : value); }
         }
 
         inputColor.addEventListener('input', function() {
@@ -299,9 +299,9 @@
             btn.innerHTML = opt.icon || opt.etiqueta || opt.valor; // Expects SVG or text
             
             btn.addEventListener('click', function() {
-                var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-                if (api && api.updateConfigValue && blk) { 
-                    api.updateConfigValue(blk, field.id, opt.valor);
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (api && api.updateConfigValue && block) { 
+                    api.updateConfigValue(block, field.id, opt.valor);
                     // Update UI locally
                     Array.from(container.children).forEach(function(b) { b.classList.remove('active'); });
                     btn.classList.add('active');
@@ -346,9 +346,9 @@
             btn.textContent = frac.label;
             
             btn.addEventListener('click', function() {
-                var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
-                if (api && api.updateConfigValue && blk) { 
-                    api.updateConfigValue(blk, field.id, frac.val);
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (api && api.updateConfigValue && block) { 
+                    api.updateConfigValue(block, field.id, frac.val);
                     Array.from(container.children).forEach(function(b) { b.classList.remove('active'); });
                     btn.classList.add('active');
                 }
