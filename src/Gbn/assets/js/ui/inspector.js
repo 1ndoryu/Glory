@@ -9,8 +9,8 @@
         if (!block || !block.element) { return; }
         block.element.classList.add('gbn-node');
         block.element.setAttribute('data-gbn-ready', '1');
-        if (Gbn.ui && Gbn.ui.panel && typeof Gbn.ui.panel._applyStyles === 'function') {
-            Gbn.ui.panel._applyStyles(block);
+        if (Gbn.ui && Gbn.ui.panelApi && typeof Gbn.ui.panelApi.applyBlockStyles === 'function') {
+            Gbn.ui.panelApi.applyBlockStyles(block);
         }
     }
 

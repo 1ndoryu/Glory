@@ -299,10 +299,23 @@
         return currentValue === conditionValue;
     }
 
+    function buildHeaderField(block, field) {
+        var wrapper = document.createElement('div'); 
+        wrapper.className = 'gbn-field-header-separator';
+        var label = document.createElement('h4'); 
+        label.textContent = field.etiqueta || field.id; 
+        wrapper.appendChild(label);
+        return wrapper;
+    }
+
     function buildField(block, field) {
-        if (!field || !field.id) { return null; }
+        if (!field) { return null; }
+        // Headers might not have ID, allow them
+        if (field.tipo !== 'header' && !field.id) { return null; }
+        
         if (!shouldShowField(block, field)) { return null; }
         switch (field.tipo) {
+            case 'header': return buildHeaderField(block, field);
             case 'spacing': return buildSpacingField(block, field);
             case 'slider': return buildSliderField(block, field);
             case 'select': return buildSelectField(block, field);
