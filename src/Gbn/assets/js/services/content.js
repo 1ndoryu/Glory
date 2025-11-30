@@ -37,6 +37,21 @@
     }
 
     var containerDefs = utils.getConfig().containers || {};
+    
+    // Merge PHP definitions into ROLE_DEFAULTS
+    Object.keys(containerDefs).forEach(function (role) {
+        var def = containerDefs[role];
+        if (def) {
+            ROLE_DEFAULTS[role] = {
+                config: utils.assign({}, def.config || {}),
+                schema: Array.isArray(def.schema) ? def.schema.slice() : []
+            };
+            if (def.selector) {
+                ensureSelector(role, def.selector);
+            }
+        }
+    });
+
     // Definición de defaults para roles principales si no existen
     if (!ROLE_DEFAULTS.principal) {
         ROLE_DEFAULTS.principal = {

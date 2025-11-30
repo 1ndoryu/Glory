@@ -176,6 +176,7 @@ final class ContainerRegistry
                         'inferior' => null,
                         'izquierda' => null,
                     ],
+                    'width' => '1/1',
                     'height' => 'auto',
                     'gap' => 20,
                     'layout' => 'block',
@@ -188,6 +189,25 @@ final class ContainerRegistry
                     'gridGap' => 20,
                 ],
                 'schema' => [
+                    [
+                        'id' => 'width',
+                        'tipo' => 'fraction',
+                        'etiqueta' => 'Ancho',
+                        'opciones' => [
+                            ['valor' => '1/1', 'etiqueta' => '1/1'],
+                            ['valor' => '5/6', 'etiqueta' => '5/6'],
+                            ['valor' => '4/5', 'etiqueta' => '4/5'],
+                            ['valor' => '3/4', 'etiqueta' => '3/4'],
+                            ['valor' => '2/3', 'etiqueta' => '2/3'],
+                            ['valor' => '3/5', 'etiqueta' => '3/5'],
+                            ['valor' => '1/2', 'etiqueta' => '1/2'],
+                            ['valor' => '2/5', 'etiqueta' => '2/5'],
+                            ['valor' => '1/3', 'etiqueta' => '1/3'],
+                            ['valor' => '1/4', 'etiqueta' => '1/4'],
+                            ['valor' => '1/5', 'etiqueta' => '1/5'],
+                            ['valor' => '1/6', 'etiqueta' => '1/6'],
+                        ],
+                    ],
                     [
                         'id' => 'height',
                         'tipo' => 'select',

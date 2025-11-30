@@ -48,8 +48,6 @@ class ContentRender
                 'paginacion'             => false,
             ],
             'schema' => [
-                    'paso'     => 1,
-                ],
                 [
                     'id'       => 'postType',
                     'tipo'     => 'select',
@@ -62,6 +60,17 @@ class ContentRender
                 ],
                 [
                     'id'       => 'publicacionesPorPagina',
+                    'tipo'     => 'slider',
+                    'etiqueta' => 'Publicaciones por página',
+                    'min'      => 1,
+                    'max'      => 50,
+                    'paso'     => 1,
+                ],
+                [
+                    'id'       => 'paginacion',
+                    'tipo'     => 'toggle',
+                    'etiqueta' => 'Activar paginación AJAX',
+                ],
                 [
                     'id'       => 'claseContenedor',
                     'tipo'     => 'text',
@@ -71,11 +80,6 @@ class ContentRender
                     'id'       => 'claseItem',
                     'tipo'     => 'text',
                     'etiqueta' => 'Clase de cada item',
-                ],
-                [
-                    'id'       => 'paginacion',
-                    'tipo'     => 'toggle',
-                    'etiqueta' => 'Activar paginación AJAX',
                 ],
                 [
                     'id'       => 'forzarSinCache',

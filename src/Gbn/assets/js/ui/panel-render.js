@@ -194,10 +194,10 @@
                     else if (config.gap) { styles.gap = config.gap + 'px'; }
                 } else if (config.layout === 'flex') {
                     styles.display = 'flex';
-                    if (config.direction) { styles['flex-direction'] = config.direction; } // Note: schema uses 'direction'
-                    if (config.wrap) { styles['flex-wrap'] = config.wrap; }
-                    if (config.justify) { styles['justify-content'] = config.justify; }
-                    if (config.align) { styles['align-items'] = config.align; }
+                    if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
+                    if (config.flexWrap) { styles['flex-wrap'] = config.flexWrap; }
+                    if (config.flexJustify) { styles['justify-content'] = config.flexJustify; }
+                    if (config.flexAlign) { styles['align-items'] = config.flexAlign; }
                     if (config.gap) { styles.gap = config.gap + 'px'; } // Add gap support for flex too
                 } else {
                     styles.display = 'block';
