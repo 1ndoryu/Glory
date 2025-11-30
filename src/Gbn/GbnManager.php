@@ -92,6 +92,7 @@ class GbnManager
             'glory-gbn-core' => [
                 'file' => '/js/core/utils.js',
                 'deps' => ['jquery', 'glory-ajax'],
+                'ver'  => time(), // Force reload for debugging
             ],
             'glory-gbn-state' => [
                 'file' => '/js/core/state.js',
@@ -141,7 +142,7 @@ class GbnManager
 
         foreach ($scripts as $handle => $data) {
             $filePath = $baseDir . $data['file'];
-            $ver = self::resolveVersion($filePath);
+            $ver = isset($data['ver']) ? $data['ver'] : self::resolveVersion($filePath);
             wp_enqueue_script(
                 $handle,
                 $baseUrl . $data['file'],

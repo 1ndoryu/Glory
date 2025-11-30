@@ -9,17 +9,17 @@ class ContentHandler
     public static function saveOptions(): void
     {
         check_ajax_referer('glory_gbn_nonce', 'nonce');
-        error_log('[GBN][saveOptions] INICIO');
+        self::log('[saveOptions] INICIO');
         $pageId = isset($_POST['pageId']) ? absint($_POST['pageId']) : 0;
         $gbnId  = isset($_POST['gbnId']) ? sanitize_text_field($_POST['gbnId']) : '';
         $valuesRaw = isset($_POST['values']) ? wp_unslash($_POST['values']) : '{}';
         $values = json_decode((string) $valuesRaw, true);
         if (!$pageId || $gbnId === '' || !is_array($values)) {
-            error_log('[GBN][saveOptions] Datos inválidos');
+            self::log('[saveOptions] Datos inválidos');
             wp_send_json_error(['message' => 'Datos inválidos']);
         }
         if (!current_user_can('edit_post', $pageId)) {
-            error_log('[GBN][saveOptions] Sin permisos');
+            self::log('[saveOptions] Sin permisos');
             wp_send_json_error(['message' => 'Sin permisos']);
         }
         $allowed = [
@@ -136,12 +136,12 @@ class ContentHandler
             $sanitized[$k] = $v;
         }
         update_post_meta($pageId, 'gbn_opts_' . $gbnId, $sanitized);
-        error_log('[GBN][saveOptions] Guardado opts para ' . $gbnId . ' en page ' . $pageId);
+        self::log('[saveOptions] Guardado opts para ' . $gbnId . ' en page ' . $pageId);
         try {
             self::syncShortcodeAttributes($pageId, $gbnId, $sanitized);
         } catch (\Throwable $e) {
         }
-        error_log('[GBN][saveOptions] OK');
+        self::log('[saveOptions] OK');
         wp_send_json_success(['ok' => true]);
     }
 
@@ -228,6 +228,7 @@ class ContentHandler
                 'order' => $order,
                 'config' => $config,
                 'children' => $children,
+                'clientPath' => isset($b['domPath']) ? $b['domPath'] : '',
             ];
             if (!empty($styles)) {
                 $stylesById[$id] = $styles;
@@ -240,8 +241,14 @@ class ContentHandler
         $mode = method_exists(PageManager::class, 'getModoContenidoParaPagina')
             ? PageManager::getModoContenidoParaPagina($pageId)
             : 'code';
+
+        if ($mode === 'code') {
+            update_post_meta($pageId, '_glory_content_mode', 'editor');
+            $mode = 'editor';
+            self::log('[saveConfig] Mode switched from code to editor');
+        }
         
-        error_log('[GBN][saveConfig] PageID: ' . $pageId . ' Mode: ' . $mode);
+        self::log('[saveConfig] PageID: ' . $pageId . ' Mode: ' . $mode);
 
         $manualEditDetected = false;
         $contentUpdated = false;
@@ -250,22 +257,41 @@ class ContentHandler
             $currentContent = (string) get_post_field('post_content', $pageId);
             $savedHash = (string) get_post_meta($pageId, '_glory_content_hash', true);
             $currentHash = $currentContent !== '' ? self::hashContenidoLocal($currentContent) : '';
+            
+            self::log("Hash Check - Saved: '$savedHash', Current: '$currentHash'");
 
             // Si el usuario editó manualmente, no sobreescribir y notificar
             if ($savedHash !== '' && $savedHash !== $currentHash) {
                 $manualEditDetected = true;
-            } else {
-                // Volcar HTML baseline renderizado por el handler cuando exista
-                $slug = (string) get_post_field('post_name', $pageId);
-                $def  = method_exists(PageManager::class, 'getDefinicionPorSlug') ? PageManager::getDefinicionPorSlug($slug) : null;
-                if (is_array($def) && !empty($def['funcion']) && method_exists(PageManager::class, 'renderHandlerParaCopiar')) {
-                    $html = PageManager::renderHandlerParaCopiar((string) $def['funcion']);
-                    if ($html !== '') {
-                        remove_filter('content_save_pre', 'wp_filter_post_kses');
-                        wp_update_post(['ID' => $pageId, 'post_content' => $html]);
-                        update_post_meta($pageId, '_glory_content_hash', self::hashContenidoLocal($html));
-                        $contentUpdated = true;
+                self::log("Manual edit detected! Overwriting enabled for GBN.");
+            }
+            
+            // Volcar HTML baseline renderizado por el handler cuando exista
+            $slug = (string) get_post_field('post_name', $pageId);
+            $def  = method_exists(PageManager::class, 'getDefinicionPorSlug') ? PageManager::getDefinicionPorSlug($slug) : null;
+            if (is_array($def) && !empty($def['funcion']) && method_exists(PageManager::class, 'renderHandlerParaCopiar')) {
+                $html = PageManager::renderHandlerParaCopiar((string) $def['funcion']);
+                if ($html !== '') {
+                    // Procesar HTML para inyectar IDs y eliminar bloques borrados
+                    $validIds = array_keys($configById);
+                    self::log('Valid IDs count: ' . count($validIds));
+                    self::log('Valid IDs sample: ' . print_r(array_slice($validIds, 0, 5), true));
+                    
+                    // Log client paths for debugging
+                    $clientPaths = [];
+                    foreach (array_slice($blocks, 0, 5) as $b) {
+                        if (isset($b['clientPath'])) {
+                            $clientPaths[] = $b['id'] . ': ' . $b['clientPath'];
+                        }
                     }
+                    self::log('Client Paths Sample: ' . print_r($clientPaths, true));
+
+                    $html = self::processHtmlForPersistence($html, $validIds);
+
+                    remove_filter('content_save_pre', 'wp_filter_post_kses');
+                    wp_update_post(['ID' => $pageId, 'post_content' => $html]);
+                    update_post_meta($pageId, '_glory_content_hash', self::hashContenidoLocal($html));
+                    $contentUpdated = true;
                 }
             }
         }
@@ -424,6 +450,129 @@ class ContentHandler
             wp_update_post([ 'ID' => $pageId, 'post_content' => $content ]);
             return;
         }
+    }
+
+    private static function processHtmlForPersistence(string $html, array $validIds): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        $dom = new \DOMDocument();
+        // Suppress warnings for malformed HTML
+        libxml_use_internal_errors(true);
+        // Hack for UTF-8. Wrap in data-gbn-root to ensure consistent ID generation.
+        $dom->loadHTML('<?xml encoding="utf-8" ?><body><div data-gbn-root>' . $html . '</div></body>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        
+        // self::log('HTML Start: ' . substr($html, 0, 100));
+
+        $xpath = new \DOMXPath($dom);
+        // Find all elements that might be blocks.
+        // Note: loadHTML lowercases attributes, so we must query for lowercase versions.
+        $query = "//*[@glorydiv] | //*[@glorydivsecundario] | //*[@glorycontentrender] | //*[@glorytermrender] | //*[@gloryimage] | //*[@data-gbnprincipal] | //*[@data-gbnsecundario] | //*[@data-gbncontent] | //*[@data-gbn-term-list] | //*[@data-gbn-image]";
+
+        $nodes = $xpath->query($query);
+        $toRemove = [];
+        
+        // self::log('Nodes found: ' . $nodes->length);
+
+        foreach ($nodes as $node) {
+            // Generate ID
+            $id = $node->getAttribute('data-gbn-id');
+            if (!$id) {
+                $path = self::computeDomPath($node);
+                $id = self::generateId($node);
+                $node->setAttribute('data-gbn-id', $id);
+                // self::log("Generated ID: $id | Path: $path");
+            }
+            
+            // self::log('Node ID: ' . $id . ' | Valid: ' . (in_array($id, $validIds) ? 'YES' : 'NO'));
+
+            // Check if valid
+            if (!in_array($id, $validIds)) {
+                $toRemove[] = $node;
+            }
+        }
+        
+        // self::log('Nodes to remove: ' . count($toRemove));
+
+        foreach ($toRemove as $node) {
+            $node->parentNode->removeChild($node);
+        }
+
+        // Return HTML of body content
+        $body = $dom->getElementsByTagName('body')->item(0);
+        $output = '';
+        foreach ($body->childNodes as $child) {
+            $output .= $dom->saveHTML($child);
+        }
+
+        return $output;
+    }
+
+    private static function generateId(\DOMElement $node): string
+    {
+        $path = self::computeDomPath($node);
+        $hash = self::hashString($path);
+        return 'gbn-v3-' . base_convert((string)$hash, 10, 36);
+    }
+
+    private static function computeDomPath(\DOMElement $node): string
+    {
+        $segments = [];
+        $curr = $node;
+        while ($curr && $curr->nodeType === XML_ELEMENT_NODE && $curr->nodeName !== 'body') {
+            // Stop at data-gbn-root
+            if ($curr->hasAttribute('data-gbn-root')) {
+                break;
+            }
+            $tag = strtolower($curr->nodeName);
+            
+            // Ignore 'main' tag to fix inconsistency between client (with main) and server (without main)
+            if ($tag === 'main') {
+                $curr = $curr->parentNode;
+                continue;
+            }
+
+            $index = 0;
+            $sibling = $curr;
+            while ($sibling = $sibling->previousSibling) {
+                if ($sibling->nodeType === XML_ELEMENT_NODE && $sibling->nodeName === $curr->nodeName) {
+                    $index++;
+                }
+            }
+            array_unshift($segments, $tag . ':' . $index);
+            $curr = $curr->parentNode;
+        }
+        return implode('>', $segments);
+    }
+
+    private static function hashString(string $str): int
+    {
+        $hash = 0;
+        $len = strlen($str);
+        for ($i = 0; $i < $len; $i++) {
+            $char = ord($str[$i]);
+            $hash = (($hash << 5) - $hash) + $char;
+            $hash = $hash & 0xFFFFFFFF; // Keep 32 bits (unsigned)
+        }
+        
+        // Convert unsigned 32-bit to signed 32-bit to match JS bitwise operations
+        if ($hash & 0x80000000) {
+            $hash = -((~$hash & 0xFFFFFFFF) + 1);
+        }
+        
+        return abs($hash);
+    }
+
+    private static function log(string $msg, $context = []): void
+    {
+        $file = dirname(__DIR__) . '/gbn.log';
+        $date = date('Y-m-d H:i:s.u');
+        $contextStr = !empty($context) ? ' | Contexto: ' . print_r($context, true) : '';
+        $line = "[$date] [INFO] [ContentHandler] $msg$contextStr\n";
+        file_put_contents($file, $line, FILE_APPEND);
     }
 }
 

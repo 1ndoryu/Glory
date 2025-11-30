@@ -224,3 +224,13 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 ### Inserción de Bloques
 - Se realiza a través de `Gbn.library` (no visible en este resumen pero parte del sistema).
 - `inspector.js` coordina la inserción y llama a `ensureBlockSetup`.
+
+### Comentarios del usuario (Recientes)
+
+[SOLUCIONADO] Problema de persistencia: Al borrar un div y guardar, el cambio no se mantiene al recargar.
+- Causa: Desajuste en la generación de IDs entre cliente (JS) y servidor (PHP) debido a que el cliente incluía la etiqueta `<main>` en la ruta del DOM (`main:0>div:0`) y el servidor no (`div:0`).
+- Solución: Se modificó `utils.js` y `ContentHandler.php` para ignorar la etiqueta `<main>` al calcular la ruta del DOM. Se actualizó el prefijo de ID a `gbn-v3-` para invalidar caché.
+- Estado: Deletions persist correctly.
+
+[PENDIENTE] Requerimiento: La opción "Restaurar" debe devolver el contenido al estado original del código (PHP/HTML base).
+- Objetivo: Limpiar `gbn_config` y `gbn_styles`, y resetear el modo de página a `code`.

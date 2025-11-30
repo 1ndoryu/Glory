@@ -62,7 +62,18 @@
         var node = el;
         var segments = [];
         while (node && node.nodeType === 1 && node !== document.body) {
+            // Stop at data-gbn-root
+            if (node.hasAttribute('data-gbn-root')) {
+                break;
+            }
             var tag = node.tagName.toLowerCase();
+            
+            // Ignore 'main' tag to fix inconsistency between client (with main) and server (without main)
+            if (tag === 'main') {
+                node = node.parentElement;
+                continue;
+            }
+
             var index = 0;
             var sibling = node;
             while (sibling.previousElementSibling) {
@@ -78,13 +89,12 @@
     }
 
     function hashString(str) {
-        var hash = 0;
-        if (!str) {
-            return hash;
-        }
-        for (var i = 0; i < str.length; i += 1) {
-            hash = ((hash << 5) - hash) + str.charCodeAt(i);
-            hash |= 0; // Convertir a entero de 32 bits
+        var hash = 0, i, chr;
+        if (str.length === 0) return hash;
+        for (i = 0; i < str.length; i++) {
+            chr = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + chr;
+            hash |= 0; // Convert to 32bit integer
         }
         return Math.abs(hash);
     }
@@ -93,9 +103,11 @@
         var fallback = Math.floor(Math.random() * 1e6);
         try {
             var path = computeDomPath(el);
-            return 'gbn-' + hashString(path).toString(36);
+            // DEBUG: Log path generation
+            // console.log('[GBN] Path for', el, 'is', path);
+            return 'gbn-v3-' + hashString(path).toString(36);
         } catch (_) {
-            return 'gbn-' + fallback.toString(36);
+            return 'gbn-v3-' + fallback.toString(36);
         }
     }
 
@@ -166,4 +178,3 @@
 
     Gbn.utils = utils;
 })(window);
-
