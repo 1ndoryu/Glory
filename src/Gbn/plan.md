@@ -145,24 +145,24 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 ### Etapa 7 · Nuevos Requerimientos (Noviembre)
 
 #### Configuración de Tema y Página
-- [ ] **Valores por defecto**:
+- [x] **Valores por defecto**:
     - `gloryDiv`: Padding 20px, display flex, clase `primario`.
     - `gloryDivSecundario`: Padding 20px, clase `secundario`.
     - Las clases deben agregarse automáticamente aunque no estén en el código.
-- [ ] **Configuración de Página**:
+- [x] **Configuración de Página**:
     - Implementar `data-gbn-root` (solo visible con GBN activo).
     - Panel de configuración de página: Background color del main, padding (default 20px), clase específica por página (ej: `gbnPage-{id}`).
-- [ ] **Panel de Configuración del Tema**:
+- [x] **Panel de Configuración del Tema**:
     - Apartados: Texto, Color, Páginas.
     - **Texto**: Configurar fuentes, tamaños, colores por defecto para p, h1, h2, etc.
     - **Colores**: Selector de color personalizado con paleta de colores por defecto (editable por usuario).
 
 #### Componentes y UI Avanzada
-- [ ] **Componente `gloryTexto`**:
+- [x] **Componente `gloryTexto`**:
     - Capacidad de cambiar etiqueta (p, h1, h2, etc.).
     - Panel de configuración específico (color morado).
     - Opciones: Fuente, color, alineación (heredando defaults del tema).
-- [ ] **Mejoras de UI**:
+- [x] **Mejoras de UI**:
     - **Layout**: Reemplazar selects por iconos para opciones de flexbox/grid (dirección, wrap, etc.).
     - **Tamaños de Bloques Secundarios**: Selector visual de fracciones (1/1, 1/2, 1/3, etc.) al agregar o configurar.
     - **Colores de Panel**: Diferenciar paneles por tipo (Azul: Primario, Naranja: Secundario, Morado: Componentes).
@@ -222,3 +222,5 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 - Solución: Se actualizó `persistence.js` para ordenar los bloques basándose en `element.compareDocumentPosition` antes de asignar el índice `order` en el payload.
 - Backend: `ConfigHandler` y `DomProcessor` ahora reciben el `order` correcto y reordenan los nodos DOM antes de guardar el HTML final.
 - Hash: Se elimina `_glory_content_hash` al guardar para evitar que `PageManager` sobrescriba los cambios manuales.
+
+

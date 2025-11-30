@@ -45,7 +45,14 @@
         var legend = document.createElement('legend'); legend.textContent = field.etiqueta || field.id; wrapper.appendChild(legend);
         var unidades = Array.isArray(field.unidades) && field.unidades.length ? field.unidades : ['px'];
         var campos = Array.isArray(field.campos) && field.campos.length ? field.campos : ['superior', 'derecha', 'inferior', 'izquierda'];
-        var baseConfig = getConfigValue(block, field.id) || {};
+        var baseConfig = getConfigValue(block, field.id);
+        if (!baseConfig && field.defecto !== undefined) {
+            if (typeof field.defecto === 'object') baseConfig = field.defecto;
+            else {
+                baseConfig = { superior: field.defecto, derecha: field.defecto, inferior: field.defecto, izquierda: field.defecto };
+            }
+        }
+        baseConfig = baseConfig || {};
         var unidadActual = unidades[0];
         for (var i = 0; i < campos.length; i += 1) { var parsed = parseSpacingValue(baseConfig[campos[i]], unidades[0]); if (parsed.unidad) { unidadActual = parsed.unidad; break; } }
         var unitSelect = document.createElement('select'); unitSelect.className = 'gbn-spacing-unit';
@@ -155,7 +162,9 @@
         var wrapper = document.createElement('div'); wrapper.className = 'gbn-field';
         var label = document.createElement('label'); label.className = 'gbn-field-label'; label.textContent = field.etiqueta || field.id; wrapper.appendChild(label);
         var input = document.createElement('input'); input.type = 'text'; input.className = 'gbn-input';
-        var current = getConfigValue(block, field.id); if (current !== undefined && current !== null) { input.value = current; }
+        var current = getConfigValue(block, field.id);
+        if (current === undefined || current === null) { current = field.defecto; }
+        if (current !== undefined && current !== null) { input.value = current; }
         input.addEventListener('input', function () {
             var value = input.value.trim();
             var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
@@ -181,6 +190,7 @@
         inputText.placeholder = '#RRGGBB';
 
         var current = getConfigValue(block, field.id);
+        if (current === undefined || current === null) { current = field.defecto; }
         var initialColor = (typeof current === 'string' && current.trim() !== '') ? current : '#ffffff';
         
         inputColor.value = initialColor;
@@ -206,9 +216,34 @@
             }
         });
 
+        // Palette
+        var palette = document.createElement('div');
+        palette.className = 'gbn-color-palette';
+        var defaultColors = ['#007bff', '#6c757d', '#28a745', '#dc3545', '#ffc107', '#17a2b8', '#f8f9fa', '#343a40', '#ffffff', '#000000'];
+        
+        // Try to get theme colors if available
+        if (Gbn.config && Gbn.config.theme && Gbn.config.theme.colors) {
+            // Merge or replace
+        }
+
+        defaultColors.forEach(function(c) {
+            var swatch = document.createElement('button');
+            swatch.type = 'button';
+            swatch.className = 'gbn-color-swatch';
+            swatch.style.backgroundColor = c;
+            swatch.title = c;
+            swatch.addEventListener('click', function() {
+                inputColor.value = c;
+                inputText.value = c;
+                update(c);
+            });
+            palette.appendChild(swatch);
+        });
+        
         container.appendChild(inputColor);
         container.appendChild(inputText);
         wrapper.appendChild(container);
+        wrapper.appendChild(palette);
         
         appendFieldDescription(wrapper, field); 
         return wrapper;
@@ -257,12 +292,17 @@
         
         var fractions = [
             { val: '1/1', label: '1/1' },
+            { val: '5/6', label: '5/6' },
+            { val: '4/5', label: '4/5' },
+            { val: '3/4', label: '3/4' },
+            { val: '2/3', label: '2/3' },
+            { val: '3/5', label: '3/5' },
             { val: '1/2', label: '1/2' },
+            { val: '2/5', label: '2/5' },
             { val: '1/3', label: '1/3' },
             { val: '1/4', label: '1/4' },
-            { val: '2/3', label: '2/3' },
-            { val: '3/4', label: '3/4' }
-            // Add more as needed
+            { val: '1/5', label: '1/5' },
+            { val: '1/6', label: '1/6' }
         ];
         
         var current = getConfigValue(block, field.id);

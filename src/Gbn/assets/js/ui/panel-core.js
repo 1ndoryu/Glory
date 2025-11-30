@@ -23,12 +23,20 @@
         var text = message || 'Selecciona un bloque para configurar.';
         panelBody.innerHTML = '<div class="gbn-panel-empty">' + text + '</div>';
         if (panelFooter) {
+            // Re-query to ensure we have the current attached element
+            var currentFooter = panelRoot.querySelector('.gbn-footer-primary');
+            if (currentFooter) {
+                panelFooter = currentFooter;
+            }
+            
             panelFooter.disabled = true;
             panelFooter.textContent = 'Guardar (próximamente)';
             // Remove listeners? Cloning is safer.
             var newFooterBtn = panelFooter.cloneNode(true);
-            panelFooter.parentNode.replaceChild(newFooterBtn, panelFooter);
-            panelFooter = newFooterBtn;
+            if (panelFooter.parentNode) {
+                panelFooter.parentNode.replaceChild(newFooterBtn, panelFooter);
+                panelFooter = newFooterBtn;
+            }
         }
         setPanelStatus('Cambios en vivo');
     }

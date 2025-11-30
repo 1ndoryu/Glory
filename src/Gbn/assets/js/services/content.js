@@ -522,6 +522,23 @@
             meta.inlineArgs = extractInlineArguments(estilosAttr);
             meta.options = utils.assign({}, parsedOptions);
         }
+        
+        // Pre-process text content for text role
+        if (role === 'text') {
+            var existingConfig = readJsonAttribute(el, 'data-gbn-config');
+            if (!existingConfig || !existingConfig.texto) {
+                var currentText = el.innerText;
+                if (currentText && currentText.trim() !== '') {
+                    // Create a temporary config to merge later or set attribute
+                    // Setting attribute is safest to ensure state.register picks it up or we merge it.
+                    // But we don't want to overwrite if there is partial config.
+                    if (!existingConfig) existingConfig = {};
+                    existingConfig.texto = currentText;
+                    el.setAttribute('data-gbn-config', JSON.stringify(existingConfig));
+                }
+            }
+        }
+
         var block = state.register(role, el, meta);
         el.classList.add('gbn-node');
 

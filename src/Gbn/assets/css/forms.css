@@ -434,3 +434,86 @@
     border-radius: 0;
     border: none;
 }
+
+/* Icon Group Fields */
+.gbn-icon-group-container {
+    display: flex;
+    gap: 4px;
+    background: #f5f5f5;
+    padding: 4px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    width: fit-content;
+}
+
+.gbn-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.gbn-icon-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #333;
+}
+
+.gbn-icon-btn.active {
+    background: #ffffff;
+    border-color: #e0e0e0;
+    color: #1d8ff1;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.gbn-icon-btn svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+    stroke-width: 2px;
+}
+
+
+/* Fraction Selector (Width Options) */
+.gbn-fraction-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+}
+
+.gbn-fraction-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.gbn-fraction-btn:hover {
+    border-color: #1d8ff1;
+    color: #1d8ff1;
+    background: #f0f7ff;
+}
+
+.gbn-fraction-btn.active {
+    background: #1d8ff1;
+    color: #ffffff;
+    border-color: #1d8ff1;
+    box-shadow: 0 2px 4px rgba(29, 143, 241, 0.2);
+}
+

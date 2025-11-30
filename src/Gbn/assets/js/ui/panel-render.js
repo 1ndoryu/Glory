@@ -153,6 +153,16 @@
         return styles;
     }
 
+    function parseFraction(fraction) {
+        if (!fraction || typeof fraction !== 'string') return null;
+        var parts = fraction.split('/');
+        if (parts.length !== 2) return null;
+        var num = parseFloat(parts[0]);
+        var den = parseFloat(parts[1]);
+        if (isNaN(num) || isNaN(den) || den === 0) return null;
+        return (num / den * 100).toFixed(4) + '%';
+    }
+
     var styleResolvers = {
         principal: function (config) {
             var styles = extractSpacingStyles(config.padding);
@@ -169,6 +179,30 @@
                 styles['max-width'] = !isNaN(max) ? max + 'px' : String(config.maxAncho);
             }
             if (config.fondo) { styles.background = config.fondo; }
+            
+            // Layout logic for principal
+            if (config.layout) {
+                if (config.layout === 'grid') {
+                    styles.display = 'grid';
+                    if (config.gridColumns) {
+                        styles['grid-template-columns'] = 'repeat(' + config.gridColumns + ', 1fr)';
+                    }
+                    if (config.gridRows && config.gridRows !== 'auto') {
+                        styles['grid-template-rows'] = config.gridRows;
+                    }
+                    if (config.gridGap) { styles.gap = config.gridGap + 'px'; }
+                } else if (config.layout === 'flex') {
+                    styles.display = 'flex';
+                    if (config.direction) { styles['flex-direction'] = config.direction; } // Note: schema uses 'direction'
+                    if (config.wrap) { styles['flex-wrap'] = config.wrap; }
+                    if (config.justify) { styles['justify-content'] = config.justify; }
+                    if (config.align) { styles['align-items'] = config.align; }
+                    if (config.gap) { styles.gap = config.gap + 'px'; } // Add gap support for flex too
+                } else {
+                    styles.display = 'block';
+                }
+            }
+            
             return styles;
         },
         secundario: function (config) {
@@ -180,6 +214,17 @@
                     styles['height'] = '100vh';
                 }
             }
+            
+            // Width logic
+            if (config.width) {
+                 var pct = parseFraction(config.width);
+                 if (pct) {
+                     styles.width = pct;
+                     styles['flex-basis'] = pct; // Ensure it works in flex containers
+                     // styles['flex-grow'] = '0'; // Optional: prevent growing beyond width?
+                 }
+            }
+
             if (config.gap !== null && config.gap !== undefined && config.gap !== '') {
                 var gap = parseFloat(config.gap);
                 if (!isNaN(gap)) { styles.gap = gap + 'px'; }
@@ -193,6 +238,7 @@
                     if (config.gridRows && config.gridRows !== 'auto') {
                         styles['grid-template-rows'] = config.gridRows;
                     }
+                    if (config.gridGap) { styles.gap = config.gridGap + 'px'; }
                 } else if (config.layout === 'flex') {
                     styles.display = 'flex';
                     if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
@@ -206,22 +252,7 @@
             return styles;
         },
         content: function () { return {}; },
-        text: function(config, block) {
-             // Special handling for text component
-             // This was handled in panel.js via updateConfigValue monkey-patching or similar?
-             // No, it was in panel.js updateConfigValue but I don't see it in the snippet I read.
-             // Wait, I saw it in the summary: "The Gbn.ui.panelApi.updateConfigValue function was extended to include special handling for blocks with role === 'text'."
-             // I need to check if I missed that logic in my read of panel.js.
-             // Yes, I probably missed it because I only read up to line 800 and maybe it was injected or I missed the diff.
-             // Let's implement it here properly.
-             
-             // Logic for text role:
-             // When config changes, we might need to update the DOM element tag or styles.
-             // But applyBlockStyles updates styleManager.
-             // Tag changing is a DOM operation, not just style.
-             // So updateConfigValue needs to handle it.
-             return {};
-        }
+        text: function(config, block) { return {}; }
     };
 
     function applyBlockStyles(block) {
@@ -229,14 +260,6 @@
         var resolver = styleResolvers[block.role] || function () { return {}; };
         var computedStyles = resolver(block.config || {}, block) || {};
         styleManager.update(block, computedStyles);
-        
-        // Special handling for text role (tag switching and inline styles)
-        if (block.role === 'text') {
-            // This logic was likely in updateConfigValue in the previous version.
-            // Let's add it to updateConfigValue or here.
-            // Since applyBlockStyles is called by updateConfigValue, we can do it here if it's style related.
-            // But tag switching is structural.
-        }
     }
     
     // Enhanced updateConfigValue to handle text role specifics
@@ -248,25 +271,23 @@
                  // Switch tag
                  var oldEl = block.element;
                  var newTag = value || 'p';
-                 var newEl = document.createElement(newTag);
-                 
-                 // Copy attributes
-                 Array.from(oldEl.attributes).forEach(function(attr) {
-                     newEl.setAttribute(attr.name, attr.value);
-                 });
-                 
-                 // Copy content
-                 newEl.innerHTML = oldEl.innerHTML;
-                 
-                 // Replace in DOM
-                 oldEl.parentNode.replaceChild(newEl, oldEl);
-                 block.element = newEl;
-                 
-                 // Update state ref?
-                 // state.updateConfig returns a new block object but with same id.
-                 // We need to ensure the block reference in state is updated with new element?
-                 // content.js manages scanning.
-                 // For now, updating block.element here affects the local reference.
+                 if (oldEl.tagName.toLowerCase() !== newTag.toLowerCase()) {
+                     var newEl = document.createElement(newTag);
+                     
+                     // Copy attributes
+                     Array.from(oldEl.attributes).forEach(function(attr) {
+                         newEl.setAttribute(attr.name, attr.value);
+                     });
+                     
+                     // Copy content
+                     newEl.innerHTML = oldEl.innerHTML;
+                     
+                     // Replace in DOM
+                     if (oldEl.parentNode) {
+                        oldEl.parentNode.replaceChild(newEl, oldEl);
+                        block.element = newEl;
+                     }
+                 }
              }
              
              // Apply inline styles directly for text
@@ -280,7 +301,14 @@
                  block.element.style.color = value;
              }
              if (path === 'size') {
-                 block.element.style.fontSize = value + 'px';
+                 var sizeVal = value;
+                 if (sizeVal && !isNaN(parseFloat(sizeVal)) && isFinite(sizeVal)) {
+                     // Check if it already has units
+                     if (!/^[0-9.]+[a-z%]+$/.test(sizeVal)) {
+                         sizeVal += 'px';
+                     }
+                 }
+                 block.element.style.fontSize = sizeVal;
              }
         }
         

@@ -56,6 +56,21 @@ class DomProcessor
                     'node' => $node,
                     'order' => isset($configById[$id]['order']) ? (int) $configById[$id]['order'] : 9999
                 ];
+
+                // Inject default classes for persistence
+                // This ensures styles work even if GBN JS is disabled
+                if ($node->hasAttribute('glorydiv') || $node->hasAttribute('data-gbnprincipal')) {
+                    $classes = $node->getAttribute('class');
+                    if (strpos($classes, 'primario') === false) {
+                        $node->setAttribute('class', trim($classes . ' primario'));
+                    }
+                }
+                if ($node->hasAttribute('glorydivsecundario') || $node->hasAttribute('data-gbnsecundario')) {
+                    $classes = $node->getAttribute('class');
+                    if (strpos($classes, 'secundario') === false) {
+                        $node->setAttribute('class', trim($classes . ' secundario'));
+                    }
+                }
             }
         }
         
