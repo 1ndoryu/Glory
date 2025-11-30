@@ -21,7 +21,7 @@ class GbnManager
         // Registrar endpoints AJAX de GBN en init
         add_action('init', [GbnManager::class, 'registerAjax']);
         add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);
-        add_action('wp_footer', [self::class, 'injectEditButtons'], 5);
+        // add_action('wp_footer', [self::class, 'injectEditButtons'], 5);
     }
 
     public static function registerAjax(): void
@@ -191,18 +191,6 @@ class GbnManager
         wp_localize_script('glory-gbn', 'gloryGbnCfg', $localizedData);
     }
 
-    public static function injectEditButtons(): void
-    {
-        if (self::isBuilderActive()) { return; }
-        if (!current_user_can('edit_posts')) { return; }
-        echo '<div id="glory-gbn-root" class="gbn-toggle-wrapper" data-enabled="0">'
-            . '<button type="button" id="gbn-toggle" class="gbn-toggle-btn" data-gbn-state="off" aria-pressed="false">Open GBN</button>'
-            . '<div class="gbn-toggle-secondary">'
-            . '  <button type="button" class="gbn-secondary-btn" data-gbn-action="theme" disabled aria-disabled="true">Theme settings</button>'
-            . '  <button type="button" class="gbn-secondary-btn" data-gbn-action="page" disabled aria-disabled="true">Page settings</button>'
-            . '  <button type="button" class="gbn-secondary-btn" data-gbn-action="restore" disabled aria-disabled="true">Restore defaults</button>'
-            . '</div>'
-            . '</div>';
-    }
+    // injectEditButtons removed as it is no longer needed
 }
 

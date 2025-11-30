@@ -18,6 +18,8 @@ class Registrar
         add_action('wp_ajax_create_glory_header', [LibraryHandler::class, 'createGloryHeader']);
         add_action('wp_ajax_update_glory_header', [LibraryHandler::class, 'updateGloryHeader']);
         add_action('wp_ajax_gbn_delete_item', [DeleteHandler::class, 'deleteItem']);
+        add_action('wp_ajax_gbn_get_theme_settings', [ThemeSettingsHandler::class, 'getSettings']);
+        add_action('wp_ajax_gbn_save_theme_settings', [ThemeSettingsHandler::class, 'saveSettings']);
     }
 }
 

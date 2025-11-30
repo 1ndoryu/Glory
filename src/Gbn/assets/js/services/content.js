@@ -13,7 +13,8 @@
         secundario: { attribute: 'gloryDivSecundario', dataAttribute: 'data-gbnSecundario' },
         content: { attribute: 'gloryContentRender', dataAttribute: 'data-gbnContent' },
         term_list: { attribute: 'gloryTermRender', dataAttribute: 'data-gbn-term-list' },
-        image: { attribute: 'gloryImage', dataAttribute: 'data-gbn-image' }
+        image: { attribute: 'gloryImage', dataAttribute: 'data-gbn-image' },
+        text: { attribute: 'gloryTexto', dataAttribute: 'data-gbn-text' }
     };
 
     function ensureSelector(role, selector) {
@@ -36,14 +37,117 @@
     }
 
     var containerDefs = utils.getConfig().containers || {};
-    Object.keys(containerDefs).forEach(function (role) {
-        var data = containerDefs[role] || {};
-        ROLE_DEFAULTS[role] = {
-            config: utils.assign({}, data.config || {}),
-            schema: Array.isArray(data.schema) ? data.schema.slice() : [],
+    // Definición de defaults para roles principales si no existen
+    if (!ROLE_DEFAULTS.principal) {
+        ROLE_DEFAULTS.principal = {
+            config: {
+                layout: 'flex',
+                direction: 'row',
+                wrap: 'wrap',
+                justify: 'flex-start',
+                align: 'stretch',
+                padding: '20px'
+            },
+            schema: [
+                { id: 'layout', tipo: 'select', etiqueta: 'Layout', opciones: [{valor: 'flex', etiqueta: 'Flexbox'}, {valor: 'grid', etiqueta: 'Grid'}] },
+                { 
+                    id: 'direction', 
+                    tipo: 'icon_group', 
+                    etiqueta: 'Dirección', 
+                    condicion: ['layout', 'flex'],
+                    opciones: [
+                        { valor: 'row', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 12h16m-4-4l4 4-4 4"/></svg>', etiqueta: 'Fila' },
+                        { valor: 'column', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 4v16m-4-4l4 4 4-4"/></svg>', etiqueta: 'Columna' }
+                    ]
+                },
+                { 
+                    id: 'wrap', 
+                    tipo: 'icon_group', 
+                    etiqueta: 'Wrap', 
+                    condicion: ['layout', 'flex'],
+                    opciones: [
+                        { valor: 'nowrap', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>', etiqueta: 'No Wrap' },
+                        { valor: 'wrap', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 8h16M4 16h10"/></svg>', etiqueta: 'Wrap' }
+                    ]
+                },
+                { 
+                    id: 'justify', 
+                    tipo: 'icon_group', 
+                    etiqueta: 'Justify Content', 
+                    condicion: ['layout', 'flex'],
+                    opciones: [
+                        { valor: 'flex-start', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 6h4M4 12h4M4 18h4"/></svg>', etiqueta: 'Start' },
+                        { valor: 'center', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M10 6h4M10 12h4M10 18h4"/></svg>', etiqueta: 'Center' },
+                        { valor: 'flex-end', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 6h4M16 12h4M16 18h4"/></svg>', etiqueta: 'End' },
+                        { valor: 'space-between', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 6h2m14 0h2M4 12h2m14 0h2M4 18h2m14 0h2"/></svg>', etiqueta: 'Space Between' }
+                    ]
+                },
+                { 
+                    id: 'align', 
+                    tipo: 'icon_group', 
+                    etiqueta: 'Align Items', 
+                    condicion: ['layout', 'flex'],
+                    opciones: [
+                        { valor: 'flex-start', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 6h16M4 10h16"/></svg>', etiqueta: 'Start' },
+                        { valor: 'center', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 11h16M4 13h16"/></svg>', etiqueta: 'Center' },
+                        { valor: 'flex-end', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 14h16M4 18h16"/></svg>', etiqueta: 'End' },
+                        { valor: 'stretch', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>', etiqueta: 'Stretch' }
+                    ]
+                },
+                { id: 'padding', tipo: 'spacing', etiqueta: 'Padding' },
+                { id: 'background', tipo: 'color', etiqueta: 'Fondo' }
+            ]
         };
-        ensureSelector(role, data.selector || {});
-    });
+    }
+
+    if (!ROLE_DEFAULTS.secundario) {
+        ROLE_DEFAULTS.secundario = {
+            config: {
+                width: '1/1',
+                padding: '20px'
+            },
+            schema: [
+                { id: 'width', tipo: 'fraction', etiqueta: 'Ancho' },
+                { id: 'padding', tipo: 'spacing', etiqueta: 'Padding' },
+                { id: 'background', tipo: 'color', etiqueta: 'Fondo' }
+            ]
+        };
+    }
+
+    // Defaults hardcoded para gloryTexto si no vienen de containerDefs
+    if (!ROLE_DEFAULTS.text) {
+        ROLE_DEFAULTS.text = {
+            config: {
+                tag: 'p',
+                texto: 'Nuevo texto',
+                alineacion: 'left',
+                color: '#333333',
+                size: '16px'
+            },
+            schema: [
+                { id: 'tag', tipo: 'select', etiqueta: 'Etiqueta HTML', opciones: [
+                    { valor: 'p', etiqueta: 'Párrafo (p)' },
+                    { valor: 'h1', etiqueta: 'Encabezado 1 (h1)' },
+                    { valor: 'h2', etiqueta: 'Encabezado 2 (h2)' },
+                    { valor: 'h3', etiqueta: 'Encabezado 3 (h3)' },
+                    { valor: 'h4', etiqueta: 'Encabezado 4 (h4)' },
+                    { valor: 'h5', etiqueta: 'Encabezado 5 (h5)' },
+                    { valor: 'h6', etiqueta: 'Encabezado 6 (h6)' },
+                    { valor: 'span', etiqueta: 'Span' },
+                    { valor: 'div', etiqueta: 'Div' }
+                ]},
+                { id: 'texto', tipo: 'text', etiqueta: 'Contenido' },
+                { id: 'alineacion', tipo: 'select', etiqueta: 'Alineación', opciones: [
+                    { valor: 'left', etiqueta: 'Izquierda' },
+                    { valor: 'center', etiqueta: 'Centro' },
+                    { valor: 'right', etiqueta: 'Derecha' },
+                    { valor: 'justify', etiqueta: 'Justificado' }
+                ]},
+                { id: 'color', tipo: 'color', etiqueta: 'Color' },
+                { id: 'size', tipo: 'text', etiqueta: 'Tamaño Fuente' }
+            ]
+        };
+    }
 
     if (!Object.keys(ROLE_DEFAULTS).length) {
         var legacyRoles = utils.getConfig().roles || {};
@@ -178,6 +282,10 @@
                     if (!cursor[segments[i]]) {
                         cursor[segments[i]] = {};
                     }
+                    // Si encontramos un string donde esperamos un objeto (ej: padding: '20px'), lo convertimos
+                    if (typeof cursor[segments[i]] !== 'object') {
+                         cursor[segments[i]] = {};
+                    }
                     cursor = cursor[segments[i]];
                 }
                 cursor[segments[segments.length - 1]] = cssValue;
@@ -235,13 +343,75 @@
             el.setAttribute('data-gbn-role', role);
         }
 
+        // Inyección automática de clases por defecto
+        if (role === 'principal') {
+            if (!el.classList.contains('primario')) {
+                el.classList.add('primario');
+            }
+        } else if (role === 'secundario') {
+            if (!el.classList.contains('secundario')) {
+                el.classList.add('secundario');
+            }
+        }
+
         var defaults = getRoleDefaults(role);
         var existingConfig = readJsonAttribute(el, 'data-gbn-config');
         var inlineStyles = utils.parseStyleString(el.getAttribute('style') || '');
 
+        // Inyección de estilos por defecto si no hay inline styles ni config previa
+        // Esto asegura que los nuevos elementos (o los que no tienen estilos) tengan los defaults requeridos
+        // 1. Principal: padding 20px, display flex
+        // 2. Secundario: padding 20px
+        var hasInlinePadding = inlineStyles['padding'] || inlineStyles['padding-top']; // Chequeo básico
+        var hasInlineDisplay = inlineStyles['display'];
+
+        if (role === 'principal') {
+            if (!hasInlinePadding) {
+                inlineStyles['padding'] = '20px';
+            }
+            if (!hasInlineDisplay) {
+                inlineStyles['display'] = 'flex';
+                // Defaults adicionales para flex si se desea
+                if (!inlineStyles['flex-wrap']) inlineStyles['flex-wrap'] = 'wrap';
+            }
+        } else if (role === 'secundario') {
+            if (!hasInlinePadding) {
+                inlineStyles['padding'] = '20px';
+            }
+        }
+
         if (!existingConfig || Object.keys(existingConfig).length === 0) {
-            // Si no hay configuración existente, sincronizar estilos inline con defaults
+            // Si no hay configuración existente, sincronizar estilos inline (incluyendo los defaults inyectados) con defaults
             var initialConfig = syncInlineStylesWithConfig(inlineStyles, defaults.schema, defaults.config);
+            
+            // Asegurar que los defaults inyectados se reflejen en la config inicial si syncInlineStylesWithConfig no los capturó
+            // (syncInlineStylesWithConfig mapea padding-top etc, pero 'padding' shorthand puede necesitar manejo especial en utils o aquí)
+            // Por simplicidad, si inyectamos 'padding: 20px', deberíamos asegurarnos que la config lo tenga.
+            // syncInlineStylesWithConfig maneja padding-top/right/bottom/left.
+            // Vamos a expandir el shorthand 'padding' para que sync lo agarre si es necesario, 
+            // o mejor, dejar que el styleManager aplique los estilos y la config se derive.
+            
+            // NOTA: syncInlineStylesWithConfig actualmente solo mira padding-top, etc.
+            // Si inlineStyles tiene 'padding', necesitamos expandirlo para que sync lo vea.
+            if (inlineStyles['padding']) {
+                var pVal = inlineStyles['padding'];
+                // Asumimos 1 valor para simplificar por ahora (20px)
+                if (!inlineStyles['padding-top']) inlineStyles['padding-top'] = pVal;
+                if (!inlineStyles['padding-right']) inlineStyles['padding-right'] = pVal;
+                if (!inlineStyles['padding-bottom']) inlineStyles['padding-bottom'] = pVal;
+                if (!inlineStyles['padding-left']) inlineStyles['padding-left'] = pVal;
+            }
+
+            // Re-sincronizar con los valores expandidos
+            initialConfig = syncInlineStylesWithConfig(inlineStyles, defaults.schema, defaults.config);
+            
+            // Forzar layout flex en config para principal si se inyectó
+            if (role === 'principal' && inlineStyles['display'] === 'flex') {
+                // Asumiendo que hay una propiedad 'layout' en el schema/config
+                // Si no existe en defaults.config, se agregará.
+                if (!initialConfig.layout) initialConfig.layout = 'flex';
+            }
+
             el.setAttribute('data-gbn-config', JSON.stringify(initialConfig));
         } else {
             var mergedConfig = utils.assign({}, defaults.config || {}, existingConfig || {});

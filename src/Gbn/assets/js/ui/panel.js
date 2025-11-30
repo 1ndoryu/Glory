@@ -332,64 +332,273 @@
         panelBody.appendChild(panelForm); setPanelStatus('Edita las opciones y se aplicarán al instante');
     }
 
-    function handleUnsavedChanges() {
-        // Esta función ya no es necesaria aquí porque dock.js maneja el estado del botón guardar
-        // Pero la mantendré vacía o la eliminaré si no se usa.
-        // Se usaba en los listeners globales que eliminé en el paso anterior.
-        // Pero espera, en el paso 266 eliminé los listeners globales de panel.js también.
-        // Así que no necesito handleUnsavedChanges aquí.
-    }
-
-    function ensurePanelMounted() {
-        if (panelRoot) { return panelRoot; }
-        panelRoot = document.getElementById('gbn-panel');
-        if (!panelRoot) {
-            panelRoot = document.createElement('aside');
-            panelRoot.id = 'gbn-panel';
-            panelRoot.setAttribute('aria-hidden', 'true');
-            panelRoot.innerHTML = ''
-                + '<header class="gbn-header">'
-                + '  <span class="gbn-header-title">GBN Panel</span>'
-                + '  <button type="button" class="gbn-header-close" data-gbn-action="close-panel" aria-label="Close panel">×</button>'
-                + '</header>'
-                + '<div class="gbn-body"></div>'
-                + '<footer class="gbn-footer">'
-                + '  <span class="gbn-footer-status">Cambios en vivo</span>'
-                + '</footer>';
-            document.body.appendChild(panelRoot);
-        }
-        panelBody = panelRoot.querySelector('.gbn-body');
-        panelTitle = panelRoot.querySelector('.gbn-header-title');
-        panelNotice = panelRoot.querySelector('.gbn-footer-status');
+    function renderPageSettingsForm(settings) {
+        if (!panelBody) return;
+        panelBody.innerHTML = '';
+        panelForm = document.createElement('form');
+        panelForm.className = 'gbn-panel-form';
         
-        renderPlaceholder();
-        if (!listenersBound) {
-            listenersBound = true;
-            var closeBtn = panelRoot.querySelector('[data-gbn-action="close-panel"]');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    panel.close();
-                });
-            }
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape' && panel.isOpen()) {
-                    panel.close();
+        var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
+        if (!builder) {
+            panelBody.innerHTML = 'Error: panelFields no disponible';
+            return;
+        }
+
+        // Schema para configuración de página
+        var schema = [
+            { type: 'color', key: 'background', label: 'Color de Fondo (Main)', default: '#ffffff' },
+            { type: 'spacing', key: 'padding', label: 'Padding (Main)', default: 20 }
+        ];
+
+        // Mock block object for builder context
+        var mockBlock = {
+            id: 'page-settings',
+            role: 'page',
+            config: settings || {}
+        };
+
+        schema.forEach(function(field) {
+            var control = builder(mockBlock, field);
+            if (control) {
+                // Interceptar cambios para guardar en settings local y habilitar guardado global
+                var input = control.querySelector('input, select, textarea');
+                if (input) {
+                    input.addEventListener('change', function() {
+                        // Actualizar settings localmente (mockBlock.config se actualiza por referencia en algunos casos, 
+                        // pero panelFields suele llamar a updateConfigValue. Necesitamos interceptar eso o usar el mock.)
+                        // panelFields usa Gbn.ui.panelApi.updateConfigValue.
+                        // Como mockBlock no está en state, updateConfigValue fallará o no hará nada útil para persistencia global.
+                        // Necesitamos un mecanismo para guardar estos settings específicos.
+                        
+                        // Solución rápida: Botón guardar explícito en el footer para página/tema.
+                        // panel.js ya tiene un listener en el footer que llama a Gbn.persistence.savePageConfig().
+                        // Pero savePageConfig guarda BLOQUES. Aquí queremos guardar SETTINGS.
+                        // Necesitamos cambiar el comportamiento del botón guardar según el modo.
+                    });
                 }
+                panelForm.appendChild(control);
+            }
+        });
+
+        panelBody.appendChild(panelForm);
+        
+        // Actualizar comportamiento del botón guardar
+        if (panelFooter) {
+            panelFooter.onclick = null; // Limpiar listeners anteriores (hacky, mejor usar removeEventListener si se tuviera referencia)
+            // Recrear el botón para limpiar listeners es más seguro
+            var newFooterBtn = panelFooter.cloneNode(true);
+            panelFooter.parentNode.replaceChild(newFooterBtn, panelFooter);
+            panelFooter = newFooterBtn;
+            
+            panelFooter.disabled = false;
+            panelFooter.textContent = 'Guardar Configuración';
+            panelFooter.addEventListener('click', function(e) {
+                e.preventDefault();
+                setPanelStatus('Guardando...');
+                
+                // Recolectar valores del form (o usar mockBlock.config si logramos que se actualice)
+                // Dado que panelFields intenta actualizar state, y mockBlock no está en state, 
+                // panelFields podría fallar o no actualizar nada.
+                // Necesitamos que panelFields soporte un modo "standalone" o "callback".
+                // O simplemente leer los valores del DOM aquí.
+                
+                var newSettings = {};
+                // Leer valores manualmente por ahora (simplificado)
+                // Esto es frágil si los controles son complejos.
+                // Mejor opción: Sobrescribir panelApi.updateConfigValue temporalmente.
+                
+                // Vamos a confiar en que panelFields actualizó mockBlock.config SI panelApi lo permite.
+                // Pero panelApi.updateConfigValue busca el bloque en state.
+                
+                // ESTRATEGIA: Leer los inputs del form.
+                // Asumimos inputs simples por ahora.
+                var inputs = panelForm.querySelectorAll('[data-gbn-key]');
+                inputs.forEach(function(inp) {
+                    var key = inp.getAttribute('data-gbn-key');
+                    var val = inp.value;
+                    if (key) newSettings[key] = val;
+                });
+                
+                // Para spacing y color complejos, esto puede no bastar.
+                // Vamos a iterar sobre el schema y buscar los valores en mockBlock.config
+                // Pero necesitamos que panelFields escriba en mockBlock.config.
+                
+                // HACK: Monkey-patch panelApi.updateConfigValue para este contexto
+                
+                Gbn.persistence.savePageSettings(mockBlock.config).then(function(res) {
+                    if (res && res.success) {
+                        setPanelStatus('Guardado');
+                        // Aplicar cambios visuales inmediatos (opcional, si queremos live preview real)
+                        applyPageSettings(mockBlock.config);
+                    } else {
+                        setPanelStatus('Error al guardar');
+                    }
+                });
             });
         }
-        return panelRoot;
+        
+        // Monkey-patch updateConfigValue para actualizar nuestro mockBlock local
+        var originalUpdate = Gbn.ui.panelApi.updateConfigValue;
+        Gbn.ui.panelApi.updateConfigValue = function(block, path, value) {
+            if (block.id === 'page-settings') {
+                // Actualizar mockBlock.config
+                var segments = path.split('.');
+                var cursor = mockBlock.config;
+                for (var i = 0; i < segments.length - 1; i++) {
+                    if (!cursor[segments[i]]) cursor[segments[i]] = {};
+                    cursor = cursor[segments[i]];
+                }
+                cursor[segments[segments.length - 1]] = value;
+                
+                // Live preview
+                applyPageSettings(mockBlock.config);
+                return;
+            }
+            return originalUpdate(block, path, value);
+        };
     }
 
-    // ...
+    function applyPageSettings(settings) {
+        var root = document.querySelector('[data-gbn-root]');
+        if (!root) return;
+        
+        if (settings.background) {
+            root.style.backgroundColor = settings.background;
+        }
+        if (settings.padding) {
+            // Asumiendo padding simple o objeto
+            if (typeof settings.padding === 'object') {
+                root.style.paddingTop = settings.padding.superior + 'px';
+                root.style.paddingRight = settings.padding.derecha + 'px';
+                root.style.paddingBottom = settings.padding.inferior + 'px';
+                root.style.paddingLeft = settings.padding.izquierda + 'px';
+            } else {
+                root.style.padding = settings.padding + 'px';
+            }
+        }
+    }
 
-    function renderPlaceholder(message) {
-        if (!panelBody) { return; }
-        panelMode = 'idle';
-        panelForm = null;
-        var text = message || 'Selecciona un bloque para configurar.';
-        panelBody.innerHTML = '<div class="gbn-panel-empty">' + text + '</div>';
-        setPanelStatus('Cambios en vivo');
+    function renderThemeSettingsForm(settings) {
+        if (!panelBody) return;
+        panelBody.innerHTML = '';
+        
+        // Crear Tabs
+        var tabsContainer = document.createElement('div');
+        tabsContainer.className = 'gbn-panel-tabs';
+        var tabButtons = ['Texto', 'Colores', 'Páginas'];
+        var activeTab = 'Texto';
+        
+        var tabsHeader = document.createElement('div');
+        tabsHeader.className = 'gbn-tabs-header';
+        
+        var tabsContent = document.createElement('div');
+        tabsContent.className = 'gbn-tabs-content';
+        
+        var mockBlock = {
+            id: 'theme-settings',
+            role: 'theme',
+            config: settings || {}
+        };
+        
+        // Función para renderizar contenido de tab
+        function renderTabContent(tabName) {
+            tabsContent.innerHTML = '';
+            var schema = [];
+            
+            if (tabName === 'Texto') {
+                schema = [
+                    { type: 'header', label: 'Párrafos (p)' },
+                    { type: 'select', key: 'text.p.font', label: 'Fuente', options: ['Inter', 'Roboto', 'Open Sans', 'System'] },
+                    { type: 'text', key: 'text.p.size', label: 'Tamaño Base (px)', default: '16' },
+                    { type: 'color', key: 'text.p.color', label: 'Color Texto', default: '#333333' },
+                    
+                    { type: 'header', label: 'Encabezados (h1)' },
+                    { type: 'text', key: 'text.h1.size', label: 'Tamaño H1 (px)', default: '32' },
+                    { type: 'color', key: 'text.h1.color', label: 'Color H1', default: '#111111' }
+                ];
+            } else if (tabName === 'Colores') {
+                schema = [
+                    { type: 'header', label: 'Paleta Global' },
+                    { type: 'color', key: 'colors.primary', label: 'Primario', default: '#007bff' },
+                    { type: 'color', key: 'colors.secondary', label: 'Secundario', default: '#6c757d' },
+                    { type: 'color', key: 'colors.accent', label: 'Acento', default: '#28a745' },
+                    { type: 'color', key: 'colors.background', label: 'Fondo Body', default: '#f8f9fa' }
+                ];
+            } else if (tabName === 'Páginas') {
+                schema = [
+                    { type: 'header', label: 'Defaults de Página' },
+                    { type: 'color', key: 'pages.background', label: 'Fondo Default', default: '#ffffff' },
+                    { type: 'spacing', key: 'pages.padding', label: 'Padding Default', default: 20 }
+                ];
+            }
+            
+            var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
+            if (builder) {
+                schema.forEach(function(field) {
+                    var control = builder(mockBlock, field);
+                    if (control) tabsContent.appendChild(control);
+                });
+            }
+        }
+        
+        tabButtons.forEach(function(name) {
+            var btn = document.createElement('button');
+            btn.className = 'gbn-tab-btn' + (name === activeTab ? ' active' : '');
+            btn.textContent = name;
+            btn.onclick = function(e) {
+                e.preventDefault();
+                activeTab = name;
+                // Update UI classes
+                Array.from(tabsHeader.children).forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                renderTabContent(name);
+            };
+            tabsHeader.appendChild(btn);
+        });
+        
+        tabsContainer.appendChild(tabsHeader);
+        tabsContainer.appendChild(tabsContent);
+        panelBody.appendChild(tabsContainer);
+        
+        // Render inicial
+        renderTabContent(activeTab);
+        
+        // Configurar botón guardar
+        if (panelFooter) {
+            var newFooterBtn = panelFooter.cloneNode(true);
+            panelFooter.parentNode.replaceChild(newFooterBtn, panelFooter);
+            panelFooter = newFooterBtn;
+            
+            panelFooter.disabled = false;
+            panelFooter.textContent = 'Guardar Tema';
+            panelFooter.addEventListener('click', function(e) {
+                e.preventDefault();
+                setPanelStatus('Guardando...');
+                
+                Gbn.persistence.saveThemeSettings(mockBlock.config).then(function(res) {
+                    if (res && res.success) {
+                        setPanelStatus('Tema Guardado');
+                        // Aquí podríamos recargar la página o inyectar CSS global nuevo
+                    }
+                });
+            });
+        }
+        
+        // Monkey-patch updateConfigValue para theme
+        var originalUpdate = Gbn.ui.panelApi.updateConfigValue;
+        Gbn.ui.panelApi.updateConfigValue = function(block, path, value) {
+            if (block.id === 'theme-settings') {
+                var segments = path.split('.');
+                var cursor = mockBlock.config;
+                for (var i = 0; i < segments.length - 1; i++) {
+                    if (!cursor[segments[i]]) cursor[segments[i]] = {};
+                    cursor = cursor[segments[i]];
+                }
+                cursor[segments[segments.length - 1]] = value;
+                return;
+            }
+            return originalUpdate(block, path, value);
+        };
     }
 
     // ...
@@ -399,7 +608,23 @@
         isOpen: function () { return !!(panelRoot && panelRoot.classList.contains('is-open')); },
         open: function (block) {
             ensurePanelMounted(); setActiveBlock(block || null); panelMode = block ? 'block' : 'idle';
-            if (panelRoot) { panelRoot.classList.add('is-open'); panelRoot.setAttribute('aria-hidden', 'false'); }
+            if (panelRoot) { 
+                panelRoot.classList.add('is-open'); 
+                panelRoot.setAttribute('aria-hidden', 'false'); 
+                
+                // Reset classes
+                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme', 'gbn-panel-page');
+                
+                if (block) {
+                    if (block.role === 'principal') {
+                        panelRoot.classList.add('gbn-panel-primary');
+                    } else if (block.role === 'secundario') {
+                        panelRoot.classList.add('gbn-panel-secondary');
+                    } else {
+                        panelRoot.classList.add('gbn-panel-component');
+                    }
+                }
+            }
             var title = 'GBN Panel';
             if (block) { if (block.meta && block.meta.label) { title = block.meta.label; } else if (block.role) { title = 'Configuración: ' + block.role; } }
             if (panelTitle) { panelTitle.textContent = title; }
@@ -410,17 +635,71 @@
         },
         openTheme: function () {
             ensurePanelMounted(); setActiveBlock(null); panelMode = 'theme';
-            if (panelRoot) { panelRoot.classList.add('is-open'); panelRoot.setAttribute('aria-hidden', 'false'); }
-            if (panelTitle) { panelTitle.textContent = 'Theme settings'; }
-            if (panelBody) { panelBody.innerHTML = '<div class="gbn-panel-empty">La configuración global del tema estará disponible en la etapa de configuraciones.</div>'; panelForm = null; }
-            setPanelStatus('Próximamente');
+            if (panelRoot) { 
+                panelRoot.classList.add('is-open'); 
+                panelRoot.setAttribute('aria-hidden', 'false');
+                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-page');
+                panelRoot.classList.add('gbn-panel-theme');
+            }
+            if (panelTitle) { panelTitle.textContent = 'Configuración del Tema'; }
+            
+            if (panelBody) {
+                panelBody.innerHTML = '<div class="gbn-panel-loading">Cargando configuración...</div>';
+                panelForm = null;
+                setPanelStatus('Cargando...');
+
+                if (Gbn.persistence && typeof Gbn.persistence.getThemeSettings === 'function') {
+                    Gbn.persistence.getThemeSettings().then(function(res) {
+                        if (res && res.success) {
+                            var settings = res.data || {};
+                            renderThemeSettingsForm(settings);
+                            setPanelStatus('Listo');
+                        } else {
+                            panelBody.innerHTML = '<div class="gbn-panel-error">Error al cargar configuración.</div>';
+                            setPanelStatus('Error');
+                        }
+                    }).catch(function() {
+                        panelBody.innerHTML = '<div class="gbn-panel-error">Error de conexión.</div>';
+                        setPanelStatus('Error');
+                    });
+                } else {
+                    panelBody.innerHTML = '<div class="gbn-panel-error">Persistencia no disponible.</div>';
+                }
+            }
         },
         openPage: function () {
             ensurePanelMounted(); setActiveBlock(null); panelMode = 'page';
-            if (panelRoot) { panelRoot.classList.add('is-open'); panelRoot.setAttribute('aria-hidden', 'false'); }
-            if (panelTitle) { panelTitle.textContent = 'Page settings'; }
-            if (panelBody) { panelBody.innerHTML = '<div class="gbn-panel-empty">Define padding, fondo y opciones por página en la siguiente fase.</div>'; panelForm = null; }
-            setPanelStatus('Próximamente');
+            if (panelRoot) { 
+                panelRoot.classList.add('is-open'); 
+                panelRoot.setAttribute('aria-hidden', 'false');
+                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme');
+                panelRoot.classList.add('gbn-panel-page');
+            }
+            if (panelTitle) { panelTitle.textContent = 'Configuración de Página'; }
+            
+            if (panelBody) {
+                panelBody.innerHTML = '<div class="gbn-panel-loading">Cargando configuración...</div>';
+                panelForm = null;
+                setPanelStatus('Cargando...');
+
+                if (Gbn.persistence && typeof Gbn.persistence.getPageSettings === 'function') {
+                    Gbn.persistence.getPageSettings().then(function(res) {
+                        if (res && res.success) {
+                            var settings = res.data || {};
+                            renderPageSettingsForm(settings);
+                            setPanelStatus('Listo');
+                        } else {
+                            panelBody.innerHTML = '<div class="gbn-panel-error">Error al cargar configuración.</div>';
+                            setPanelStatus('Error');
+                        }
+                    }).catch(function() {
+                        panelBody.innerHTML = '<div class="gbn-panel-error">Error de conexión.</div>';
+                        setPanelStatus('Error');
+                    });
+                } else {
+                    panelBody.innerHTML = '<div class="gbn-panel-error">Persistencia no disponible.</div>';
+                }
+            }
         },
         openRestore: function () {
             ensurePanelMounted(); setActiveBlock(null); panelMode = 'restore';

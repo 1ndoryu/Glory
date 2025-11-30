@@ -142,42 +142,32 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 - [ ] Ajustar componentes agnósticos (`TermRender`, `GloryImage`, etc.) para exponer `gbnDefaults`.
 - [ ] Documentar cómo registrar nuevos elementos/controles.
 
-### Comentarios del usuario 
+### Etapa 7 · Nuevos Requerimientos (Noviembre)
 
-[solucionado] Actualmente al entrar a la pagina "constructor.php" donde estamos haciendo los test, no veo el boton, tampoco veo que algún script de gbn este cargando. Al activivar el constructor los elementos editables deben ser identificables facilmente al pasar el mouse.
+#### Configuración de Tema y Página
+- [ ] **Valores por defecto**:
+    - `gloryDiv`: Padding 20px, display flex, clase `primario`.
+    - `gloryDivSecundario`: Padding 20px, clase `secundario`.
+    - Las clases deben agregarse automáticamente aunque no estén en el código.
+- [ ] **Configuración de Página**:
+    - Implementar `data-gbn-root` (solo visible con GBN activo).
+    - Panel de configuración de página: Background color del main, padding (default 20px), clase específica por página (ej: `gbnPage-{id}`).
+- [ ] **Panel de Configuración del Tema**:
+    - Apartados: Texto, Color, Páginas.
+    - **Texto**: Configurar fuentes, tamaños, colores por defecto para p, h1, h2, etc.
+    - **Colores**: Selector de color personalizado con paleta de colores por defecto (editable por usuario).
 
-[solucionado] El boton aparece pero no hace nada, los script aparecen con version 1.0, deben de tener el versionado de assetmanager de cuando el modo local o dev este activo, supongo yo que hay que preparar las configuraciones para los divs? y adaptar gloryContentRender el primer componente que va a soportar gbn
-
-[solucionado] Al activar GBN el panel lateral debe mostrarse y el contenido principal debe desplazarse (padding-top: 100px) para que sea visible.
-
-[solucionado] Refactor UI: `overlay.js` dividido en `ui/panel.js`, `ui/panel-fields.js` y `ui/inspector.js`. `overlay.js` eliminado.
-
-[solucionado] Refactor AJAX: `GbnAjaxHandler` dividido en `Ajax/Registrar` + `OrderHandler`, `ContentHandler`, `PageSettingsHandler`, `LibraryHandler`, `DeleteHandler`.
-
-[pendiente] Repasar los componentes agnósticos sin `gbnDefaults()` y conectar la persistencia antes de habilitar la inserción/reordenamiento de bloques (Etapa 6). -> **POSPUESTO**
-
-[solucionado] Problema de estilos inline vs GBN: ahora los estilos escritos en HTML (style="padding-top: 100px") se cargan automáticamente en el panel la primera vez, y al borrar valores regresan al valor inline original. ----> Actualización, la primera vez no carga los estilos escrito en el html, los carga dejar vacío la opcion en el panel o al restaurar default, no representa un problema grave pero si se puede ajustar en el futuro sería lo ideal, no es urgente resolverlo ahora, solo tenerlo en cuenta para el futuro.
+#### Componentes y UI Avanzada
+- [ ] **Componente `gloryTexto`**:
+    - Capacidad de cambiar etiqueta (p, h1, h2, etc.).
+    - Panel de configuración específico (color morado).
+    - Opciones: Fuente, color, alineación (heredando defaults del tema).
+- [ ] **Mejoras de UI**:
+    - **Layout**: Reemplazar selects por iconos para opciones de flexbox/grid (dirección, wrap, etc.).
+    - **Tamaños de Bloques Secundarios**: Selector visual de fracciones (1/1, 1/2, 1/3, etc.) al agregar o configurar.
+    - **Colores de Panel**: Diferenciar paneles por tipo (Azul: Primario, Naranja: Secundario, Morado: Componentes).
 
 
-### Etapa 6 · Adaptación de Componentes (Pospuesto)
-- [ ] Ajustar componentes agnósticos (`TermRender`, `GloryImage`, etc.) para exponer `gbnDefaults`.
-- [ ] Documentar cómo registrar nuevos elementos/controles.
-
-### Comentarios del usuario 
-
-[solucionado] Actualmente al entrar a la pagina "constructor.php" donde estamos haciendo los test, no veo el boton, tampoco veo que algún script de gbn este cargando. Al activivar el constructor los elementos editables deben ser identificables facilmente al pasar el mouse.
-
-[solucionado] El boton aparece pero no hace nada, los script aparecen con version 1.0, deben de tener el versionado de assetmanager de cuando el modo local o dev este activo, supongo yo que hay que preparar las configuraciones para los divs? y adaptar gloryContentRender el primer componente que va a soportar gbn
-
-[solucionado] Al activar GBN el panel lateral debe mostrarse y el contenido principal debe desplazarse (padding-top: 100px) para que sea visible.
-
-[solucionado] Refactor UI: `overlay.js` dividido en `ui/panel.js`, `ui/panel-fields.js` y `ui/inspector.js`. `overlay.js` eliminado.
-
-[solucionado] Refactor AJAX: `GbnAjaxHandler` dividido en `Ajax/Registrar` + `OrderHandler`, `ContentHandler`, `PageSettingsHandler`, `LibraryHandler`, `DeleteHandler`.
-
-[pendiente] Repasar los componentes agnósticos sin `gbnDefaults()` y conectar la persistencia antes de habilitar la inserción/reordenamiento de bloques (Etapa 6). -> **POSPUESTO**
-
-[solucionado] Problema de estilos inline vs GBN: ahora los estilos escritos en HTML (style="padding-top: 100px") se cargan automáticamente en el panel la primera vez, y al borrar valores regresan al valor inline original. ----> Actualización, la primera vez no carga los estilos escrito en el html, los carga dejar vacío la opcion en el panel o al restaurar default, no representa un problema grave pero si se puede ajustar en el futuro sería lo ideal, no es urgente resolverlo ahora, solo tenerlo en cuenta para el futuro.
 
 [NUEVO] Prioridad: Hacer un constructor esencial con bases sólidas que permita mover contenedores, columnas entre columnas, agregar más componentes, eliminar componentes y actualizar el código en tiempo real.
 

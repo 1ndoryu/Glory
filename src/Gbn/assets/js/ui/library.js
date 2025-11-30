@@ -13,12 +13,12 @@
         section: {
             label: 'Sección (divPrincipal)',
             role: 'principal',
-            html: '<div gloryDiv class="divPrincipal" style="padding: 50px 0;"><div gloryDivSecundario class="divSecundario" style="padding: 20px;"></div></div>'
+            html: '<div gloryDiv class="divPrincipal"><div gloryDivSecundario class="divSecundario"></div></div>'
         },
         container: {
             label: 'Contenedor (divSecundario)',
             role: 'secundario',
-            html: '<div gloryDivSecundario class="divSecundario" style="padding: 20px;"></div>'
+            html: '<div gloryDivSecundario class="divSecundario"></div>'
         },
         content_list: {
             label: 'Lista de Entradas',
@@ -34,6 +34,11 @@
             label: 'Imagen',
             role: 'image',
             html: '<div gloryImage="1" opciones="image_url: \'https://via.placeholder.com/300\'"></div>'
+        },
+        text: {
+            label: 'Texto (gloryTexto)',
+            role: 'text',
+            html: '<div gloryTexto="p" opciones="texto: \'Nuevo texto\'">Nuevo texto</div>'
         }
     };
 

@@ -107,7 +107,50 @@
         return ajaxFn('gbn_restore_page', { nonce: cfg.nonce, pageId: cfg.pageId });
     }
 
-    Gbn.persistence = { savePageConfig: savePageConfig, restorePage: restorePage };
+    async function getPageSettings() {
+        var ajaxFn = global.gloryAjax || global.enviarAjax;
+        var cfg = utils.getConfig();
+        if (typeof ajaxFn !== 'function' || !cfg || !cfg.pageId) {
+            return { success: false, message: 'Configuración no disponible' };
+        }
+        return ajaxFn('gbn_get_page_settings', { nonce: cfg.nonce, pageId: cfg.pageId });
+    }
+
+    async function savePageSettings(settings) {
+        var ajaxFn = global.gloryAjax || global.enviarAjax;
+        var cfg = utils.getConfig();
+        if (typeof ajaxFn !== 'function' || !cfg || !cfg.pageId) {
+            return { success: false, message: 'Configuración no disponible' };
+        }
+        return ajaxFn('gbn_save_page_settings', { nonce: cfg.nonce, pageId: cfg.pageId, settings: JSON.stringify(settings) });
+    }
+
+    async function getThemeSettings() {
+        var ajaxFn = global.gloryAjax || global.enviarAjax;
+        var cfg = utils.getConfig();
+        if (typeof ajaxFn !== 'function') {
+            return { success: false, message: 'Configuración no disponible' };
+        }
+        return ajaxFn('gbn_get_theme_settings', { nonce: cfg.nonce });
+    }
+
+    async function saveThemeSettings(settings) {
+        var ajaxFn = global.gloryAjax || global.enviarAjax;
+        var cfg = utils.getConfig();
+        if (typeof ajaxFn !== 'function') {
+            return { success: false, message: 'Configuración no disponible' };
+        }
+        return ajaxFn('gbn_save_theme_settings', { nonce: cfg.nonce, settings: JSON.stringify(settings) });
+    }
+
+    Gbn.persistence = { 
+        savePageConfig: savePageConfig, 
+        restorePage: restorePage,
+        getPageSettings: getPageSettings,
+        savePageSettings: savePageSettings,
+        getThemeSettings: getThemeSettings,
+        saveThemeSettings: saveThemeSettings
+    };
 })(window);
 
 

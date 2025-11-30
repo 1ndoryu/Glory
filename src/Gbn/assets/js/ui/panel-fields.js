@@ -177,7 +177,7 @@
         
         var inputText = document.createElement('input');
         inputText.type = 'text';
-        inputText.className = 'gbn-color-text gbn-input'; // Added gbn-input for base styling
+        inputText.className = 'gbn-color-text gbn-input';
         inputText.placeholder = '#RRGGBB';
 
         var current = getConfigValue(block, field.id);
@@ -186,7 +186,6 @@
         inputColor.value = initialColor;
         inputText.value = initialColor;
 
-        // Sincronizar inputs
         function update(value) {
             var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
             if (api && api.updateConfigValue && blk) { api.updateConfigValue(blk, field.id, value === '' ? null : value); }
@@ -215,6 +214,81 @@
         return wrapper;
     }
 
+    function buildIconGroupField(block, field) {
+        var wrapper = document.createElement('div'); wrapper.className = 'gbn-field gbn-field-icon-group';
+        var label = document.createElement('label'); label.className = 'gbn-field-label'; label.textContent = field.etiqueta || field.id; wrapper.appendChild(label);
+        
+        var container = document.createElement('div');
+        container.className = 'gbn-icon-group-container';
+        
+        var current = getConfigValue(block, field.id);
+        var opciones = Array.isArray(field.opciones) ? field.opciones : [];
+        
+        opciones.forEach(function(opt) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'gbn-icon-btn' + (current === opt.valor ? ' active' : '');
+            btn.title = opt.etiqueta || opt.valor;
+            btn.innerHTML = opt.icon || opt.etiqueta || opt.valor; // Expects SVG or text
+            
+            btn.addEventListener('click', function() {
+                var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
+                if (api && api.updateConfigValue && blk) { 
+                    api.updateConfigValue(blk, field.id, opt.valor);
+                    // Update UI locally
+                    Array.from(container.children).forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                }
+            });
+            container.appendChild(btn);
+        });
+        
+        wrapper.appendChild(container);
+        appendFieldDescription(wrapper, field);
+        return wrapper;
+    }
+
+    function buildFractionSelectorField(block, field) {
+        var wrapper = document.createElement('div'); wrapper.className = 'gbn-field gbn-field-fraction';
+        var label = document.createElement('label'); label.className = 'gbn-field-label'; label.textContent = field.etiqueta || field.id; wrapper.appendChild(label);
+        
+        var container = document.createElement('div');
+        container.className = 'gbn-fraction-container';
+        
+        var fractions = [
+            { val: '1/1', label: '1/1' },
+            { val: '1/2', label: '1/2' },
+            { val: '1/3', label: '1/3' },
+            { val: '1/4', label: '1/4' },
+            { val: '2/3', label: '2/3' },
+            { val: '3/4', label: '3/4' }
+            // Add more as needed
+        ];
+        
+        var current = getConfigValue(block, field.id);
+        
+        fractions.forEach(function(frac) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'gbn-fraction-btn' + (current === frac.val ? ' active' : '');
+            btn.textContent = frac.label;
+            
+            btn.addEventListener('click', function() {
+                var api = Gbn.ui && Gbn.ui.panelApi; var blk = api && api.getActiveBlock ? api.getActiveBlock() : null;
+                if (api && api.updateConfigValue && blk) { 
+                    api.updateConfigValue(blk, field.id, frac.val);
+                    Array.from(container.children).forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                }
+            });
+            container.appendChild(btn);
+        });
+        
+        wrapper.appendChild(container);
+        appendFieldDescription(wrapper, field);
+        return wrapper;
+    }
+
     function shouldShowField(block, field) {
         if (!field || !field.condicion || !Array.isArray(field.condicion) || field.condicion.length !== 2) {
             return true; // Mostrar si no hay condición
@@ -234,6 +308,8 @@
             case 'select': return buildSelectField(block, field);
             case 'toggle': return buildToggleField(block, field);
             case 'color': return buildColorField(block, field);
+            case 'icon_group': return buildIconGroupField(block, field);
+            case 'fraction': return buildFractionSelectorField(block, field);
             case 'text':
             default: return buildTextField(block, field);
         }
