@@ -50,9 +50,6 @@ class ConfigHandler
                 'clientPath' => isset($b['domPath']) ? $b['domPath'] : '',
             ];
             
-            // Debug raw order
-            Logger::log("Block $id - Order: $order");
-
             if (!empty($styles)) {
                 $stylesById[$id] = $styles;
             }

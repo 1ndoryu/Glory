@@ -64,19 +64,11 @@ class DomProcessor
             $parent = $group['parent'];
             $children = $group['children'];
             
-            // Log before sort
-            $orders = array_map(function($c) { return $c['order']; }, $children);
-            Logger::log("Parent $parentId - Orders before: " . implode(', ', $orders));
-
             // Sort by order
             usort($children, function($a, $b) {
                 return $a['order'] - $b['order'];
             });
             
-            // Log after sort
-            $orders = array_map(function($c) { return $c['order']; }, $children);
-            Logger::log("Parent $parentId - Orders after: " . implode(', ', $orders));
-
             // Re-append in correct order
             foreach ($children as $child) {
                 $parent->appendChild($child['node']);

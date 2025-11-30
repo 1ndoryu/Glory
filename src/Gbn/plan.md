@@ -234,3 +234,9 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 
 [PENDIENTE] Requerimiento: La opción "Restaurar" debe devolver el contenido al estado original del código (PHP/HTML base).
 - Objetivo: Limpiar `gbn_config` y `gbn_styles`, y resetear el modo de página a `code`.
+
+[SOLUCIONADO] Problema de persistencia de orden: El orden de los elementos no se guardaba correctamente.
+- Causa: El cliente enviaba el orden basado en la creación/índice del array `state.all()`, no en la posición visual real en el DOM.
+- Solución: Se actualizó `persistence.js` para ordenar los bloques basándose en `element.compareDocumentPosition` antes de asignar el índice `order` en el payload.
+- Backend: `ConfigHandler` y `DomProcessor` ahora reciben el `order` correcto y reordenan los nodos DOM antes de guardar el HTML final.
+- Hash: Se elimina `_glory_content_hash` al guardar para evitar que `PageManager` sobrescriba los cambios manuales.
