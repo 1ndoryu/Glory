@@ -189,6 +189,13 @@
         inputText.className = 'gbn-color-text gbn-input';
         inputText.placeholder = '#RRGGBB';
 
+        // Toggle Palette Button
+        var toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'gbn-color-toggle';
+        toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+        toggleBtn.title = 'Mostrar/Ocultar Paleta Global';
+
         var current = getConfigValue(block, field.id);
         if (current === undefined || current === null) { current = field.defecto; }
         var initialColor = (typeof current === 'string' && current.trim() !== '') ? current : '#ffffff';
@@ -219,7 +226,13 @@
         // Palette
         var palette = document.createElement('div');
         palette.className = 'gbn-color-palette';
+        palette.style.display = 'none'; // Hidden by default
         
+        toggleBtn.onclick = function() {
+            palette.style.display = palette.style.display === 'none' ? 'flex' : 'none';
+            toggleBtn.classList.toggle('active');
+        };
+
         // Default colors with names
         var defaultColors = [
             { val: '#007bff', name: 'Primary' },
@@ -235,14 +248,10 @@
         ];
         
         // Try to get theme colors if available
-        // We use gloryGbnCfg.themeSettings if available (localized from PHP)
         var themeSettings = (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.themeSettings) ? gloryGbnCfg.themeSettings : (Gbn.config && Gbn.config.themeSettings ? Gbn.config.themeSettings : null);
         var themeColors = (themeSettings && themeSettings.colors) ? themeSettings.colors : null;
         
-        // If themeColors is an object like { primary: '#...', secondary: '#...' }
         if (themeColors) {
-            // Override defaults or prepend?
-            // Let's map them to the format
             var mapped = [];
             Object.keys(themeColors).forEach(function(key) {
                 if (themeColors[key]) {
@@ -250,9 +259,7 @@
                 }
             });
             if (mapped.length) {
-                // Use theme colors as priority, maybe append some basics if needed
                 defaultColors = mapped.concat(defaultColors.filter(function(d) {
-                    // Avoid duplicates
                     return !mapped.some(function(m) { return m.val.toLowerCase() === d.val.toLowerCase(); });
                 }));
             }
@@ -263,7 +270,7 @@
             swatch.type = 'button';
             swatch.className = 'gbn-color-swatch';
             swatch.style.backgroundColor = c.val;
-            swatch.title = c.name + ' (' + c.val + ')'; // Show name and hex
+            swatch.title = c.name + ' (' + c.val + ')';
             swatch.addEventListener('click', function() {
                 inputColor.value = c.val;
                 inputText.value = c.val;
@@ -274,6 +281,12 @@
         
         container.appendChild(inputColor);
         container.appendChild(inputText);
+        
+        // Only show toggle if palette is not explicitly hidden via config
+        if (!field.hidePalette) {
+            container.appendChild(toggleBtn);
+        }
+        
         wrapper.appendChild(container);
         
         if (!field.hidePalette) {
@@ -281,6 +294,99 @@
         }
         
         appendFieldDescription(wrapper, field); 
+        return wrapper;
+    }
+
+    function buildTypographyField(block, field) {
+        var wrapper = document.createElement('div'); wrapper.className = 'gbn-field gbn-field-typography';
+        
+        // Header
+        var header = document.createElement('div'); header.className = 'gbn-field-header';
+        var label = document.createElement('span'); label.className = 'gbn-field-label'; label.textContent = field.etiqueta || 'Typography';
+        header.appendChild(label); wrapper.appendChild(header);
+
+        var baseId = field.id; // e.g., 'text.p'
+
+        // 1. Font Family (Full Width)
+        var fontRow = document.createElement('div'); fontRow.className = 'gbn-typo-row';
+        var fontSelect = document.createElement('select'); fontSelect.className = 'gbn-select';
+        var fonts = ['System', 'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat'];
+        fonts.forEach(function(f) {
+            var opt = document.createElement('option'); opt.value = f; opt.textContent = f; fontSelect.appendChild(opt);
+        });
+        var currentFont = getConfigValue(block, baseId + '.font');
+        if (currentFont) fontSelect.value = currentFont;
+        fontSelect.addEventListener('change', function() {
+            var api = Gbn.ui && Gbn.ui.panelApi;
+            if (api && api.updateConfigValue && block) { api.updateConfigValue(block, baseId + '.font', fontSelect.value); }
+        });
+        fontRow.appendChild(fontSelect);
+        wrapper.appendChild(fontRow);
+
+        // 2. Size, Line Height, Letter Spacing (3 Cols)
+        var gridRow = document.createElement('div'); gridRow.className = 'gbn-typo-grid';
+        
+        function createInput(subId, placeholder, labelText) {
+            var col = document.createElement('div'); col.className = 'gbn-typo-col';
+            var lbl = document.createElement('label'); lbl.textContent = labelText;
+            var inp = document.createElement('input'); inp.type = 'text'; inp.className = 'gbn-input'; inp.placeholder = placeholder;
+            var val = getConfigValue(block, baseId + '.' + subId);
+            if (val) inp.value = val;
+            inp.addEventListener('input', function() {
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (api && api.updateConfigValue && block) { 
+                    // Auto-append px for size/spacing if number
+                    var v = inp.value.trim();
+                    // Let the panel-theme.js handle units via toCssValue, or do it here?
+                    // The user wants "1.3rem" or "14px". Let's save raw string.
+                    api.updateConfigValue(block, baseId + '.' + subId, v === '' ? null : v); 
+                }
+            });
+            col.appendChild(lbl); col.appendChild(inp);
+            return col;
+        }
+
+        gridRow.appendChild(createInput('size', '16px', 'Size'));
+        gridRow.appendChild(createInput('lineHeight', '1.5', 'Line Height'));
+        gridRow.appendChild(createInput('letterSpacing', '0px', 'Spacing'));
+        wrapper.appendChild(gridRow);
+
+        // 3. Text Transform (Icon Group)
+        var transformRow = document.createElement('div'); transformRow.className = 'gbn-typo-row';
+        var transformLabel = document.createElement('label'); transformLabel.className = 'gbn-field-label'; transformLabel.textContent = 'Text Transform';
+        transformRow.appendChild(transformLabel);
+        
+        var transformGroup = document.createElement('div'); transformGroup.className = 'gbn-icon-group-container';
+        var transforms = [
+            { val: 'none', label: 'None', icon: '&mdash;' }, // Dash
+            { val: 'uppercase', label: 'Uppercase', icon: 'AB' },
+            { val: 'lowercase', label: 'Lowercase', icon: 'ab' },
+            { val: 'capitalize', label: 'Capitalize', icon: 'Ab' }
+        ];
+        var currentTransform = getConfigValue(block, baseId + '.transform');
+        
+        transforms.forEach(function(opt) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'gbn-icon-btn' + (currentTransform === opt.val ? ' active' : '');
+            btn.title = opt.label;
+            btn.innerHTML = opt.icon;
+            btn.style.fontSize = '11px'; // Text icons need adjustment
+            btn.style.fontWeight = '600';
+            
+            btn.addEventListener('click', function() {
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (api && api.updateConfigValue && block) { 
+                    api.updateConfigValue(block, baseId + '.transform', opt.val);
+                    Array.from(transformGroup.children).forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                }
+            });
+            transformGroup.appendChild(btn);
+        });
+        transformRow.appendChild(transformGroup);
+        wrapper.appendChild(transformRow);
+
         return wrapper;
     }
 
@@ -396,6 +502,7 @@
             case 'select': return buildSelectField(block, field);
             case 'toggle': return buildToggleField(block, field);
             case 'color': return buildColorField(block, field);
+            case 'typography': return buildTypographyField(block, field);
             case 'icon_group': return buildIconGroupField(block, field);
             case 'fraction': return buildFractionSelectorField(block, field);
             case 'text':

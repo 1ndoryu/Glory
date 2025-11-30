@@ -78,16 +78,18 @@
         
         // Text Settings
         if (settings.text) {
-            if (settings.text.p) {
-                if (settings.text.p.color) root.style.setProperty('--gbn-text-color', settings.text.p.color);
-                if (settings.text.p.size) root.style.setProperty('--gbn-text-size', toCssValue(settings.text.p.size));
-                if (settings.text.p.font && settings.text.p.font !== 'System') root.style.setProperty('--gbn-text-font', settings.text.p.font);
-            }
-            // Headers h1-h6
-            ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(function(tag) {
+            var tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+            tags.forEach(function(tag) {
                 if (settings.text[tag]) {
-                    if (settings.text[tag].color) root.style.setProperty('--gbn-' + tag + '-color', settings.text[tag].color);
-                    if (settings.text[tag].size) root.style.setProperty('--gbn-' + tag + '-size', toCssValue(settings.text[tag].size));
+                    var s = settings.text[tag];
+                    var prefix = '--gbn-' + (tag === 'p' ? 'text' : tag);
+                    
+                    if (s.color) root.style.setProperty(prefix + '-color', s.color);
+                    if (s.size) root.style.setProperty(prefix + '-size', toCssValue(s.size));
+                    if (s.font && s.font !== 'System') root.style.setProperty(prefix + '-font', s.font);
+                    if (s.lineHeight) root.style.setProperty(prefix + '-lh', s.lineHeight);
+                    if (s.letterSpacing) root.style.setProperty(prefix + '-ls', toCssValue(s.letterSpacing));
+                    if (s.transform) root.style.setProperty(prefix + '-transform', s.transform);
                 }
             });
         }
@@ -196,15 +198,14 @@
             if (sectionId === 'text') {
                 schema = [
                     { tipo: 'header', etiqueta: 'Párrafos (p)' },
-                    { tipo: 'select', id: 'text.p.font', etiqueta: 'Fuente', opciones: [{valor: 'Inter'}, {valor: 'Roboto'}, {valor: 'Open Sans'}, {valor: 'System'}] },
-                    { tipo: 'text', id: 'text.p.size', etiqueta: 'Tamaño Base (px)', defecto: '16' },
+                    { tipo: 'typography', id: 'text.p', etiqueta: 'Tipografía' },
                     { tipo: 'color', id: 'text.p.color', etiqueta: 'Color Texto', defecto: '#333333' }
                 ];
                 
                 // Add headers h1-h6
                 ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(function(tag) {
                     schema.push({ tipo: 'header', etiqueta: tag.toUpperCase() });
-                    schema.push({ tipo: 'text', id: 'text.' + tag + '.size', etiqueta: 'Tamaño ' + tag.toUpperCase() + ' (px)', defecto: '' });
+                    schema.push({ tipo: 'typography', id: 'text.' + tag, etiqueta: 'Tipografía' });
                     schema.push({ tipo: 'color', id: 'text.' + tag + '.color', etiqueta: 'Color ' + tag.toUpperCase(), defecto: '' });
                 });
                 

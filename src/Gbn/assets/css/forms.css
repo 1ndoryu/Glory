@@ -484,7 +484,7 @@
 /* Fraction Selector (Width Options) */
 .gbn-fraction-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 6px;
     width: 100%;
 }
@@ -546,4 +546,78 @@
 
 .gbn-color-swatch:active {
     transform: scale(0.95);
+}
+
+/* Color Toggle Button */
+.gbn-color-toggle {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.gbn-color-toggle:hover,
+.gbn-color-toggle.active {
+    background: #f0f7ff;
+    color: #1d8ff1;
+    border-color: #1d8ff1;
+}
+
+.gbn-color-toggle svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Typography Field */
+.gbn-field-typography {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #fafafa;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #f0f0f0;
+}
+
+.gbn-typo-row {
+    width: 100%;
+}
+
+.gbn-typo-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.gbn-typo-col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.gbn-typo-col label {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #999;
+}
+
+.gbn-typo-col input {
+    height: 30px !important;
+    background: #fff !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 4px !important;
+    padding: 0 6px !important;
+}
+
+.gbn-typo-col input:focus {
+    border-color: #1d8ff1 !important;
 }
