@@ -154,13 +154,57 @@
     right: 8px;
     display: none;
     align-items: center;
-    gap: 4px;
+    gap: 4px; /* Reduced gap */
     z-index: 20;
     opacity: 0;
     transition: opacity 0.2s ease, transform 0.2s ease;
+    
+    /* Dock-like style */
+    padding: 3px 6px; /* Reduced padding */
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.gbn-active [data-gbn-role]:hover > .gbn-controls-group {
+/* Principal (Blue) Theme */
+.gbn-controls-principal {
+    background: rgba(29, 143, 241, 0.95);
+    border-color: rgba(29, 143, 241, 0.2);
+}
+
+.gbn-controls-principal .gbn-config-btn,
+.gbn-controls-principal .gbn-add-btn,
+.gbn-controls-principal .gbn-delete-btn {
+    color: #fff;
+}
+
+.gbn-controls-principal .gbn-config-btn:hover,
+.gbn-controls-principal .gbn-add-btn:hover,
+.gbn-controls-principal .gbn-delete-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Secundario (Orange) Theme */
+.gbn-controls-secundario {
+    background: rgba(245, 158, 11, 0.95);
+    border-color: rgba(245, 158, 11, 0.2);
+}
+
+.gbn-controls-secundario .gbn-config-btn,
+.gbn-controls-secundario .gbn-add-btn,
+.gbn-controls-secundario .gbn-delete-btn {
+    color: #fff;
+}
+
+.gbn-controls-secundario .gbn-config-btn:hover,
+.gbn-controls-secundario .gbn-add-btn:hover,
+.gbn-controls-secundario .gbn-delete-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.gbn-active .gbn-show-controls > .gbn-controls-group {
     opacity: 1;
     transform: translateY(-2px);
 }
@@ -171,41 +215,41 @@
 }
 
 .gbn-config-btn,
+.gbn-add-btn,
 .gbn-delete-btn {
     border: none;
-    border-radius: 999px;
-    background: #111827;
-    color: #ffffff;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 6px 12px;
+    border-radius: 50%;
+    background: transparent;
+    color: #555; /* Default color if not themed */
+    width: 20px; /* Reduced size */
+    height: 20px; /* Reduced size */
+    padding: 0;
     cursor: pointer;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    transition: background 0.2s ease, box-shadow 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
 }
 
-.gbn-delete-btn {
-    padding: 6px 10px;
-    background: #dc2626;
-    font-size: 14px;
-    font-weight: bold;
+.gbn-config-btn svg,
+.gbn-add-btn svg,
+.gbn-delete-btn svg {
+    display: block;
+    width: 14px; /* Reduced icon size */
+    height: 14px; /* Reduced icon size */
 }
 
-.gbn-config-btn:hover {
-    background: #1d8ff1;
-}
-
+.gbn-config-btn:hover,
+.gbn-add-btn:hover,
 .gbn-delete-btn:hover {
-    background: #ef4444;
+    background: rgba(0, 0, 0, 0.05);
+    transform: scale(1.1);
 }
 
 .gbn-config-btn:focus,
+.gbn-add-btn:focus,
 .gbn-delete-btn:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.5);
 }
 
 .gbn-config-btn[disabled] {
@@ -1154,10 +1198,10 @@ button#gbn-close {
 }
 
 .gbn-add-btn {
-    padding: 6px 10px;
-    background: #10b981; /* Green */
-    font-size: 14px;
+    /* padding: 5px 5px; */
+    /* background: #10b981; */
     font-weight: bold;
+    border-radius: 100px;
 }
 
 .gbn-add-btn:hover {

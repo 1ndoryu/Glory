@@ -22,8 +22,18 @@
         container = document.createElement('div');
         container.className = 'gbn-controls-group';
         
+        // Add specific class based on role
+        if (block.role === 'principal') {
+            container.classList.add('gbn-controls-principal');
+        } else if (block.role === 'secundario') {
+            container.classList.add('gbn-controls-secundario');
+        }
+
+        // Config Button
         var btnConfig = document.createElement('button');
-        btnConfig.type = 'button'; btnConfig.className = 'gbn-config-btn'; btnConfig.textContent = 'Config';
+        btnConfig.type = 'button'; btnConfig.className = 'gbn-config-btn'; 
+        btnConfig.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+        btnConfig.title = 'Configurar';
         btnConfig.addEventListener('click', function (event) {
             event.preventDefault(); event.stopPropagation();
             if (Gbn.ui && Gbn.ui.panel && typeof Gbn.ui.panel.open === 'function') {
@@ -31,17 +41,10 @@
             }
         });
         
-        var btnDelete = document.createElement('button');
-        btnDelete.type = 'button'; btnDelete.className = 'gbn-delete-btn'; btnDelete.innerHTML = '&times;';
-        btnDelete.title = 'Eliminar bloque';
-        btnDelete.addEventListener('click', function (event) {
-            event.preventDefault(); event.stopPropagation();
-            // Eliminación directa sin confirmación (según petición de usuario)
-            state.deleteBlock(block.id);
-        });
-
+        // Add Button
         var btnAdd = document.createElement('button');
-        btnAdd.type = 'button'; btnAdd.className = 'gbn-add-btn'; btnAdd.innerHTML = '+';
+        btnAdd.type = 'button'; btnAdd.className = 'gbn-add-btn'; 
+        btnAdd.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>';
         btnAdd.title = 'Añadir bloque';
         btnAdd.addEventListener('click', function (event) {
             event.preventDefault(); event.stopPropagation();
@@ -49,29 +52,29 @@
                 var position = 'after';
                 var allowed = [];
                 
-                // Lógica de roles permitidos
                 if (block.role === 'principal') {
-                    // Si estoy en un principal, puedo añadir dentro (secundario) o después (otro principal)
-                    // Pero el botón "+" es contextual. Asumamos que el "+" del toolbar es para "añadir hijo" si es contenedor,
-                    // o "añadir hermano" si no lo es?
-                    // El usuario dijo "que no se pueda agregar divprimarios dentro de los div secundarios".
-                    
-                    // Simplificación:
-                    // Si click en "+" de Principal -> Añadir Secundario DENTRO (append)
                     position = 'append';
                     allowed = ['secundario'];
                 } else if (block.role === 'secundario') {
-                    // Si click en "+" de Secundario -> Añadir Contenido DENTRO (append)
                     position = 'append';
                     allowed = ['content', 'term_list', 'image'];
                 } else {
-                    // Si click en "+" de Contenido -> Añadir Contenido DESPUÉS (after)
                     position = 'after';
                     allowed = ['content', 'term_list', 'image'];
                 }
                 
                 Gbn.ui.library.open(block.element, position, allowed);
             }
+        });
+
+        // Delete Button
+        var btnDelete = document.createElement('button');
+        btnDelete.type = 'button'; btnDelete.className = 'gbn-delete-btn'; 
+        btnDelete.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+        btnDelete.title = 'Eliminar bloque';
+        btnDelete.addEventListener('click', function (event) {
+            event.preventDefault(); event.stopPropagation();
+            state.deleteBlock(block.id);
         });
 
         container.appendChild(btnConfig);
@@ -151,11 +154,35 @@
             block.element.setAttribute('data-gbn-role', block.role || 'block');
             var controls = block.element.__gbnControls;
             if (controls && !controls.parentElement) { block.element.appendChild(controls); }
+            
+            // Remove old event listeners if any (to avoid duplicates if called multiple times)
+            // Ideally we should store the handler reference, but for now let's rely on the fact 
+            // that we only add them if active.
+            // Actually, let's just add them once.
+            if (!block.element.__gbnEventsAttached) {
+                block.element.addEventListener('mouseover', function(e) {
+                    if (!active) return;
+                    e.stopPropagation();
+                    // Remove class from all others to ensure exclusivity
+                    document.querySelectorAll('.gbn-show-controls').forEach(function(el) {
+                        el.classList.remove('gbn-show-controls');
+                    });
+                    block.element.classList.add('gbn-show-controls');
+                });
+                
+                block.element.addEventListener('mouseout', function(e) {
+                    if (!active) return;
+                    // e.stopPropagation(); // Don't stop propagation here, let it bubble so parent can handle it?
+                    // Actually, if we leave child, we might enter parent.
+                    block.element.classList.remove('gbn-show-controls');
+                });
+                block.element.__gbnEventsAttached = true;
+            }
+
             if (active) {
                 controls = controls || createConfigButton(block);
                 if (controls) {
                     controls.style.display = 'flex';
-                    // Activar botones internos
                     var btns = controls.querySelectorAll('button');
                     btns.forEach(function(b) { b.disabled = false; b.tabIndex = 0; });
                 }
@@ -163,6 +190,7 @@
                 controls.style.display = 'none';
                 var btns = controls.querySelectorAll('button');
                 btns.forEach(function(b) { b.disabled = true; b.tabIndex = -1; });
+                block.element.classList.remove('gbn-show-controls');
             }
         }
 
