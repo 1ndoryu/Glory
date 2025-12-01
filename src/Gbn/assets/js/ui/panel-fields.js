@@ -147,15 +147,52 @@
     }
 
     function buildToggleField(block, field) {
-        var wrapper = document.createElement('label'); wrapper.className = 'gbn-field gbn-field-toggle';
-        var input = document.createElement('input'); input.type = 'checkbox'; input.className = 'gbn-toggle';
-        var current = !!getConfigValue(block, field.id); input.checked = current;
-        input.addEventListener('change', function () {
-            var api = Gbn.ui && Gbn.ui.panelApi;
-            if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, !!input.checked); }
+        var wrapper = document.createElement('div'); wrapper.className = 'gbn-field gbn-field-icon-group gbn-field-toggle-group';
+        var label = document.createElement('label'); label.className = 'gbn-field-label'; label.textContent = field.etiqueta || field.id; wrapper.appendChild(label);
+        
+        var container = document.createElement('div');
+        container.className = 'gbn-icon-group-container';
+        
+        var current = !!getConfigValue(block, field.id);
+        
+        // Define options for False (Off) and True (On)
+        var options = [
+            { 
+                value: false, 
+                label: 'Desactivar', 
+                icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' 
+            },
+            { 
+                value: true, 
+                label: 'Activar', 
+                icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>' 
+            }
+        ];
+        
+        options.forEach(function(opt) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            // Check equality strictly or loosely? current is boolean. opt.value is boolean.
+            var isActive = current === opt.value;
+            btn.className = 'gbn-icon-btn' + (isActive ? ' active' : '');
+            btn.title = opt.label;
+            btn.innerHTML = opt.icon;
+            
+            btn.addEventListener('click', function() {
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (api && api.updateConfigValue && block) { 
+                    api.updateConfigValue(block, field.id, opt.value);
+                    // Update UI locally
+                    Array.from(container.children).forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                }
+            });
+            container.appendChild(btn);
         });
-        var span = document.createElement('span'); span.textContent = field.etiqueta || field.id; wrapper.appendChild(input); wrapper.appendChild(span);
-        appendFieldDescription(wrapper, field); return wrapper;
+        
+        wrapper.appendChild(container);
+        appendFieldDescription(wrapper, field); 
+        return wrapper;
     }
 
     function buildTextField(block, field) {
