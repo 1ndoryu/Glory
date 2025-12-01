@@ -59,12 +59,7 @@
         if (!ROLE_DEFAULTS.principal) {
             ROLE_DEFAULTS.principal = {
                 config: {
-                    layout: 'flex',
-                    direction: 'row',
-                    wrap: 'wrap',
-                    justify: 'flex-start',
-                    align: 'stretch',
-                    padding: '20px'
+                    // Defaults handled by CSS variables
                 },
                 schema: [
                     { 
@@ -167,8 +162,7 @@
         if (!ROLE_DEFAULTS.secundario) {
             ROLE_DEFAULTS.secundario = {
                 config: {
-                    width: '1/1',
-                    padding: '20px'
+                    // Defaults handled by CSS variables
                 },
                 schema: [
                     { id: 'width', tipo: 'fraction', etiqueta: 'Ancho', defecto: '1/1' },

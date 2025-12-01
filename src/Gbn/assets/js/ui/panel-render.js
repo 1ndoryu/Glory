@@ -142,7 +142,21 @@
 
     function extractSpacingStyles(spacingConfig) {
         var styles = {};
-        if (!spacingConfig || typeof spacingConfig !== 'object') { return styles; }
+        if (spacingConfig === null || spacingConfig === undefined || spacingConfig === '') { return styles; }
+        
+        // Handle single value (string or number)
+        if (typeof spacingConfig !== 'object') {
+            var val = typeof spacingConfig === 'number' ? spacingConfig + 'px' : spacingConfig;
+            // If it's a simple value, apply to all sides or just 'padding' shorthand?
+            // Using shorthand 'padding' is better but our map uses specific sides.
+            // Let's set all specific sides to ensure consistency with overrides.
+            styles['padding-top'] = val;
+            styles['padding-right'] = val;
+            styles['padding-bottom'] = val;
+            styles['padding-left'] = val;
+            return styles;
+        }
+        
         var map = { superior: 'padding-top', derecha: 'padding-right', inferior: 'padding-bottom', izquierda: 'padding-left' };
         Object.keys(map).forEach(function (key) {
             var raw = spacingConfig[key];

@@ -34,7 +34,8 @@
             panelFooter.disabled = true;
             panelFooter.textContent = 'Guardar (próximamente)';
             // Remove listeners? Cloning is safer.
-            if (panelFooter.parentNode) {
+            // Remove listeners? Cloning is safer.
+            if (panelFooter && panelFooter.parentNode) {
                 var newFooterBtn = panelFooter.cloneNode(true);
                 panelFooter.parentNode.replaceChild(newFooterBtn, panelFooter);
                 panelFooter = newFooterBtn;

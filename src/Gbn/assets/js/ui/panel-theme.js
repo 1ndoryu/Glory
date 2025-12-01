@@ -76,6 +76,24 @@
         var root = document.querySelector('[data-gbn-root]') || document.documentElement;
         if (!settings) return;
         
+        // Helper to set or remove property
+        function setOrRemove(prop, val) {
+            if (val !== null && val !== undefined && val !== '') {
+                root.style.setProperty(prop, val);
+            } else {
+                root.style.removeProperty(prop);
+            }
+        }
+
+        // Helper to set or remove property with unit conversion
+        function setOrRemoveValue(prop, val) {
+             if (val !== null && val !== undefined && val !== '') {
+                root.style.setProperty(prop, toCssValue(val));
+            } else {
+                root.style.removeProperty(prop);
+            }
+        }
+        
         // Text Settings
         if (settings.text) {
             var tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
@@ -84,31 +102,33 @@
                     var s = settings.text[tag];
                     var prefix = '--gbn-' + (tag === 'p' ? 'text' : tag);
                     
-                    if (s.color) root.style.setProperty(prefix + '-color', s.color);
-                    if (s.size) root.style.setProperty(prefix + '-size', toCssValue(s.size));
-                    if (s.font && s.font !== 'System') root.style.setProperty(prefix + '-font', s.font);
-                    if (s.lineHeight) root.style.setProperty(prefix + '-lh', s.lineHeight);
-                    if (s.letterSpacing) root.style.setProperty(prefix + '-ls', toCssValue(s.letterSpacing));
-                    if (s.transform) root.style.setProperty(prefix + '-transform', s.transform);
+                    setOrRemove(prefix + '-color', s.color);
+                    setOrRemoveValue(prefix + '-size', s.size);
+                    
+                    if (s.font && s.font !== 'System') {
+                        root.style.setProperty(prefix + '-font', s.font);
+                    } else {
+                        root.style.removeProperty(prefix + '-font');
+                    }
+                    
+                    setOrRemove(prefix + '-lh', s.lineHeight);
+                    setOrRemoveValue(prefix + '-ls', s.letterSpacing);
+                    setOrRemove(prefix + '-transform', s.transform);
                 }
             });
         }
         
         // Color Settings
         if (settings.colors) {
-            if (settings.colors.primary) root.style.setProperty('--gbn-primary', settings.colors.primary);
-            if (settings.colors.secondary) root.style.setProperty('--gbn-secondary', settings.colors.secondary);
-            if (settings.colors.accent) root.style.setProperty('--gbn-accent', settings.colors.accent);
-            if (settings.colors.background) root.style.setProperty('--gbn-bg', settings.colors.background);
+            setOrRemove('--gbn-primary', settings.colors.primary);
+            setOrRemove('--gbn-secondary', settings.colors.secondary);
+            setOrRemove('--gbn-accent', settings.colors.accent);
+            setOrRemove('--gbn-bg', settings.colors.background);
             
             // Custom Colors
             if (settings.colors.custom && Array.isArray(settings.colors.custom)) {
                 settings.colors.custom.forEach(function(c, i) {
                     if (c.value) {
-                        // We can set by index or name. Let's set by index for stability if names change?
-                        // Or maybe we don't need CSS vars for custom colors if they are just for the palette?
-                        // But if we want to use them in CSS, we might need them.
-                        // Let's set them just in case.
                         root.style.setProperty('--gbn-custom-' + i, c.value);
                     }
                 });
@@ -117,7 +137,29 @@
         
         // Page Defaults
         if (settings.pages) {
-            if (settings.pages.background) root.style.setProperty('--gbn-page-bg', settings.pages.background);
+            setOrRemove('--gbn-page-bg', settings.pages.background);
+            // Page padding is handled in applyPageSettings usually, but if it's a theme default for pages:
+            // We might want a variable for it if we want it to be overridable
+        }
+        
+        // Component Defaults (Principal, Secundario, etc)
+        if (settings.components) {
+             Object.keys(settings.components).forEach(function(role) {
+                 var comp = settings.components[role];
+                 if (!comp) return;
+                 
+                 // Map specific known properties to CSS variables
+                 if (role === 'principal') {
+                     setOrRemoveValue('--gbn-principal-padding', comp.padding);
+                     setOrRemove('--gbn-principal-background', comp.background);
+                     setOrRemove('--gbn-principal-gap', comp.gap);
+                     // Layout defaults could be vars too if we updated CSS
+                 } else if (role === 'secundario') {
+                     setOrRemoveValue('--gbn-secundario-padding', comp.padding);
+                     setOrRemove('--gbn-secundario-background', comp.background);
+                     setOrRemove('--gbn-secundario-width', comp.width);
+                 }
+             });
         }
     }
 
