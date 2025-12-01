@@ -153,4 +153,131 @@ class DefaultContentManager
         }
         self::$sincronizadorInstancia->detectarEdicionManual($idPost, $objetoPost, $esActualizacion);
     }
+
+    /**
+     * Construye definiciones de posts desde arrays simples.
+     * 
+     * Permite crear contenido por defecto de forma declarativa y legible.
+     * 
+     * @param array $items Array de items. Cada item puede ser:
+     *   - Array asociativo completo (se usa directo)
+     *   - Array simple donde posición 0 = titulo, 1 = imagen, resto según config
+     * 
+     * @param array $config Configuración global:
+     *   - 'alias' (string): Alias de imágenes (def: 'images')
+     *   - 'parrafos' (array): Párrafos para el contenido
+     *   - 'extracto' (string): Extracto por defecto
+     *   - 'estado' (string): Estado por defecto (def: 'publish')
+     *   - 'meta' (callable): fn($item, $index) => array de metaEntrada
+     *   - 'galeria' (callable): fn($item, $index) => array de galeriaAssets
+     *   - 'contenido' (callable|int): fn($item) => string, o índice del item
+     *   - 'extractoIndice' (int): Índice del item para usar como extracto
+     * 
+     * @return array Definiciones listas para define()
+     * 
+     * @example
+     * // Forma simple
+     * DefaultContentManager::build([
+     *     ['Mi Título', 'imagen.jpg'],
+     *     ['Otro Título', 'otra.jpg'],
+     * ], ['alias' => 'images']);
+     * 
+     * @example
+     * // Con meta personalizado
+     * DefaultContentManager::build([
+     *     ['Proyecto 1', 'p1.jpg', ['Cat1', 'Cat2'], true],
+     *     ['Proyecto 2', 'p2.jpg', ['Cat3'], false],
+     * ], [
+     *     'alias' => 'images',
+     *     'meta' => fn($item) => [
+     *         'category' => $item[2] ?? [],
+     *         'has_page' => ($item[3] ?? false) ? 'yes' : 'no',
+     *     ],
+     * ]);
+     */
+    public static function build(array $items, array $config = []): array
+    {
+        $alias = $config['alias'] ?? 'images';
+        $parrafos = $config['parrafos'] ?? [];
+        $extractoDefault = $config['extracto'] ?? '';
+        $estadoDefault = $config['estado'] ?? 'publish';
+        $metaBuilder = $config['meta'] ?? null;
+        $galeriaBuilder = $config['galeria'] ?? null;
+        $contenidoConfig = $config['contenido'] ?? null;
+        $extractoIndice = $config['extractoIndice'] ?? null;
+
+        $posts = [];
+        foreach ($items as $index => $item) {
+            // Si es array asociativo con slugDefault, usarlo directo
+            if (isset($item['slugDefault'])) {
+                $posts[] = $item;
+                continue;
+            }
+
+            // Array simple: [titulo, imagen, ...extras]
+            $titulo = $item[0] ?? '';
+            $imagen = $item[1] ?? '';
+            $slug = self::generarSlug($titulo);
+
+            // Contenido
+            $contenido = '';
+            if (is_callable($contenidoConfig)) {
+                $contenido = $contenidoConfig($item, $index);
+            } elseif (is_int($contenidoConfig) && isset($item[$contenidoConfig])) {
+                $contenido = '<p>' . esc_html($item[$contenidoConfig]) . '</p>';
+            } elseif (!empty($parrafos)) {
+                $contenido = '<p>' . implode('</p><p>', array_map('esc_html', $parrafos)) . '</p>';
+            }
+
+            // Extracto
+            $extracto = $extractoDefault;
+            if ($extractoIndice !== null && isset($item[$extractoIndice])) {
+                $extracto = $item[$extractoIndice];
+            }
+
+            // Imagen destacada
+            $imagenRef = '';
+            if ($imagen !== '') {
+                $imagenRef = (strpos($imagen, '::') !== false) ? $imagen : "{$alias}::{$imagen}";
+            }
+
+            $post = [
+                'slugDefault' => $slug,
+                'titulo' => $titulo,
+                'contenido' => $contenido,
+                'estado' => $estadoDefault,
+                'extracto' => $extracto,
+                'imagenDestacadaAsset' => $imagenRef,
+            ];
+
+            // Meta personalizado
+            if ($metaBuilder && is_callable($metaBuilder)) {
+                $meta = $metaBuilder($item, $index);
+                if (!empty($meta)) {
+                    $post['metaEntrada'] = $meta;
+                }
+            }
+
+            // Galería
+            if ($galeriaBuilder && is_callable($galeriaBuilder)) {
+                $galeria = $galeriaBuilder($item, $index);
+                if (!empty($galeria)) {
+                    $post['galeriaAssets'] = $galeria;
+                }
+            }
+
+            $posts[] = $post;
+        }
+
+        return $posts;
+    }
+
+    /**
+     * Genera un slug limpio desde un título.
+     */
+    private static function generarSlug(string $titulo): string
+    {
+        $slug = strtolower(trim(preg_replace('/[^a-z0-9]+/i', '-', $titulo), '-'));
+        return $slug ?: 'post-' . uniqid();
+    }
 }
