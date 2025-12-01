@@ -684,11 +684,11 @@ class ContentRender
                 
                 // Ensure post_type is set in finalConfig so frontend picks it up
                 if (empty($finalConfig['post_type'])) {
-                    $finalConfig['post_type'] = $effectivePostType;
+                    $finalConfig['post_type'] = $postType;
                 }
                 // Maintain backward compatibility for config key 'postType' if needed by PHP logic
                 if (empty($finalConfig['postType'])) {
-                    $finalConfig['postType'] = $effectivePostType;
+                    $finalConfig['postType'] = $postType;
                 }
 
                 $configAttr = esc_attr(wp_json_encode($finalConfig));
@@ -774,7 +774,7 @@ class ContentRender
         // El contenido ya fue impreso o capturado en el buffer y devuelto por ob_get_clean() en renderizarContenido,
         // pero renderizarContenido devuelve string.
         // Aquí print hace echo.
-        // return $out; // Eliminado para cumplir con : void
+        return $out;
     }
 
     /**
