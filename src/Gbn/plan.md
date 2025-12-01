@@ -174,7 +174,123 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 
 
 
-[NUEVO] Prioridad: Hacer un constructor esencial con bases sólidas que permita mover contenedores, columnas entre columnas, agregar más componentes, eliminar componentes y actualizar el código en tiempo real.
+---
+
+## 🚨 PRIORIDAD CRÍTICA: Sincronización de Estilos Computados con Panel
+
+### Problema Identificado
+
+Cuando se abre el panel de configuración de un elemento, **no se leen los estilos actuales del elemento**. Esto causa:
+
+1. **Estilos inline ignorados**: Un `<div gloryDiv style="padding: 50px; background-color: #f0f0f0;">` muestra "20" (del tema) en el panel en lugar de "50".
+
+2. **Estilos de clase ignorados**: Si `.miClase { padding: 50px }` está aplicada al elemento, el panel no lo refleja.
+
+3. **Afecta TODOS los campos**: padding, background, gap, y cualquier otro estilo configurable.
+
+4. **El placeholder debería ser condicional**: Solo mostrar placeholder cuando el valor computado coincide con el default del tema.
+
+### Comportamiento Actual (Incorrecto)
+
+```
+Elemento: <div gloryDiv style="padding: 50px">
+Panel muestra:
+  - input.value = "" (vacío)
+  - input.placeholder = "20" (del tema)
+  
+El usuario ve "20" y piensa que el padding es 20px, cuando en realidad es 50px.
+```
+
+### Comportamiento Esperado
+
+```
+Elemento: <div gloryDiv style="padding: 50px">
+Panel muestra:
+  - input.value = "50" (leído del computed style)
+  - input.placeholder = "20" (del tema, solo visible si se borra el valor)
+  
+El usuario ve "50" y sabe exactamente qué tiene el elemento.
+```
+
+### Jerarquía de Lectura de Valores (Prioridad)
+
+1. **`block.config`**: Valores guardados en GBN (post_meta) - máxima prioridad
+2. **`getComputedStyle(element)`**: Estilos actuales del DOM (inline + clases + CSS)
+3. **`themeSettings.components[role]`**: Valores del Panel de Tema
+4. **`cssSync.readDefaults()`**: Variables CSS de `:root` en gbn.css
+
+### Archivos Afectados
+
+| Archivo | Rol | Cambio Necesario |
+|---------|-----|------------------|
+| `ui/panel-fields/spacing.js` | Campo de padding/margin | Leer `getComputedStyle` del elemento |
+| `ui/panel-fields/color.js` | Campo de color | Leer `backgroundColor` computado |
+| `ui/panel-fields/slider.js` | Campo numérico (gap, etc.) | Leer propiedad computada |
+| `ui/panel-fields/utils.js` | Utilidades compartidas | Nueva función `getComputedValue(element, cssProperty)` |
+| `ui/panel-core.js` | Apertura del panel | Pasar referencia al elemento DOM al builder de campos |
+
+### Solución Propuesta
+
+1. **Nueva utilidad en `utils.js`**:
+   ```javascript
+   function getComputedValue(element, cssProperty) {
+       if (!element) return undefined;
+       var computed = window.getComputedStyle(element);
+       return computed[cssProperty];
+   }
+   ```
+
+2. **Modificar cada campo** para:
+   - Recibir `element` (el nodo DOM real)
+   - Leer `getComputedStyle(element)` para obtener valores actuales
+   - Comparar con defaults del tema para decidir si mostrar como value o placeholder
+
+3. **Lógica de decisión**:
+   ```javascript
+   var computedValue = getComputedValue(element, 'paddingTop');
+   var themeDefault = getThemeDefault(role, 'padding.superior');
+   var savedValue = getDeepValue(block.config, 'padding.superior');
+   
+   if (savedValue) {
+       input.value = parseSpacingValue(savedValue).valor;
+   } else if (computedValue !== themeDefault) {
+       // Tiene valor inline o de clase diferente al tema
+       input.value = parseSpacingValue(computedValue).valor;
+   } else {
+       // Usa el default del tema
+       input.value = '';
+       input.placeholder = parseSpacingValue(themeDefault).valor;
+   }
+   ```
+
+### Mapeo CSS ↔ Config
+
+| Campo Config | Propiedad CSS | Notas |
+|--------------|---------------|-------|
+| `padding.superior` | `paddingTop` | En px |
+| `padding.derecha` | `paddingRight` | En px |
+| `padding.inferior` | `paddingBottom` | En px |
+| `padding.izquierda` | `paddingLeft` | En px |
+| `background` | `backgroundColor` | rgb() o hex |
+| `gap` | `gap` o `rowGap` | En px |
+| `layout` | `display` | flex, grid, block |
+| `flexDirection` | `flexDirection` | row, column |
+| `flexWrap` | `flexWrap` | wrap, nowrap |
+| `flexJustify` | `justifyContent` | flex-start, center, etc. |
+| `flexAlign` | `alignItems` | stretch, center, etc. |
+
+### Estado Actual
+
+- [ ] Función `getComputedValue` en utils.js
+- [ ] `spacing.js` lee estilos computados
+- [ ] `color.js` lee backgroundColor computado
+- [ ] `slider.js` lee propiedades numéricas
+- [ ] `select.js` / `icon-group.js` leen propiedades de layout
+- [ ] Panel pasa referencia al elemento DOM
+- [ ] Tests manuales con inline, clases y defaults
+
+---
+
 
 ---
 
