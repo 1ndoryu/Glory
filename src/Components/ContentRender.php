@@ -42,7 +42,6 @@ class ContentRender
                 'publicacionesPorPagina' => 6,
                 'claseContenedor'        => 'gbn-content-grid',
                 'claseItem'              => 'gbn-content-card',
-                'plantilla'              => null,
                 'argumentosConsulta'     => [],
                 'forzarSinCache'         => false,
                 'paginacion'             => false,

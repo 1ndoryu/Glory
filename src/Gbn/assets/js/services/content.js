@@ -771,6 +771,12 @@
             claseItem: opts.claseItem,
             argumentosConsulta: JSON.stringify(opts.argumentosConsulta || {})
         };
+        
+        // Ensure plantilla from meta options is used if not present in config (fix for null override)
+        if (!opts.plantilla && block.meta.options && block.meta.options.plantilla) {
+            opts.plantilla = block.meta.options.plantilla;
+        }
+
         if (opts.plantilla) {
             payload.plantilla = opts.plantilla;
         }
