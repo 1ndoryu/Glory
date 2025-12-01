@@ -1,13 +1,14 @@
-GBN será un constructor visual con compatibilidad con el front y el back (código). Debe permitir construir sitios desde el HTML plano y, opcionalmente, desde la interfaz del front. Mantiene una UI en inglés, pero todo el código queda en español. El núcleo en `Glory/` se mantiene agnóstico; cualquier personalización específica vive en el tema. 
+# GBN - Glory Builder Nativo
 
-Los componentes de Glory deberan de mantener su propias configuaciones compatibles en el codigo y el constructor en el front, se adaptara los componentes poco a poco. Seguir los principios solid.
+**GBN** es un constructor visual moderno e inteligente para WordPress que permite construir sitios web desde HTML plano con capacidad de edición visual en el front-end. Mantiene la UI en inglés para usuarios finales, pero todo el código interno está en español siguiendo principios SOLID.
 
-## Principios
-- HTML limpio sin shortcodes.
-- Al apagar GBN (no cargar scripts ni estilos) la página debe comportarse igual gracias a que el marcado mantiene estilos renderizados.
-- Código minimalista, ordenado y fácil de escalar.
-- Los componentes de Glory deben aceptar progresivamente la capa GBN sin romper su uso independiente.
-- Evitar repetir el error de Avada Constructor, donde el codigo se repite una y otra vez, no, aquí hay que seguir los principios solid a como de lugar, centralizar cosas y no de repetir nada.
+## Filosofía y Principios
+
+1. **HTML Limpio**: Sin shortcodes, markup semántico y válido
+2. **Independencia de GBN**: Las páginas funcionan correctamente aunque GBN esté desactivado (estilos inline persisten)
+3. **Código Minimalista**: Principios SOLID, evitar duplicación de código (lecciones aprendidas de Avada)
+4. **Componentes Agnósticos**: Los componentes de Glory aceptan progresivamente GBN sin romper su uso independiente
+5. **Sincronización Bidireccional**: Cambios en código o interfaz se reflejan correctamente en ambos lados
 
 ## Contexto Glory, tema y PageManager
 - `Glory/` actúa como micro–framework agnóstico: provee managers (assets, páginas, menús), componentes reutilizables y utilidades base. No debe incluir lógica específica del proyecto.
@@ -92,8 +93,8 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 1. `core/utils`: helpers agnósticos (logger, DOM, parsing de estilos, detección de builder).
 2. `core/state`: registra nodos, crea `data-gbn-id`, persiste config y expone getters.
 3. `render/styleManager`: sincroniza estilos base en `<style data-gbn-style="*">` reutilizando los inline originales.
-4. `services/content`: normaliza atributos `glory*`, parsea `opciones`, define meta y lanza AJAX (`gloryAjax`) para hidratar `gloryContentRender`.
-5. `ui/panel`: núcleo del panel lateral (montaje, títulos, estado, summary y aplicación de estilos vía `styleManager`).
+4. `services/content`: Facade que orquesta sub-módulos (`roles`, `config`, `dom`, `builder`, `scanner`, `hydrator`) para la gestión de contenido.
+5. `ui/panel-core`: núcleo del panel lateral (montaje, títulos, estado, summary y aplicación de estilos vía `styleManager`).
 6. `ui/panel-fields`: constructores de campos (spacing, slider, select, toggle, color, text) que delegan en `Gbn.ui.panelApi` para actualizar config.
 7. `ui/inspector`: toggle “Open GBN”, botones secundarios, persistencia local y activación/desactivación; abre paneles de tema/página/restauración.
 8. `gbn.js`: orquesta el arranque (omite ejecución cuando el builder externo está activo).
@@ -171,7 +172,88 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 
 [NUEVO] Prioridad: Hacer un constructor esencial con bases sólidas que permita mover contenedores, columnas entre columnas, agregar más componentes, eliminar componentes y actualizar el código en tiempo real.
 
-## Contexto Técnico y Aprendizajes (Actualización)
+---
+
+## Estructura de Archivos y Arquitectura Actual
+
+### Backend (PHP)
+
+#### 📁 Raíz (`Glory/src/Gbn/`)
+- **`GbnManager.php`**: Gestor principal que registra assets CSS/JS con versionado dinámico, maneja enqueuing condicional (solo para usuarios con permisos), y proporciona configuración al frontend vía `gloryGbnCfg`
+- **`GbnAjaxHandler.php`**: Facade para compatibilidad, delega a `Ajax\Registrar`
+- **`Logger.php`**: Utilidad para logging de depuración en `gbn.log`
+
+#### 📁 `Ajax/` - Gestión de Endpoints
+- **`Registrar.php`**: Registra todos los endpoints AJAX (`wp_ajax_*`) y conecta con handlers específicos
+- **`ContentHandler.php`**: Facade que delega operaciones de contenido a handlers especializados
+- **`DeleteHandler.php`**: Maneja eliminación de bloques (`gbn_delete_item`)
+- **`OrderHandler.php`**: Maneja reordenamiento de bloques (`gbn_save_order`)
+- **`PageSettingsHandler.php`**: GET/POST de configuraciones por página (`gbn_get_page_settings`, `gbn_save_page_settings`)
+- **`ThemeSettingsHandler.php`**: GET/POST de configuraciones globales del tema (`gbn_get_theme_settings`, `gbn_save_theme_settings`)
+- **`LibraryHandler.php`**: Creación/actualización de elementos desde la biblioteca (`create_glory_link`, `update_glory_link`, `create_glory_header`, etc.)
+
+##### 📁 `Ajax/Handlers/` - Lógica de Negocio
+- **`ConfigHandler.php`**: Procesa y persiste configuraciones de bloques, aplica estilos al DOM, maneja sincronización con `PageManager`
+- **`OptionsHandler.php`**: Maneja actualización de opciones de bloques (`gbn_save_options`)
+- **`PreviewHandler.php`**: Genera vistas previas sin persistir cambios (`gbn_preview_block`)
+
+##### 📁 `Ajax/Services/` - Utilidades Compartidas
+- **`DomProcessor.php`**: Manipulación del DOM, generación de IDs deterministas, parsing de HTML, aplicación de estilos y clases, limpieza de nodos inválidos
+
+#### 📁 `Config/` - Esquemas y Configuración
+- **`ContainerRegistry.php`**: Define schemas y defaults para todos los tipos de contenedores (`principal`, `secundario`, `content`). Especifica controles del panel (spacing, layout, width, etc.)
+- **`RoleConfig.php`**: Mapeo de roles a clases CSS y configuraciones básicas
+
+#### 📁 `assets/css/` - Estilos Modulares
+- **`gbn.css`**: Imports y configuración base
+- **`variables.css`**: Variables CSS globales (colores, espaciado)
+- **`layout.css`**: Estilos del panel, dock, y layout general de GBN
+- **`forms.css`**: Inputs, selectores, controles del panel
+- **`components.css`**: Componentes específicos (color picker, typography field, etc.)
+- **`interactive.css`**: Estados hover, drag & drop, feedback visual
+- **`modals.css`**: Modales y overlays (biblioteca, confirmaciones)
+- **`theme-styles.css`**: Aplica variables CSS del tema a contenido dentro de `[data-gbn-root]`
+
+### Frontend (JavaScript)
+
+#### 📁 `assets/js/`
+- **`gbn.js`**: Punto de entrada principal, inicializa GBN solo cuando no hay builders externos activos
+- **`gbn-front.js`**: Versión simplificada para frontend público (usuarios no logueados)
+
+#### 📁 `core/` - Fundamentos
+- **`utils.js`**: Helpers agnósticos (logger, parsing de estilos, detección de builder, manipulación DOM, generación de IDs deterministas)
+- **`state.js`**: Gestión de estado global (`Gbn.state`), registro de nodos, almacenamiento de config/schema, getters/setters
+
+#### 📁 `render/` - Aplicación de Estilos
+- **`styleManager.js`**: Sincroniza estilos entre `data-gbn-config` y atributos inline del DOM, maneja prioridad inline vs panel
+- **`theme-applicator.js`**: Aplica configuraciones del tema como variables CSS globales en `[data-gbn-root]`
+
+#### 📁 `services/` - Servicios de Negocio
+- **`persistence.js`**: Maneja serialización y guardado AJAX del estado, dispara eventos de sincronización
+- **`css-sync.js`**: Sincronización entre CSS defaults y panel de configuración. Lee estilos computados de elementos temporales para poblar defaults en el panel.
+- **`content.js`**: Facade que orquesta normalización de atributos y carga dinámica de contenido
+
+##### 📁 `services/content/` - Módulos de Contenido
+- **`roles.js`**: Define roles (`principal`, `secundario`, `content`, `text`), detecta elementos con atributos `glory*`, asigna roles y defaults
+- **`config.js`**: Parsing de atributos `opciones`, construcción de configuración inicial, merge de configs
+- **`dom.js`**: Normalización de atributos (`glorydiv` → `data-gbn-*`), inyección de clases y estilos por defecto (padding, flex) si faltan
+- **`builder.js`**: Construcción de objetos de bloque (`Gbn.state.register`), integración de estilos inline con configuración
+- **`scanner.js`**: Escaneo del DOM inicial, detección de elementos GBN, reconciliación con configuración guardada
+- **`hydrator.js`**: Inyecta HTML recibido vía AJAX para bloques de contenido dinámico, emite eventos de hidratación
+
+#### 📁 `ui/` - Interfaz de Usuario
+- **`dock.js`**: Barra flotante minimalista (botones Guardar, Config Tema, Config Página, Restaurar), detecta cambios pendientes via eventos
+- **`inspector.js`**: Maneja interacción con bloques (hover, click, selección), muestra botones contextuales (Config, Add, Delete)
+- **`drag-drop.js`**: Sistema drag & drop nativo HTML5 con indicadores visuales (líneas de inserción)
+- **`library.js`**: Modal de biblioteca para insertar nuevos bloques/componentes
+- **`panel-core.js`**: Núcleo del panel lateral (apertura, cierre, navegación, estructura base)
+- **`panel-fields.js`**: Constructores de campos del panel (spacing, slider, select, toggle, color, typography, icon_group)
+- **`panel-render.js`**: Renderiza contenido del panel basado en schema, aplica cambios en tiempo real
+- **`panel-theme.js`**: Panel específico para configuraciones de tema (colores, tipografía, defaults globales)
+
+---
+
+## Contexto Técnico Detallado
 
 ### Sistema de Eventos
 La comunicación entre módulos se realiza a través de eventos globales en `window`:
@@ -182,7 +264,7 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 
 ### UI Components
 - **Dock (`dock.js`)**: Barra flotante minimalista. Usa iconos SVG. Centraliza las acciones de guardar y configuración global.
-- **Panel (`panel.js`)**: Panel lateral derecho. Se abre al seleccionar un bloque.
+- **Panel (`panel-core.js`)**: Panel lateral derecho. Se abre al seleccionar un bloque.
   - Usa `panel-fields.js` para renderizar controles basados en el esquema del bloque.
   - Estilos minimalistas definidos en `gbn.css` (ancho 280px, inputs compactos).
 - **Inspector (`inspector.js`)**: Maneja la interacción directa con el DOM (hover, click en bloques).
@@ -207,34 +289,265 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 - Se realiza a través de `Gbn.library` (no visible en este resumen pero parte del sistema).
 - `inspector.js` coordina la inserción y llama a `ensureBlockSetup`.
 
-### Comentarios del usuario (Recientes)
+---
 
-[SOLUCIONADO] Problema de persistencia: Al borrar un div y guardar, el cambio no se mantiene al recargar.
-- Causa: Desajuste en la generación de IDs entre cliente (JS) y servidor (PHP) debido a que el cliente incluía la etiqueta `<main>` en la ruta del DOM (`main:0>div:0`) y el servidor no (`div:0`).
-- Solución: Se modificó `utils.js` y `ContentHandler.php` para ignorar la etiqueta `<main>` al calcular la ruta del DOM. Se actualizó el prefijo de ID a `gbn-v3-` para invalidar caché.
-- Estado: Deletions persist correctly.
+## Historial de Desarrollo Reciente (basado en contructor.php)
 
-[SOLUCIONADO] Requerimiento: La opción "Restaurar" debe devolver el contenido al estado original del código (PHP/HTML base).
-- Objetivo: Limpiar `gbn_config` y `gbn_styles`, y resetear el modo de página a `code`.
+### ✅ Problemas Resueltos
 
-[SOLUCIONADO] Problema de persistencia de orden: El orden de los elementos no se guardaba correctamente.
-- Causa: El cliente enviaba el orden basado en la creación/índice del array `state.all()`, no en la posición visual real en el DOM.
-- Solución: Se actualizó `persistence.js` para ordenar los bloques basándose en `element.compareDocumentPosition` antes de asignar el índice `order` en el payload.
-- Backend: `ConfigHandler` y `DomProcessor` ahora reciben el `order` correcto y reordenan los nodos DOM antes de guardar el HTML final.
-- Hash: Se elimina `_glory_content_hash` al guardar para evitar que `PageManager` sobrescriba los cambios manuales.
+#### Persistencia de Eliminación de Bloques
+- **Problema**: Al borrar un bloque y guardar, no persistía al recargar
+- **Causa**: Desajuste en generación de IDs entre cliente (incluía `<main>`) y servidor (no lo incluía)
+- **Solución**: Se modificó `utils.js` y `ContentHandler.php` para ignorar `<main>`, se actualizó prefijo a `gbn-v3-`
 
-[SOLUCIONADO] Persistencia y Actualización en Tiempo Real de Configuración de Tema/Página (Noviembre 30)
-- Problema: Los cambios en el panel de tema y página no se guardaban ni se reflejaban en tiempo real. El botón "Guardar" global no detectaba estos cambios.
-- Solución:
-    - Se centralizó la lógica de actualización en `panel-render.js` y `dock.js`.
-    - El botón "Guardar" del Dock ahora guarda concurrentemente `PageConfig`, `PageSettings` y `ThemeSettings`.
-    - Se arregló la aplicación de estilos en tiempo real usando variables CSS (`--gbn-*`) y un helper `toCssValue` para unidades.
+#### Persistencia de Orden de Bloques
+- **Problema**: El orden visual no se guardaba correctamente
+- **Causa**: Cliente ordenaba por creación/índice de array, no por posición DOM real
+- **Solución**: `persistence.js` ahora usa `element.compareDocumentPosition` antes de asignar `order`
 
-[MEJORA] UI de Configuración de Tema y CSS (Noviembre 30)
-- **Typography Field**: Nuevo control compuesto con Familia, Grid (Size/LineHeight/Spacing) y Transform (iconos).
-- **Color Picker**: Toggle para mostrar/ocultar la paleta global (icono de mundo).
-- **Scope de Estilos**: Se aisló la fuente del panel (`layout.css`) para que no herede la del tema. Se creó `theme-styles.css` para aplicar variables GBN solo al contenido dentro de `[data-gbn-root]`.
-- **Arquitectura CSS**: Refactorización de `GbnManager.php` para encolar archivos CSS individuales (`forms.css`, `layout.css`, etc.) con versionado dinámico, eliminando `@import` estáticos.
+#### Función Restaurar
+- **Objetivo**: Devolver contenido al estado original del código PHP/HTML
+- **Implementación**: Limpia `gbn_config` y `gbn_styles`, resetea modo de página a `code`
 
+#### Configuración de Tema y Página en Tiempo Real
+- **Problema**: Cambios no se guardaban ni reflejaban en tiempo real, aparecía "Connection Error"
+- **Solución**: 
+  - Centralización en `panel-render.js` y `dock.js`
+  - Botón Guardar ahora guarda concurrentemente PageConfig, PageSettings, ThemeSettings
+  - Aplicación de estilos vía variables CSS (`--gbn-*`) con helper `toCssValue`
 
+#### Herencia de Padding y Valores Default
+- **Problema**: `gloryDiv` y `gloryDivSecundario` cargaban padding de 20px hardcodeado, sobreescribiendo theme defaults
+- **Contexto**: Múltiples iteraciones en conversaciones recientes (41a2ca99, ff5abd2a, 83c31b39, 39ffecf4)
+- **Estado**: Solucionado con sistema de fallback correcto a Theme Panel defaults
+- **Mejora**: Restauración efectiva de valores vía panel
+
+#### CSS Defaults y Sincronización
+- **Objetivo**: Defaults CSS automáticamente en panel, modificaciones del usuario rompen sync, función "Restore" re-sincroniza
+- **Estado**: Sistema implementado con sync parcial, trabajo continuo en optimización
+
+#### Experiencia de Usuarios Deslogeados
+- **Problema**: Páginas no renderizaban correctamente para usuarios no logueados
+- **Áreas afectadas**: `data-gbn-root` sin estilos inline, `gloryContentRender` no renderizaba
+- **Estado**: Resuelto - estilos de página y componentes se aplican correctamente para ambos tipos de usuarios
+
+### 🔄 Características Implementadas Recientemente
+
+#### Mejoras de UI/UX
+- **Typography Field**: Control compuesto con Familia, Grid (Size/LineHeight/Spacing) y Transform (iconos)
+- **Color Picker**: Toggle para mostrar/ocultar paleta global (icono mundo), lista de colores por defecto editables
+- **Layout Options**: Selectores con iconos para flex/grid (reemplazando selects simples)
+- **Width Options**: Opciones fraccionarias para divs secundarios (1/2, 1/3, 3/4, etc.)
+- **Panel Diferenciado por Color**: Azul (primario), Naranja (secundario), Morado (componentes)
+
+#### Componente gloryTexto
+- **Funcionalidad**: Capacidad de cambiar etiqueta (p, h1, h2, etc.) dinámicamente
+- **Configuraciones**: Fuente, color, alineación, tamaño con unidades flexibles (px, rem)
+- **Herencia**: Valores default heredan de configuración de tema
+
+#### gloryContentRender
+- **Template Discovery**: `TemplateManager` para detección dinámica de plantillas
+- **Post Types**: Soporte para tipos personalizados (libro, post, etc.)
+- **Layout Options**: Display mode, flex-direction, flex-wrap, justify-content con iconos
+- **Opciones Display**: Mostrar/ocultar imagen, título, con persistencia correcta
+- **Plantillas**: Sistema de plantillas dinámicas (plantillaPosts, plantillaLibro, etc.)
+
+#### Configuraciones Globales
+- **Theme Panel**: Apartados para Texto, Color, Páginas
+  - Configuración de fuentes por defecto para p, h1, h2, etc.
+  - Paleta de colores globales (5 defaults + capacidad de añadir/eliminar)
+  - Variables CSS aplicadas globalmente
+- **Page Panel**: Background color, padding, clase específica por página (`gbnPage-{id}`)
+
+#### Drag & Drop y Manipulación DOM
+- **Sistema D&D**: HTML5 nativo con indicadores visuales (líneas de inserción)
+- **Biblioteca**: Modal para insertar nuevos bloques y componentes
+- **Eliminación**: Botón directo para eliminar nodos
+- **Sincronización Bidireccional**: Cambios DOM ↔ `Gbn.state` en tiempo real
+
+### 🚧 Áreas en Desarrollo
+
+#### gloryContentRender Avanzado
+- **Objetivo**: Replicar funcionalidad compleja de integración Avada
+- **Pendiente**: Opciones avanzadas de alineación, layout, efectos
+- **Referencia**: `Glory/Integrations/` contiene integración Avada original
+
+#### Adaptación de Componentes
+- **Pendiente**: Ajustar componentes agnósticos (`TermRender`, `GloryImage`) para exponer `gbnDefaults()`
+- **Prioridad**: Pospuesta hasta tener base sólida de constructor
+
+#### CSS Sync Avanzado
+- **Estado**: Implementación parcial en `css-sync.js`
+- **Objetivo**: Sincronización perfecta entre CSS y panel con detección de cambios manuales
+
+---
+
+## Roadmap y Estado de Desarrollo
+
+### ✅ Fase 1 - Fundamentos (COMPLETADO)
+- [x] Esquemas base por rol (principal/secundario/content)
+- [x] Centralización de definición de contenedores en `ContainerRegistry.php`
+- [x] Panel interactivo con inputs, tabs basados en `data-gbn-schema`
+- [x] Feedback visual (loading, hover) en botones y estados de bloques
+- [x] Sincronización de estilos inline con configuración inicial
+- [x] Reset inteligente a valores por defecto
+- [x] Opciones de altura para divs (auto, mínimo, altura completa)
+- [x] Selector flex/grid con opciones condicionales
+- [x] Sistema de persistencia AJAX (`gbn_save_config`)
+- [x] Cliente JS de persistencia con botón Guardar
+- [x] Función de restauración (`gbn_restore_page`)
+- [x] Drag & Drop moderno con indicadores visuales
+- [x] Modal de biblioteca para insertar bloques
+- [x] Eliminación de bloques desde UI
+- [x] Sincronización bidireccional DOM ↔ Estado
+- [x] Panel de configuración del tema (colores, fuentes, defaults)
+- [x] Panel de configuración de página (background, padding, overrides)
+
+### 🔄 Fase 2 - Maduración (EN PROGRESO)
+- [x] Componente `gloryTexto` con cambio dinámico de etiqueta
+- [x] Layout con iconos (flex/grid) reemplazando selects
+- [x] Width fraccionario para bloques secundarios
+- [x] Diferenciación de paneles por color (azul/naranja/morado)
+- [x] Typography field compuesto
+- [x] Color picker con paleta global editable
+- [x] Template discovery para `gloryContentRender`
+- [/] gloryContentRender avanzado (opciones completas de Avada)
+- [ ] Layout grid con opciones completas (columns, gap, auto-flow)
+- [ ] Editor de texto enriquecido para componente texto
+
+### 📋 Fase 3 - Expansión (PLANIFICADO)
+- [ ] Adaptación de componentes agnósticos (`GloryImage`, etc.)
+- [ ] Sistema de plantillas robusto y extensible
+- [ ] Historial de cambios (undo/redo)
+- [ ] Responsive breakpoints (mobile, tablet, desktop)
+- [ ] Export/import de configuraciones
+- [ ] Biblioteca de presets y bloques predefinidos
+
+---
+
+## Marcado Base y Atributos
+
+### Atributos HTML Personalizados
+
+GBN utiliza atributos personalizados para identificar y configurar elementos:
+
+**Atributos de Autor (simplificados)**:
+- `gloryDiv`: Define un contenedor principal
+- `gloryDivSecundario`: Define un contenedor secundario (hijo de principal)
+- `gloryContentRender="{postType}"`: Renderiza contenido dinámico del tipo especificado
+- `gloryTexto`: Elemento de texto editable
+- `opciones="{config}"`: Configuraciones adicionales parseadas
+
+**Atributos GBN Normalizados** (generados automáticamente):
+- `data-gbn-id`: ID estable generado determinísticamente basado en posición DOM
+- `data-gbn-role`: Rol del elemento (`principal`, `secundario`, `content`, `texto`)
+- `data-gbn-config`: JSON con configuración editable del elemento
+- `data-gbn-schema`: JSON con definición de controles del panel
+- `data-gbn-root`: Contenedor raíz de página (solo visible con GBN activo)
+
+### Ejemplo de Markup Mínimo
+
+```php
+<?php $opciones = "publicacionesPorPagina: 3, plantilla: 'plantillaPosts'"; ?>
+
+<div gloryDiv style="padding: 40px 20px; gap: 24px;">
+    <div gloryDivSecundario style="display: grid; gap: 20px;">
+        <p gloryTexto>Título de sección</p>
+        <div gloryContentRender="libro" opciones="<?php echo esc_attr($opciones); ?>"></div>
+    </div>
+</div>
+```
+
+### Normalización en Runtime
+
+1. `services/content/scanner.js` detecta atributos `glory*`
+2. `services/content/roles.js` asigna roles apropiados
+3. `services/content/dom.js` normaliza a atributos `data-gbn-*`
+4. `core/utils.js` genera IDs deterministas basados en ruta DOM
+5. `services/content/config.js` parsea `opciones` y construye config inicial
+6. `core/state.js` registra el bloque en estado global
+
+---
+
+## Sistema de Persistencia
+
+### Flujo de Guardado
+
+1. **Captura**: Usuario modifica elemento en panel → `panel-fields.js` actualiza `Gbn.state`
+2. **Evento**: Se dispara `gbn:configChanged` → `dock.js` habilita botón Guardar
+3. **Serialización**: `persistence.js` ordena bloques por posición DOM real
+4. **Payload**: Se construye JSON con estructura:
+   ```json
+   {
+     "pageId": 123,
+     "blocks": [
+       {
+         "id": "gbn-v3-xyz",
+         "role": "principal",
+         "config": {"padding": {"top": "40px", ...}},
+         "order": 0
+       }
+     ]
+   }
+   ```
+5. **AJAX**: Se envía a `gbn_save_options` con nonce de seguridad
+6. **Backend**: `OptionsHandler.php` valida y delega a `ConfigHandler.php`
+7. **DOM Processing**: `DomProcessor.php` aplica cambios al HTML
+8. **Persistencia**: Se guarda en `post_meta` como `gbn_config` y se actualiza `post_content`
+
+### Metadatos de WordPress
+
+- `gbn_config`: Array serializado con configuraciones por bloque
+- `gbn_styles`: CSS instanciado para regenerar `<style>` tags
+- `gbn_page_settings`: Configuraciones específicas de página
+- `gbn_theme_settings`: Configuraciones globales del tema (option, no post_meta)
+- `_glory_content_mode`: `code` o `editor` (controla sincronización)
+- `_glory_content_hash`: Hash para detectar ediciones manuales
+
+### Sincronización con PageManager
+
+- Si modo = `code`: Solo persiste metadatos, respeta HTML original
+- Si modo = `editor`: Actualiza `post_content` con HTML regenerado
+- Hash cambiado: GBN muestra aviso, deja de sincronizar automáticamente
+
+---
+
+## Notas Técnicas Importantes
+
+### Generación de IDs Deterministas
+- **Formato**: `gbn-v3-{hash}` (v3 indica versión de algoritmo)
+- **Algoritmo**: Hash de ruta DOM excluyendo `<main>` (ej: `div:0>div:1>p:0`)
+- **Estabilidad**: El mismo markup siempre genera el mismo ID
+- **Sincronización**: Garantiza que cliente y servidor usen IDs idénticos
+
+### Prioridad de Estilos
+1. **Estilos inline del autor** (baseline en HTML)
+2. **Configuración GBN** (si existe en `data-gbn-config`)
+3. **Theme defaults** (si no hay inline ni config)
+4. **Fallback hard-coded** (último recurso, evitado cuando es posible)
+
+### Variables CSS Globales
+Aplicadas en `[data-gbn-root]`:
+- `--gbn-text-font`: Fuente de párrafos
+- `--gbn-text-size`: Tamaño de texto base
+- `--gbn-text-color`: Color de texto base
+- `--gbn-custom-{n}`: Colores personalizados del tema
+
+### Eventos del Sistema
+- `gbn:layoutChanged`: Estructura DOM cambió (mover/insertar/eliminar)
+- `gbn:contentHydrated`: Contenido dinámico cargado vía AJAX
+- `gbn:configChanged`: Configuración de bloque modificada
+- `gbn:styleApplied`: Estilos aplicados al DOM
+- `gbn:saved`: Guardado completado exitosamente
+
+---
+
+## Próximos Pasos Inmediatos
+
+1. **gloryContentRender Completo**: Implementar todas las opciones de la integración Avada
+2. **Layout Grid**: Opciones completas de CSS Grid (columns, rows, areas, auto-flow)
+3. **Editor de Texto Rico**: Implementar editor minimalista para gloryTexto (bold, italic, links)
+4. **Optimización de Performance**: Debouncing en actualizaciones, lazy loading de assets
+5. **Testing Cross-browser**: Validar en Chrome, Firefox, Safari, Edge
+6. **Documentación de API**: Documentar cómo extender GBN con componentes personalizados
 
