@@ -127,9 +127,13 @@ class GbnManager
                 'file' => '/js/core/state.js',
                 'deps' => ['glory-gbn-core'],
             ],
+            'glory-gbn-theme-applicator' => [
+                'file' => '/js/render/theme-applicator.js',
+                'deps' => ['glory-gbn-state'],
+            ],
             'glory-gbn-style' => [
                 'file' => '/js/render/styleManager.js',
-                'deps' => ['glory-gbn-state'],
+                'deps' => ['glory-gbn-state', 'glory-gbn-theme-applicator'],
             ],
             'glory-gbn-content-roles' => [
                 'file' => '/js/services/content/roles.js',
@@ -265,7 +269,8 @@ class GbnManager
         // Asegurar que la config esté disponible antes de cualquier script consumidor
         wp_localize_script('glory-gbn-core', 'gloryGbnCfg', $localizedData);
         // Proveer ajax_params para gloryAjax si no lo define otro módulo
-        wp_localize_script('glory-gbn-core', 'ajax_params', [
+        // Localizar a glory-ajax para que esté disponible cuando el script se ejecute
+        wp_localize_script('glory-ajax', 'ajax_params', [
             'ajax_url' => admin_url('admin-ajax.php'),
         ]);
         // Mantener compatibilidad: también localizamos en el script final
