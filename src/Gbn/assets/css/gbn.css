@@ -35,6 +35,7 @@
     
     background-color: var(--gbn-principal-background, transparent);
     box-sizing: border-box;
+    max-width: 100%;
 }
 
 [gloryDivSecundario], [data-gbnSecundario] {
@@ -54,6 +55,7 @@
 [gloryContentRender], [data-gbnContent] {
     display: block;
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
     /* Add defaults if needed, e.g. padding */
 }

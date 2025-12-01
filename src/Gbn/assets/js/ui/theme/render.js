@@ -19,7 +19,8 @@
 
         var schema = [
             { tipo: 'color', id: 'background', etiqueta: 'Color de Fondo (Main)', defecto: '#ffffff' },
-            { tipo: 'spacing', id: 'padding', etiqueta: 'Padding (Main)', defecto: 20 }
+            { tipo: 'spacing', id: 'padding', etiqueta: 'Padding (Main)', defecto: 20 },
+            { tipo: 'text', id: 'maxAncho', etiqueta: 'Ancho Máximo (Página)', defecto: '100%' }
         ];
 
         var mockBlock = {
@@ -419,7 +420,7 @@
                     // Fields
                     var defaults = Gbn.content.roles.getRoleDefaults(role);
                     if (defaults && defaults.schema) {
-                        var allowedTypes = ['color', 'spacing', 'typography', 'slider', 'icon_group', 'select'];
+                    var allowedTypes = ['color', 'spacing', 'typography', 'slider', 'icon_group', 'select', 'text'];
                         var relevantFields = defaults.schema.filter(function(f) {
                             return allowedTypes.indexOf(f.tipo) !== -1 && f.id !== 'texto' && f.id !== 'tag';
                         });

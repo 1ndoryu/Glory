@@ -152,11 +152,12 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
     - Las clases deben agregarse automáticamente aunque no estén en el código.
 - [x] **Configuración de Página**:
     - Implementar `data-gbn-root` (solo visible con GBN activo).
-    - Panel de configuración de página: Background color del main, padding (default 20px), clase específica por página (ej: `gbnPage-{id}`).
+    - Panel de configuración de página: Background color del main, padding (default 20px), ancho máximo (default 100%), clase específica por página (ej: `gbnPage-{id}`).
 - [x] **Panel de Configuración del Tema**:
-    - Apartados: Texto, Color, Páginas.
+    - Apartados: Texto, Color, Páginas, Componentes.
     - **Texto**: Configurar fuentes, tamaños, colores por defecto para p, h1, h2, etc.
     - **Colores**: Selector de color personalizado con paleta de colores por defecto (editable por usuario).
+    - **Componentes**: Configuración global de defaults para cada rol (incluyendo Ancho Máximo).
 
 #### Componentes y UI Avanzada
 - [x] **Componente `gloryTexto`**:
@@ -293,13 +294,13 @@ El usuario ve "50" y sabe exactamente qué tiene el elemento.
 
 | Problema | Estado | Notas |
 |----------|--------|-------|
-| Altura no cargaba 'Automática' por defecto | ❌ PENDIENTE | Select aparece vacío, debe cargar default si existe |
-| Padding no cambiaba visualmente al borrar | ❌ PENDIENTE | Se queda en 50px aunque muestre placeholder de 20px |
-| Alineación mostraba vacía | ❌ PENDIENTE | Aparece vacía, además debería ser icon-group no select |
-| Color leía incorrectamente de clases CSS | ❌ PENDIENTE | Sigue mostrando #1d8ff1 en lugar de #f0f0f0 (valor inline) |
-| Ancho máximo mostraba NaN | ✅ Parcial | Corregido NaN, pero campo necesita rediseño |
-| Layout no mostraba opciones condicionales | ✅ OK | Funciona correctamente |
-| Color no mostraba placeholder del valor original | ❌ PENDIENTE | Placeholder muestra #1d8ff1 incorrecto |
+| Altura no cargaba 'Automática' por defecto | ✅ OK | Corregido (fallback a defaultValue en select.js) |
+| Padding no cambiaba visualmente al borrar | ✅ OK | Corregido (agregado shorthands a styleManager.js) |
+| Alineación mostraba vacía | ✅ OK | Corregido (cambiado a icon-group y defaults) |
+| Color leía incorrectamente de clases CSS | ✅ OK | Corregido (mapeo correcto de background-color en config.js) |
+| Ancho máximo mostraba NaN | ✅ OK | Corregido y mejorado con input de texto flexible |
+| Layout no mostraba opciones condicionales | ✅ OK | Funciona correctamente (defaults en panel-render.js) |
+| Color no mostraba placeholder del valor original | ✅ OK | Corregido (sincronización correcta en config.js) |
 
 ### Revisión de Usuario (Diciembre 2025)
 
@@ -328,36 +329,6 @@ El usuario ve "50" y sabe exactamente qué tiene el elemento.
    - Solo cambia el placeholder a 20px pero el elemento mantiene el estilo inline
 
 5. **Layout**: ✅ Funciona correctamente
-
----
-
-### Tareas Pendientes Prioritarias
-
-#### 🔴 Crítico: Color de fondo
-- [ ] Investigar por qué `getComputedStyle` devuelve #1d8ff1 en lugar de #f0f0f0
-- [ ] Verificar que la función `rgbToHex` convierte correctamente
-- [ ] El placeholder debe mostrar el valor inline original, no un valor incorrecto
-
-#### 🔴 Crítico: Padding no se limpia visualmente
-- [ ] Verificar que `styleManager.js` realmente limpia las propiedades inline
-- [ ] El estilo `padding: 50px` del HTML debe quitarse cuando se borra en el panel
-- [ ] El elemento debe heredar de las variables CSS del tema (20px)
-
-#### 🟡 Medio: Selects vacíos
-- [ ] Los selects no deben forzar selección si no hay valor
-- [ ] Solo mostrar seleccionado si existe valor real (config, computedStyle diferente a default, o themeDefault explícito)
-- [ ] Revisar lógica de `getEffectiveValue` para estos casos
-
-#### 🟡 Medio: Cambiar Alineación a icon-group
-- [ ] Modificar `ContainerRegistry.php`: cambiar `tipo` de `select` a `icon_group`
-- [ ] Agregar íconos SVG apropiados para cada opción (left, center, right, justify, inherit)
-
-#### 🟢 Menor: Campo Ancho Máximo
-- [ ] Reemplazar el slider por un input numérico con íconos
-- [ ] Incluir ícono de "desactivado" (sin límite)
-- [ ] Incluir ícono de "automático"
-
----
 
 
 ---
@@ -614,26 +585,31 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 - [x] Opciones de altura para divs (auto, mínimo, altura completa)
 - [x] Selector flex/grid con opciones condicionales
 - [x] Sistema de persistencia AJAX (`gbn_save_config`)
-- [x] Cliente JS de persistencia con botón Guardar
-- [x] Función de restauración (`gbn_restore_page`)
-- [x] Drag & Drop moderno con indicadores visuales
-- [x] Modal de biblioteca para insertar bloques
-- [x] Eliminación de bloques desde UI
-- [x] Sincronización bidireccional DOM ↔ Estado
-- [x] Panel de configuración del tema (colores, fuentes, defaults)
-- [x] Panel de configuración de página (background, padding, overrides)
-
-### 🔄 Fase 2 - Maduración (EN PROGRESO)
-- [x] Componente `gloryTexto` con cambio dinámico de etiqueta
-- [x] Layout con iconos (flex/grid) reemplazando selects
-- [x] Width fraccionario para bloques secundarios
-- [x] Diferenciación de paneles por color (azul/naranja/morado)
 - [x] Typography field compuesto
 - [x] Color picker con paleta global editable
 - [x] Template discovery para `gloryContentRender`
 - [/] gloryContentRender avanzado (opciones completas de Avada)
 - [ ] Layout grid con opciones completas (columns, gap, auto-flow)
 - [ ] Editor de texto enriquecido para componente texto
+
+- [ ] Editor de texto enriquecido para componente texto
+
+---
+
+## 🚨 NUEVAS PRIORIDADES CRÍTICAS (Diciembre 2025)
+
+#### 🔴 Crítico: Ancho Máximo no funciona
+- [ ] **Problema**: La opción de "Ancho Máximo" no está aplicando cambios ni en los divs principales ni en la configuración de página.
+- [ ] **Acción**: Revisar la aplicación de estilos CSS para `max-width` en `styleManager.js` y `theme-applicator.js`. Verificar si el CSS global `max-width: 100%` está interfiriendo o si falta la lógica de aplicación.
+
+#### 🔴 Crítico: Opciones de Layout en Configuración del Tema
+- [ ] **Problema**: En "Theme Settings > Componentes", el layout aparece como 'flexbox' pero las opciones dependientes (dirección, wrap, etc.) están ocultas hasta que se hace clic de nuevo.
+- [ ] **Causa probable**: El `render.js` del tema no está disparando la lógica de visibilidad condicional al cargar el formulario inicial, similar al bug que se arregló en el panel principal.
+
+#### 🟡 Refactorización: Automatización de Opciones de Componentes (SOLID)
+- [ ] **Problema**: La lógica actual en `renderThemeSettingsForm` define manualmente qué campos mostrar para cada componente, lo cual es repetitivo y propenso a errores.
+- [ ] **Propuesta**: Refactorizar para iterar automáticamente sobre `ContainerRegistry.getRoleDefaults(role).schema`.
+- [ ] **Objetivo**: Que cualquier nuevo campo añadido al schema del componente aparezca automáticamente en la configuración global del tema sin tocar `render.js`.
 
 ### 📋 Fase 3 - Expansión (PLANIFICADO)
 - [ ] Adaptación de componentes agnósticos (`GloryImage`, etc.)
