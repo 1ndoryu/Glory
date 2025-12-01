@@ -131,6 +131,38 @@
             config: settings || {}
         };
         
+        // Merge defaults for components if not present
+        if (!mockBlock.config.components) mockBlock.config.components = {};
+        
+        if (Gbn.content && Gbn.content.roles && Gbn.content.roles.getMap) {
+            var roles = Gbn.content.roles.getMap();
+            Object.keys(roles).forEach(function(role) {
+                var defaults = Gbn.content.roles.getRoleDefaults(role);
+                if (defaults && defaults.config) {
+                    // Only set if not already set
+                    if (!mockBlock.config.components[role]) {
+                        mockBlock.config.components[role] = {};
+                    }
+                    // Deep merge or just copy missing keys?
+                    // Let's copy missing keys from defaults.config to mockBlock.config.components[role]
+                    // But wait, defaults.config has keys like 'padding', 'background', etc.
+                    // We need to map them.
+                    // Actually, the schema uses IDs like 'components.principal.padding'.
+                    // So updateConfigValue will store them in config.components.principal.padding.
+                    // So we just need to ensure config.components.principal has the default values.
+                    
+                    var compDefaults = defaults.config;
+                    var currentComp = mockBlock.config.components[role];
+                    
+                    Object.keys(compDefaults).forEach(function(key) {
+                        if (currentComp[key] === undefined) {
+                            currentComp[key] = compDefaults[key];
+                        }
+                    });
+                }
+            });
+        }
+        
         // Initial apply
         applyThemeSettings(mockBlock.config);
         
@@ -164,6 +196,11 @@
                     id: 'pages', 
                     label: 'Páginas', 
                     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>' 
+                },
+                {
+                    id: 'components',
+                    label: 'Componentes',
+                    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M2 12l4-4m-4 4l4 4M22 12l-4-4m4 4l-4 4"/></svg>'
                 }
             ];
             
@@ -355,6 +392,36 @@
                     { tipo: 'color', id: 'pages.background', etiqueta: 'Fondo Default', defecto: '#ffffff' },
                     { tipo: 'spacing', id: 'pages.padding', etiqueta: 'Padding Default', defecto: 20 }
                 ];
+            } else if (sectionId === 'components') {
+                // Dynamic Component Defaults
+                if (Gbn.content && Gbn.content.roles && Gbn.content.roles.getMap) {
+                    var roles = Gbn.content.roles.getMap();
+                    var roleKeys = Object.keys(roles);
+                    
+                    // Filter roles that have defaults/schema
+                    roleKeys.forEach(function(role) {
+                        var defaults = Gbn.content.roles.getRoleDefaults(role);
+                        if (defaults && defaults.schema && defaults.schema.length > 0) {
+                            // Filter relevant fields for global defaults (style related)
+                            var allowedTypes = ['color', 'spacing', 'typography', 'slider', 'icon_group', 'select'];
+                            var relevantFields = defaults.schema.filter(function(f) {
+                                return allowedTypes.indexOf(f.tipo) !== -1 && f.id !== 'texto' && f.id !== 'tag';
+                            });
+                            
+                            if (relevantFields.length > 0) {
+                                schema.push({ tipo: 'header', etiqueta: role.charAt(0).toUpperCase() + role.slice(1) });
+                                relevantFields.forEach(function(field) {
+                                    // Clone field to avoid modifying original schema
+                                    var f = Gbn.utils.assign({}, field);
+                                    // Prefix id with components.{role}.
+                                    f.id = 'components.' + role + '.' + f.id;
+                                    // Adjust label if needed? Maybe not.
+                                    schema.push(f);
+                                });
+                            }
+                        }
+                    });
+                }
             }
             
             var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;

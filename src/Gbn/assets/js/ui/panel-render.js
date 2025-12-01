@@ -373,9 +373,14 @@
             var current = cloneConfig(block.config);
             var segments = path.split('.');
             var cursor = current;
+            
+            // Ensure path exists
             for (var i = 0; i < segments.length - 1; i++) {
-                if (!cursor[segments[i]]) cursor[segments[i]] = {};
-                cursor = cursor[segments[i]];
+                var key = segments[i];
+                if (!cursor[key] || typeof cursor[key] !== 'object') {
+                    cursor[key] = {};
+                }
+                cursor = cursor[key];
             }
             cursor[segments[segments.length - 1]] = value;
             

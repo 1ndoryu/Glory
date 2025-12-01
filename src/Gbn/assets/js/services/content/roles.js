@@ -71,6 +71,7 @@
                         id: 'layout', 
                         tipo: 'icon_group', 
                         etiqueta: 'Layout', 
+                        defecto: 'flex',
                         opciones: [
                             {valor: 'block', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>', etiqueta: 'Bloque'},
                             {valor: 'flex', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>', etiqueta: 'Flexbox'},
@@ -85,12 +86,14 @@
                         min: 0, 
                         max: 120, 
                         paso: 2,
+                        defecto: 0,
                         condicion: ['layout', 'flex'] // Also for grid, logic handled in panel-render
                     },
                     { 
                         id: 'direction', // Note: PHP uses flexDirection, JS defaults used direction. Let's align to PHP if possible, but panel-render handles both.
                         tipo: 'icon_group', 
                         etiqueta: 'Dirección', 
+                        defecto: 'row',
                         condicion: ['layout', 'flex'],
                         opciones: [
                             { valor: 'row', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 12h16m-4-4l4 4-4 4"/></svg>', etiqueta: 'Fila' },
@@ -101,6 +104,7 @@
                         id: 'wrap', 
                         tipo: 'icon_group', 
                         etiqueta: 'Wrap', 
+                        defecto: 'wrap',
                         condicion: ['layout', 'flex'],
                         opciones: [
                             { valor: 'nowrap', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>', etiqueta: 'No Wrap' },
@@ -111,6 +115,7 @@
                         id: 'justify', 
                         tipo: 'icon_group', 
                         etiqueta: 'Justify Content', 
+                        defecto: 'flex-start',
                         condicion: ['layout', 'flex'],
                         opciones: [
                             { valor: 'flex-start', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 6h4M4 12h4M4 18h4"/></svg>', etiqueta: 'Start' },
@@ -123,6 +128,7 @@
                         id: 'align', 
                         tipo: 'icon_group', 
                         etiqueta: 'Align Items', 
+                        defecto: 'stretch',
                         condicion: ['layout', 'flex'],
                         opciones: [
                             { valor: 'flex-start', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 6h16M4 10h16"/></svg>', etiqueta: 'Start' },
@@ -138,6 +144,7 @@
                         min: 1,
                         max: 12,
                         paso: 1,
+                        defecto: 4,
                         condicion: ['layout', 'grid']
                     },
                     {
@@ -148,10 +155,11 @@
                         min: 0,
                         max: 120,
                         paso: 2,
+                        defecto: 20,
                         condicion: ['layout', 'grid']
                     },
-                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding' },
-                    { id: 'background', tipo: 'color', etiqueta: 'Fondo' }
+                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding', defecto: 20 },
+                    { id: 'background', tipo: 'color', etiqueta: 'Fondo', defecto: 'transparent' }
                 ]
             };
         }
@@ -163,9 +171,9 @@
                     padding: '20px'
                 },
                 schema: [
-                    { id: 'width', tipo: 'fraction', etiqueta: 'Ancho' },
-                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding' },
-                    { id: 'background', tipo: 'color', etiqueta: 'Fondo' }
+                    { id: 'width', tipo: 'fraction', etiqueta: 'Ancho', defecto: '1/1' },
+                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding', defecto: 20 },
+                    { id: 'background', tipo: 'color', etiqueta: 'Fondo', defecto: 'transparent' }
                 ]
             };
         }

@@ -6,14 +6,31 @@
 /* Default Styles for GBN Containers */
 [gloryDiv], [data-gbnPrincipal] {
     display: flex;
-    flex-wrap: wrap;
-    padding: 20px;
+    flex-direction: var(--gbn-principal-direction, row);
+    flex-wrap: var(--gbn-principal-wrap, wrap);
+    justify-content: var(--gbn-principal-justify, flex-start);
+    align-items: var(--gbn-principal-align, stretch);
+    gap: var(--gbn-principal-gap, 0px);
+    padding: var(--gbn-principal-padding, 20px);
+    padding-top: var(--gbn-principal-padding-top, var(--gbn-principal-padding, 20px));
+    padding-right: var(--gbn-principal-padding-right, var(--gbn-principal-padding, 20px));
+    padding-bottom: var(--gbn-principal-padding-bottom, var(--gbn-principal-padding, 20px));
+    padding-left: var(--gbn-principal-padding-left, var(--gbn-principal-padding, 20px));
+    
+    background-color: var(--gbn-principal-background, transparent);
     box-sizing: border-box;
 }
 
 [gloryDivSecundario], [data-gbnSecundario] {
-    padding: 20px;
-    width: 100%;
+    width: var(--gbn-secundario-width, 100%);
+    
+    padding: var(--gbn-secundario-padding, 20px);
+    padding-top: var(--gbn-secundario-padding-top, var(--gbn-secundario-padding, 20px));
+    padding-right: var(--gbn-secundario-padding-right, var(--gbn-secundario-padding, 20px));
+    padding-bottom: var(--gbn-secundario-padding-bottom, var(--gbn-secundario-padding, 20px));
+    padding-left: var(--gbn-secundario-padding-left, var(--gbn-secundario-padding, 20px));
+    
+    background-color: var(--gbn-secundario-background, transparent);
     box-sizing: border-box;
 }
 
@@ -22,4 +39,5 @@
     display: block;
     width: 100%;
     box-sizing: border-box;
+    /* Add defaults if needed, e.g. padding */
 }

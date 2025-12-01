@@ -89,6 +89,47 @@
         if (settings.pages) {
             if (settings.pages.background) root.style.setProperty('--gbn-page-bg', settings.pages.background);
         }
+
+        // Component Defaults
+        if (settings.components) {
+            Object.keys(settings.components).forEach(function(role) {
+                var compSettings = settings.components[role];
+                if (!compSettings) return;
+                
+                Object.keys(compSettings).forEach(function(prop) {
+                    var val = compSettings[prop];
+                    var prefix = '--gbn-' + role + '-' + prop;
+                    
+                    if (val === null || val === undefined || val === '') return;
+
+                    // Handle complex types
+                    if (prop === 'typography') {
+                        // Typography object: size, font, lineHeight, etc.
+                        // We map to --gbn-{role}-text-{prop} to avoid conflict or just --gbn-{role}-{prop}
+                        // Let's use --gbn-{role}-text-size etc. to match text settings pattern if possible,
+                        // OR just --gbn-{role}-font-size.
+                        // Given the schema uses 'typography' type, val is an object.
+                        if (val.size) root.style.setProperty('--gbn-' + role + '-font-size', toCssValue(val.size));
+                        if (val.font && val.font !== 'System') root.style.setProperty('--gbn-' + role + '-font-family', val.font);
+                        if (val.lineHeight) root.style.setProperty('--gbn-' + role + '-line-height', val.lineHeight);
+                        if (val.letterSpacing) root.style.setProperty('--gbn-' + role + '-letter-spacing', toCssValue(val.letterSpacing));
+                        if (val.transform) root.style.setProperty('--gbn-' + role + '-text-transform', val.transform);
+                        if (val.weight) root.style.setProperty('--gbn-' + role + '-font-weight', val.weight);
+                    } else if (prop === 'padding' && typeof val === 'object') {
+                        // Spacing object
+                        root.style.setProperty(prefix + '-top', toCssValue(val.superior));
+                        root.style.setProperty(prefix + '-right', toCssValue(val.derecha));
+                        root.style.setProperty(prefix + '-bottom', toCssValue(val.inferior));
+                        root.style.setProperty(prefix + '-left', toCssValue(val.izquierda));
+                        // Also set shorthand if possible, but vars are usually individual.
+                        // Let's set individual vars.
+                    } else {
+                        // Simple value (color, gap, etc.)
+                        root.style.setProperty(prefix, toCssValue(val));
+                    }
+                });
+            });
+        }
     }
 
     // Expose functions
