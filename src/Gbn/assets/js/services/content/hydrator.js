@@ -51,22 +51,22 @@
             claseItem: 'glory-content-item',
             argumentosConsulta: {}
         }, block.meta.options || {}, block.config || {});
-        var payload = {
-            postType: block.meta.postType || opts.postType || 'post',
-            publicacionesPorPagina: opts.publicacionesPorPagina,
-            claseContenedor: opts.claseContenedor,
-            claseItem: opts.claseItem,
-            argumentosConsulta: JSON.stringify(opts.argumentosConsulta || {})
-        };
         
+        // Send all options to backend to support dynamic CSS generation
+        var payload = utils.assign({}, opts);
+        
+        // Overrides and specific handling
+        payload.postType = block.meta.postType || opts.postType || 'post';
+        payload.argumentosConsulta = JSON.stringify(opts.argumentosConsulta || {});
+        
+        // Generate instanceId based on block ID for unique CSS scoping
+        payload.instanceId = 'gbn-cr-' + block.id;
+
         // Ensure plantilla from meta options is used if not present in config (fix for null override)
         if (!opts.plantilla && block.meta.options && block.meta.options.plantilla) {
-            opts.plantilla = block.meta.options.plantilla;
+            payload.plantilla = block.meta.options.plantilla;
         }
 
-        if (opts.plantilla) {
-            payload.plantilla = opts.plantilla;
-        }
         utils.debug('Solicitando contenido', payload);
         block.element.classList.add('gbn-loading');
         ajaxFn('obtenerHtmlLista', payload).then(function (res) {

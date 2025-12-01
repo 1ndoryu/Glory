@@ -84,6 +84,48 @@
             }
 
             // Manejar otras propiedades comunes
+            if (cssProp === 'display') {
+                if (cssValue === 'flex' || cssValue === 'grid' || cssValue === 'block') {
+                    config.display_mode = cssValue;
+                }
+                return;
+            }
+
+            if (cssProp === 'gap') {
+                config.gap = cssValue;
+                return;
+            }
+
+            if (cssProp === 'flex-direction') {
+                config.flex_direction = cssValue;
+                return;
+            }
+
+            if (cssProp === 'flex-wrap') {
+                config.flex_wrap = cssValue;
+                return;
+            }
+
+            if (cssProp === 'justify-content') {
+                config.justify_content = cssValue;
+                return;
+            }
+
+            if (cssProp === 'align-items') {
+                config.align_items = cssValue;
+                return;
+            }
+
+            if (cssProp === 'grid-template-columns') {
+                // Intentar inferir el número de columnas si es un repeat simple
+                // Ej: repeat(4, 1fr)
+                var match = cssValue.match(/repeat\((\d+)/);
+                if (match) {
+                    config.grid_columns = parseInt(match[1], 10);
+                }
+                return;
+            }
+
             if (cssProp === 'height') {
                 if (cssValue === 'min-content') {
                     config.height = 'min-content';

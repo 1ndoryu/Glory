@@ -126,7 +126,7 @@
         }
         global.dispatchEvent(event);
 
-        var conditionalFields = ['layout'];
+        var conditionalFields = ['layout', 'display_mode', 'img_show', 'title_show', 'interaccion_modo'];
         if (conditionalFields.indexOf(path) !== -1) {
             // Re-render controls
             // We need access to the container. 

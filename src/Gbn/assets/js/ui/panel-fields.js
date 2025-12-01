@@ -542,13 +542,37 @@
     }
 
     function shouldShowField(block, field) {
-        if (!field || !field.condicion || !Array.isArray(field.condicion) || field.condicion.length !== 2) {
-            return true; // Mostrar si no hay condición
+        if (!field || !field.condicion || !Array.isArray(field.condicion)) {
+            return true;
         }
-        var conditionField = field.condicion[0];
-        var conditionValue = field.condicion[1];
-        var currentValue = getConfigValue(block, conditionField);
-        return currentValue === conditionValue;
+        
+        var cond = field.condicion;
+        var key, operator, value;
+
+        // Support [key, value] (implicit equality)
+        if (cond.length === 2) {
+            key = cond[0];
+            operator = '==';
+            value = cond[1];
+        } 
+        // Support [key, operator, value]
+        else if (cond.length === 3) {
+            key = cond[0];
+            operator = cond[1];
+            value = cond[2];
+        } else {
+            return true; // Malformed, show by default
+        }
+
+        var current = getConfigValue(block, key);
+
+        switch (operator) {
+            case '==': return current === value;
+            case '!=': return current !== value;
+            case 'in': return Array.isArray(value) && value.indexOf(current) !== -1;
+            case '!in': return Array.isArray(value) && value.indexOf(current) === -1;
+            default: return true;
+        }
     }
 
     function buildHeaderField(block, field) {

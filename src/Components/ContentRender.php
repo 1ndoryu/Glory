@@ -55,7 +55,15 @@ class ContentRender
                         ['valor' => 'post', 'etiqueta' => 'Entradas'],
                         ['valor' => 'page', 'etiqueta' => 'Páginas'],
                         ['valor' => 'libro', 'etiqueta' => 'Libros'],
+                        ['valor' => 'servicio', 'etiqueta' => 'Servicios'],
+                        ['valor' => 'portfolio', 'etiqueta' => 'Portafolio'],
                     ],
+                ],
+                [
+                    'id'       => 'plantilla',
+                    'tipo'     => 'text', // Idealmente un select dinámico, pero text por ahora
+                    'etiqueta' => 'Plantilla (ID)',
+                    'descripcion' => 'Ej: plantillaLibro, plantillaServicios',
                 ],
                 [
                     'id'       => 'publicacionesPorPagina',
@@ -69,6 +77,154 @@ class ContentRender
                     'id'       => 'paginacion',
                     'tipo'     => 'toggle',
                     'etiqueta' => 'Activar paginación AJAX',
+                ],
+                // --- Layout Options ---
+                [
+                    'id'       => 'display_mode',
+                    'tipo'     => 'icon_group',
+                    'etiqueta' => 'Modo de Visualización',
+                    'opciones' => [
+                        ['valor' => 'block', 'etiqueta' => 'Bloque', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>'],
+                        ['valor' => 'flex', 'etiqueta' => 'Flexbox', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>'],
+                        ['valor' => 'grid', 'etiqueta' => 'Grid', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>'],
+                    ],
+                    'default'  => 'flex',
+                ],
+                [
+                    'id'       => 'gap',
+                    'tipo'     => 'dimension',
+                    'etiqueta' => 'Espaciado (Gap)',
+                    'default'  => '20px',
+                    'condicion' => ['display_mode', 'in', ['flex', 'grid']],
+                ],
+                // Flex Options
+                [
+                    'id'       => 'flex_direction',
+                    'tipo'     => 'icon_group',
+                    'etiqueta' => 'Dirección Flex',
+                    'opciones' => [
+                        ['valor' => 'row', 'etiqueta' => 'Horizontal', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><path d="M16 8l4 4-4 4"/></svg>'],
+                        ['valor' => 'column', 'etiqueta' => 'Vertical', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16"/><path d="M8 16l4 4 4-4"/></svg>'],
+                    ],
+                    'condicion' => ['display_mode', '==', 'flex'],
+                ],
+                [
+                    'id'       => 'flex_wrap',
+                    'tipo'     => 'icon_group',
+                    'etiqueta' => 'Envolver (Wrap)',
+                    'opciones' => [
+                        ['valor' => 'nowrap', 'etiqueta' => 'No envolver', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/></svg>'],
+                        ['valor' => 'wrap', 'etiqueta' => 'Envolver', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4"/><path d="M8 12l-4 4 4 4"/></svg>'],
+                    ],
+                    'condicion' => ['display_mode', '==', 'flex'],
+                ],
+                [
+                    'id'       => 'justify_content',
+                    'tipo'     => 'icon_group',
+                    'etiqueta' => 'Justificar Contenido',
+                    'opciones' => [
+                        ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="18" rx="1"/></svg>'],
+                        ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="18" rx="1"/></svg>'],
+                        ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="15" y="3" width="6" height="18" rx="1"/></svg>'],
+                        ['valor' => 'space-between', 'etiqueta' => 'Espacio entre', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>'],
+                        ['valor' => 'space-around', 'etiqueta' => 'Espacio alrededor', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/></svg>'],
+                    ],
+                    'condicion' => ['display_mode', '==', 'flex'],
+                ],
+                [
+                    'id'       => 'align_items',
+                    'tipo'     => 'icon_group',
+                    'etiqueta' => 'Alinear Items',
+                    'opciones' => [
+                        ['valor' => 'stretch', 'etiqueta' => 'Estirar', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3v18"/><path d="M20 3v18"/><rect x="8" y="6" width="8" height="12" rx="1"/></svg>'],
+                        ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h16"/><rect x="8" y="7" width="8" height="8" rx="1"/></svg>'],
+                        ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'],
+                        ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21h16"/><rect x="8" y="9" width="8" height="8" rx="1"/></svg>'],
+                    ],
+                    'condicion' => ['display_mode', '==', 'flex'],
+                ],
+                // Grid Options
+                [
+                    'id'       => 'grid_columns',
+                    'tipo'     => 'slider',
+                    'etiqueta' => 'Columnas (Grid)',
+                    'min'      => 1,
+                    'max'      => 12,
+                    'condicion' => ['display_mode', '==', 'grid'],
+                ],
+                [
+                    'id'       => 'grid_min_width',
+                    'tipo'     => 'dimension',
+                    'etiqueta' => 'Ancho Mínimo (Grid)',
+                    'default'  => '250px',
+                    'condicion' => ['display_mode', '==', 'grid'],
+                ],
+                // --- Image Options ---
+                [
+                    'id'       => 'img_show',
+                    'tipo'     => 'toggle',
+                    'etiqueta' => 'Mostrar Imagen',
+                    'default'  => true,
+                ],
+                [
+                    'id'       => 'img_size',
+                    'tipo'     => 'select',
+                    'etiqueta' => 'Tamaño de Imagen',
+                    'opciones' => [
+                        ['valor' => 'thumbnail', 'etiqueta' => 'Miniatura'],
+                        ['valor' => 'medium', 'etiqueta' => 'Medio'],
+                        ['valor' => 'large', 'etiqueta' => 'Grande'],
+                        ['valor' => 'full', 'etiqueta' => 'Completo'],
+                    ],
+                    'condicion' => ['img_show', '==', true],
+                ],
+                [
+                    'id'       => 'img_aspect_ratio',
+                    'tipo'     => 'text',
+                    'etiqueta' => 'Aspect Ratio',
+                    'descripcion' => 'Ej: 16/9, 4/3, 1/1',
+                    'condicion' => ['img_show', '==', true],
+                ],
+                [
+                    'id'       => 'img_object_fit',
+                    'tipo'     => 'select',
+                    'etiqueta' => 'Ajuste de Imagen',
+                    'opciones' => [
+                        ['valor' => 'cover', 'etiqueta' => 'Cover'],
+                        ['valor' => 'contain', 'etiqueta' => 'Contain'],
+                    ],
+                    'condicion' => ['img_show', '==', true],
+                ],
+                // --- Typography Options ---
+                [
+                    'id'       => 'title_show',
+                    'tipo'     => 'toggle',
+                    'etiqueta' => 'Mostrar Título',
+                    'default'  => true,
+                ],
+                [
+                    'id'       => 'title_font_size',
+                    'tipo'     => 'dimension',
+                    'etiqueta' => 'Tamaño Fuente Título',
+                    'condicion' => ['title_show', '==', true],
+                ],
+                [
+                    'id'       => 'title_color',
+                    'tipo'     => 'color',
+                    'etiqueta' => 'Color Título',
+                    'condicion' => ['title_show', '==', true],
+                ],
+                // --- Interaction Options ---
+                [
+                    'id'       => 'interaccion_modo',
+                    'tipo'     => 'select',
+                    'etiqueta' => 'Modo Interacción',
+                    'opciones' => [
+                        ['valor' => 'normal', 'etiqueta' => 'Normal'],
+                        ['valor' => 'carousel', 'etiqueta' => 'Carrusel'],
+                        ['valor' => 'toggle', 'etiqueta' => 'Acordeón (Toggle)'],
+                    ],
+                    'default'  => 'normal',
                 ],
                 [
                     'id'       => 'claseContenedor',
