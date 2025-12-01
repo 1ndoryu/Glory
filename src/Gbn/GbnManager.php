@@ -115,9 +115,33 @@ class GbnManager
                 'file' => '/js/render/styleManager.js',
                 'deps' => ['glory-gbn-state'],
             ],
+            'glory-gbn-content-roles' => [
+                'file' => '/js/services/content/roles.js',
+                'deps' => ['glory-gbn-style'],
+            ],
+            'glory-gbn-content-config' => [
+                'file' => '/js/services/content/config.js',
+                'deps' => ['glory-gbn-content-roles'],
+            ],
+            'glory-gbn-content-dom' => [
+                'file' => '/js/services/content/dom.js',
+                'deps' => ['glory-gbn-content-config'],
+            ],
+            'glory-gbn-content-builder' => [
+                'file' => '/js/services/content/builder.js',
+                'deps' => ['glory-gbn-content-dom'],
+            ],
+            'glory-gbn-content-scanner' => [
+                'file' => '/js/services/content/scanner.js',
+                'deps' => ['glory-gbn-content-builder'],
+            ],
+            'glory-gbn-content-hydrator' => [
+                'file' => '/js/services/content/hydrator.js',
+                'deps' => ['glory-gbn-content-scanner'],
+            ],
             'glory-gbn-services' => [
                 'file' => '/js/services/content.js',
-                'deps' => ['glory-gbn-style'],
+                'deps' => ['glory-gbn-content-hydrator'],
             ],
             'glory-gbn-persistence' => [
                 'file' => '/js/services/persistence.js',
