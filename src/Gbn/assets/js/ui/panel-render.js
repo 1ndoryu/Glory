@@ -181,8 +181,13 @@
             }
             if (config.alineacion && config.alineacion !== 'inherit') { styles['text-align'] = config.alineacion; }
             if (config.maxAncho !== null && config.maxAncho !== undefined && config.maxAncho !== '') {
-                var max = parseFloat(config.maxAncho);
-                styles['max-width'] = !isNaN(max) ? max + 'px' : String(config.maxAncho);
+                var val = String(config.maxAncho).trim();
+                // Si es solo número, agregar px. Si tiene unidad o es texto (auto), dejar tal cual.
+                if (/^-?\d+(\.\d+)?$/.test(val)) {
+                    styles['max-width'] = val + 'px';
+                } else {
+                    styles['max-width'] = val;
+                }
             }
             if (config.fondo) { styles.background = config.fondo; }
             

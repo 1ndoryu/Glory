@@ -59,12 +59,9 @@ final class ContainerRegistry
                     ],
                     [
                         'id' => 'maxAncho',
-                        'tipo' => 'slider',
+                        'tipo' => 'text',
                         'etiqueta' => 'Ancho máximo',
-                        'unidad' => 'px',
-                        'min' => 320,
-                        'max' => 1600,
-                        'paso' => 10,
+                        'defecto' => '1200px',
                     ],
                     [
                         'id' => 'fondo',
