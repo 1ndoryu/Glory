@@ -6,9 +6,10 @@
 
     function toCssValue(val, defaultUnit) {
         if (val === null || val === undefined || val === '') return '';
-        if (typeof val === 'string' && /^[0-9.]+[a-z%]+$/i.test(val)) return val;
-        if (!isNaN(parseFloat(val))) return val + (defaultUnit || 'px');
-        return val;
+        var strVal = String(val).trim();
+        if (/^[0-9.]+[a-z%]+$/i.test(strVal)) return strVal;
+        if (!isNaN(parseFloat(strVal))) return strVal + (defaultUnit || 'px');
+        return strVal;
     }
 
     function applyPageSettings(settings) {
@@ -393,9 +394,13 @@
 // Initialize Settings on Load
 document.addEventListener('DOMContentLoaded', function() {
     // 1. Identify Root
-    var root = document.querySelector('main') || document.body;
-    if (root && !root.hasAttribute('data-gbn-root')) {
-        root.setAttribute('data-gbn-root', 'true');
+    // Check if a root is already defined (e.g. by PHP template)
+    var existingRoot = document.querySelector('[data-gbn-root]');
+    if (!existingRoot) {
+        var root = document.querySelector('main') || document.body;
+        if (root) {
+            root.setAttribute('data-gbn-root', 'true');
+        }
     }
     
     // 2. Load Config

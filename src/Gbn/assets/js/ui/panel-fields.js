@@ -64,7 +64,9 @@
             var input = event.target; var value = input.value.trim(); var unit = wrapper.dataset.unit || unitSelect.value || 'px';
             if (input.__gbnUnit) { input.__gbnUnit.textContent = unit; }
             var path = input.dataset.configPath;
-            var finalValue = value === '' ? null : (isNaN(parseFloat(value)) ? null : value + unit);
+            // Strip any existing unit from value if user typed it
+            var numericVal = parseFloat(value);
+            var finalValue = value === '' ? null : (isNaN(numericVal) ? null : numericVal + unit);
             var api = Gbn.ui && Gbn.ui.panelApi; 
             if (api && api.updateConfigValue && block) { api.updateConfigValue(block, path, finalValue); }
         }
@@ -386,8 +388,10 @@
                 if (api && api.updateConfigValue && block) { 
                     // Auto-append px for size/spacing if number
                     var v = inp.value.trim();
-                    // Let the panel-theme.js handle units via toCssValue, or do it here?
-                    // The user wants "1.3rem" or "14px". Let's save raw string.
+                    // If it's a pure number, append px. If it has unit, leave it.
+                    if (v !== '' && !isNaN(parseFloat(v)) && isFinite(v)) {
+                         v += 'px';
+                    }
                     api.updateConfigValue(block, baseId + '.' + subId, v === '' ? null : v); 
                 }
             });

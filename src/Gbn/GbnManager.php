@@ -64,26 +64,41 @@ class GbnManager
     public static function enqueueAssets(): void
     {
         if (self::isBuilderActive()) { return; }
-        if (!current_user_can('edit_posts')) { return; }
+        
+        // Remove early return for non-editors to allow frontend assets
+        // if (!current_user_can('edit_posts')) { return; }
 
         $baseDir = get_template_directory() . '/Glory/src/Gbn/assets';
         $baseUrl = get_template_directory_uri() . '/Glory/src/Gbn/assets';
 
-        $cssFiles = [
+        // 1. Frontend CSS (Always loaded)
+        $frontendCss = [
             'variables'   => 'variables.css',
             'layout'      => 'layout.css',
             'components'  => 'components.css',
-            'forms'       => 'forms.css',
-            'interactive' => 'interactive.css',
-            'modals'      => 'modals.css',
-            'theme-styles'=> 'theme-styles.css',
-            'gbn'         => 'gbn.css'
+            'gbn'         => 'gbn.css',
+            'theme-styles'=> 'theme-styles.css'
         ];
 
-        foreach ($cssFiles as $handle => $file) {
+        // 2. Builder CSS (Only for editors)
+        $builderCss = [
+            'forms'       => 'forms.css',
+            'interactive' => 'interactive.css',
+            'modals'      => 'modals.css'
+        ];
+
+        foreach ($frontendCss as $handle => $file) {
             $path = $baseDir . '/css/' . $file;
             $ver  = self::resolveVersion($path);
             wp_enqueue_style('glory-gbn-' . $handle, $baseUrl . '/css/' . $file, [], $ver);
+        }
+
+        if (current_user_can('edit_posts')) {
+            foreach ($builderCss as $handle => $file) {
+                $path = $baseDir . '/css/' . $file;
+                $ver  = self::resolveVersion($path);
+                wp_enqueue_style('glory-gbn-' . $handle, $baseUrl . '/css/' . $file, [], $ver);
+            }
         }
 
         if (!wp_script_is('glory-ajax', 'enqueued')) {
@@ -101,7 +116,8 @@ class GbnManager
             wp_enqueue_script('glory-ajax');
         }
 
-        $scripts = [
+        // 3. Frontend Scripts (Always loaded)
+        $frontendScripts = [
             'glory-gbn-core' => [
                 'file' => '/js/core/utils.js',
                 'deps' => ['jquery', 'glory-ajax'],
@@ -143,6 +159,10 @@ class GbnManager
                 'file' => '/js/services/content.js',
                 'deps' => ['glory-gbn-content-hydrator'],
             ],
+        ];
+
+        // 4. Builder Scripts (Only for editors)
+        $builderScripts = [
             'glory-gbn-persistence' => [
                 'file' => '/js/services/persistence.js',
                 'deps' => ['glory-gbn-services'],
@@ -185,7 +205,7 @@ class GbnManager
             ],
         ];
 
-        foreach ($scripts as $handle => $data) {
+        foreach ($frontendScripts as $handle => $data) {
             $filePath = $baseDir . $data['file'];
             $ver = isset($data['ver']) ? $data['ver'] : self::resolveVersion($filePath);
             wp_enqueue_script(
@@ -195,6 +215,20 @@ class GbnManager
                 $ver,
                 true
             );
+        }
+
+        if (current_user_can('edit_posts')) {
+            foreach ($builderScripts as $handle => $data) {
+                $filePath = $baseDir . $data['file'];
+                $ver = isset($data['ver']) ? $data['ver'] : self::resolveVersion($filePath);
+                wp_enqueue_script(
+                    $handle,
+                    $baseUrl . $data['file'],
+                    $data['deps'],
+                    $ver,
+                    true
+                );
+            }
         }
 
         $pageId = get_queried_object_id();
