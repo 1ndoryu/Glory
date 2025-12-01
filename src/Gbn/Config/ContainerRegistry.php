@@ -48,13 +48,13 @@ final class ContainerRegistry
                     ],
                     [
                         'id' => 'alineacion',
-                        'tipo' => 'select',
+                        'tipo' => 'icon_group',
                         'etiqueta' => 'Alineación del contenido',
                         'opciones' => [
-                            ['valor' => 'inherit', 'etiqueta' => 'Hereda'],
-                            ['valor' => 'left', 'etiqueta' => 'Izquierda'],
-                            ['valor' => 'center', 'etiqueta' => 'Centro'],
-                            ['valor' => 'right', 'etiqueta' => 'Derecha'],
+                            ['valor' => 'inherit', 'etiqueta' => 'Hereda', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/></svg>'],
+                            ['valor' => 'left', 'etiqueta' => 'Izquierda', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h12"/></svg>'],
+                            ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M6 18h12"/></svg>'],
+                            ['valor' => 'right', 'etiqueta' => 'Derecha', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M10 12h10"/><path d="M8 18h12"/></svg>'],
                         ],
                     ],
                     [

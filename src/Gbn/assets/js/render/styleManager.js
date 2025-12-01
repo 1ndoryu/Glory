@@ -8,14 +8,15 @@
     
     // Propiedades CSS que GBN puede controlar - se limpian al aplicar nuevos estilos
     var GBN_CONTROLLED_PROPERTIES = [
-        'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+        'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+        'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
         'background', 'background-color',
         'gap', 'row-gap', 'column-gap',
         'display', 'flex-direction', 'flex-wrap', 'justify-content', 'align-items',
         'grid-template-columns', 'grid-template-rows',
         'height', 'max-width', 'width', 'flex-basis', 'flex-shrink', 'flex-grow',
         'text-align', 'color', 'font-size', 'font-family', 'line-height', 
-        'letter-spacing', 'text-transform'
+        'letter-spacing', 'text-transform', 'font', 'border', 'border-radius'
     ];
 
     function ensureStyleElement(id) {

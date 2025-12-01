@@ -187,27 +187,27 @@
             if (config.fondo) { styles.background = config.fondo; }
             
             // Layout logic for principal
-            if (config.layout) {
-                if (config.layout === 'grid') {
-                    styles.display = 'grid';
-                    if (config.gridColumns) {
-                        styles['grid-template-columns'] = 'repeat(' + config.gridColumns + ', 1fr)';
-                    }
-                    if (config.gridRows && config.gridRows !== 'auto') {
-                        styles['grid-template-rows'] = config.gridRows;
-                    }
-                    if (config.gridGap) { styles.gap = config.gridGap + 'px'; }
-                    else if (config.gap) { styles.gap = config.gap + 'px'; }
-                } else if (config.layout === 'flex') {
-                    styles.display = 'flex';
-                    if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
-                    if (config.flexWrap) { styles['flex-wrap'] = config.flexWrap; }
-                    if (config.flexJustify) { styles['justify-content'] = config.flexJustify; }
-                    if (config.flexAlign) { styles['align-items'] = config.flexAlign; }
-                    if (config.gap) { styles.gap = config.gap + 'px'; } // Add gap support for flex too
-                } else {
-                    styles.display = 'block';
+            var layout = config.layout || 'flex'; // Default to flex
+            
+            if (layout === 'grid') {
+                if (config.layout) styles.display = 'grid';
+                if (config.gridColumns) {
+                    styles['grid-template-columns'] = 'repeat(' + config.gridColumns + ', 1fr)';
                 }
+                if (config.gridRows && config.gridRows !== 'auto') {
+                    styles['grid-template-rows'] = config.gridRows;
+                }
+                if (config.gridGap) { styles.gap = config.gridGap + 'px'; }
+                else if (config.gap) { styles.gap = config.gap + 'px'; }
+            } else if (layout === 'flex') {
+                if (config.layout) styles.display = 'flex';
+                if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
+                if (config.flexWrap) { styles['flex-wrap'] = config.flexWrap; }
+                if (config.flexJustify) { styles['justify-content'] = config.flexJustify; }
+                if (config.flexAlign) { styles['align-items'] = config.flexAlign; }
+                if (config.gap) { styles.gap = config.gap + 'px'; }
+            } else {
+                if (config.layout) styles.display = 'block';
             }
             
             return styles;
@@ -237,25 +237,26 @@
                 var gap = parseFloat(config.gap);
                 if (!isNaN(gap)) { styles.gap = gap + 'px'; }
             }
-            if (config.layout) {
-                if (config.layout === 'grid') {
-                    styles.display = 'grid';
-                    if (config.gridColumns) {
-                        styles['grid-template-columns'] = 'repeat(' + config.gridColumns + ', 1fr)';
-                    }
-                    if (config.gridRows && config.gridRows !== 'auto') {
-                        styles['grid-template-rows'] = config.gridRows;
-                    }
-                    if (config.gridGap) { styles.gap = config.gridGap + 'px'; }
-                } else if (config.layout === 'flex') {
-                    styles.display = 'flex';
-                    if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
-                    if (config.flexWrap) { styles['flex-wrap'] = config.flexWrap; }
-                    if (config.flexJustify) { styles['justify-content'] = config.flexJustify; }
-                    if (config.flexAlign) { styles['align-items'] = config.flexAlign; }
-                } else {
-                    styles.display = 'block';
+            
+            var layout = config.layout || 'block'; // Default to block
+            
+            if (layout === 'grid') {
+                if (config.layout) styles.display = 'grid';
+                if (config.gridColumns) {
+                    styles['grid-template-columns'] = 'repeat(' + config.gridColumns + ', 1fr)';
                 }
+                if (config.gridRows && config.gridRows !== 'auto') {
+                    styles['grid-template-rows'] = config.gridRows;
+                }
+                if (config.gridGap) { styles.gap = config.gridGap + 'px'; }
+            } else if (layout === 'flex') {
+                if (config.layout) styles.display = 'flex';
+                if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
+                if (config.flexWrap) { styles['flex-wrap'] = config.flexWrap; }
+                if (config.flexJustify) { styles['justify-content'] = config.flexJustify; }
+                if (config.flexAlign) { styles['align-items'] = config.flexAlign; }
+            } else {
+                if (config.layout) styles.display = 'block';
             }
             return styles;
         },

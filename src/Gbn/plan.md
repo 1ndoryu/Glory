@@ -289,27 +289,73 @@ El usuario ve "50" y sabe exactamente qué tiene el elemento.
 - [x] Panel pasa referencia al elemento DOM (ya disponible en block.element)
 - [x] Tests manuales con inline, clases y defaults
 
-### Correcciones Adicionales (Diciembre 2024)
+### Correcciones Intentadas (Diciembre 2025)
 
-| Problema | Solución |
-|----------|----------|
-| Altura no cargaba 'Automática' por defecto | `select.js` e `icon-group.js` ahora seleccionan primera opción cuando no hay valor |
-| Padding no cambiaba visualmente al borrar | `styleManager.js` ahora limpia propiedades controladas por GBN al actualizar estilos |
-| Alineación mostraba vacía | Ahora muestra 'Hereda' (primera opción) por defecto |
-| Color leía incorrectamente de clases CSS | Mejorada función `rgbToHex` y lectura directa de `computedStyle` |
-| Ancho máximo mostraba NaN | Corregida función `extractNumeric` para ignorar valores CSS especiales (none, auto) |
-| Layout no mostraba opciones condicionales | `shouldShowField` ahora usa `getEffectiveValue` para incluir valores computados |
-| Color no mostraba placeholder del valor original | El placeholder ahora muestra el valor inline/clase original al borrar |
+| Problema | Estado | Notas |
+|----------|--------|-------|
+| Altura no cargaba 'Automática' por defecto | ❌ PENDIENTE | Select aparece vacío, debe cargar default si existe |
+| Padding no cambiaba visualmente al borrar | ❌ PENDIENTE | Se queda en 50px aunque muestre placeholder de 20px |
+| Alineación mostraba vacía | ❌ PENDIENTE | Aparece vacía, además debería ser icon-group no select |
+| Color leía incorrectamente de clases CSS | ❌ PENDIENTE | Sigue mostrando #1d8ff1 en lugar de #f0f0f0 (valor inline) |
+| Ancho máximo mostraba NaN | ✅ Parcial | Corregido NaN, pero campo necesita rediseño |
+| Layout no mostraba opciones condicionales | ✅ OK | Funciona correctamente |
+| Color no mostraba placeholder del valor original | ❌ PENDIENTE | Placeholder muestra #1d8ff1 incorrecto |
 
-### Mejora Pendiente: Campo Ancho Máximo
+### Revisión de Usuario (Diciembre 2025)
 
-**Problema**: El campo slider para `maxAncho` no es ideal para valores ilimitados.
+**Prueba realizada con:**
+```html
+<div gloryDiv style="padding: 50px; background-color: #f0f0f0;">
+```
 
-**Propuesta de mejora** (delegada a implementación futura):
-- Reemplazar el slider por un input numérico con íconos
-- Incluir ícono de "desactivado" (sin límite)
-- Incluir ícono de "automático"
-- Similar al comportamiento de Figma/Sketch para constraints
+**Problemas encontrados:**
+
+1. **Background color incorrecto**: 
+   - El panel muestra #1d8ff1 en lugar de #f0f0f0
+   - El placeholder también muestra #1d8ff1 al borrar
+   - El color no se muestra visualmente en el elemento
+
+2. **Selects aparecen vacíos**:
+   - Altura y Alineación del contenido aparecen sin selección
+   - No se debe forzar un valor, pero si hay un default real definido, debe cargarlo
+   - Solo mostrar seleccionado si realmente hay un valor (config, inline, o default del tema)
+
+3. **Alineación del contenido**:
+   - Actualmente es un `select`, debería ser `icon-group` para consistencia visual
+
+4. **Padding no cambia visualmente al borrar**:
+   - Al borrar el padding en el panel, visualmente se queda en 50px
+   - Solo cambia el placeholder a 20px pero el elemento mantiene el estilo inline
+
+5. **Layout**: ✅ Funciona correctamente
+
+---
+
+### Tareas Pendientes Prioritarias
+
+#### 🔴 Crítico: Color de fondo
+- [ ] Investigar por qué `getComputedStyle` devuelve #1d8ff1 en lugar de #f0f0f0
+- [ ] Verificar que la función `rgbToHex` convierte correctamente
+- [ ] El placeholder debe mostrar el valor inline original, no un valor incorrecto
+
+#### 🔴 Crítico: Padding no se limpia visualmente
+- [ ] Verificar que `styleManager.js` realmente limpia las propiedades inline
+- [ ] El estilo `padding: 50px` del HTML debe quitarse cuando se borra en el panel
+- [ ] El elemento debe heredar de las variables CSS del tema (20px)
+
+#### 🟡 Medio: Selects vacíos
+- [ ] Los selects no deben forzar selección si no hay valor
+- [ ] Solo mostrar seleccionado si existe valor real (config, computedStyle diferente a default, o themeDefault explícito)
+- [ ] Revisar lógica de `getEffectiveValue` para estos casos
+
+#### 🟡 Medio: Cambiar Alineación a icon-group
+- [ ] Modificar `ContainerRegistry.php`: cambiar `tipo` de `select` a `icon_group`
+- [ ] Agregar íconos SVG apropiados para cada opción (left, center, right, justify, inherit)
+
+#### 🟢 Menor: Campo Ancho Máximo
+- [ ] Reemplazar el slider por un input numérico con íconos
+- [ ] Incluir ícono de "desactivado" (sin límite)
+- [ ] Incluir ícono de "automático"
 
 ---
 

@@ -68,11 +68,56 @@
             'padding-left': 'padding.izquierda'
         };
 
+        // Helper para expandir shorthands (1, 2, 3, 4 valores)
+        function expandShorthand(value) {
+            if (!value) return null;
+            var parts = String(value).trim().split(/\s+/);
+            if (parts.length === 1) {
+                return { top: parts[0], right: parts[0], bottom: parts[0], left: parts[0] };
+            }
+            if (parts.length === 2) {
+                return { top: parts[0], right: parts[1], bottom: parts[0], left: parts[1] };
+            }
+            if (parts.length === 3) {
+                return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[1] };
+            }
+            if (parts.length >= 4) {
+                return { top: parts[0], right: parts[1], bottom: parts[2], left: parts[3] };
+            }
+            return null;
+        }
+
         // Procesar estilos inline y mapearlos a la configuración
         Object.keys(inlineStyles).forEach(function(cssProp) {
             var cssValue = inlineStyles[cssProp];
 
-            // Manejar propiedades de espaciado
+            // Expandir shorthands de padding
+            if (cssProp === 'padding') {
+                var expanded = expandShorthand(cssValue);
+                if (expanded) {
+                    if (!config.padding) config.padding = {};
+                    config.padding.superior = expanded.top;
+                    config.padding.derecha = expanded.right;
+                    config.padding.inferior = expanded.bottom;
+                    config.padding.izquierda = expanded.left;
+                }
+                return;
+            }
+
+            // Expandir shorthands de margin (aunque GBN no usa margin en config por defecto, es bueno tenerlo)
+            if (cssProp === 'margin') {
+                var expanded = expandShorthand(cssValue);
+                if (expanded) {
+                    if (!config.margin) config.margin = {};
+                    config.margin.superior = expanded.top;
+                    config.margin.derecha = expanded.right;
+                    config.margin.inferior = expanded.bottom;
+                    config.margin.izquierda = expanded.left;
+                }
+                return;
+            }
+
+            // Manejar propiedades de espaciado individuales
             if (spacingMap[cssProp]) {
                 var configPath = spacingMap[cssProp];
                 var segments = configPath.split('.');
@@ -94,7 +139,7 @@
             // Manejar otras propiedades comunes
             if (cssProp === 'display') {
                 if (cssValue === 'flex' || cssValue === 'grid' || cssValue === 'block') {
-                    config.display_mode = cssValue;
+                    config.layout = cssValue;
                 }
                 return;
             }
@@ -158,6 +203,11 @@
             }
 
             if (cssProp === 'background') {
+                config.fondo = cssValue;
+                return;
+            }
+
+            if (cssProp === 'background-color') {
                 config.fondo = cssValue;
                 return;
             }

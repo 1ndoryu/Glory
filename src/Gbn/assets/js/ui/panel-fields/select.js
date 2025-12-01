@@ -49,11 +49,16 @@
         // Determinar el valor por defecto (primera opción si existe)
         var defaultValue = opciones.length > 0 ? opciones[0].valor : null;
         
-        if (current !== undefined && current !== null && current !== '') {
+        // Verificar si el valor actual existe en las opciones
+        var valueExists = opciones.some(function(opt) {
+            return opt.valor === current;
+        });
+
+        if (current !== undefined && current !== null && current !== '' && valueExists) {
             select.value = current;
             wrapper.classList.add('gbn-field-override');
         } else {
-            // Sin valor guardado: usar la primera opción como default visual
+            // Sin valor guardado o valor no coincidente: usar la primera opción como default visual
             if (defaultValue !== null) {
                 select.value = defaultValue;
             }
