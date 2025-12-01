@@ -24,19 +24,30 @@
         var effective = u.getEffectiveValue(block, field.id);
         var current = effective.value;
         var opciones = Array.isArray(field.opciones) ? field.opciones : [];
+        var defaultValue = opciones.length > 0 ? opciones[0].valor : null;
         
         // Para propiedades de layout, normalizar valor computado a opciones
         if (effective.source === 'computed' && current) {
+            // Mapear valores CSS a valores de opciones
+            var found = false;
             opciones.forEach(function(opt) {
                 if (opt.valor === current || 
                     String(opt.valor).toLowerCase() === String(current).toLowerCase()) {
                     current = opt.valor;
+                    found = true;
                 }
             });
+            // Si no se encontró coincidencia exacta, intentar mapeo especial
+            if (!found && field.id === 'layout') {
+                if (current === 'flex') current = 'flex';
+                else if (current === 'grid') current = 'grid';
+                else current = 'block';
+            }
         }
         
-        // Indicar visualmente si es heredado o override
-        if (effective.source === 'none') {
+        // Si no hay valor, usar el default (primera opción)
+        if (current === undefined || current === null || current === '') {
+            current = defaultValue;
             wrapper.classList.add('gbn-field-inherited');
         } else {
             wrapper.classList.add('gbn-field-override');

@@ -232,6 +232,7 @@
 
     /**
      * Evalúa si un campo debe mostrarse basado en su condición
+     * Usa getEffectiveValue para incluir valores computados del DOM
      * @param {Object} block - Bloque actual
      * @param {Object} field - Definición del campo
      * @returns {boolean}
@@ -256,7 +257,16 @@
             return true;
         }
 
-        var current = getConfigValue(block, key);
+        // Usar getEffectiveValue para incluir valores computados del DOM
+        var effective = getEffectiveValue(block, key);
+        var current = effective.value;
+        
+        // Para 'layout', mapear 'flex' desde computedStyle 'display: flex'
+        if (key === 'layout' && effective.source === 'computed') {
+            if (current === 'flex') current = 'flex';
+            else if (current === 'grid') current = 'grid';
+            else if (current === 'block' || current === 'block flow') current = 'block';
+        }
 
         switch (operator) {
             case '==': return current === value;

@@ -5,6 +5,18 @@
     var utils = Gbn.utils;
     var state = Gbn.state;
     var STYLE_ATTR = 'data-gbn-style';
+    
+    // Propiedades CSS que GBN puede controlar - se limpian al aplicar nuevos estilos
+    var GBN_CONTROLLED_PROPERTIES = [
+        'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
+        'background', 'background-color',
+        'gap', 'row-gap', 'column-gap',
+        'display', 'flex-direction', 'flex-wrap', 'justify-content', 'align-items',
+        'grid-template-columns', 'grid-template-rows',
+        'height', 'max-width', 'width', 'flex-basis', 'flex-shrink', 'flex-grow',
+        'text-align', 'color', 'font-size', 'font-family', 'line-height', 
+        'letter-spacing', 'text-transform'
+    ];
 
     function ensureStyleElement(id) {
         var selector = 'style[' + STYLE_ATTR + '="' + id + '"]';
@@ -20,11 +32,34 @@
     }
 
     function applyInlineStyles(block, styles) {
-        if (!block || !block.element || !styles) {
+        if (!block || !block.element) {
             return;
         }
+        styles = styles || {};
+        
+        // Leer estilos actuales
         var currentInline = utils.parseStyleString(block.element.getAttribute('style') || '');
-        var merged = utils.assign({}, currentInline, styles);
+        
+        // Limpiar propiedades controladas por GBN que no están en los nuevos estilos
+        // Esto permite que los valores borrados vuelvan al default del tema
+        var cleanedInline = {};
+        Object.keys(currentInline).forEach(function(prop) {
+            var propLower = prop.toLowerCase();
+            // Si la propiedad está controlada por GBN y no viene en los nuevos estilos, no la incluimos
+            if (GBN_CONTROLLED_PROPERTIES.indexOf(propLower) !== -1) {
+                // Solo mantener si viene en los nuevos estilos
+                if (styles[prop] !== undefined || styles[propLower] !== undefined) {
+                    cleanedInline[prop] = currentInline[prop];
+                }
+                // Si no viene en styles, se limpia (no se incluye)
+            } else {
+                // Propiedades no controladas por GBN se mantienen
+                cleanedInline[prop] = currentInline[prop];
+            }
+        });
+        
+        // Mezclar con los nuevos estilos
+        var merged = utils.assign({}, cleanedInline, styles);
         var styleString = utils.stringifyStyles(merged);
         if (styleString) {
             block.element.setAttribute('style', styleString);

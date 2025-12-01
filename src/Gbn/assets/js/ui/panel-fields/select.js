@@ -46,18 +46,35 @@
             });
         }
         
+        // Determinar el valor por defecto (primera opción si existe)
+        var defaultValue = opciones.length > 0 ? opciones[0].valor : null;
+        
         if (current !== undefined && current !== null && current !== '') {
             select.value = current;
             wrapper.classList.add('gbn-field-override');
-        } else if (effective.placeholder) {
-            // Si hay placeholder (theme default), podría mostrarse de alguna forma
+        } else {
+            // Sin valor guardado: usar la primera opción como default visual
+            if (defaultValue !== null) {
+                select.value = defaultValue;
+            }
             wrapper.classList.add('gbn-field-inherited');
         }
         
         select.addEventListener('change', function () {
             var api = Gbn.ui && Gbn.ui.panelApi;
             if (api && api.updateConfigValue && block) {
-                api.updateConfigValue(block, field.id, select.value);
+                var newValue = select.value;
+                // Si se selecciona el valor default (primera opción), limpiar el config
+                // para que herede del tema o CSS
+                if (newValue === defaultValue && effective.source !== 'config') {
+                    newValue = null;
+                    wrapper.classList.remove('gbn-field-override');
+                    wrapper.classList.add('gbn-field-inherited');
+                } else {
+                    wrapper.classList.add('gbn-field-override');
+                    wrapper.classList.remove('gbn-field-inherited');
+                }
+                api.updateConfigValue(block, field.id, newValue);
             }
         });
         

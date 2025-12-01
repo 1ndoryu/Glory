@@ -40,11 +40,19 @@
         var displayValue;
         
         // Extraer valor numérico de valores con unidad (ej: "20px" -> 20)
+        // Retorna null si el valor es "none", "auto" o no numérico
         function extractNumeric(val) {
             if (val === null || val === undefined || val === '') return null;
             if (typeof val === 'number') return val;
+            // Ignorar valores CSS especiales que no son numéricos
+            var strVal = String(val).toLowerCase().trim();
+            if (strVal === 'none' || strVal === 'auto' || strVal === 'inherit' || strVal === 'initial') {
+                return null;
+            }
             var parsed = u.parseSpacingValue(val);
-            return parsed.valor !== '' ? parseFloat(parsed.valor) : null;
+            var num = parseFloat(parsed.valor);
+            // Verificar que sea un número válido
+            return (!isNaN(num) && isFinite(num)) ? num : null;
         }
         
         var effectiveNumeric = extractNumeric(effective.value);
@@ -52,7 +60,7 @@
         
         if (effective.source === 'none' || effectiveNumeric === null) {
             wrapper.classList.add('gbn-field-inherited');
-            if (themeNumeric !== null) {
+            if (themeNumeric !== null && !isNaN(themeNumeric)) {
                 input.value = themeNumeric;
                 displayValue = themeNumeric + (field.unidad ? field.unidad : '') + ' (auto)';
             } else {

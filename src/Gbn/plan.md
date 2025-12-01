@@ -287,7 +287,29 @@ El usuario ve "50" y sabe exactamente qué tiene el elemento.
 - [x] `slider.js` lee propiedades numéricas
 - [x] `select.js` / `icon-group.js` leen propiedades de layout
 - [x] Panel pasa referencia al elemento DOM (ya disponible en block.element)
-- [ ] Tests manuales con inline, clases y defaults
+- [x] Tests manuales con inline, clases y defaults
+
+### Correcciones Adicionales (Diciembre 2024)
+
+| Problema | Solución |
+|----------|----------|
+| Altura no cargaba 'Automática' por defecto | `select.js` e `icon-group.js` ahora seleccionan primera opción cuando no hay valor |
+| Padding no cambiaba visualmente al borrar | `styleManager.js` ahora limpia propiedades controladas por GBN al actualizar estilos |
+| Alineación mostraba vacía | Ahora muestra 'Hereda' (primera opción) por defecto |
+| Color leía incorrectamente de clases CSS | Mejorada función `rgbToHex` y lectura directa de `computedStyle` |
+| Ancho máximo mostraba NaN | Corregida función `extractNumeric` para ignorar valores CSS especiales (none, auto) |
+| Layout no mostraba opciones condicionales | `shouldShowField` ahora usa `getEffectiveValue` para incluir valores computados |
+| Color no mostraba placeholder del valor original | El placeholder ahora muestra el valor inline/clase original al borrar |
+
+### Mejora Pendiente: Campo Ancho Máximo
+
+**Problema**: El campo slider para `maxAncho` no es ideal para valores ilimitados.
+
+**Propuesta de mejora** (delegada a implementación futura):
+- Reemplazar el slider por un input numérico con íconos
+- Incluir ícono de "desactivado" (sin límite)
+- Incluir ícono de "automático"
+- Similar al comportamiento de Figma/Sketch para constraints
 
 ---
 

@@ -42,34 +42,43 @@
             }
         }
         
-        // Función para convertir rgb() a hex
+        // Función para convertir rgb()/rgba() a hex
         function rgbToHex(rgb) {
             if (!rgb || rgb === 'transparent' || rgb === 'rgba(0, 0, 0, 0)') return null;
-            if (rgb.startsWith('#')) return rgb;
-            var match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (typeof rgb !== 'string') return null;
+            rgb = rgb.trim();
+            if (rgb.startsWith('#')) return rgb.toLowerCase();
+            // Regex más flexible para rgb/rgba con o sin espacios
+            var match = rgb.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
             if (!match) return null;
             var r = parseInt(match[1], 10);
             var g = parseInt(match[2], 10);
             var b = parseInt(match[3], 10);
-            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            // Validar rangos
+            if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) return null;
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toLowerCase();
+        }
+        
+        // Leer valor computado directamente para colores
+        var computedColor = null;
+        var computedColorHex = null;
+        if (block.element) {
+            computedColor = u.getComputedValue(block.element, 'backgroundColor');
+            if (computedColor && computedColor !== 'transparent' && computedColor !== 'rgba(0, 0, 0, 0)') {
+                computedColorHex = rgbToHex(computedColor);
+            }
         }
         
         // Usar getEffectiveValue para obtener el valor correcto
         var effective = u.getEffectiveValue(block, field.id);
         var themeDefault = u.getThemeDefault(block.role, field.id);
+        var themeDefaultHex = themeDefault ? rgbToHex(themeDefault) || themeDefault : null;
         
-        // Si no hay valor en config ni computedStyle devolvió algo diferente,
-        // intentamos leer directamente del computedStyle para colores
-        if (effective.source === 'none' && block.element) {
-            var computedBg = u.getComputedValue(block.element, 'backgroundColor');
-            if (computedBg && computedBg !== 'transparent' && computedBg !== 'rgba(0, 0, 0, 0)') {
-                var hexBg = rgbToHex(computedBg);
-                var hexTheme = themeDefault ? rgbToHex(themeDefault) : null;
-                // Si es diferente al theme default, mostrarlo
-                if (hexBg && hexBg !== hexTheme) {
-                    effective.value = hexBg;
-                    effective.source = 'computed';
-                }
+        // Si no hay valor en config, usar el valor computado si existe y es diferente al tema
+        if (effective.source === 'none' && computedColorHex) {
+            if (computedColorHex !== themeDefaultHex) {
+                effective.value = computedColorHex;
+                effective.source = 'computed';
             }
         }
         
@@ -79,19 +88,21 @@
             if (hexValue) effective.value = hexValue;
         }
         
+        // Guardar el valor original computado para usarlo como placeholder al borrar
+        var originalComputedHex = computedColorHex;
+        
         if (effective.source === 'none' || !effective.value) {
             wrapper.classList.add('gbn-field-inherited');
-            if (themeDefault) {
-                inputColor.value = themeDefault;
-                inputText.placeholder = themeDefault;
-            } else {
-                inputColor.value = field.defecto || '#000000';
-                inputText.placeholder = field.defecto || '#000000';
-            }
+            // Usar el color computado como placeholder si existe, sino el theme default
+            var placeholderColor = originalComputedHex || themeDefaultHex || field.defecto || '#000000';
+            inputColor.value = placeholderColor;
+            inputText.placeholder = placeholderColor;
         } else {
             wrapper.classList.add('gbn-field-override');
             inputColor.value = effective.value;
             inputText.value = effective.value;
+            // Placeholder es el valor original (computado o tema)
+            inputText.placeholder = originalComputedHex || themeDefaultHex || field.defecto || '#000000';
         }
         
         inputColor.dataset.role = block.role;
