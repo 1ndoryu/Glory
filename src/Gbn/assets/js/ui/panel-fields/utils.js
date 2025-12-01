@@ -24,22 +24,38 @@
 
     /**
      * Obtiene el valor por defecto del tema para un rol y propiedad específicos
+     * Jerarquía: themeSettings guardados > valores CSS actuales (via cssSync)
      * @param {string} role - Rol del bloque (principal, secundario, etc.)
-     * @param {string} path - Ruta de la propiedad
+     * @param {string} path - Ruta de la propiedad (ej: 'padding.superior')
      * @returns {*} Valor del tema o undefined
      */
     function getThemeDefault(role, path) {
         if (!role) return undefined;
         
+        // 1. Intentar desde themeSettings guardados
         var themeSettings = (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.themeSettings) 
             ? gloryGbnCfg.themeSettings 
             : (Gbn.config && Gbn.config.themeSettings ? Gbn.config.themeSettings : null);
         
-        if (!themeSettings || !themeSettings.components || !themeSettings.components[role]) {
-            return undefined;
+        if (themeSettings && themeSettings.components && themeSettings.components[role]) {
+            var themeVal = getDeepValue(themeSettings.components[role], path);
+            if (themeVal !== undefined && themeVal !== null && themeVal !== '') {
+                return themeVal;
+            }
         }
         
-        return getDeepValue(themeSettings.components[role], path);
+        // 2. Fallback: leer valores actuales desde el CSS via cssSync
+        if (Gbn.cssSync && Gbn.cssSync.readDefaults) {
+            var cssDefaults = Gbn.cssSync.readDefaults();
+            if (cssDefaults && cssDefaults.components && cssDefaults.components[role]) {
+                var cssVal = getDeepValue(cssDefaults.components[role], path);
+                if (cssVal !== undefined && cssVal !== null && cssVal !== '') {
+                    return cssVal;
+                }
+            }
+        }
+        
+        return undefined;
     }
 
     /**

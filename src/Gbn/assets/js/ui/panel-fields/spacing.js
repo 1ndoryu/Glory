@@ -29,20 +29,9 @@
             ? field.campos 
             : ['superior', 'derecha', 'inferior', 'izquierda'];
         
-        var baseConfig = u.getConfigValue(block, field.id);
-        if (!baseConfig && field.defecto !== undefined) {
-            if (typeof field.defecto === 'object') {
-                baseConfig = field.defecto;
-            } else {
-                baseConfig = { 
-                    superior: field.defecto, 
-                    derecha: field.defecto, 
-                    inferior: field.defecto, 
-                    izquierda: field.defecto 
-                };
-            }
-        }
-        baseConfig = baseConfig || {};
+        // Solo usar valores propios del bloque (no heredados del tema)
+        // Los valores del tema van en placeholder, no en value
+        var baseConfig = u.getDeepValue(block.config, field.id) || {};
         
         // Detectar unidad actual
         var unidadActual = unidades[0];
