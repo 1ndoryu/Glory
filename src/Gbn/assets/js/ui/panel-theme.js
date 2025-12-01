@@ -147,20 +147,49 @@
         
         // Component Defaults (Principal, Secundario, etc)
         if (settings.components) {
+             // Helper para aplicar padding descompuesto
+             function applyPadding(prefix, paddingObj) {
+                 if (paddingObj && typeof paddingObj === 'object') {
+                     // Mapeo de nombres en español a nombres CSS
+                     var map = {
+                         superior: 'top',
+                         derecha: 'right',
+                         inferior: 'bottom',
+                         izquierda: 'left'
+                     };
+                     
+                     Object.keys(map).forEach(function(key) {
+                         var cssName = map[key];
+                         var varName = prefix + '-padding-' + cssName;
+                         setOrRemoveValue(varName, paddingObj[key]);
+                     });
+                 } else if (paddingObj) {
+                     // Si es un valor único, aplicarlo a todas las direcciones
+                     ['top', 'right', 'bottom', 'left'].forEach(function(dir) {
+                         setOrRemoveValue(prefix + '-padding-' + dir, paddingObj);
+                     });
+                 } else {
+                     // Remover todas las direcciones
+                     ['top', 'right', 'bottom', 'left'].forEach(function(dir) {
+                         root.style.removeProperty(prefix + '-padding-' + dir);
+                     });
+                 }
+             }
+             
              Object.keys(settings.components).forEach(function(role) {
                  var comp = settings.components[role];
                  if (!comp) return;
                  
                  // Map specific known properties to CSS variables
                  if (role === 'principal') {
-                     setOrRemoveValue('--gbn-principal-padding', comp.padding);
+                     applyPadding('--gbn-principal', comp.padding);
                      setOrRemove('--gbn-principal-background', comp.background);
-                     setOrRemove('--gbn-principal-gap', comp.gap);
+                     setOrRemoveValue('--gbn-principal-gap', comp.gap);
                      // Layout defaults could be vars too if we updated CSS
                  } else if (role === 'secundario') {
-                     setOrRemoveValue('--gbn-secundario-padding', comp.padding);
+                     applyPadding('--gbn-secundario', comp.padding);
                      setOrRemove('--gbn-secundario-background', comp.background);
-                     setOrRemove('--gbn-secundario-width', comp.width);
+                     setOrRemoveValue('--gbn-secundario-width', comp.width);
                  }
              });
         }
@@ -634,19 +663,50 @@
             setOrRemove('--gbn-page-bg', settings.pages.background);
         }
         
+        
         // Component Defaults (Principal, Secundario, etc)
         if (settings.components) {
+             // Helper para aplicar padding descompuesto
+             function applyPadding(prefix, paddingObj) {
+                 if (paddingObj && typeof paddingObj === 'object') {
+                     // Mapeo de nombres en español a nombres CSS
+                     var map = {
+                         superior: 'top',
+                         derecha: 'right',
+                         inferior: 'bottom',
+                         izquierda: 'left'
+                     };
+                     
+                     Object.keys(map).forEach(function(key) {
+                         var cssName = map[key];
+                         var varName = prefix + '-padding-' + cssName;
+                         setOrRemoveValue(varName, paddingObj[key]);
+                     });
+                 } else if (paddingObj) {
+                     // Si es un valor único, aplicarlo a todas las direcciones
+                     ['top', 'right', 'bottom', 'left'].forEach(function(dir) {
+                         setOrRemoveValue(prefix + '-padding-' + dir, paddingObj);
+                     });
+                 } else {
+                     // Remover todas las direcciones
+                     ['top', 'right', 'bottom', 'left'].forEach(function(dir) {
+                         root.style.removeProperty(prefix + '-padding-' + dir);
+                     });
+                 }
+             }
+             
              Object.keys(settings.components).forEach(function(role) {
                  var comp = settings.components[role];
                  if (!comp) return;
                  
                  // Map specific known properties to CSS variables
                  if (role === 'principal') {
-                     setOrRemoveValue('--gbn-principal-padding', comp.padding);
+                     applyPadding('--gbn-principal', comp.padding);
                      setOrRemove('--gbn-principal-background', comp.background);
                      setOrRemoveValue('--gbn-principal-gap', comp.gap);
+                     // Layout defaults could be vars too if we updated CSS
                  } else if (role === 'secundario') {
-                     setOrRemoveValue('--gbn-secundario-padding', comp.padding);
+                     applyPadding('--gbn-secundario', comp.padding);
                      setOrRemove('--gbn-secundario-background', comp.background);
                      setOrRemoveValue('--gbn-secundario-width', comp.width);
                  }

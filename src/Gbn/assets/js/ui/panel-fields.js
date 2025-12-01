@@ -109,7 +109,9 @@
         }
         campos.forEach(function (nombre) {
             var parsed = parseSpacingValue(baseConfig[nombre], unitSelect.value);
-            var item = document.createElement('label'); item.className = 'gbn-spacing-input'; item.setAttribute('data-field', nombre);
+            var item = document.createElement('label'); 
+            item.className = 'gbn-spacing-input'; 
+            item.setAttribute('data-field', nombre);
             
             // Icono en lugar de texto
             var iconSpan = document.createElement('span');
@@ -122,14 +124,46 @@
             if (field.min !== undefined) { input.min = field.min; }
             if (field.max !== undefined) { input.max = field.max; }
             if (field.paso !== undefined) { input.step = field.paso; }
+            
+            // Lógica de Placeholder Dinámico y Herencia
             var themeDefault = getThemeDefault(block.role, field.id + '.' + nombre);
             var placeholder = '-';
+            var isInherited = false;
+            
             if (themeDefault !== undefined && themeDefault !== null) {
                  var parsedTheme = parseSpacingValue(themeDefault, unitSelect.value);
                  placeholder = parsedTheme.valor;
             }
             
-            input.value = parsed.valor; input.placeholder = placeholder; input.dataset.configPath = field.id + '.' + nombre; input.addEventListener('input', handleSpacingInput);
+            // Determinar si el valor es heredado (campo vacío) o directo
+            if (parsed.valor === '' || parsed.valor === null || parsed.valor === undefined) {
+                isInherited = true;
+                item.classList.add('gbn-field-inherited');
+            } else {
+                item.classList.add('gbn-field-override');
+            }
+            
+            input.value = parsed.valor; 
+            input.placeholder = placeholder; 
+            input.dataset.configPath = field.id + '.' + nombre; 
+            
+            // Guardar referencia para actualizaciones en tiempo real
+            input.dataset.role = block.role;
+            input.dataset.prop = field.id + '.' + nombre;
+            
+            input.addEventListener('input', handleSpacingInput);
+            
+            // Actualizar estado visual al cambiar
+            input.addEventListener('input', function() {
+                if (input.value === '') {
+                    item.classList.add('gbn-field-inherited');
+                    item.classList.remove('gbn-field-override');
+                } else {
+                    item.classList.remove('gbn-field-inherited');
+                    item.classList.add('gbn-field-override');
+                }
+            });
+            
             item.appendChild(input);
             var unitLabel = document.createElement('span'); unitLabel.className = 'gbn-spacing-unit-label'; unitLabel.textContent = unitSelect.value; input.__gbnUnit = unitLabel; item.appendChild(unitLabel);
             grid.appendChild(item);
@@ -159,13 +193,47 @@
         var input = document.createElement('input'); input.type = 'range';
         if (field.min !== undefined) { input.min = field.min; }
         if (field.max !== undefined) { input.max = field.max; }
-        input.step = field.paso || 1; var current = getConfigValue(block, field.id);
-        if (current === null || current === undefined || current === '') { current = field.min !== undefined ? field.min : 0; }
-        input.value = current; valueBadge.textContent = input.value + (field.unidad ? field.unidad : ''); input.dataset.configPath = field.id;
+        input.step = field.paso || 1; 
+        var current = getConfigValue(block, field.id);
+        
+        // Lógica de Placeholder/Default para Slider
+        var themeDefault = getThemeDefault(block.role, field.id);
+        var displayValue = current;
+        var isInherited = false;
+        
+        if (current === null || current === undefined || current === '') { 
+            isInherited = true;
+            wrapper.classList.add('gbn-field-inherited');
+            // Si no hay valor directo, usamos el default del tema para el slider visual
+            if (themeDefault !== undefined && themeDefault !== null) {
+                input.value = themeDefault;
+                displayValue = themeDefault + (field.unidad ? field.unidad : '') + ' (auto)';
+            } else {
+                input.value = field.min !== undefined ? field.min : 0;
+                displayValue = 'auto';
+            }
+        } else {
+            wrapper.classList.add('gbn-field-override');
+            input.value = current;
+            displayValue = input.value + (field.unidad ? field.unidad : '');
+        }
+        
+        valueBadge.textContent = displayValue; 
+        input.dataset.configPath = field.id;
+        
+        // Guardar referencia para actualizaciones
+        input.dataset.role = block.role;
+        input.dataset.prop = field.id;
+        
         input.addEventListener('input', function () {
             var value = input.value.trim();
             var numeric = parseFloat(value);
+            
+            wrapper.classList.remove('gbn-field-inherited');
+            wrapper.classList.add('gbn-field-override');
+            
             if (isNaN(numeric) || value === '') {
+                // Esto es difícil de lograr con un range input, pero por si acaso
                 valueBadge.textContent = 'auto';
                 var api = Gbn.ui && Gbn.ui.panelApi;
                 if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, null); }
@@ -173,6 +241,26 @@
                 valueBadge.textContent = numeric + (field.unidad ? field.unidad : '');
                 var api = Gbn.ui && Gbn.ui.panelApi;
                 if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, numeric); }
+            }
+        });
+        
+        // Doble click para resetear a auto/heredado
+        input.addEventListener('dblclick', function() {
+            var api = Gbn.ui && Gbn.ui.panelApi;
+            if (api && api.updateConfigValue && block) { 
+                api.updateConfigValue(block, field.id, null); 
+                // La UI se actualizará cuando el config cambie y se re-renderice, 
+                // o podemos forzar actualización visual aquí
+                wrapper.classList.remove('gbn-field-override');
+                wrapper.classList.add('gbn-field-inherited');
+                
+                var def = getThemeDefault(block.role, field.id);
+                if (def !== undefined && def !== null) {
+                    input.value = def;
+                    valueBadge.textContent = def + (field.unidad ? field.unidad : '') + ' (auto)';
+                } else {
+                    valueBadge.textContent = 'auto';
+                }
             }
         });
         wrapper.appendChild(input); appendFieldDescription(wrapper, field); return wrapper;
@@ -245,11 +333,39 @@
         var wrapper = document.createElement('div'); wrapper.className = 'gbn-field';
         var label = document.createElement('label'); label.className = 'gbn-field-label'; label.textContent = field.etiqueta || field.id; wrapper.appendChild(label);
         var input = document.createElement('input'); input.type = 'text'; input.className = 'gbn-input';
+        
         var current = getConfigValue(block, field.id);
-        if (current === undefined || current === null) { current = field.defecto; }
-        if (current !== undefined && current !== null) { input.value = current; }
+        var themeDefault = getThemeDefault(block.role, field.id);
+        
+        if (current === undefined || current === null) { 
+            // Es heredado
+            wrapper.classList.add('gbn-field-inherited');
+            if (themeDefault !== undefined && themeDefault !== null) {
+                input.placeholder = themeDefault;
+            } else {
+                input.placeholder = field.defecto || '';
+            }
+        } else {
+            // Es override
+            wrapper.classList.add('gbn-field-override');
+            input.value = current;
+        }
+        
+        // Guardar referencia
+        input.dataset.role = block.role;
+        input.dataset.prop = field.id;
+        
         input.addEventListener('input', function () {
             var value = input.value.trim();
+            
+            if (value === '') {
+                wrapper.classList.add('gbn-field-inherited');
+                wrapper.classList.remove('gbn-field-override');
+            } else {
+                wrapper.classList.remove('gbn-field-inherited');
+                wrapper.classList.add('gbn-field-override');
+            }
+            
             var api = Gbn.ui && Gbn.ui.panelApi;
             if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, value === '' ? null : value); }
         });
@@ -281,11 +397,28 @@
         }
         
         var current = getConfigValue(block, field.id);
-        if (current === undefined || current === null) { current = field.defecto; }
-        if (current && current !== '') {
+        var themeDefault = getThemeDefault(block.role, field.id);
+        
+        if (current === undefined || current === null || current === '') {
+            // Heredado
+            wrapper.classList.add('gbn-field-inherited');
+            if (themeDefault) {
+                inputColor.value = themeDefault;
+                inputText.placeholder = themeDefault;
+            } else {
+                inputColor.value = field.defecto || '#000000';
+                inputText.placeholder = field.defecto || '#000000';
+            }
+        } else {
+            // Override
+            wrapper.classList.add('gbn-field-override');
             inputColor.value = current;
             inputText.value = current;
         }
+        
+        // Guardar referencia
+        inputColor.dataset.role = block.role;
+        inputColor.dataset.prop = field.id;
         
         inputColor.addEventListener('input', function() {
             inputText.value = inputColor.value;
@@ -746,8 +879,82 @@
         }
     }
 
+    /**
+     * Actualiza los placeholders de todos los campos visibles basados en los nuevos defaults del tema
+     */
+    function updatePlaceholdersFromTheme(role, property, newValue) {
+        // Buscar todos los inputs que coincidan con el rol y propiedad
+        // Nota: property puede ser parcial (ej: 'padding' afecta a 'padding.superior', etc.)
+        
+        var inputs = document.querySelectorAll('#gbn-panel input[data-role="' + role + '"]');
+        
+        inputs.forEach(function(input) {
+            var prop = input.dataset.prop;
+            if (!prop) return;
+            
+            // Verificar si la propiedad coincide o es hija
+            if (prop === property || prop.startsWith(property + '.')) {
+                
+                // Si el input tiene valor, es un override, no tocamos el valor pero sí el placeholder
+                // Si el input está vacío (heredado), actualizamos placeholder y visualmente
+                
+                var newVal = getThemeDefault(role, prop);
+                
+                // Caso especial para spacing
+                if (input.closest('.gbn-spacing-input')) {
+                    // Recalcular valor basado en unidad actual
+                    var wrapper = input.closest('.gbn-field-spacing');
+                    var unit = wrapper ? wrapper.dataset.unit : 'px';
+                    
+                    if (newVal !== undefined && newVal !== null) {
+                        var parsed = parseSpacingValue(newVal, unit);
+                        input.placeholder = parsed.valor;
+                    } else {
+                        input.placeholder = '-';
+                    }
+                } 
+                // Caso especial para slider
+                else if (input.type === 'range') {
+                    var wrapper = input.closest('.gbn-field-range');
+                    var badge = wrapper.querySelector('.gbn-field-value');
+                    
+                    if (input.value === '' || wrapper.classList.contains('gbn-field-inherited')) {
+                        // Actualizar valor visual si es heredado
+                        if (newVal !== undefined && newVal !== null) {
+                            input.value = newVal;
+                            if (badge) badge.textContent = newVal + ' (auto)';
+                        } else {
+                            if (badge) badge.textContent = 'auto';
+                        }
+                    }
+                }
+                // Caso standard text/color
+                else {
+                    if (newVal !== undefined && newVal !== null) {
+                        input.placeholder = newVal;
+                        // Para color inputs, si es heredado, actualizar valor también
+                        if (input.type === 'color' && input.closest('.gbn-field-inherited')) {
+                            input.value = newVal;
+                        }
+                    } else {
+                        input.placeholder = '';
+                    }
+                }
+            }
+        });
+    }
+
+    // Escuchar evento global de cambio de defaults
+    if (typeof window !== 'undefined') {
+        window.addEventListener('gbn:themeDefaultsChanged', function(e) {
+            if (e.detail && e.detail.role) {
+                updatePlaceholdersFromTheme(e.detail.role, e.detail.property, e.detail.value);
+            }
+        });
+    }
+
     Gbn.ui = Gbn.ui || {};
-    Gbn.ui.panelFields = { buildField: buildField, addSyncIndicator: addSyncIndicator };
+    Gbn.ui.panelFields = { buildField: buildField, addSyncIndicator: addSyncIndicator, updatePlaceholdersFromTheme: updatePlaceholdersFromTheme };
 })(window);
 
 

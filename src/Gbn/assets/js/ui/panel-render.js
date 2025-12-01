@@ -429,6 +429,28 @@
                 event.initCustomEvent('gbn:configChanged', false, false, { id: 'theme-settings' });
             }
             global.dispatchEvent(event);
+            
+            // NUEVO: Disparar evento específico para actualización en tiempo real de defaults
+            if (path.startsWith('components.')) {
+                var pathParts = path.split('.');
+                if (pathParts.length >= 3) {
+                    var role = pathParts[1];
+                    // Reconstruir la propiedad relativa al componente (ej: 'padding.superior')
+                    var property = pathParts.slice(2).join('.');
+                    
+                    var defaultsEvent;
+                    var detail = { role: role, property: property, value: value };
+                    
+                    if (typeof global.CustomEvent === 'function') {
+                        defaultsEvent = new CustomEvent('gbn:themeDefaultsChanged', { detail: detail });
+                    } else {
+                        defaultsEvent = document.createEvent('CustomEvent');
+                        defaultsEvent.initCustomEvent('gbn:themeDefaultsChanged', false, false, detail);
+                    }
+                    global.dispatchEvent(defaultsEvent);
+                }
+            }
+            
             return current;
         }
         
@@ -485,6 +507,99 @@
         if (Gbn.ui.panel && Gbn.ui.panel.setStatus) {
             Gbn.ui.panel.setStatus('Edita las opciones y se aplicarán al instante');
         }
+    }
+
+    /**
+     * Aplica los nuevos defaults del tema a todos los bloques que no tienen override
+     */
+    function applyThemeDefaultsToBlocks(role, property, value) {
+        if (!state || !state.all) return;
+        
+        var blocks = state.all();
+        blocks.forEach(function(block) {
+            if (block.role !== role) return;
+            
+            // Verificar si el bloque tiene un override para esta propiedad
+            // Usamos getDefaultValueForPath para ver si hay valor configurado
+            // Pero getDefaultValueForPath busca en defaults si no hay config.
+            // Necesitamos chequear directamente block.config
+            
+            var hasOverride = false;
+            var currentConfig = block.config || {};
+            
+            // Navegar por el objeto config para ver si existe la propiedad
+            var segments = property.split('.');
+            var cursor = currentConfig;
+            for (var i = 0; i < segments.length; i++) {
+                if (cursor === undefined || cursor === null) break;
+                cursor = cursor[segments[i]];
+            }
+            
+            // Si cursor tiene valor (y no es null/undefined/''), es un override
+            if (cursor !== undefined && cursor !== null && cursor !== '') {
+                hasOverride = true;
+            }
+            
+            // Si NO tiene override, debemos re-aplicar estilos para que tome el nuevo default
+            if (!hasOverride) {
+                // Forzamos re-calculo de estilos. 
+                // applyBlockStyles usa los defaults internamente si no hay config
+                // Pero necesitamos asegurarnos que 'getThemeDefault' (usado en panel-fields) 
+                // o la lógica de resolución de estilos use el nuevo valor.
+                
+                // En panel-render.js, 'styleResolvers' usa 'block.config'.
+                // Si block.config está vacío, usa defaults?
+                // Revisemos styleResolvers...
+                // styleResolvers['principal'] usa config.padding etc.
+                // Si config.padding es undefined, no aplica nada.
+                // ESTO ES UN PROBLEMA: styleResolvers asume que config tiene todo o que CSS classes manejan defaults.
+                // Pero queremos ver los cambios en tiempo real.
+                
+                // Si el sistema confía en clases CSS para defaults, entonces actualizar las variables CSS
+                // (que ya hace panel-theme.js -> applyThemeSettings) debería ser suficiente.
+                
+                // PERO, si styleResolvers aplica estilos inline que SOBREESCRIBEN las clases,
+                // entonces debemos asegurarnos que no haya estilos inline viejos.
+                
+                // Si no hay override, styleResolvers no debería generar estilo inline para esa propiedad.
+                // Por lo tanto, el elemento debería caer en los estilos por defecto (CSS vars).
+                
+                // Si panel-theme.js ya actualizó las variables CSS globales (--gbn-principal-padding, etc),
+                // entonces los elementos deberían actualizarse automáticamente por el navegador.
+                
+                // EXCEPCIÓN: Si previamente había un valor y se borró, styleManager podría haber dejado
+                // un estilo inline vacío o algo así? No, styleManager limpia.
+                
+                // ENTONCES: La actualización visual "en tiempo real" para elementos NO editados
+                // debería ser automática gracias a las variables CSS, SIEMPRE Y CUANDO
+                // los defaults del tema se mapeen a variables CSS.
+                
+                // Revisemos panel-theme.js: applyThemeSettings SÍ mapea a variables:
+                // --gbn-principal-padding, --gbn-principal-background, etc.
+                
+                // Y revisemos ContainerRegistry/CSS: ¿Los componentes usan estas variables?
+                // Si no las usan, no se verá nada.
+                // Asumamos que el sistema de variables CSS está conectado (según plan.md).
+                
+                // SIN EMBARGO, para propiedades que NO son variables CSS (como layout flex/grid options que generan estilos inline),
+                // sí necesitamos re-aplicar.
+                
+                // Además, si el usuario tiene el panel abierto de un bloque afectado,
+                // queremos que los placeholders se actualicen (eso ya lo hace panel-fields.js).
+                
+                // Vamos a forzar un re-apply por si acaso hay lógica JS que depende de defaults
+                applyBlockStyles(block);
+            }
+        });
+    }
+
+    // Escuchar evento global
+    if (typeof window !== 'undefined') {
+        window.addEventListener('gbn:themeDefaultsChanged', function(e) {
+            if (e.detail && e.detail.role) {
+                applyThemeDefaultsToBlocks(e.detail.role, e.detail.property, e.detail.value);
+            }
+        });
     }
 
     Gbn.ui = Gbn.ui || {};

@@ -622,3 +622,76 @@
 .gbn-typo-col input:focus {
     border-color: #1d8ff1 !important;
 }
+
+/* Estilos para herencia de valores del tema */
+.gbn-field-inherited input,
+.gbn-field-inherited select,
+.gbn-field-inherited .gbn-input,
+.gbn-field-inherited .gbn-select {
+    color: #6c757d; /* Gris más claro para indicar herencia */
+    font-style: italic;
+}
+
+.gbn-field-inherited input::placeholder,
+.gbn-field-inherited select::placeholder,
+.gbn-field-inherited .gbn-input::placeholder {
+    color: #adb5bd; /* Placeholder aún más claro */
+    opacity: 1;
+}
+
+/* Indicador visual para valores heredados */
+.gbn-field-inherited {
+    position: relative;
+}
+
+.gbn-field-inherited::before {
+    content: "↓"; /* Flecha indicando "viene de arriba/global" */
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #007bff;
+    font-size: 10px;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Ajuste específico para campos de espaciado */
+.gbn-spacing-input.gbn-field-inherited::before {
+    left: -8px;
+    top: 50%;
+}
+
+/* Estilo para campos con valores directos (override) */
+.gbn-field-override input,
+.gbn-field-override select,
+.gbn-field-override .gbn-input,
+.gbn-field-override .gbn-select {
+    color: var(--text, #111111); /* Negro normal */
+    font-weight: 500;
+    font-style: normal;
+}
+
+/* Indicador de sincronización en Panel de Tema */
+.gbn-sync-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.gbn-sync-css {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.gbn-sync-manual {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
