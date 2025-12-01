@@ -163,6 +163,10 @@ class GbnManager
                 'file' => '/js/services/content.js',
                 'deps' => ['glory-gbn-content-hydrator'],
             ],
+            'glory-gbn-front' => [
+                'file' => '/js/gbn-front.js',
+                'deps' => ['glory-gbn-services'],
+            ],
         ];
 
         // 4. Builder Scripts (Only for editors)

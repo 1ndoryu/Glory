@@ -7,6 +7,10 @@
     function toCssValue(val, defaultUnit) {
         if (val === null || val === undefined || val === '') return '';
         var strVal = String(val).trim();
+        // Fix for double unit (e.g. 120pxpx)
+        if (strVal.match(/pxpx$/i)) {
+            strVal = strVal.replace(/pxpx$/i, 'px');
+        }
         if (/^[0-9.]+[a-z%]+$/i.test(strVal)) return strVal;
         if (!isNaN(parseFloat(strVal))) return strVal + (defaultUnit || 'px');
         return strVal;

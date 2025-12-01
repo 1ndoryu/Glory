@@ -2,3 +2,24 @@
 
 /* GBN Modular CSS */
 /* GBN Modular CSS - Imports handled by GbnManager.php for dynamic versioning */
+
+/* Default Styles for GBN Containers */
+[gloryDiv], [data-gbnPrincipal] {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+[gloryDivSecundario], [data-gbnSecundario] {
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure content render is visible */
+[gloryContentRender], [data-gbnContent] {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+}

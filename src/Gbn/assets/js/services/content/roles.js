@@ -176,9 +176,9 @@
                 config: {
                     tag: 'p',
                     texto: 'Nuevo texto',
-                    alineacion: 'left',
-                    color: '#333333',
-                    size: '16px'
+                    alineacion: '',
+                    color: '',
+                    size: ''
                 },
                 schema: [
                     { id: 'tag', tipo: 'select', etiqueta: 'Etiqueta HTML', opciones: [

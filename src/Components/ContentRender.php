@@ -771,7 +771,10 @@ class ContentRender
         $out = ob_get_clean();
         // Limpiar config expuesta
         self::$currentConfig = [];
-        return $out; // Devolver el contenido del buffer y limpiarlo.
+        // El contenido ya fue impreso o capturado en el buffer y devuelto por ob_get_clean() en renderizarContenido,
+        // pero renderizarContenido devuelve string.
+        // Aquí print hace echo.
+        // return $out; // Eliminado para cumplir con : void
     }
 
     /**
