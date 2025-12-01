@@ -281,12 +281,12 @@ El usuario ve "50" y sabe exactamente qué tiene el elemento.
 
 ### Estado Actual
 
-- [ ] Función `getComputedValue` en utils.js
-- [ ] `spacing.js` lee estilos computados
-- [ ] `color.js` lee backgroundColor computado
-- [ ] `slider.js` lee propiedades numéricas
-- [ ] `select.js` / `icon-group.js` leen propiedades de layout
-- [ ] Panel pasa referencia al elemento DOM
+- [x] Función `getComputedValue` en utils.js
+- [x] `spacing.js` lee estilos computados
+- [x] `color.js` lee backgroundColor computado
+- [x] `slider.js` lee propiedades numéricas
+- [x] `select.js` / `icon-group.js` leen propiedades de layout
+- [x] Panel pasa referencia al elemento DOM (ya disponible en block.element)
 - [ ] Tests manuales con inline, clases y defaults
 
 ---

@@ -34,23 +34,39 @@
         if (field.max !== undefined) input.max = field.max;
         input.step = field.paso || 1;
         
-        var current = u.getConfigValue(block, field.id);
+        // Usar getEffectiveValue para obtener valor correcto
+        var effective = u.getEffectiveValue(block, field.id);
         var themeDefault = u.getThemeDefault(block.role, field.id);
-        var displayValue = current;
+        var displayValue;
         
-        if (current === null || current === undefined || current === '') {
+        // Extraer valor numérico de valores con unidad (ej: "20px" -> 20)
+        function extractNumeric(val) {
+            if (val === null || val === undefined || val === '') return null;
+            if (typeof val === 'number') return val;
+            var parsed = u.parseSpacingValue(val);
+            return parsed.valor !== '' ? parseFloat(parsed.valor) : null;
+        }
+        
+        var effectiveNumeric = extractNumeric(effective.value);
+        var themeNumeric = extractNumeric(themeDefault);
+        
+        if (effective.source === 'none' || effectiveNumeric === null) {
             wrapper.classList.add('gbn-field-inherited');
-            if (themeDefault !== undefined && themeDefault !== null) {
-                input.value = themeDefault;
-                displayValue = themeDefault + (field.unidad ? field.unidad : '') + ' (auto)';
+            if (themeNumeric !== null) {
+                input.value = themeNumeric;
+                displayValue = themeNumeric + (field.unidad ? field.unidad : '') + ' (auto)';
             } else {
                 input.value = field.min !== undefined ? field.min : 0;
                 displayValue = 'auto';
             }
         } else {
             wrapper.classList.add('gbn-field-override');
-            input.value = current;
-            displayValue = input.value + (field.unidad ? field.unidad : '');
+            input.value = effectiveNumeric;
+            displayValue = effectiveNumeric + (field.unidad ? field.unidad : '');
+            // Indicar si viene de computedStyle (inline/clase)
+            if (effective.source === 'computed') {
+                displayValue += ' (inline)';
+            }
         }
         
         valueBadge.textContent = displayValue;

@@ -29,17 +29,24 @@
             ? field.campos 
             : ['superior', 'derecha', 'inferior', 'izquierda'];
         
-        // Solo usar valores propios del bloque (no heredados del tema)
-        // Los valores del tema van en placeholder, no en value
-        var baseConfig = u.getDeepValue(block.config, field.id) || {};
+        // Usar getEffectiveValue para cada campo - lee config, computedStyle y themeDefaults
+        var effectiveValues = {};
+        campos.forEach(function(nombre) {
+            var path = field.id + '.' + nombre;
+            effectiveValues[nombre] = u.getEffectiveValue(block, path);
+        });
         
-        // Detectar unidad actual
+        // Detectar unidad actual desde el primer valor efectivo disponible
         var unidadActual = unidades[0];
         for (var i = 0; i < campos.length; i += 1) {
-            var parsed = u.parseSpacingValue(baseConfig[campos[i]], unidades[0]);
-            if (parsed.unidad) {
-                unidadActual = parsed.unidad;
-                break;
+            var effective = effectiveValues[campos[i]];
+            var valueToCheck = effective.value || effective.placeholder;
+            if (valueToCheck) {
+                var parsed = u.parseSpacingValue(valueToCheck, unidades[0]);
+                if (parsed.unidad && unidades.indexOf(parsed.unidad) !== -1) {
+                    unidadActual = parsed.unidad;
+                    break;
+                }
             }
         }
         
@@ -81,7 +88,7 @@
         }
         
         campos.forEach(function (nombre) {
-            var parsed = u.parseSpacingValue(baseConfig[nombre], unitSelect.value);
+            var effective = effectiveValues[nombre];
             var item = document.createElement('label');
             item.className = 'gbn-spacing-input';
             item.setAttribute('data-field', nombre);
@@ -100,27 +107,33 @@
             if (field.max !== undefined) input.max = field.max;
             if (field.paso !== undefined) input.step = field.paso;
             
-            // Placeholder dinámico
-            var themeDefault = u.getThemeDefault(block.role, field.id + '.' + nombre);
+            // Placeholder: siempre es el theme default
             var placeholder = '-';
-            
-            if (themeDefault !== undefined && themeDefault !== null) {
-                var parsedTheme = u.parseSpacingValue(themeDefault, unitSelect.value);
-                placeholder = parsedTheme.valor;
+            if (effective.placeholder !== undefined && effective.placeholder !== null) {
+                var parsedPlaceholder = u.parseSpacingValue(effective.placeholder, unitSelect.value);
+                placeholder = parsedPlaceholder.valor;
             }
             
-            // Heredado vs override
-            if (parsed.valor === '' || parsed.valor === null || parsed.valor === undefined) {
+            // Valor: viene de config o computedStyle (si es diferente al theme default)
+            var displayValue = '';
+            if (effective.value !== undefined && effective.value !== null && effective.value !== '') {
+                var parsedValue = u.parseSpacingValue(effective.value, unitSelect.value);
+                displayValue = parsedValue.valor;
+            }
+            
+            // Heredado (usa theme default) vs override (tiene valor propio)
+            if (displayValue === '' || displayValue === null || displayValue === undefined) {
                 item.classList.add('gbn-field-inherited');
             } else {
                 item.classList.add('gbn-field-override');
             }
             
-            input.value = parsed.valor;
+            input.value = displayValue;
             input.placeholder = placeholder;
             input.dataset.configPath = field.id + '.' + nombre;
             input.dataset.role = block.role;
             input.dataset.prop = field.id + '.' + nombre;
+            input.dataset.source = effective.source; // Guardar origen para debug
             
             input.addEventListener('input', handleSpacingInput);
             input.addEventListener('input', function() {

@@ -128,6 +128,109 @@
     };
 
     /**
+     * Mapeo de propiedades de config a propiedades CSS
+     */
+    var CONFIG_TO_CSS_MAP = {
+        'padding.superior': 'paddingTop',
+        'padding.derecha': 'paddingRight',
+        'padding.inferior': 'paddingBottom',
+        'padding.izquierda': 'paddingLeft',
+        'fondo': 'backgroundColor',
+        'background': 'backgroundColor',
+        'gap': 'gap',
+        'layout': 'display',
+        'flexDirection': 'flexDirection',
+        'flexWrap': 'flexWrap',
+        'flexJustify': 'justifyContent',
+        'flexAlign': 'alignItems',
+        'height': 'height',
+        'alineacion': 'textAlign',
+        'maxAncho': 'maxWidth',
+        'color': 'color',
+        'size': 'fontSize'
+    };
+
+    /**
+     * Obtiene el valor computado de una propiedad CSS de un elemento
+     * @param {HTMLElement} element - Elemento DOM
+     * @param {string} cssProperty - Propiedad CSS (camelCase, ej: 'paddingTop')
+     * @returns {string|undefined} Valor computado o undefined
+     */
+    function getComputedValue(element, cssProperty) {
+        if (!element || !cssProperty) return undefined;
+        try {
+            var computed = window.getComputedStyle(element);
+            var value = computed[cssProperty];
+            // Retornar undefined si es vacío o no existe
+            if (value === '' || value === undefined || value === null) {
+                return undefined;
+            }
+            return value;
+        } catch (e) {
+            return undefined;
+        }
+    }
+
+    /**
+     * Obtiene el valor computado para una ruta de configuración
+     * Usa el mapeo CONFIG_TO_CSS_MAP para traducir la ruta a propiedad CSS
+     * @param {HTMLElement} element - Elemento DOM
+     * @param {string} configPath - Ruta de configuración (ej: 'padding.superior')
+     * @returns {string|undefined} Valor computado o undefined
+     */
+    function getComputedValueForPath(element, configPath) {
+        if (!element || !configPath) return undefined;
+        var cssProperty = CONFIG_TO_CSS_MAP[configPath];
+        if (!cssProperty) return undefined;
+        return getComputedValue(element, cssProperty);
+    }
+
+    /**
+     * Determina el valor efectivo para un campo del panel
+     * Prioridad: 1) block.config, 2) computedStyle, 3) themeDefault
+     * Retorna { value, source, placeholder }
+     * @param {Object} block - Bloque con config, role y element
+     * @param {string} path - Ruta de la propiedad
+     * @returns {{value: *, source: string, placeholder: *}}
+     */
+    function getEffectiveValue(block, path) {
+        var result = { value: undefined, source: 'none', placeholder: undefined };
+        
+        // 1. Valor guardado en config del bloque (máxima prioridad)
+        var savedValue = getDeepValue(block.config, path);
+        if (savedValue !== undefined && savedValue !== null && savedValue !== '') {
+            result.value = savedValue;
+            result.source = 'config';
+        }
+        
+        // 2. Si no hay valor guardado, leer del computedStyle
+        if (result.source === 'none' && block.element) {
+            var computedValue = getComputedValueForPath(block.element, path);
+            if (computedValue !== undefined && computedValue !== null && computedValue !== '') {
+                // Obtener theme default para comparar
+                var themeDefault = getThemeDefault(block.role, path);
+                var parsedComputed = parseSpacingValue(computedValue);
+                var parsedTheme = parseSpacingValue(themeDefault);
+                
+                // Si el valor computado es diferente al default del tema, 
+                // significa que hay estilos inline o de clase que debemos mostrar
+                if (parsedComputed.valor !== parsedTheme.valor) {
+                    result.value = computedValue;
+                    result.source = 'computed';
+                }
+            }
+        }
+        
+        // 3. Placeholder: siempre es el valor del tema (si existe)
+        var themePlaceholder = getThemeDefault(block.role, path);
+        if (themePlaceholder !== undefined && themePlaceholder !== null) {
+            result.placeholder = themePlaceholder;
+        }
+        
+        return result;
+    }
+
+    /**
      * Evalúa si un campo debe mostrarse basado en su condición
      * @param {Object} block - Bloque actual
      * @param {Object} field - Definición del campo
@@ -169,9 +272,13 @@
         getDeepValue: getDeepValue,
         getThemeDefault: getThemeDefault,
         getConfigValue: getConfigValue,
+        getComputedValue: getComputedValue,
+        getComputedValueForPath: getComputedValueForPath,
+        getEffectiveValue: getEffectiveValue,
         appendFieldDescription: appendFieldDescription,
         parseSpacingValue: parseSpacingValue,
         shouldShowField: shouldShowField,
+        CONFIG_TO_CSS_MAP: CONFIG_TO_CSS_MAP,
         ICONS: ICONS
     };
 

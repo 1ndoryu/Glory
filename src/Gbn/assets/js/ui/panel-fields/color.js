@@ -42,10 +42,44 @@
             }
         }
         
-        var current = u.getConfigValue(block, field.id);
+        // Función para convertir rgb() a hex
+        function rgbToHex(rgb) {
+            if (!rgb || rgb === 'transparent' || rgb === 'rgba(0, 0, 0, 0)') return null;
+            if (rgb.startsWith('#')) return rgb;
+            var match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+            if (!match) return null;
+            var r = parseInt(match[1], 10);
+            var g = parseInt(match[2], 10);
+            var b = parseInt(match[3], 10);
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+        
+        // Usar getEffectiveValue para obtener el valor correcto
+        var effective = u.getEffectiveValue(block, field.id);
         var themeDefault = u.getThemeDefault(block.role, field.id);
         
-        if (current === undefined || current === null || current === '') {
+        // Si no hay valor en config ni computedStyle devolvió algo diferente,
+        // intentamos leer directamente del computedStyle para colores
+        if (effective.source === 'none' && block.element) {
+            var computedBg = u.getComputedValue(block.element, 'backgroundColor');
+            if (computedBg && computedBg !== 'transparent' && computedBg !== 'rgba(0, 0, 0, 0)') {
+                var hexBg = rgbToHex(computedBg);
+                var hexTheme = themeDefault ? rgbToHex(themeDefault) : null;
+                // Si es diferente al theme default, mostrarlo
+                if (hexBg && hexBg !== hexTheme) {
+                    effective.value = hexBg;
+                    effective.source = 'computed';
+                }
+            }
+        }
+        
+        // Convertir valores a hex si vienen en rgb
+        if (effective.value) {
+            var hexValue = rgbToHex(effective.value);
+            if (hexValue) effective.value = hexValue;
+        }
+        
+        if (effective.source === 'none' || !effective.value) {
             wrapper.classList.add('gbn-field-inherited');
             if (themeDefault) {
                 inputColor.value = themeDefault;
@@ -56,8 +90,8 @@
             }
         } else {
             wrapper.classList.add('gbn-field-override');
-            inputColor.value = current;
-            inputText.value = current;
+            inputColor.value = effective.value;
+            inputText.value = effective.value;
         }
         
         inputColor.dataset.role = block.role;

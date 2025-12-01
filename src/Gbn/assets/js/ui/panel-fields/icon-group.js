@@ -20,8 +20,27 @@
         var container = document.createElement('div');
         container.className = 'gbn-icon-group-container';
         
-        var current = u.getConfigValue(block, field.id);
+        // Usar getEffectiveValue para leer valor de config, computedStyle o theme
+        var effective = u.getEffectiveValue(block, field.id);
+        var current = effective.value;
         var opciones = Array.isArray(field.opciones) ? field.opciones : [];
+        
+        // Para propiedades de layout, normalizar valor computado a opciones
+        if (effective.source === 'computed' && current) {
+            opciones.forEach(function(opt) {
+                if (opt.valor === current || 
+                    String(opt.valor).toLowerCase() === String(current).toLowerCase()) {
+                    current = opt.valor;
+                }
+            });
+        }
+        
+        // Indicar visualmente si es heredado o override
+        if (effective.source === 'none') {
+            wrapper.classList.add('gbn-field-inherited');
+        } else {
+            wrapper.classList.add('gbn-field-override');
+        }
         
         opciones.forEach(function(opt) {
             var btn = document.createElement('button');

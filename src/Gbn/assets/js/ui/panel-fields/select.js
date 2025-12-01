@@ -28,9 +28,30 @@
             select.appendChild(option);
         });
         
-        var current = u.getConfigValue(block, field.id);
+        // Usar getEffectiveValue para leer valor de config, computedStyle o theme
+        var effective = u.getEffectiveValue(block, field.id);
+        var current = effective.value;
+        
+        // Para propiedades de layout (display, flexDirection, etc), 
+        // mapear valores CSS a valores de opciones
+        if (effective.source === 'computed' && current) {
+            // Normalizar valores CSS a los valores esperados por las opciones
+            var normalized = current.toLowerCase().replace(/-/g, '');
+            // Buscar coincidencia en opciones
+            opciones.forEach(function(opt) {
+                var optNorm = String(opt.valor).toLowerCase().replace(/-/g, '');
+                if (optNorm === normalized || opt.valor === current) {
+                    current = opt.valor;
+                }
+            });
+        }
+        
         if (current !== undefined && current !== null && current !== '') {
             select.value = current;
+            wrapper.classList.add('gbn-field-override');
+        } else if (effective.placeholder) {
+            // Si hay placeholder (theme default), podría mostrarse de alguna forma
+            wrapper.classList.add('gbn-field-inherited');
         }
         
         select.addEventListener('change', function () {
