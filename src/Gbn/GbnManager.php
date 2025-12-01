@@ -179,9 +179,79 @@ class GbnManager
                 'file' => '/js/services/persistence.js',
                 'deps' => ['glory-gbn-services'],
             ],
+            // Panel Fields - Módulos refactorizados
+            'glory-gbn-ui-fields-utils' => [
+                'file' => '/js/ui/panel-fields/utils.js',
+                'deps' => ['glory-gbn-persistence'],
+            ],
+            'glory-gbn-ui-fields-sync' => [
+                'file' => '/js/ui/panel-fields/sync.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-header' => [
+                'file' => '/js/ui/panel-fields/header.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-spacing' => [
+                'file' => '/js/ui/panel-fields/spacing.js',
+                'deps' => ['glory-gbn-ui-fields-sync'],
+            ],
+            'glory-gbn-ui-fields-slider' => [
+                'file' => '/js/ui/panel-fields/slider.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-select' => [
+                'file' => '/js/ui/panel-fields/select.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-toggle' => [
+                'file' => '/js/ui/panel-fields/toggle.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-text' => [
+                'file' => '/js/ui/panel-fields/text.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-color' => [
+                'file' => '/js/ui/panel-fields/color.js',
+                'deps' => ['glory-gbn-ui-fields-sync'],
+            ],
+            'glory-gbn-ui-fields-typography' => [
+                'file' => '/js/ui/panel-fields/typography.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-icon-group' => [
+                'file' => '/js/ui/panel-fields/icon-group.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-fraction' => [
+                'file' => '/js/ui/panel-fields/fraction.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-rich-text' => [
+                'file' => '/js/ui/panel-fields/rich-text.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-fields-index' => [
+                'file' => '/js/ui/panel-fields/index.js',
+                'deps' => [
+                    'glory-gbn-ui-fields-header',
+                    'glory-gbn-ui-fields-spacing',
+                    'glory-gbn-ui-fields-slider',
+                    'glory-gbn-ui-fields-select',
+                    'glory-gbn-ui-fields-toggle',
+                    'glory-gbn-ui-fields-text',
+                    'glory-gbn-ui-fields-color',
+                    'glory-gbn-ui-fields-typography',
+                    'glory-gbn-ui-fields-icon-group',
+                    'glory-gbn-ui-fields-fraction',
+                    'glory-gbn-ui-fields-rich-text',
+                ],
+            ],
+            // Wrapper de compatibilidad
             'glory-gbn-ui-panel-fields' => [
                 'file' => '/js/ui/panel-fields.js',
-                'deps' => ['glory-gbn-persistence'],
+                'deps' => ['glory-gbn-ui-fields-index'],
             ],
             'glory-gbn-ui-panel-render' => [
                 'file' => '/js/ui/panel-render.js',

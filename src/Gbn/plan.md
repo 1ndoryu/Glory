@@ -95,7 +95,7 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 3. `render/styleManager`: sincroniza estilos base en `<style data-gbn-style="*">` reutilizando los inline originales.
 4. `services/content`: Facade que orquesta sub-módulos (`roles`, `config`, `dom`, `builder`, `scanner`, `hydrator`) para la gestión de contenido.
 5. `ui/panel-core`: núcleo del panel lateral (montaje, títulos, estado, summary y aplicación de estilos vía `styleManager`).
-6. `ui/panel-fields`: constructores de campos (spacing, slider, select, toggle, color, text) que delegan en `Gbn.ui.panelApi` para actualizar config.
+6. `ui/panel-fields/`: módulos refactorizados para campos del panel, organizados por tipo (spacing, slider, select, toggle, color, text, typography, icon-group, fraction, rich-text, header). Cada módulo exporta una función `build()` y el dispatcher en `index.js` delega según el tipo de campo.
 7. `ui/inspector`: toggle “Open GBN”, botones secundarios, persistencia local y activación/desactivación; abre paneles de tema/página/restauración.
 8. `gbn.js`: orquesta el arranque (omite ejecución cuando el builder externo está activo).
 
@@ -251,7 +251,22 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 - **`drag-drop.js`**: Sistema drag & drop nativo HTML5 con indicadores visuales (líneas de inserción)
 - **`library.js`**: Modal de biblioteca para insertar nuevos bloques/componentes
 - **`panel-core.js`**: Núcleo del panel lateral (apertura, cierre, navegación, estructura base)
-- **`panel-fields.js`**: Constructores de campos del panel (spacing, slider, select, toggle, color, typography, icon_group)
+- **`panel-fields.js`**: Wrapper de compatibilidad que delega a módulos en `panel-fields/`
+- **`panel-fields/`**: Módulos refactorizados para construcción de campos del panel
+  - **`utils.js`**: Utilidades compartidas (`getDeepValue`, `getThemeDefault`, `getConfigValue`, `parseSpacingValue`)
+  - **`sync.js`**: Indicadores de sincronización CSS y actualización de placeholders
+  - **`spacing.js`**: Campo de spacing (padding/margin) con 4 direcciones
+  - **`slider.js`**: Campo slider/range con badge de valor
+  - **`select.js`**: Campo select/dropdown
+  - **`toggle.js`**: Campo toggle on/off con íconos
+  - **`text.js`**: Campo de texto simple
+  - **`color.js`**: Campo de color con picker y paleta global
+  - **`typography.js`**: Campo compuesto (font, size, lineHeight, spacing, transform)
+  - **`icon-group.js`**: Grupo de botones con íconos para selección única
+  - **`fraction.js`**: Selector de fracciones de ancho (1/2, 1/3, etc.)
+  - **`rich-text.js`**: Editor de texto enriquecido básico
+  - **`header.js`**: Separador/header de sección
+  - **`index.js`**: Dispatcher principal que delega según tipo de campo
 - **`panel-render.js`**: Renderiza contenido del panel basado en schema, aplica cambios en tiempo real
 - **`ui/theme/`**: Módulo refactorizado para configuraciones de tema
   - **`applicator.js`**: Lógica de aplicación de estilos (CSS variables)
@@ -338,6 +353,19 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 - **Problema**: Páginas no renderizaban correctamente para usuarios no logueados
 - **Áreas afectadas**: `data-gbn-root` sin estilos inline, `gloryContentRender` no renderizaba
 - **Estado**: Resuelto - estilos de página y componentes se aplican correctamente para ambos tipos de usuarios
+
+### 🔄 Refactorizaciones Recientes
+
+#### Panel Fields Modularizado
+- **Problema**: `panel-fields.js` creció a ~970 líneas, dificultando mantenimiento
+- **Solución**: Refactorización en módulos independientes dentro de `ui/panel-fields/`
+- **Estructura**:
+  - `utils.js` - Utilidades compartidas (getDeepValue, parseSpacingValue, etc.)
+  - `sync.js` - Sincronización con CSS y actualización de placeholders
+  - Un archivo por tipo de campo (spacing, slider, select, toggle, text, color, typography, icon-group, fraction, rich-text, header)
+  - `index.js` - Dispatcher que delega al módulo correcto según `field.tipo`
+- **Compatibilidad**: `panel-fields.js` original se mantiene como wrapper que re-exporta la API
+- **Beneficios**: Código más mantenible, ~80 líneas por módulo en promedio, facilita testing y extensión
 
 ### 🔄 Características Implementadas Recientemente
 

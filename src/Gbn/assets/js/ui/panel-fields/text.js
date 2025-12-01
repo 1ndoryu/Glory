@@ -1,0 +1,70 @@
+;(function (global) {
+    'use strict';
+
+    var Gbn = global.Gbn = global.Gbn || {};
+    var utils = function() { return Gbn.ui.fieldUtils; };
+
+    /**
+     * Construye un campo de texto simple
+     */
+    function buildTextField(block, field) {
+        var u = utils();
+        var wrapper = document.createElement('div');
+        wrapper.className = 'gbn-field';
+        
+        var label = document.createElement('label');
+        label.className = 'gbn-field-label';
+        label.textContent = field.etiqueta || field.id;
+        wrapper.appendChild(label);
+        
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'gbn-input';
+        
+        var current = u.getConfigValue(block, field.id);
+        var themeDefault = u.getThemeDefault(block.role, field.id);
+        
+        if (current === undefined || current === null) {
+            wrapper.classList.add('gbn-field-inherited');
+            if (themeDefault !== undefined && themeDefault !== null) {
+                input.placeholder = themeDefault;
+            } else {
+                input.placeholder = field.defecto || '';
+            }
+        } else {
+            wrapper.classList.add('gbn-field-override');
+            input.value = current;
+        }
+        
+        input.dataset.role = block.role;
+        input.dataset.prop = field.id;
+        
+        input.addEventListener('input', function () {
+            var value = input.value.trim();
+            
+            if (value === '') {
+                wrapper.classList.add('gbn-field-inherited');
+                wrapper.classList.remove('gbn-field-override');
+            } else {
+                wrapper.classList.remove('gbn-field-inherited');
+                wrapper.classList.add('gbn-field-override');
+            }
+            
+            var api = Gbn.ui && Gbn.ui.panelApi;
+            if (api && api.updateConfigValue && block) {
+                api.updateConfigValue(block, field.id, value === '' ? null : value);
+            }
+        });
+        
+        wrapper.appendChild(input);
+        u.appendFieldDescription(wrapper, field);
+        
+        return wrapper;
+    }
+
+    // Exportar
+    Gbn.ui = Gbn.ui || {};
+    Gbn.ui.textField = { build: buildTextField };
+
+})(window);
+
