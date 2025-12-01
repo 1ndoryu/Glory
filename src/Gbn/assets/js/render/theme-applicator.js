@@ -46,8 +46,17 @@
     }
 
     function applyThemeSettings(settings) {
-        // Use data-gbn-root for scoping, fallback to documentElement if not found (but prefer root)
-        var root = document.querySelector('[data-gbn-root]') || document.documentElement;
+        // Use data-gbn-root for scoping, or find main/body if not set yet (consistent with page settings)
+        var root = document.querySelector('[data-gbn-root]');
+        if (!root) {
+            root = document.querySelector('main') || document.body;
+            if (root) {
+                root.setAttribute('data-gbn-root', 'true');
+            }
+        }
+        // Fallback to documentElement if still nothing (unlikely)
+        if (!root) root = document.documentElement;
+
         if (!settings) return;
         
         // Text Settings

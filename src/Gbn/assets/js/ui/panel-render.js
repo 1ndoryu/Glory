@@ -81,17 +81,9 @@
         var segments = path.split('.');
         var cursor = current;
 
-        if (value === null || value === undefined || value === '') {
-            var inlineValue = getInlineValueForPath(block, path);
-            if (inlineValue !== null) {
-                value = inlineValue;
-            } else {
-                var defaultValue = getDefaultValueForPath(block, path);
-                if (defaultValue !== null && defaultValue !== undefined) {
-                    value = defaultValue;
-                }
-            }
-        }
+        // Removed fallback to inlineValue to allow clearing of values.
+        // If value is null/undefined/empty, it should remain so in the config
+        // to allow inheritance from Theme Settings or CSS defaults.
 
         for (var i = 0; i < segments.length - 1; i += 1) {
             var key = segments[i];
@@ -397,6 +389,25 @@
                 cursor = cursor[key];
             }
             cursor[segments[segments.length - 1]] = value;
+            
+            // DETECTAR CAMBIOS MANUALES: Marcar como 'manual' en __sync
+            // Si estamos editando configuración de componentes (path empieza con "components.")
+            if (path.startsWith('components.')) {
+                // Ejemplo path: "components.principal.padding.superior"
+                var pathParts = path.split('.');
+                if (pathParts.length >= 3) {
+                    var role = pathParts[1];      // "principal" o "secundario"
+                    var prop = pathParts[2];      // "padding", "background", etc.
+                    
+                    // Asegurar que existe el objeto __sync
+                    if (!current.components[role].__sync) {
+                        current.components[role].__sync = {};
+                    }
+                    
+                    // Marcar como modificado manualmente
+                    current.components[role].__sync[prop] = 'manual';
+                }
+            }
             
             // Update block config reference
             block.config = current;

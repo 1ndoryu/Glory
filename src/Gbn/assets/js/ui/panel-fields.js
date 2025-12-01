@@ -5,15 +5,48 @@
     var utils = Gbn.utils;
     var state = Gbn.state;
 
-    function getConfigValue(block, path) {
-        if (!block || !block.config || !path) { return undefined; }
-        var value = block.config;
+    function getDeepValue(obj, path) {
+        if (!obj || !path) return undefined;
+        var value = obj;
         var segments = path.split('.');
         for (var i = 0; i < segments.length; i += 1) {
             if (value === null || value === undefined) { return undefined; }
             value = value[segments[i]];
         }
         return value;
+    }
+
+    function getThemeDefault(role, path) {
+        if (!role) return undefined;
+        // Access global config
+        var themeSettings = (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.themeSettings) ? gloryGbnCfg.themeSettings : (Gbn.config && Gbn.config.themeSettings ? Gbn.config.themeSettings : null);
+        
+        if (!themeSettings || !themeSettings.components || !themeSettings.components[role]) {
+            return undefined;
+        }
+        
+        return getDeepValue(themeSettings.components[role], path);
+    }
+
+    function getConfigValue(block, path) {
+        if (!block || !path) { return undefined; }
+        
+        // 1. Try Block Config
+        var value = getDeepValue(block.config, path);
+        if (value !== undefined && value !== null && value !== '') {
+            return value;
+        }
+
+        // 2. Try Theme Default (if applicable)
+        // Skip for Theme/Page settings editing to avoid circular logic or confusion
+        if (block.role && block.role !== 'theme' && block.role !== 'page') {
+            var themeVal = getThemeDefault(block.role, path);
+            if (themeVal !== undefined && themeVal !== null && themeVal !== '') {
+                return themeVal;
+            }
+        }
+
+        return undefined;
     }
 
     function appendFieldDescription(container, field) {
@@ -43,6 +76,10 @@
         var wrapper = document.createElement('fieldset');
         wrapper.className = 'gbn-field gbn-field-spacing';
         var legend = document.createElement('legend'); legend.textContent = field.etiqueta || field.id; wrapper.appendChild(legend);
+        
+        // Agregar indicador de sincronización para Panel de Tema
+        addSyncIndicator(wrapper, block, field.id);
+        
         var unidades = Array.isArray(field.unidades) && field.unidades.length ? field.unidades : ['px'];
         var campos = Array.isArray(field.campos) && field.campos.length ? field.campos : ['superior', 'derecha', 'inferior', 'izquierda'];
         var baseConfig = getConfigValue(block, field.id);
@@ -85,7 +122,14 @@
             if (field.min !== undefined) { input.min = field.min; }
             if (field.max !== undefined) { input.max = field.max; }
             if (field.paso !== undefined) { input.step = field.paso; }
-            input.value = parsed.valor; input.placeholder = '-'; input.dataset.configPath = field.id + '.' + nombre; input.addEventListener('input', handleSpacingInput);
+            var themeDefault = getThemeDefault(block.role, field.id + '.' + nombre);
+            var placeholder = '-';
+            if (themeDefault !== undefined && themeDefault !== null) {
+                 var parsedTheme = parseSpacingValue(themeDefault, unitSelect.value);
+                 placeholder = parsedTheme.valor;
+            }
+            
+            input.value = parsed.valor; input.placeholder = placeholder; input.dataset.configPath = field.id + '.' + nombre; input.addEventListener('input', handleSpacingInput);
             item.appendChild(input);
             var unitLabel = document.createElement('span'); unitLabel.className = 'gbn-spacing-unit-label'; unitLabel.textContent = unitSelect.value; input.__gbnUnit = unitLabel; item.appendChild(unitLabel);
             grid.appendChild(item);
@@ -216,6 +260,9 @@
         var wrapper = document.createElement('div'); wrapper.className = 'gbn-field gbn-field-color';
         var label = document.createElement('label'); label.className = 'gbn-field-label'; label.textContent = field.etiqueta || field.id; wrapper.appendChild(label);
         
+        // Agregar indicador de sincronización para Panel de Tema
+        addSyncIndicator(wrapper, block, field.id);
+        
         var container = document.createElement('div');
         container.className = 'gbn-color-container';
 
@@ -226,46 +273,43 @@
         var inputText = document.createElement('input');
         inputText.type = 'text';
         inputText.className = 'gbn-color-text gbn-input';
-        inputText.placeholder = '#RRGGBB';
-
-        // Toggle Palette Button
-        var toggleBtn = document.createElement('button');
-        toggleBtn.type = 'button';
-        toggleBtn.className = 'gbn-color-toggle';
-        toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
-        toggleBtn.title = 'Mostrar/Ocultar Paleta Global';
-
-        var current = getConfigValue(block, field.id);
-        if (current === undefined || current === null) { current = field.defecto; }
-        var initialColor = (typeof current === 'string' && current.trim() !== '') ? current : '#ffffff';
+        inputText.placeholder = 'ej: #ff5733';
         
-        inputColor.value = initialColor;
-        inputText.value = initialColor;
-
         function update(value) {
             var api = Gbn.ui && Gbn.ui.panelApi;
             if (api && api.updateConfigValue && block) { api.updateConfigValue(block, field.id, value === '' ? null : value); }
         }
-
+        
+        var current = getConfigValue(block, field.id);
+        if (current === undefined || current === null) { current = field.defecto; }
+        if (current && current !== '') {
+            inputColor.value = current;
+            inputText.value = current;
+        }
+        
         inputColor.addEventListener('input', function() {
             inputText.value = inputColor.value;
             update(inputColor.value);
         });
-
+        
         inputText.addEventListener('input', function() {
             var val = inputText.value.trim();
-            if (/^#[0-9A-F]{6}$/i.test(val)) {
+            if (val && val.match(/^#(?:[0-9a-fA-F]{3}){1,2}$/)) {
                 inputColor.value = val;
-                update(val);
-            } else if (val === '') {
-                update(null);
             }
+            update(val);
         });
-
-        // Palette
+        
+        // Color Palette Toggle
+        var toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'gbn-color-palette-toggle';
+        toggleBtn.innerHTML = '▼';
+        toggleBtn.title = 'Mostrar/Ocultar Paleta';
+        
         var palette = document.createElement('div');
         palette.className = 'gbn-color-palette';
-        palette.style.display = 'none'; // Hidden by default
+        palette.style.display = 'none';
         
         toggleBtn.onclick = function() {
             palette.style.display = palette.style.display === 'none' ? 'flex' : 'none';
@@ -647,8 +691,63 @@
         }
     }
 
+    /**
+     * Agrega indicador visual de estado de sincronización para campos del Panel de Tema
+     * Muestra si el campo está sincronizado con CSS o modificado manualmente
+     */
+    function addSyncIndicator(wrapper, block, fieldId) {
+        // Solo para Panel de Tema
+        if (!block || block.role !== 'theme') return;
+        
+        // Solo para campos de componentes
+        if (!fieldId || !fieldId.startsWith('components.')) return;
+        
+        var pathParts = fieldId.split('.');
+        if (pathParts.length < 3) return;
+        
+        var role = pathParts[1];      // "principal" o "secundario"
+        var prop = pathParts[2];      // "padding", "background", etc.
+        
+        // Obtener estado de sincronización
+        var syncState = 'css'; // default: sincronizado
+        if (block.config && block.config.components && block.config.components[role]) {
+            var comp = block.config.components[role];
+            if (comp.__sync && comp.__sync[prop]) {
+                syncState = comp.__sync[prop];
+            }
+        }
+        
+        // Crear indicador
+        var indicator = document.createElement('span');
+        indicator.className = 'gbn-sync-indicator gbn-sync-' + syncState;
+        indicator.style.marginLeft = '8px';
+        indicator.style.padding = '2px 8px';
+        indicator.style.borderRadius = '4px';
+        indicator.style.fontSize = '11px';
+        indicator.style.fontWeight = '600';
+        indicator.style.textTransform = 'uppercase';
+        
+        if (syncState === 'css') {
+            indicator.innerHTML = '🔗 CSS';
+            indicator.style.backgroundColor = '#e3f2fd';
+            indicator.style.color = '#1976d2';
+            indicator.title = 'Sincronizado con código CSS';
+        } else {
+            indicator.innerHTML = '✏️ Manual';
+            indicator.style.backgroundColor = '#fff3e0';
+            indicator.style.color = '#f57c00';
+            indicator.title = 'Modificado manualmente - No sincroniza con CSS';
+        }
+        
+        // Buscar dónde agregarlo (legend o label)
+        var target = wrapper.querySelector('legend') || wrapper.querySelector('.gbn-field-label');
+        if (target) {
+            target.appendChild(indicator);
+        }
+    }
+
     Gbn.ui = Gbn.ui || {};
-    Gbn.ui.panelFields = { buildField: buildField };
+    Gbn.ui.panelFields = { buildField: buildField, addSyncIndicator: addSyncIndicator };
 })(window);
 
 

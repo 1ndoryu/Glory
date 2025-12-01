@@ -48,11 +48,19 @@
     }
 
     function syncInlineStylesWithConfig(inlineStyles, schema, defaults) {
-        if (!inlineStyles || !schema || !Array.isArray(schema)) {
-            return deepCloneConfig(defaults || {});
+        // Si no hay estilos inline reales, devolver objeto vacío
+        // Esto evita que los fallbacks CSS se interpreten como valores "establecidos"
+        if (!inlineStyles || Object.keys(inlineStyles).length === 0) {
+            return {};
+        }
+        
+        if (!schema || !Array.isArray(schema)) {
+            return {};
         }
 
-        var config = deepCloneConfig(defaults || {});
+        // Empezar con objeto vacío, NO con defaults
+        // Solo procesaremos las propiedades que realmente existen en inlineStyles
+        var config = {};
         var spacingMap = {
             'padding-top': 'padding.superior',
             'padding-right': 'padding.derecha',

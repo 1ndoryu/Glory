@@ -71,18 +71,33 @@
         el.classList.add('gbn-node');
 
         // Asegurar que los valores inline iniciales se reflejen en la configuración del bloque
+        // SOLO si hay estilos inline REALES (escritos en el HTML)
+        // Esto evita que los fallbacks CSS se guarden como configuración del componente
         try {
-            var roleDefaults = roles.getRoleDefaults(role);
-            var inlineConfig = configHelpers.syncInlineStyles(block.styles.inline, roleDefaults.schema, roleDefaults.config);
+            var hasRealInlineStyles = el.hasAttribute('style') && el.getAttribute('style').trim() !== '';
             
-            // Merge options from attributes into inlineConfig so they populate the panel
-            if (meta.options) {
-                inlineConfig = utils.assign({}, inlineConfig, meta.options);
-            }
+            if (hasRealInlineStyles) {
+                var roleDefaults = roles.getRoleDefaults(role);
+                // NO pasar roleDefaults.config, solo un objeto vacío para evitar herencia CSS
+                var inlineConfig = configHelpers.syncInlineStyles(block.styles.inline, roleDefaults.schema, {});
+                
+                // Merge options from attributes into inlineConfig so they populate the panel
+                if (meta.options) {
+                    inlineConfig = utils.assign({}, inlineConfig, meta.options);
+                }
 
-            var currentConfig = utils.assign({}, block.config || {});
-            var mergedWithInline = configHelpers.mergeIfEmpty(currentConfig, inlineConfig);
-            block = state.updateConfig(block.id, mergedWithInline) || block;
+                var currentConfig = utils.assign({}, block.config || {});
+                var mergedWithInline = configHelpers.mergeIfEmpty(currentConfig, inlineConfig);
+                block = state.updateConfig(block.id, mergedWithInline) || block;
+            } else if (meta.options) {
+                // Si no hay estilos inline pero sí hay opciones de atributos (ej: gloryContentRender)
+                // Solo aplicar las opciones, sin valores CSS
+                var currentConfig = utils.assign({}, block.config || {});
+                var mergedWithOptions = configHelpers.mergeIfEmpty(currentConfig, meta.options);
+                block = state.updateConfig(block.id, mergedWithOptions) || block;
+            }
+            // Si NO hay estilos inline NI opciones, no hacer nada
+            // El componente heredará valores del Panel de Tema vía variables CSS
         } catch (_) {}
 
         // Aplicar presets persistidos (config y estilos) si existen para este bloque

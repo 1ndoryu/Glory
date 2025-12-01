@@ -127,9 +127,13 @@ class GbnManager
                 'file' => '/js/core/state.js',
                 'deps' => ['glory-gbn-core'],
             ],
+            'glory-gbn-css-sync' => [
+                'file' => '/js/services/css-sync.js',
+                'deps' => ['glory-gbn-core'],
+            ],
             'glory-gbn-theme-applicator' => [
                 'file' => '/js/render/theme-applicator.js',
-                'deps' => ['glory-gbn-state'],
+                'deps' => ['glory-gbn-state', 'glory-gbn-css-sync'],
             ],
             'glory-gbn-style' => [
                 'file' => '/js/render/styleManager.js',

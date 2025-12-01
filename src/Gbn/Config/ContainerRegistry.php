@@ -17,16 +17,7 @@ final class ContainerRegistry
             ],
             'defaults' => [
                 'config' => [
-                    'padding' => [
-                        'superior' => null,
-                        'derecha' => null,
-                        'inferior' => null,
-                        'izquierda' => null,
-                    ],
-                    'height' => 'auto',
-                    'alineacion' => 'inherit',
-                    'maxAncho' => null,
-                    'fondo' => null,
+                    // Defaults handled by CSS variables
                     'layout' => 'flex',
                     'flexDirection' => 'row',
                     'flexWrap' => 'wrap',
@@ -47,12 +38,13 @@ final class ContainerRegistry
                     [
                         'id' => 'padding',
                         'tipo' => 'spacing',
-                        'etiqueta' => 'Padding',
+                        'etiqueta' => 'Padding (Auto)',
                         'unidades' => ['px', '%', 'rem'],
                         'paso' => 4,
                         'min' => 0,
                         'max' => 240,
                         'campos' => ['superior', 'derecha', 'inferior', 'izquierda'],
+                        'defecto' => null,
                     ],
                     [
                         'id' => 'alineacion',
@@ -175,23 +167,12 @@ final class ContainerRegistry
             ],
             'defaults' => [
                 'config' => [
-                    'padding' => [
-                        'superior' => null,
-                        'derecha' => null,
-                        'inferior' => null,
-                        'izquierda' => null,
-                    ],
-                    'width' => '1/1',
-                    'height' => 'auto',
-                    'gap' => 20,
+                    // Defaults handled by CSS variables
                     'layout' => 'block',
                     'flexDirection' => 'row',
                     'flexWrap' => 'nowrap',
                     'flexJustify' => 'flex-start',
                     'flexAlign' => 'stretch',
-                    'gridColumns' => 3,
-                    'gridRows' => 'auto',
-                    'gridGap' => 20,
                 ],
                 'schema' => [
                     [
@@ -236,12 +217,13 @@ final class ContainerRegistry
                     [
                         'id' => 'padding',
                         'tipo' => 'spacing',
-                        'etiqueta' => 'Padding interno',
+                        'etiqueta' => 'Padding Interno (Auto)',
                         'unidades' => ['px', '%', 'rem'],
                         'paso' => 4,
                         'min' => 0,
                         'max' => 160,
                         'campos' => ['superior', 'derecha', 'inferior', 'izquierda'],
+                        'defecto' => null,
                     ],
                     [
                         'id' => 'gap',

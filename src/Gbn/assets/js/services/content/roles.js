@@ -153,7 +153,7 @@
                         defecto: 20,
                         condicion: ['layout', 'grid']
                     },
-                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding', defecto: 20 },
+                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding' },
                     { id: 'background', tipo: 'color', etiqueta: 'Fondo', defecto: 'transparent' }
                 ]
             };
@@ -166,7 +166,7 @@
                 },
                 schema: [
                     { id: 'width', tipo: 'fraction', etiqueta: 'Ancho', defecto: '1/1' },
-                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding', defecto: 20 },
+                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding' },
                     { id: 'background', tipo: 'color', etiqueta: 'Fondo', defecto: 'transparent' }
                 ]
             };

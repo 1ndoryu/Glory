@@ -8,7 +8,10 @@
     // We keep local wrappers that delegate to Gbn.ui.themeApplicator
     
     function toCssValue(val, defaultUnit) {
-        return Gbn.ui.themeApplicator ? Gbn.ui.themeApplicator.toCssValue(val, defaultUnit) : val;
+        if (val === null || val === undefined || val === '') return '';
+        if (typeof val === 'number') return val + (defaultUnit || 'px');
+        if (/^\d+(\.\d+)?$/.test(val)) return val + (defaultUnit || 'px');
+        return val;
     }
 
     function applyPageSettings(settings) {
@@ -203,6 +206,11 @@
                     });
                 }
             });
+        }
+        
+        // Sincronización automática con CSS en modo dev
+        if (gloryGbnCfg && gloryGbnCfg.devMode && Gbn.cssSync && Gbn.cssSync.syncTheme) {
+            mockBlock.config = Gbn.cssSync.syncTheme(mockBlock.config);
         }
         
         // Initial apply
@@ -435,6 +443,50 @@
                     { tipo: 'spacing', id: 'pages.padding', etiqueta: 'Padding Default', defecto: 20 }
                 ];
             } else if (sectionId === 'components') {
+                // Agregar botón "Restaurar desde Código" al inicio de la sección
+                if (gloryGbnCfg && gloryGbnCfg.devMode && Gbn.cssSync && Gbn.cssSync.restore) {
+                    var restoreContainer = document.createElement('div');
+                    restoreContainer.className = 'gbn-restore-container';
+                    restoreContainer.style.marginBottom = '20px';
+                    restoreContainer.style.padding = '12px';
+                    restoreContainer.style.backgroundColor = '#f0f0f0';
+                    restoreContainer.style.borderRadius = '6px';
+                    
+                    var restoreBtn = document.createElement('button');
+                    restoreBtn.type = 'button';
+                    restoreBtn.className = 'gbn-restore-btn';
+                    restoreBtn.innerHTML = '↻ Restaurar desde Código CSS';
+                    restoreBtn.title = 'Volver a sincronizar todos los componentes con valores del CSS';
+                    restoreBtn.style.width = '100%';
+                    restoreBtn.style.padding = '10px';
+                    restoreBtn.style.fontSize = '14px';
+                    restoreBtn.style.fontWeight = '600';
+                    restoreBtn.style.backgroundColor = '#007bff';
+                    restoreBtn.style.color = '#fff';
+                    restoreBtn.style.border = 'none';
+                    restoreBtn.style.borderRadius = '4px';
+                    restoreBtn.style.cursor = 'pointer';
+                    
+                    restoreBtn.onmouseover = function() {
+                        this.style.backgroundColor = '#0056b3';
+                    };
+                    restoreBtn.onmouseout = function() {
+                        this.style.backgroundColor = '#007bff';
+                    };
+                    
+                    restoreBtn.onclick = function() {
+                        if (confirm('¿Restaurar todos los valores desde el código CSS? Esto sobrescribirá los cambios manuales.')) {
+                            mockBlock.config = Gbn.cssSync.restore(mockBlock.config);
+                            applyThemeSettings(mockBlock.config);
+                            // Re-renderizar la sección actual
+                            renderSection('components');
+                        }
+                    };
+                    
+                    restoreContainer.appendChild(restoreBtn);
+                    content.appendChild(restoreContainer);
+                }
+                
                 // Dynamic Component Defaults
                 if (Gbn.content && Gbn.content.roles && Gbn.content.roles.getMap) {
                     var roles = Gbn.content.roles.getMap();
@@ -490,14 +542,115 @@
     }
 
     function applyPageSettings(settings) {
-        if (Gbn.ui.themeApplicator) {
-            Gbn.ui.themeApplicator.applyPageSettings(settings);
+        var root = document.querySelector('[data-gbn-root]');
+        if (!root) return;
+        
+        if (settings.background) {
+            root.style.backgroundColor = settings.background;
+        } else {
+            root.style.removeProperty('background-color');
+        }
+        
+        if (settings.padding) {
+            if (typeof settings.padding === 'object') {
+                root.style.paddingTop = toCssValue(settings.padding.superior);
+                root.style.paddingRight = toCssValue(settings.padding.derecha);
+                root.style.paddingBottom = toCssValue(settings.padding.inferior);
+                root.style.paddingLeft = toCssValue(settings.padding.izquierda);
+            } else {
+                root.style.padding = toCssValue(settings.padding);
+            }
+        } else {
+            root.style.removeProperty('padding');
         }
     }
 
     function applyThemeSettings(settings) {
-        if (Gbn.ui.themeApplicator) {
-            Gbn.ui.themeApplicator.applyThemeSettings(settings);
+        // Use data-gbn-root for scoping, fallback to documentElement if not found (but prefer root)
+        var root = document.querySelector('[data-gbn-root]') || document.documentElement;
+        if (!settings) return;
+        
+        // Helper to set or remove property
+        function setOrRemove(prop, val) {
+            if (val !== null && val !== undefined && val !== '') {
+                root.style.setProperty(prop, val);
+            } else {
+                root.style.removeProperty(prop);
+            }
+        }
+
+        // Helper to set or remove property with unit conversion
+        function setOrRemoveValue(prop, val) {
+            if (val !== null && val !== undefined && val !== '') {
+                root.style.setProperty(prop, toCssValue(val));
+            } else {
+                root.style.removeProperty(prop);
+            }
+        }
+        
+        // Text Settings
+        if (settings.text) {
+            var tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+            tags.forEach(function(tag) {
+                if (settings.text[tag]) {
+                    var s = settings.text[tag];
+                    var prefix = '--gbn-' + (tag === 'p' ? 'text' : tag);
+                    
+                    setOrRemove(prefix + '-color', s.color);
+                    setOrRemoveValue(prefix + '-size', s.size);
+                    
+                    if (s.font && s.font !== 'System') {
+                        root.style.setProperty(prefix + '-font', s.font);
+                    } else {
+                        root.style.removeProperty(prefix + '-font');
+                    }
+                    
+                    setOrRemove(prefix + '-lh', s.lineHeight);
+                    setOrRemoveValue(prefix + '-ls', s.letterSpacing);
+                    setOrRemove(prefix + '-transform', s.transform);
+                }
+            });
+        }
+        
+        // Color Settings
+        if (settings.colors) {
+            setOrRemove('--gbn-primary', settings.colors.primary);
+            setOrRemove('--gbn-secondary', settings.colors.secondary);
+            setOrRemove('--gbn-accent', settings.colors.accent);
+            setOrRemove('--gbn-bg', settings.colors.background);
+            
+            // Custom Colors
+            if (settings.colors.custom && Array.isArray(settings.colors.custom)) {
+                settings.colors.custom.forEach(function(c, i) {
+                    if (c.value) {
+                        root.style.setProperty('--gbn-custom-' + i, c.value);
+                    }
+                });
+            }
+        }
+        
+        // Page Defaults
+        if (settings.pages) {
+            setOrRemove('--gbn-page-bg', settings.pages.background);
+        }
+        
+        // Component Defaults (Principal, Secundario, etc)
+        if (settings.components) {
+             Object.keys(settings.components).forEach(function(role) {
+                 var comp = settings.components[role];
+                 if (!comp) return;
+                 
+                 // Map specific known properties to CSS variables
+                 if (role === 'principal') {
+                     setOrRemoveValue('--gbn-principal-padding', comp.padding);
+                     setOrRemove('--gbn-principal-background', comp.background);
+                     setOrRemoveValue('--gbn-principal-gap', comp.gap);
+                 } else if (role === 'secundario') {
+                     setOrRemoveValue('--gbn-secundario-padding', comp.padding);
+                     setOrRemove('--gbn-secundario-background', comp.background);
+                     setOrRemoveValue('--gbn-secundario-width', comp.width);
+                 }
+             });
         }
     }
 
