@@ -167,6 +167,10 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
     - **Layout**: Reemplazar selects por iconos para opciones de flexbox/grid (dirección, wrap, etc.).
     - **Tamaños de Bloques Secundarios**: Selector visual de fracciones (1/1, 1/2, 1/3, etc.) al agregar o configurar.
     - **Colores de Panel**: Diferenciar paneles por tipo (Azul: Primario, Naranja: Secundario, Morado: Componentes).
+- [x] **Gestión Avanzada de Estilos Globales**:
+    - **Placeholders Dinámicos**: Los campos vacíos muestran el valor heredado del tema en tiempo real.
+    - **Distinción Visual**: Indicadores visuales (flecha ↓, texto gris/itálica) para diferenciar valores heredados de overrides manuales.
+    - **Sincronización en Tiempo Real**: Cambios en defaults del tema se propagan instantáneamente a todos los bloques sin recargar.
 
 
 
@@ -260,6 +264,7 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 - `gbn:layoutChanged`: Se dispara cuando cambia la estructura (mover, insertar, borrar).
 - `gbn:contentHydrated`: Se dispara cuando el contenido se carga o recarga.
 - `gbn:configChanged`: Se dispara cuando se edita la configuración de un bloque en el panel.
+- `gbn:themeDefaultsChanged`: Se dispara cuando cambian los valores por defecto en el Panel de Tema. Permite actualización en tiempo real de todos los bloques afectados.
 - **Uso**: El módulo `dock.js` escucha estos eventos para habilitar el botón de "Guardar".
 
 ### UI Components
