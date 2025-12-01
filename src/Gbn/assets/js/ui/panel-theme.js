@@ -11,6 +11,116 @@
         return Gbn.ui.themeApplicator ? Gbn.ui.themeApplicator.toCssValue(val, defaultUnit) : val;
     }
 
+    function applyPageSettings(settings) {
+        var root = document.querySelector('[data-gbn-root]');
+        if (!root) return;
+        
+        if (settings.background) {
+            root.style.backgroundColor = settings.background;
+        }
+        if (settings.padding) {
+            if (typeof settings.padding === 'object') {
+                root.style.paddingTop = toCssValue(settings.padding.superior);
+                root.style.paddingRight = toCssValue(settings.padding.derecha);
+                root.style.paddingBottom = toCssValue(settings.padding.inferior);
+                root.style.paddingLeft = toCssValue(settings.padding.izquierda);
+            } else {
+                root.style.padding = toCssValue(settings.padding);
+            }
+        }
+    }
+
+    function renderPageSettingsForm(settings, container, footer) {
+        if (!container) return;
+        container.innerHTML = '';
+        var form = document.createElement('form');
+        form.className = 'gbn-panel-form';
+        
+        var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
+        if (!builder) {
+            container.innerHTML = 'Error: panelFields no disponible';
+            return;
+        }
+
+        var schema = [
+            { tipo: 'color', id: 'background', etiqueta: 'Color de Fondo (Main)', defecto: '#ffffff' },
+            { tipo: 'spacing', id: 'padding', etiqueta: 'Padding (Main)', defecto: 20 }
+        ];
+
+        var mockBlock = {
+            id: 'page-settings',
+            role: 'page',
+            config: settings || {}
+        };
+
+        schema.forEach(function(field) {
+            var control = builder(mockBlock, field);
+            if (control) {
+                form.appendChild(control);
+            }
+        });
+
+        container.appendChild(form);
+        
+        // Disable panel footer button as we use global dock save
+        if (footer) {
+            footer.disabled = true;
+            footer.textContent = 'Usa Guardar en el Dock';
+        }
+        
+        // Monkey-patching removed. Logic moved to panel-render.js
+    }
+
+    function applyThemeSettings(settings) {
+        // Use data-gbn-root for scoping, fallback to documentElement if not found (but prefer root)
+        var root = document.querySelector('[data-gbn-root]') || document.documentElement;
+        if (!settings) return;
+        
+        // Text Settings
+        if (settings.text) {
+            var tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+            tags.forEach(function(tag) {
+                if (settings.text[tag]) {
+                    var s = settings.text[tag];
+                    var prefix = '--gbn-' + (tag === 'p' ? 'text' : tag);
+                    
+                    if (s.color) root.style.setProperty(prefix + '-color', s.color);
+                    if (s.size) root.style.setProperty(prefix + '-size', toCssValue(s.size));
+                    if (s.font && s.font !== 'System') root.style.setProperty(prefix + '-font', s.font);
+                    if (s.lineHeight) root.style.setProperty(prefix + '-lh', s.lineHeight);
+                    if (s.letterSpacing) root.style.setProperty(prefix + '-ls', toCssValue(s.letterSpacing));
+                    if (s.transform) root.style.setProperty(prefix + '-transform', s.transform);
+                }
+            });
+        }
+        
+        // Color Settings
+        if (settings.colors) {
+            if (settings.colors.primary) root.style.setProperty('--gbn-primary', settings.colors.primary);
+            if (settings.colors.secondary) root.style.setProperty('--gbn-secondary', settings.colors.secondary);
+            if (settings.colors.accent) root.style.setProperty('--gbn-accent', settings.colors.accent);
+            if (settings.colors.background) root.style.setProperty('--gbn-bg', settings.colors.background);
+            
+            // Custom Colors
+            if (settings.colors.custom && Array.isArray(settings.colors.custom)) {
+                settings.colors.custom.forEach(function(c, i) {
+                    if (c.value) {
+                        // We can set by index or name. Let's set by index for stability if names change?
+                        // Or maybe we don't need CSS vars for custom colors if they are just for the palette?
+                        // But if we want to use them in CSS, we might need them.
+                        // Let's set them just in case.
+                        root.style.setProperty('--gbn-custom-' + i, c.value);
+                    }
+                });
+            }
+        }
+        
+        // Page Defaults
+        if (settings.pages) {
+            if (settings.pages.background) root.style.setProperty('--gbn-page-bg', settings.pages.background);
+        }
+    }
+
     function renderThemeSettingsForm(settings, container, footer) {
         if (!container) return;
         container.innerHTML = '';
