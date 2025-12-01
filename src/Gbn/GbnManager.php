@@ -187,13 +187,21 @@ class GbnManager
                 'file' => '/js/ui/panel-render.js',
                 'deps' => ['glory-gbn-ui-panel-fields'],
             ],
-            'glory-gbn-ui-panel-theme' => [
-                'file' => '/js/ui/panel-theme.js',
-                'deps' => ['glory-gbn-ui-panel-fields'],
+            'glory-gbn-ui-theme-applicator' => [
+                'file' => '/js/ui/theme/applicator.js',
+                'deps' => ['glory-gbn-state', 'glory-gbn-css-sync'],
+            ],
+            'glory-gbn-ui-theme-render' => [
+                'file' => '/js/ui/theme/render.js',
+                'deps' => ['glory-gbn-ui-panel-fields', 'glory-gbn-ui-theme-applicator'],
+            ],
+            'glory-gbn-ui-theme-index' => [
+                'file' => '/js/ui/theme/index.js',
+                'deps' => ['glory-gbn-ui-theme-render'],
             ],
             'glory-gbn-ui-panel' => [
                 'file' => '/js/ui/panel-core.js',
-                'deps' => ['glory-gbn-ui-panel-render', 'glory-gbn-ui-panel-theme'],
+                'deps' => ['glory-gbn-ui-panel-render', 'glory-gbn-ui-theme-index'],
             ],
             'glory-gbn-ui-dragdrop' => [
                 'file' => '/js/ui/drag-drop.js',

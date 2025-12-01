@@ -436,9 +436,9 @@
         // Color Palette Toggle
         var toggleBtn = document.createElement('button');
         toggleBtn.type = 'button';
-        toggleBtn.className = 'gbn-color-palette-toggle';
-        toggleBtn.innerHTML = '▼';
-        toggleBtn.title = 'Mostrar/Ocultar Paleta';
+        toggleBtn.className = 'gbn-color-toggle';
+        toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+        toggleBtn.title = 'Mostrar/Ocultar Paleta Global';
         
         var palette = document.createElement('div');
         palette.className = 'gbn-color-palette';
@@ -875,7 +875,15 @@
         // Buscar dónde agregarlo (legend o label)
         var target = wrapper.querySelector('legend') || wrapper.querySelector('.gbn-field-label');
         if (target) {
+            // Check if it's a legend (fieldset), we might need to be careful not to break layout
+            // For legend, it's fine. For label, we might want to ensure it's flex.
+            if (target.tagName.toLowerCase() === 'label') {
+                // Ensure label container allows inline elements or is flex
+                // But we can just append.
+            }
             target.appendChild(indicator);
+            // Add class to wrapper to help with styling if needed
+            wrapper.classList.add('gbn-has-sync-indicator');
         }
     }
 

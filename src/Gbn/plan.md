@@ -253,7 +253,10 @@ Para `gloryContentRender="post"`, el builder detecta el tipo de contenido y ejec
 - **`panel-core.js`**: Núcleo del panel lateral (apertura, cierre, navegación, estructura base)
 - **`panel-fields.js`**: Constructores de campos del panel (spacing, slider, select, toggle, color, typography, icon_group)
 - **`panel-render.js`**: Renderiza contenido del panel basado en schema, aplica cambios en tiempo real
-- **`panel-theme.js`**: Panel específico para configuraciones de tema (colores, tipografía, defaults globales)
+- **`ui/theme/`**: Módulo refactorizado para configuraciones de tema
+  - **`applicator.js`**: Lógica de aplicación de estilos (CSS variables)
+  - **`render.js`**: Renderizado de formularios de configuración
+  - **`index.js`**: Punto de entrada y compatibilidad
 
 ---
 

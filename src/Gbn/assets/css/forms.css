@@ -695,3 +695,119 @@
     background-color: #fff3e0;
     color: #f57c00;
 }
+
+/* Restore Section Styles */
+.gbn-restore-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #eee;
+}
+
+.gbn-restore-section:last-child {
+    border-bottom: none;
+}
+
+.gbn-restore-section h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.gbn-restore-section p {
+    margin: 0 0 16px 0;
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+.gbn-btn-primary {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-align: center;
+}
+
+.gbn-btn-danger {
+    background-color: #d9534f;
+    color: #fff;
+}
+.gbn-btn-danger:hover { background-color: #c9302c; }
+
+.gbn-btn-warning {
+    background-color: #f0ad4e;
+    color: #fff;
+}
+.gbn-btn-warning:hover { background-color: #ec971f; }
+
+.gbn-btn-danger-dark {
+    background-color: #a94442;
+    color: #fff;
+}
+.gbn-btn-danger-dark:hover { background-color: #843534; }
+
+
+/* Component Menu List */
+.gbn-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.gbn-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: left;
+    color: #333;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.gbn-menu-item:hover {
+    border-color: #1d8ff1;
+    background: #f0f7ff;
+    color: #1d8ff1;
+}
+
+.gbn-menu-item svg {
+    color: #ccc;
+    transition: color 0.2s;
+}
+
+.gbn-menu-item:hover svg {
+    color: #1d8ff1;
+}
+
+/* Sync Indicator Layout Fix */
+.gbn-has-sync-indicator .gbn-field-header,
+.gbn-has-sync-indicator legend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.gbn-has-sync-indicator .gbn-field-label {
+    /* Ensure label takes available space if needed, but indicator is usually right aligned */
+}
+
+/* Padding Control Header Fix */
+.gbn-field-spacing legend {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}

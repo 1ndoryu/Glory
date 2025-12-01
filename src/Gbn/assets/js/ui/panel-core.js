@@ -282,33 +282,21 @@
                 
                 // --- Restore Page Section ---
                 var pageSection = document.createElement('div');
-                pageSection.style.marginBottom = '30px';
-                pageSection.style.borderBottom = '1px solid #eee';
-                pageSection.style.paddingBottom = '20px';
-
+                pageSection.className = 'gbn-restore-section';
+                
                 var pageTitle = document.createElement('h4');
                 pageTitle.textContent = 'Restaurar Página Actual';
-                pageTitle.style.marginTop = '0';
                 
                 var desc = document.createElement('p');
                 desc.textContent = 'Elimina configuraciones personalizadas de esta página y restaura el contenido original.';
-                desc.style.fontSize = '13px';
-                desc.style.color = '#666';
                 
                 var btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'gbn-btn-primary gbn-btn-danger';
                 btn.textContent = 'Restaurar Página';
-                btn.style.width = '100%';
-                btn.style.padding = '10px';
-                btn.style.backgroundColor = '#d9534f';
-                btn.style.color = '#fff';
-                btn.style.border = 'none';
-                btn.style.borderRadius = '4px';
-                btn.style.cursor = 'pointer';
                 
                 btn.addEventListener('click', function() {
-                    if (!confirm('¿Estás seguro de restaurar la página?')) return;
+                    // No confirm dialog
                     btn.disabled = true;
                     btn.textContent = 'Restaurando...';
                     setPanelStatus('Restaurando Página...');
@@ -338,30 +326,21 @@
 
                 // --- Restore Theme Section ---
                 var themeSection = document.createElement('div');
+                themeSection.className = 'gbn-restore-section';
                 
                 var themeTitle = document.createElement('h4');
                 themeTitle.textContent = 'Restaurar Tema Global';
-                themeTitle.style.marginTop = '0';
 
                 var themeDesc = document.createElement('p');
                 themeDesc.textContent = 'Restablece todos los ajustes globales del tema (colores, tipografía, defaults de componentes) a sus valores originales.';
-                themeDesc.style.fontSize = '13px';
-                themeDesc.style.color = '#666';
 
                 var themeBtn = document.createElement('button');
                 themeBtn.type = 'button';
                 themeBtn.className = 'gbn-btn-primary gbn-btn-warning';
-                themeBtn.textContent = 'Restaurar Tema Completo';
-                themeBtn.style.width = '100%';
-                themeBtn.style.padding = '10px';
-                themeBtn.style.backgroundColor = '#f0ad4e';
-                themeBtn.style.color = '#fff';
-                themeBtn.style.border = 'none';
-                themeBtn.style.borderRadius = '4px';
-                themeBtn.style.cursor = 'pointer';
+                themeBtn.textContent = 'Restaurar Tema Global';
 
                 themeBtn.addEventListener('click', function() {
-                    if (!confirm('¿Estás seguro de restablecer TODO el tema? Esto afectará a todo el sitio.')) return;
+                    // No confirm dialog
                     themeBtn.disabled = true;
                     themeBtn.textContent = 'Restableciendo...';
                     setPanelStatus('Restableciendo Tema...');
@@ -375,12 +354,12 @@
                             } else {
                                 setPanelStatus('Error al restablecer tema');
                                 themeBtn.disabled = false;
-                                themeBtn.textContent = 'Restaurar Tema Completo';
+                                themeBtn.textContent = 'Restaurar Tema Global';
                             }
                         }).catch(function() {
                             setPanelStatus('Error de conexión');
                             themeBtn.disabled = false;
-                            themeBtn.textContent = 'Restaurar Tema Completo';
+                            themeBtn.textContent = 'Restaurar Tema Global';
                         });
                     } else {
                          setPanelStatus('Función no disponible');
@@ -392,6 +371,46 @@
                 themeSection.appendChild(themeDesc);
                 themeSection.appendChild(themeBtn);
                 container.appendChild(themeSection);
+                
+                // --- Restore ALL Section ---
+                var allSection = document.createElement('div');
+                allSection.className = 'gbn-restore-section gbn-restore-all';
+                
+                var allTitle = document.createElement('h4');
+                allTitle.textContent = 'Restaurar Todo (Página + Tema)';
+
+                var allDesc = document.createElement('p');
+                allDesc.textContent = 'Restablece TANTO la página actual como el tema global a sus estados originales. ¡Acción destructiva!';
+
+                var allBtn = document.createElement('button');
+                allBtn.type = 'button';
+                allBtn.className = 'gbn-btn-primary gbn-btn-danger-dark';
+                allBtn.textContent = 'Restaurar TODO';
+
+                allBtn.addEventListener('click', function() {
+                    // No confirm dialog
+                    allBtn.disabled = true;
+                    allBtn.textContent = 'Restaurando Todo...';
+                    setPanelStatus('Restaurando Todo...');
+                    
+                    var p1 = Gbn.persistence && typeof Gbn.persistence.restorePage === 'function' ? Gbn.persistence.restorePage() : Promise.resolve({success:false});
+                    var p2 = Gbn.persistence && typeof Gbn.persistence.saveThemeSettings === 'function' ? Gbn.persistence.saveThemeSettings({}) : Promise.resolve({success:false});
+                    
+                    Promise.all([p1, p2]).then(function(results) {
+                        // Check if at least one succeeded or both
+                        setPanelStatus('Restauración completa. Recargando...');
+                        setTimeout(function() { window.location.reload(); }, 500);
+                    }).catch(function() {
+                        setPanelStatus('Error durante la restauración');
+                        allBtn.disabled = false;
+                        allBtn.textContent = 'Restaurar TODO';
+                    });
+                });
+
+                allSection.appendChild(allTitle);
+                allSection.appendChild(allDesc);
+                allSection.appendChild(allBtn);
+                container.appendChild(allSection);
 
                 panelBody.appendChild(container);
             }
