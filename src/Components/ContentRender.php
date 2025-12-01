@@ -15,6 +15,8 @@ use WP_Query;
 use Glory\Components\PaginationRenderer;
 use Glory\Utility\ImageUtility;
 use Glory\Core\GloryFeatures;
+use Glory\Support\CSS\ContentRenderCss;
+use Glory\Utility\TemplateRegistry;
 
 /**
  * Clase ContentRender.
@@ -45,6 +47,13 @@ class ContentRender
                 'argumentosConsulta'     => [],
                 'forzarSinCache'         => false,
                 'paginacion'             => false,
+                'gap'                    => '20px',
+                'display_mode'           => 'flex',
+                'img_show'               => true,
+                'title_show'             => true,
+                'title_position'         => 'top',
+                'title_show_on_hover'    => false,
+                'content_opacity'        => 0.9,
             ],
             'schema' => [
                 [
@@ -61,9 +70,10 @@ class ContentRender
                 ],
                 [
                     'id'       => 'plantilla',
-                    'tipo'     => 'text', // Idealmente un select dinámico, pero text por ahora
+                    'tipo'     => 'select',
                     'etiqueta' => 'Plantilla (ID)',
-                    'descripcion' => 'Ej: plantillaLibro, plantillaServicios',
+                    'opciones' => self::getTemplateOptions(),
+                    'descripcion' => 'Selecciona la plantilla de renderizado.',
                 ],
                 [
                     'id'       => 'publicacionesPorPagina',
@@ -214,6 +224,22 @@ class ContentRender
                     'etiqueta' => 'Color Título',
                     'condicion' => ['title_show', '==', true],
                 ],
+                [
+                    'id'       => 'title_position',
+                    'tipo'     => 'select',
+                    'etiqueta' => 'Posición Título',
+                    'opciones' => [
+                        ['valor' => 'top', 'etiqueta' => 'Arriba'],
+                        ['valor' => 'bottom', 'etiqueta' => 'Abajo'],
+                    ],
+                    'condicion' => ['title_show', '==', true],
+                ],
+                [
+                    'id'       => 'title_show_on_hover',
+                    'tipo'     => 'toggle',
+                    'etiqueta' => 'Mostrar al pasar el mouse',
+                    'condicion' => ['title_show', '==', true],
+                ],
                 // --- Interaction Options ---
                 [
                     'id'       => 'interaccion_modo',
@@ -243,6 +269,21 @@ class ContentRender
                 ],
             ],
         ];
+    }
+
+    /**
+     * Helper to get template options for the select field.
+     */
+    private static function getTemplateOptions(): array
+    {
+        $options = [];
+        if (class_exists(TemplateRegistry::class)) {
+            $templates = TemplateRegistry::options();
+            foreach ($templates as $id => $label) {
+                $options[] = ['valor' => $id, 'etiqueta' => $label . ' (' . $id . ')'];
+            }
+        }
+        return $options;
     }
 
     /**
@@ -371,6 +412,30 @@ class ContentRender
         ];
         $config   = wp_parse_args($opciones, $defaults);
 
+        // Resolve template ID to callback if provided
+        if (!empty($config['plantilla'])) {
+            $callback = null;
+            
+            // 1. Try TemplateRegistry (registered via code)
+            if (class_exists(TemplateRegistry::class)) {
+                $callback = TemplateRegistry::get($config['plantilla']);
+            }
+            
+            // 2. Try TemplateManager (scans files)
+            if (!$callback && class_exists(\Glory\Manager\TemplateManager::class)) {
+                $callback = \Glory\Manager\TemplateManager::getTemplateCallback($config['plantilla']);
+            }
+
+            // 3. Fallback: check if the ID itself is a callable function (e.g. 'plantillaPosts')
+            if (!$callback && is_callable($config['plantilla'])) {
+                $callback = $config['plantilla'];
+            }
+            
+            if ($callback) {
+                $config['plantillaCallback'] = $callback;
+            }
+        }
+
         // Usar la constante global de WordPress para el modo desarrollo.
         // Si WP_DEBUG es true, no se usará la caché.
         $isDevMode = (defined('WP_DEBUG') && WP_DEBUG);
@@ -497,11 +562,27 @@ class ContentRender
                 $query->max_num_pages = (int) $config['minPaginas'];
             }
 
-            $contenedorClass  = trim($config['claseContenedor'] . ' ' . sanitize_html_class($postType));
-            $itemClass        = trim($config['claseItem'] . ' ' . sanitize_html_class($postType) . '-item');
+            // Generate instance class for CSS scoping
+            $instanceClass = $config['instanceClass'] ?? 'glory-cr-' . substr(md5(uniqid('', true)), 0, 8);
+            
+            $contenedorClass  = trim($config['claseContenedor'] . ' ' . sanitize_html_class($postType) . ' ' . $instanceClass);
+            $itemClass        = trim($config['claseItem'] . ' ' . sanitize_html_class($postType) . '-item' . ' ' . $instanceClass . '__item');
             $isAjaxPagination = $config['paginacion'];
 
-            $instanceClass = isset( $config['instanceClass'] ) ? (string) $config['instanceClass'] : '';
+            // Generate CSS
+            if (class_exists(ContentRenderCss::class)) {
+                $css = ContentRenderCss::build(
+                    $instanceClass, 
+                    $config, 
+                    $config, 
+                    $config['interaccion_modo'] ?? 'normal', 
+                    false 
+                );
+                if (!empty($css)) {
+                    echo '<style>' . $css . '</style>';
+                }
+            }
+
             if ( ! isset( $config['categoryFilter'] ) || ! is_array( $config['categoryFilter'] ) ) {
                 $config['categoryFilter'] = [
                     'enabled'  => false,
@@ -598,7 +679,19 @@ class ContentRender
             $gbnAttrs = '';
             if (class_exists(GloryFeatures::class) && GloryFeatures::isActive('gbn', 'glory_gbn_activado') !== false) {
                 $gbnRole    = self::gbnDefaults();
-                $configAttr = esc_attr(wp_json_encode($gbnRole['config'] ?? []));
+                // Merge defaults with current config to ensure all keys exist
+                $finalConfig = wp_parse_args($config, $gbnRole['config'] ?? []);
+                
+                // Ensure post_type is set in finalConfig so frontend picks it up
+                if (empty($finalConfig['post_type'])) {
+                    $finalConfig['post_type'] = $effectivePostType;
+                }
+                // Maintain backward compatibility for config key 'postType' if needed by PHP logic
+                if (empty($finalConfig['postType'])) {
+                    $finalConfig['postType'] = $effectivePostType;
+                }
+
+                $configAttr = esc_attr(wp_json_encode($finalConfig));
                 $schemaAttr = esc_attr(wp_json_encode($gbnRole['schema'] ?? []));
                 $gbnAttrs   = ' data-gbn-content="1" data-gbn-role="content"'
                     . ' data-gbn-config="' . $configAttr . '"'
@@ -693,9 +786,12 @@ class ContentRender
         <div id="post-<?php echo $post->ID; ?>" class="<?php echo esc_attr($itemClass); ?>">
             <a class="glory-cr__link" href="<?php echo esc_url(get_permalink($post)); ?>">
                 <div class="glory-cr__stack">
-                    <h2 class="glory-cr__title"><?php echo esc_html(get_the_title($post)); ?></h2>
+                    <h2 class="glory-cr__title"
+                        <?php if (isset(self::$currentConfig['title_show']) && !self::$currentConfig['title_show']) echo ' style="display:none;"'; ?>
+                    ><?php echo esc_html(get_the_title($post)); ?></h2>
                     <?php
-                    if (has_post_thumbnail($post)) :
+                    $showImg = isset(self::$currentConfig['img_show']) ? (bool) self::$currentConfig['img_show'] : true;
+                    if ($showImg && has_post_thumbnail($post)) :
                         $optimize = (bool) (self::$currentConfig['imgOptimize'] ?? true);
                         $quality  = (int) (self::$currentConfig['imgQuality'] ?? 60);
                         $size     = (string) (self::$currentConfig['imgSize'] ?? 'medium');

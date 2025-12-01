@@ -43,7 +43,7 @@ class ContentRenderCss
 		$currentConfig = $instanceConfig ?? [];
 		$internalLayout = $currentConfig['internalLayoutOptionsResponsive'] ?? $currentConfig['internalLayoutOptions'] ?? [];
 
-		$img_show = ! isset( $args['img_show'] ) || 'yes' === $args['img_show'];
+		$img_show = ! isset( $args['img_show'] ) || 'yes' === $args['img_show'] || true === $args['img_show'] || '1' === (string) $args['img_show'];
 		$img_aspect_ratio = isset( $args['img_aspect_ratio'] ) ? (string) $args['img_aspect_ratio'] : '1 / 1';
 		$img_object_fit = isset( $args['img_object_fit'] ) ? (string) $args['img_object_fit'] : 'cover';
 
@@ -380,7 +380,7 @@ class ContentRenderCss
 			}
 		}
 
-		$title_show = ! isset( $args['title_show'] ) || 'yes' === (string) $args['title_show'];
+		$title_show = ! isset( $args['title_show'] ) || 'yes' === (string) $args['title_show'] || true === $args['title_show'];
 		// Color del título: soportar responsive si viene como array
 		$title_color_raw = $args['title_color'] ?? '';
 		if ( is_array( $title_color_raw ) ) {

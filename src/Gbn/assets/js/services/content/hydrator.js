@@ -56,7 +56,8 @@
         var payload = utils.assign({}, opts);
         
         // Overrides and specific handling
-        payload.postType = block.meta.postType || opts.postType || 'post';
+        // Prioritize opts.postType (from config) over meta.postType (from attribute)
+        payload.postType = opts.postType || block.meta.postType || 'post';
         payload.argumentosConsulta = JSON.stringify(opts.argumentosConsulta || {});
         
         // Generate instanceId based on block ID for unique CSS scoping

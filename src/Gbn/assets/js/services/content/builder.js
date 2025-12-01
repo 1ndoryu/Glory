@@ -38,6 +38,10 @@
             var estilosAttr = el.getAttribute('estilos');
             meta.inlineArgs = configHelpers.extractInlineArgs(estilosAttr);
             meta.options = utils.assign({}, parsedOptions);
+            // Ensure postType is in options so it populates the config
+            if (meta.postType) {
+                meta.options.postType = meta.postType;
+            }
         }
         
         // Pre-process text content for text role
@@ -70,6 +74,12 @@
         try {
             var roleDefaults = roles.getRoleDefaults(role);
             var inlineConfig = configHelpers.syncInlineStyles(block.styles.inline, roleDefaults.schema, roleDefaults.config);
+            
+            // Merge options from attributes into inlineConfig so they populate the panel
+            if (meta.options) {
+                inlineConfig = utils.assign({}, inlineConfig, meta.options);
+            }
+
             var currentConfig = utils.assign({}, block.config || {});
             var mergedWithInline = configHelpers.mergeIfEmpty(currentConfig, inlineConfig);
             block = state.updateConfig(block.id, mergedWithInline) || block;
