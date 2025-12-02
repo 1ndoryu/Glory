@@ -5,6 +5,8 @@
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.renderers = Gbn.ui.renderers || {};
 
+    var utils = Gbn.utils;
+
     function extractSpacingStyles(spacingConfig) {
         var styles = {};
         if (spacingConfig === null || spacingConfig === undefined || spacingConfig === '') { return styles; }
