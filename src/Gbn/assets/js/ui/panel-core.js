@@ -192,6 +192,21 @@
             if (panelTitle) { panelTitle.textContent = 'Configuración del Tema'; }
             
             if (panelBody) {
+                // Primero verificar si hay estado local (cambios no guardados)
+                var localSettings = Gbn.config && Gbn.config.themeSettings;
+                
+                if (localSettings && Object.keys(localSettings).length > 0) {
+                    // Usar estado local si existe
+                    if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.renderThemeSettingsForm) {
+                        var currentFooter = panelRoot.querySelector('.gbn-footer-primary');
+                        if (currentFooter) panelFooter = currentFooter;
+                        Gbn.ui.panelTheme.renderThemeSettingsForm(localSettings, panelBody, panelFooter);
+                    }
+                    setPanelStatus('Listo (desde cache local)');
+                    return;
+                }
+                
+                // Si no hay estado local, cargar del servidor
                 panelBody.innerHTML = '<div class="gbn-panel-loading">Cargando configuración...</div>';
                 panelForm = null;
                 setPanelStatus('Cargando...');
@@ -200,6 +215,10 @@
                     Gbn.persistence.getThemeSettings().then(function(res) {
                         if (res && res.success) {
                             var settings = res.data || {};
+                            // Guardar en estado local para uso futuro
+                            if (!Gbn.config) Gbn.config = {};
+                            Gbn.config.themeSettings = settings;
+                            
                             // Delegate to panelTheme
                             if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.renderThemeSettingsForm) {
                                 // Ensure footer is fresh
@@ -235,6 +254,21 @@
             if (panelTitle) { panelTitle.textContent = 'Configuración de Página'; }
             
             if (panelBody) {
+                // Primero verificar si hay estado local (cambios no guardados)
+                var localSettings = Gbn.config && Gbn.config.pageSettings;
+                
+                if (localSettings && Object.keys(localSettings).length > 0) {
+                    // Usar estado local si existe
+                    if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.renderPageSettingsForm) {
+                        var currentFooter = panelRoot.querySelector('.gbn-footer-primary');
+                        if (currentFooter) panelFooter = currentFooter;
+                        Gbn.ui.panelTheme.renderPageSettingsForm(localSettings, panelBody, panelFooter);
+                    }
+                    setPanelStatus('Listo (desde cache local)');
+                    return;
+                }
+                
+                // Si no hay estado local, cargar del servidor
                 panelBody.innerHTML = '<div class="gbn-panel-loading">Cargando configuración...</div>';
                 panelForm = null;
                 setPanelStatus('Cargando...');
@@ -243,6 +277,10 @@
                     Gbn.persistence.getPageSettings().then(function(res) {
                         if (res && res.success) {
                             var settings = res.data || {};
+                            // Guardar en estado local para uso futuro
+                            if (!Gbn.config) Gbn.config = {};
+                            Gbn.config.pageSettings = settings;
+                            
                             // Delegate to panelTheme
                             if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.renderPageSettingsForm) {
                                 // Ensure footer is fresh

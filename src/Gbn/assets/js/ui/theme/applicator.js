@@ -148,20 +148,57 @@
                  }
              }
              
+             // Helper para aplicar propiedades de layout
+             function applyLayoutProperties(prefix, comp) {
+                 // Layout type
+                 setOrRemove(prefix + '-layout', comp.layout);
+                 
+                 // Flex properties
+                 setOrRemove(prefix + '-direction', comp.direction || comp.flexDirection);
+                 setOrRemove(prefix + '-wrap', comp.wrap || comp.flexWrap);
+                 setOrRemove(prefix + '-justify', comp.justify || comp.flexJustify);
+                 setOrRemove(prefix + '-align', comp.align || comp.flexAlign);
+                 
+                 // Grid properties
+                 if (comp.gridColumns) {
+                     setOrRemove(prefix + '-grid-columns', comp.gridColumns);
+                 }
+                 if (comp.gridGap !== undefined) {
+                     setOrRemoveValue(prefix + '-grid-gap', comp.gridGap);
+                 }
+                 
+                 // Max width
+                 if (comp.maxAncho !== undefined && comp.maxAncho !== null && comp.maxAncho !== '') {
+                     setOrRemoveValue(prefix + '-max-width', comp.maxAncho);
+                 } else {
+                     root.style.removeProperty(prefix + '-max-width');
+                 }
+                 
+                 // Height
+                 setOrRemove(prefix + '-height', comp.height);
+             }
+             
              Object.keys(settings.components).forEach(function(role) {
                  var comp = settings.components[role];
                  if (!comp) return;
                  
-                 // Map specific known properties to CSS variables
-                 if (role === 'principal') {
-                     applyPadding('--gbn-principal', comp.padding);
-                     setOrRemove('--gbn-principal-background', comp.background);
-                     setOrRemoveValue('--gbn-principal-gap', comp.gap);
-                     // Layout defaults could be vars too if we updated CSS
-                 } else if (role === 'secundario') {
-                     applyPadding('--gbn-secundario', comp.padding);
-                     setOrRemove('--gbn-secundario-background', comp.background);
-                     setOrRemoveValue('--gbn-secundario-width', comp.width);
+                 var prefix = '--gbn-' + role;
+                 
+                 // Aplicar padding
+                 applyPadding(prefix, comp.padding);
+                 
+                 // Aplicar background
+                 setOrRemove(prefix + '-background', comp.background);
+                 
+                 // Aplicar gap
+                 setOrRemoveValue(prefix + '-gap', comp.gap);
+                 
+                 // Aplicar propiedades de layout (layout, direction, wrap, justify, align, grid, maxAncho, height)
+                 applyLayoutProperties(prefix, comp);
+                 
+                 // Propiedades específicas por rol
+                 if (role === 'secundario') {
+                     setOrRemoveValue(prefix + '-width', comp.width);
                  }
              });
         }

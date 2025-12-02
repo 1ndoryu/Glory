@@ -24,7 +24,7 @@
 
     /**
      * Obtiene el valor por defecto del tema para un rol y propiedad específicos
-     * Jerarquía: themeSettings guardados > valores CSS actuales (via cssSync)
+     * Jerarquía: Gbn.config.themeSettings (local) > gloryGbnCfg.themeSettings (servidor) > cssSync
      * @param {string} role - Rol del bloque (principal, secundario, etc.)
      * @param {string} path - Ruta de la propiedad (ej: 'padding.superior')
      * @returns {*} Valor del tema o undefined
@@ -32,19 +32,30 @@
     function getThemeDefault(role, path) {
         if (!role) return undefined;
         
-        // 1. Intentar desde themeSettings guardados
-        var themeSettings = (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.themeSettings) 
-            ? gloryGbnCfg.themeSettings 
-            : (Gbn.config && Gbn.config.themeSettings ? Gbn.config.themeSettings : null);
-        
-        if (themeSettings && themeSettings.components && themeSettings.components[role]) {
-            var themeVal = getDeepValue(themeSettings.components[role], path);
-            if (themeVal !== undefined && themeVal !== null && themeVal !== '') {
-                return themeVal;
+        // 1. PRIMERO: Intentar desde estado local (Gbn.config.themeSettings)
+        // Este tiene prioridad porque puede contener cambios no guardados
+        if (Gbn.config && Gbn.config.themeSettings) {
+            var localSettings = Gbn.config.themeSettings;
+            if (localSettings.components && localSettings.components[role]) {
+                var localVal = getDeepValue(localSettings.components[role], path);
+                if (localVal !== undefined && localVal !== null && localVal !== '') {
+                    return localVal;
+                }
             }
         }
         
-        // 2. Fallback: leer valores actuales desde el CSS via cssSync
+        // 2. SEGUNDO: Intentar desde gloryGbnCfg (valores del servidor)
+        if (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.themeSettings) {
+            var serverSettings = gloryGbnCfg.themeSettings;
+            if (serverSettings.components && serverSettings.components[role]) {
+                var serverVal = getDeepValue(serverSettings.components[role], path);
+                if (serverVal !== undefined && serverVal !== null && serverVal !== '') {
+                    return serverVal;
+                }
+            }
+        }
+        
+        // 3. Fallback: leer valores actuales desde el CSS via cssSync
         if (Gbn.cssSync && Gbn.cssSync.readDefaults) {
             var cssDefaults = Gbn.cssSync.readDefaults();
             if (cssDefaults && cssDefaults.components && cssDefaults.components[role]) {

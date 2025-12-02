@@ -73,6 +73,71 @@
         }
         return cursor;
     }
+    
+    /**
+     * Obtiene el valor de Theme Settings para un rol y propiedad específicos
+     * @param {string} role - Rol del bloque (principal, secundario, etc.)
+     * @param {string} path - Ruta de la propiedad (ej: 'padding.superior', 'layout', 'gap')
+     * @returns {*} Valor del Theme Settings o undefined
+     */
+    function getThemeSettingsValue(role, path) {
+        if (!role || !path) return undefined;
+        
+        // Intentar desde Gbn.config.themeSettings (estado local)
+        var themeSettings = Gbn.config && Gbn.config.themeSettings;
+        
+        // Si no hay estado local, intentar desde gloryGbnCfg (cargado del servidor)
+        if (!themeSettings && typeof gloryGbnCfg !== 'undefined') {
+            themeSettings = gloryGbnCfg.themeSettings;
+        }
+        
+        if (!themeSettings || !themeSettings.components || !themeSettings.components[role]) {
+            return undefined;
+        }
+        
+        var comp = themeSettings.components[role];
+        var segments = path.split('.');
+        var cursor = comp;
+        
+        for (var i = 0; i < segments.length; i++) {
+            if (cursor === null || cursor === undefined) return undefined;
+            cursor = cursor[segments[i]];
+        }
+        
+        // Solo retornar si hay valor válido
+        if (cursor !== undefined && cursor !== null && cursor !== '') {
+            return cursor;
+        }
+        
+        return undefined;
+    }
+    
+    /**
+     * Obtiene el valor efectivo de configuración con fallback a Theme Settings
+     * Prioridad: 1) block.config, 2) themeSettings.components[role]
+     * @param {Object} config - Configuración del bloque
+     * @param {string} role - Rol del bloque
+     * @param {string} path - Ruta de la propiedad
+     * @returns {*} Valor encontrado o undefined
+     */
+    function getConfigWithThemeFallback(config, role, path) {
+        // 1. Buscar en config del bloque
+        var segments = path.split('.');
+        var cursor = config || {};
+        
+        for (var i = 0; i < segments.length; i++) {
+            if (cursor === null || cursor === undefined) break;
+            cursor = cursor[segments[i]];
+        }
+        
+        // Si el valor existe en config, usarlo
+        if (cursor !== undefined && cursor !== null && cursor !== '') {
+            return cursor;
+        }
+        
+        // 2. Fallback a Theme Settings
+        return getThemeSettingsValue(role, path);
+    }
 
     function updateConfigValue(block, path, value) {
         if (!block || !path) { return; }
@@ -170,99 +235,156 @@
     }
 
     var styleResolvers = {
-        principal: function (config) {
-            var styles = extractSpacingStyles(config.padding);
-            if (config.height && config.height !== 'auto') {
-                if (config.height === 'min-content') {
+        principal: function (config, block) {
+            var role = 'principal';
+            
+            // Helper para obtener valor con fallback a theme
+            function get(path) {
+                return getConfigWithThemeFallback(config, role, path);
+            }
+            
+            // Padding - usa la función extractSpacingStyles con fallback
+            var paddingConfig = config.padding;
+            if (!paddingConfig || (typeof paddingConfig === 'object' && Object.keys(paddingConfig).length === 0)) {
+                paddingConfig = getThemeSettingsValue(role, 'padding');
+            }
+            var styles = extractSpacingStyles(paddingConfig);
+            
+            var height = get('height');
+            if (height && height !== 'auto') {
+                if (height === 'min-content') {
                     styles['height'] = 'min-content';
-                } else if (config.height === '100vh') {
+                } else if (height === '100vh') {
                     styles['height'] = '100vh';
                 }
             }
-            if (config.alineacion && config.alineacion !== 'inherit') { styles['text-align'] = config.alineacion; }
-            if (config.maxAncho !== null && config.maxAncho !== undefined && config.maxAncho !== '') {
-                var val = String(config.maxAncho).trim();
-                // Si es solo número, agregar px. Si tiene unidad o es texto (auto), dejar tal cual.
+            
+            var alineacion = get('alineacion');
+            if (alineacion && alineacion !== 'inherit') { styles['text-align'] = alineacion; }
+            
+            var maxAncho = get('maxAncho');
+            if (maxAncho !== null && maxAncho !== undefined && maxAncho !== '') {
+                var val = String(maxAncho).trim();
                 if (/^-?\d+(\.\d+)?$/.test(val)) {
                     styles['max-width'] = val + 'px';
                 } else {
                     styles['max-width'] = val;
                 }
             }
-            if (config.fondo) { styles.background = config.fondo; }
+            
+            var fondo = get('fondo') || get('background');
+            if (fondo) { styles.background = fondo; }
             
             // Layout logic for principal
-            var layout = config.layout || 'flex'; // Default to flex
+            var layout = get('layout') || 'flex'; // Default to flex
             
             if (layout === 'grid') {
-                if (config.layout) styles.display = 'grid';
-                if (config.gridColumns) {
-                    styles['grid-template-columns'] = 'repeat(' + config.gridColumns + ', 1fr)';
+                styles.display = 'grid';
+                var gridColumns = get('gridColumns');
+                if (gridColumns) {
+                    styles['grid-template-columns'] = 'repeat(' + gridColumns + ', 1fr)';
                 }
-                if (config.gridRows && config.gridRows !== 'auto') {
-                    styles['grid-template-rows'] = config.gridRows;
+                var gridRows = get('gridRows');
+                if (gridRows && gridRows !== 'auto') {
+                    styles['grid-template-rows'] = gridRows;
                 }
-                if (config.gridGap) { styles.gap = config.gridGap + 'px'; }
-                else if (config.gap) { styles.gap = config.gap + 'px'; }
+                var gridGap = get('gridGap');
+                var gap = get('gap');
+                if (gridGap) { styles.gap = gridGap + 'px'; }
+                else if (gap) { styles.gap = gap + 'px'; }
             } else if (layout === 'flex') {
-                if (config.layout) styles.display = 'flex';
-                if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
-                if (config.flexWrap) { styles['flex-wrap'] = config.flexWrap; }
-                if (config.flexJustify) { styles['justify-content'] = config.flexJustify; }
-                if (config.flexAlign) { styles['align-items'] = config.flexAlign; }
-                if (config.gap) { styles.gap = config.gap + 'px'; }
+                styles.display = 'flex';
+                var direction = get('direction') || get('flexDirection');
+                var wrap = get('wrap') || get('flexWrap');
+                var justify = get('justify') || get('flexJustify');
+                var align = get('align') || get('flexAlign');
+                var gap = get('gap');
+                
+                if (direction) { styles['flex-direction'] = direction; }
+                if (wrap) { styles['flex-wrap'] = wrap; }
+                if (justify) { styles['justify-content'] = justify; }
+                if (align) { styles['align-items'] = align; }
+                if (gap) { styles.gap = gap + 'px'; }
             } else {
-                if (config.layout) styles.display = 'block';
+                styles.display = 'block';
             }
             
             return styles;
         },
-        secundario: function (config) {
-            var styles = extractSpacingStyles(config.padding);
-            if (config.height && config.height !== 'auto') {
-                if (config.height === 'min-content') {
+        secundario: function (config, block) {
+            var role = 'secundario';
+            
+            // Helper para obtener valor con fallback a theme
+            function get(path) {
+                return getConfigWithThemeFallback(config, role, path);
+            }
+            
+            // Padding - usa la función extractSpacingStyles con fallback
+            var paddingConfig = config.padding;
+            if (!paddingConfig || (typeof paddingConfig === 'object' && Object.keys(paddingConfig).length === 0)) {
+                paddingConfig = getThemeSettingsValue(role, 'padding');
+            }
+            var styles = extractSpacingStyles(paddingConfig);
+            
+            var height = get('height');
+            if (height && height !== 'auto') {
+                if (height === 'min-content') {
                     styles['height'] = 'min-content';
-                } else if (config.height === '100vh') {
+                } else if (height === '100vh') {
                     styles['height'] = '100vh';
                 }
             }
             
             // Width logic
-            if (config.width) {
-                 var pct = parseFraction(config.width);
+            var width = get('width');
+            if (width) {
+                 var pct = parseFraction(width);
                  if (pct) {
                      styles.width = pct;
-                     styles['flex-basis'] = pct; // Ensure it works in flex containers
-                     styles['flex-shrink'] = '0'; // Prevent shrinking
-                     styles['flex-grow'] = '0'; // Prevent growing
+                     styles['flex-basis'] = pct;
+                     styles['flex-shrink'] = '0';
+                     styles['flex-grow'] = '0';
                  }
             }
 
-            if (config.gap !== null && config.gap !== undefined && config.gap !== '') {
-                var gap = parseFloat(config.gap);
-                if (!isNaN(gap)) { styles.gap = gap + 'px'; }
+            var gap = get('gap');
+            if (gap !== null && gap !== undefined && gap !== '') {
+                var gapVal = parseFloat(gap);
+                if (!isNaN(gapVal)) { styles.gap = gapVal + 'px'; }
             }
             
-            var layout = config.layout || 'block'; // Default to block
+            var layout = get('layout') || 'block'; // Default to block
             
             if (layout === 'grid') {
-                if (config.layout) styles.display = 'grid';
-                if (config.gridColumns) {
-                    styles['grid-template-columns'] = 'repeat(' + config.gridColumns + ', 1fr)';
+                styles.display = 'grid';
+                var gridColumns = get('gridColumns');
+                if (gridColumns) {
+                    styles['grid-template-columns'] = 'repeat(' + gridColumns + ', 1fr)';
                 }
-                if (config.gridRows && config.gridRows !== 'auto') {
-                    styles['grid-template-rows'] = config.gridRows;
+                var gridRows = get('gridRows');
+                if (gridRows && gridRows !== 'auto') {
+                    styles['grid-template-rows'] = gridRows;
                 }
-                if (config.gridGap) { styles.gap = config.gridGap + 'px'; }
+                var gridGap = get('gridGap');
+                if (gridGap) { styles.gap = gridGap + 'px'; }
             } else if (layout === 'flex') {
-                if (config.layout) styles.display = 'flex';
-                if (config.flexDirection) { styles['flex-direction'] = config.flexDirection; }
-                if (config.flexWrap) { styles['flex-wrap'] = config.flexWrap; }
-                if (config.flexJustify) { styles['justify-content'] = config.flexJustify; }
-                if (config.flexAlign) { styles['align-items'] = config.flexAlign; }
+                styles.display = 'flex';
+                var direction = get('direction') || get('flexDirection');
+                var wrap = get('wrap') || get('flexWrap');
+                var justify = get('justify') || get('flexJustify');
+                var align = get('align') || get('flexAlign');
+                
+                if (direction) { styles['flex-direction'] = direction; }
+                if (wrap) { styles['flex-wrap'] = wrap; }
+                if (justify) { styles['justify-content'] = justify; }
+                if (align) { styles['align-items'] = align; }
             } else {
-                if (config.layout) styles.display = 'block';
+                styles.display = 'block';
             }
+            
+            var fondo = get('fondo') || get('background');
+            if (fondo) { styles.background = fondo; }
+            
             return styles;
         },
         content: function () { return {}; },
@@ -608,11 +730,29 @@
         });
     }
 
+    /**
+     * Aplica los estilos basados en Theme Settings a todos los bloques existentes
+     * Útil para aplicar cambios después de cargar Theme Settings del servidor
+     */
+    function applyThemeStylesToAllBlocks() {
+        if (!state || !state.all) return;
+        
+        var blocks = state.all();
+        blocks.forEach(function(block) {
+            if (block.role === 'principal' || block.role === 'secundario') {
+                applyBlockStyles(block);
+            }
+        });
+    }
+
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.panelRender = {
         renderBlockControls: renderBlockControls,
         updateConfigValue: updateConfigValue,
-        applyBlockStyles: applyBlockStyles
+        applyBlockStyles: applyBlockStyles,
+        applyThemeStylesToAllBlocks: applyThemeStylesToAllBlocks,
+        getThemeSettingsValue: getThemeSettingsValue,
+        getConfigWithThemeFallback: getConfigWithThemeFallback
     };
 
 })(window);

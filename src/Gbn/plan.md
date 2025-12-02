@@ -596,79 +596,57 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 
 ---
 
-## 🚨 PRIORIDADES CRÍTICAS PENDIENTES (Diciembre 2025)
+## ✅ PRIORIDADES CRÍTICAS RESUELTAS (Diciembre 2025)
 
-### 🔴 Problema 1: Theme Settings > Componentes > Principal - No se aplican valores
+### ✅ Problema 1: Theme Settings > Componentes > Principal - RESUELTO
 
-**Síntomas:**
-- [ ] El campo "Ancho Máximo" en Theme Settings > Componentes > Principal no se aplica en tiempo real al cambiar el valor
-- [ ] Las opciones de Layout (flex, grid, block) tampoco se aplican en tiempo real
-- [ ] Al guardar, los valores NO se persisten correctamente
-- [ ] Al guardar y volver a abrir el panel, el valor aparece vacío
-
-**Área afectada:** `ui/theme/applicator.js` → `applyThemeSettings()` no está aplicando `maxAncho` para componentes, solo para página.
-
-**Diferencia con Page Settings:** El Ancho Máximo de Página SÍ funciona en tiempo real porque `applyPageSettings()` lo maneja explícitamente.
+**Solución aplicada:**
+- [x] Extendido `ui/theme/applicator.js` → `applyThemeSettings()` ahora aplica todas las propiedades de componentes
+- [x] Nueva función `applyLayoutProperties()` para manejar: layout, direction, wrap, justify, align, gridColumns, gridGap, maxAncho, height
+- [x] Variables CSS creadas: `--gbn-{role}-layout`, `--gbn-{role}-direction`, `--gbn-{role}-wrap`, `--gbn-{role}-justify`, `--gbn-{role}-align`, `--gbn-{role}-max-width`, etc.
 
 ---
 
-### 🔴 Problema 2: Page Settings - Valores no se mantienen al reabrir
+### ✅ Problema 2: Page Settings - Valores no se mantienen al reabrir - RESUELTO
 
-**Síntomas:**
-- [x] "Ancho Máximo (Página)" se aplica en tiempo real ✅
-- [x] Se guarda correctamente ✅  
-- [ ] **PERO**: Al cerrar y volver a abrir el panel, si había un valor nuevo (ej: 1000px) y antes había otro (ej: 500px), se pierde el valor nuevo y carga el anterior
-
-**Causa probable:** El panel carga los datos del servidor (`getPageSettings`) en lugar de mantener el estado local actualizado (`Gbn.config.pageSettings`). Hay un desync entre el estado local y lo que carga el panel.
-
-**Flujo actual incorrecto:**
-1. Usuario abre Page Settings → carga desde servidor (500px)
-2. Usuario cambia a 1000px → se aplica en tiempo real, se actualiza `Gbn.config.pageSettings`
-3. Usuario cierra panel
-4. Usuario abre panel de nuevo → carga desde servidor (500px) ← Aquí está el bug
-5. El valor 1000px se perdió porque no se había guardado aún
+**Solución aplicada:**
+- [x] Modificado `ui/panel-core.js` → `openPage()` y `openTheme()` ahora verifican primero si existe estado local
+- [x] Si hay `Gbn.config.pageSettings` o `Gbn.config.themeSettings` (cambios no guardados), se usa ese estado
+- [x] Solo va al servidor si no hay estado local
+- [x] Al cargar del servidor, se guarda en `Gbn.config` para uso futuro
 
 ---
 
-### 🔴 Problema 3: Herencia de valores Theme → Bloques individuales NO funciona
+### ✅ Problema 3: Herencia de valores Theme → Bloques individuales - RESUELTO
 
-**Síntomas:**
-- [ ] Al abrir el panel de un `gloryDiv` principal, NO carga los valores default del Theme Panel
-- [ ] Si en Theme Settings > Componentes > Principal se configura "Layout: flexbox, wrap: nowrap", eso NO se aplica globalmente a todos los divs principales
-- [ ] Solo funciona configurando individualmente cada div
-- [ ] Los placeholders del panel individual deberían mostrar los valores del Theme Panel
+**Solución aplicada:**
+- [x] Creadas nuevas funciones en `ui/panel-render.js`:
+  - `getThemeSettingsValue(role, path)`: Obtiene valor de Theme Settings para un rol
+  - `getConfigWithThemeFallback(config, role, path)`: Obtiene valor con fallback a Theme Settings
+- [x] Modificados `styleResolvers.principal` y `styleResolvers.secundario` para usar fallback a Theme Settings
+- [x] Ahora cuando un bloque no tiene configuración propia, hereda del Theme Panel
+- [x] Actualizado `ui/panel-fields/utils.js` → `getThemeDefault()` ahora prioriza:
+  1. `Gbn.config.themeSettings` (estado local, puede tener cambios no guardados)
+  2. `gloryGbnCfg.themeSettings` (valores del servidor)
+  3. `cssSync.readDefaults()` (fallback CSS)
 
-**Jerarquía esperada (no implementada):**
+**Jerarquía implementada:**
 ```
 CSS defaults (gbn.css) 
     ↓ hereda si no hay override
-Theme Panel (components.principal.*)
+Theme Panel (components.principal.*) - Gbn.config.themeSettings.components[role]
     ↓ hereda si no hay override  
 Bloque individual (block.config.*)
 ```
 
-**Archivos afectados:**
-- `ui/panel-fields/utils.js` → `getThemeDefault()` - ¿Está leyendo correctamente de `Gbn.config.themeSettings.components[role]`?
-- `ui/panel-fields/*.js` → Los campos individuales no están usando `getThemeDefault()` como placeholder
-- `services/content/dom.js` → Al normalizar elementos, no aplica defaults del Theme Panel
-- `render/styleManager.js` → Al aplicar estilos, no considera la jerarquía Theme → Individual
-
-**Preguntas clave:**
-1. ¿`getThemeDefault(role, path)` realmente busca en `Gbn.config.themeSettings.components[role][path]`?
-2. ¿Los campos del panel individual usan esa función para mostrar placeholders?
-3. ¿`applyBlockStyles()` considera los valores del Theme Panel cuando `block.config` está vacío?
+**Funciones expuestas para debugging:**
+- `Gbn.ui.panelRender.getThemeSettingsValue(role, path)`
+- `Gbn.ui.panelRender.getConfigWithThemeFallback(config, role, path)`
+- `Gbn.ui.panelRender.applyThemeStylesToAllBlocks()`
 
 ---
 
-### Progreso parcial (intentos previos)
-
-#### ✅ Parcialmente resuelto: Visibilidad de opciones condicionales en Theme Settings
-- [x] Las opciones dependientes de layout ahora se muestran/ocultan correctamente al cambiar el valor
-- [x] Se agregó lógica en `render.js` para re-renderizar campos condicionales
-- [x] Se mejoró `shouldShowField()` para evaluar condiciones de componentes
-
-#### ⚠️ Pendiente verificar
-- [ ] La visibilidad condicional funciona, pero los valores no se aplican
+### Mejoras pendientes (futuras)
 
 #### 🟡 Refactorización: Automatización de Opciones de Componentes (SOLID)
 - [ ] **Problema**: La lógica actual en `renderThemeSettingsForm` define manualmente qué campos mostrar para cada componente, lo cual es repetitivo y propenso a errores.
