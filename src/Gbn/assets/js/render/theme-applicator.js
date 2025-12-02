@@ -43,6 +43,13 @@
                 root.style.padding = toCssValue(settings.padding);
             }
         }
+        // Ancho Máximo - aplicar a root
+        if (settings.maxAncho !== undefined && settings.maxAncho !== null && settings.maxAncho !== '') {
+            root.style.maxWidth = toCssValue(settings.maxAncho);
+            // Para que maxWidth funcione correctamente, centrar el contenedor
+            root.style.marginLeft = 'auto';
+            root.style.marginRight = 'auto';
+        }
     }
 
     function applyThemeSettings(settings) {

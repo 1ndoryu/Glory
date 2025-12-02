@@ -233,6 +233,8 @@
     /**
      * Evalúa si un campo debe mostrarse basado en su condición
      * Usa getEffectiveValue para incluir valores computados del DOM
+     * Para Theme Settings con campos de componentes (ej: 'components.principal.layout'),
+     * la condición se evalúa relativa al componente
      * @param {Object} block - Bloque actual
      * @param {Object} field - Definición del campo
      * @returns {boolean}
@@ -257,15 +259,29 @@
             return true;
         }
 
-        // Usar getEffectiveValue para incluir valores computados del DOM
-        var effective = getEffectiveValue(block, key);
-        var current = effective.value;
+        var current;
         
-        // Para 'layout', mapear 'flex' desde computedStyle 'display: flex'
-        if (key === 'layout' && effective.source === 'computed') {
-            if (current === 'flex') current = 'flex';
-            else if (current === 'grid') current = 'grid';
-            else if (current === 'block' || current === 'block flow') current = 'block';
+        // Para Theme Settings con campos de componentes
+        // Si field.id es 'components.{role}.{prop}', buscar condición en 'components.{role}.{key}'
+        if (field.id && field.id.indexOf('components.') === 0) {
+            var parts = field.id.split('.');
+            if (parts.length >= 3) {
+                var componentPath = parts.slice(0, 2).join('.') + '.' + key;
+                current = getDeepValue(block.config, componentPath);
+            }
+        }
+        
+        // Si no encontramos valor con la lógica de componentes, usar getEffectiveValue normal
+        if (current === undefined || current === null) {
+            var effective = getEffectiveValue(block, key);
+            current = effective.value;
+            
+            // Para 'layout', mapear 'flex' desde computedStyle 'display: flex'
+            if (key === 'layout' && effective.source === 'computed') {
+                if (current === 'flex') current = 'flex';
+                else if (current === 'grid') current = 'grid';
+                else if (current === 'block' || current === 'block flow') current = 'block';
+            }
         }
 
         switch (operator) {

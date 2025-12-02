@@ -6,7 +6,7 @@
 /* Variables CSS por defecto - Sincronizables con Panel de Tema */
 :root {
     /* Principal Padding Defaults */
-    --gbn-principal-padding-top: 20px;
+    --gbn-principal-padding-top: 40px;
     --gbn-principal-padding-right: 20px;
     --gbn-principal-padding-bottom: 20px;
     --gbn-principal-padding-left: 20px;

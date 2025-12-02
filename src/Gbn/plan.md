@@ -596,15 +596,79 @@ La comunicación entre módulos se realiza a través de eventos globales en `win
 
 ---
 
-## 🚨 NUEVAS PRIORIDADES CRÍTICAS (Diciembre 2025)
+## 🚨 PRIORIDADES CRÍTICAS PENDIENTES (Diciembre 2025)
 
-#### 🔴 Crítico: Ancho Máximo no funciona
-- [ ] **Problema**: La opción de "Ancho Máximo" no está aplicando cambios ni en los divs principales ni en la configuración de página.
-- [ ] **Acción**: Revisar la aplicación de estilos CSS para `max-width` en `styleManager.js` y `theme-applicator.js`. Verificar si el CSS global `max-width: 100%` está interfiriendo o si falta la lógica de aplicación.
+### 🔴 Problema 1: Theme Settings > Componentes > Principal - No se aplican valores
 
-#### 🔴 Crítico: Opciones de Layout en Configuración del Tema
-- [ ] **Problema**: En "Theme Settings > Componentes", el layout aparece como 'flexbox' pero las opciones dependientes (dirección, wrap, etc.) están ocultas hasta que se hace clic de nuevo.
-- [ ] **Causa probable**: El `render.js` del tema no está disparando la lógica de visibilidad condicional al cargar el formulario inicial, similar al bug que se arregló en el panel principal.
+**Síntomas:**
+- [ ] El campo "Ancho Máximo" en Theme Settings > Componentes > Principal no se aplica en tiempo real al cambiar el valor
+- [ ] Las opciones de Layout (flex, grid, block) tampoco se aplican en tiempo real
+- [ ] Al guardar, los valores NO se persisten correctamente
+- [ ] Al guardar y volver a abrir el panel, el valor aparece vacío
+
+**Área afectada:** `ui/theme/applicator.js` → `applyThemeSettings()` no está aplicando `maxAncho` para componentes, solo para página.
+
+**Diferencia con Page Settings:** El Ancho Máximo de Página SÍ funciona en tiempo real porque `applyPageSettings()` lo maneja explícitamente.
+
+---
+
+### 🔴 Problema 2: Page Settings - Valores no se mantienen al reabrir
+
+**Síntomas:**
+- [x] "Ancho Máximo (Página)" se aplica en tiempo real ✅
+- [x] Se guarda correctamente ✅  
+- [ ] **PERO**: Al cerrar y volver a abrir el panel, si había un valor nuevo (ej: 1000px) y antes había otro (ej: 500px), se pierde el valor nuevo y carga el anterior
+
+**Causa probable:** El panel carga los datos del servidor (`getPageSettings`) en lugar de mantener el estado local actualizado (`Gbn.config.pageSettings`). Hay un desync entre el estado local y lo que carga el panel.
+
+**Flujo actual incorrecto:**
+1. Usuario abre Page Settings → carga desde servidor (500px)
+2. Usuario cambia a 1000px → se aplica en tiempo real, se actualiza `Gbn.config.pageSettings`
+3. Usuario cierra panel
+4. Usuario abre panel de nuevo → carga desde servidor (500px) ← Aquí está el bug
+5. El valor 1000px se perdió porque no se había guardado aún
+
+---
+
+### 🔴 Problema 3: Herencia de valores Theme → Bloques individuales NO funciona
+
+**Síntomas:**
+- [ ] Al abrir el panel de un `gloryDiv` principal, NO carga los valores default del Theme Panel
+- [ ] Si en Theme Settings > Componentes > Principal se configura "Layout: flexbox, wrap: nowrap", eso NO se aplica globalmente a todos los divs principales
+- [ ] Solo funciona configurando individualmente cada div
+- [ ] Los placeholders del panel individual deberían mostrar los valores del Theme Panel
+
+**Jerarquía esperada (no implementada):**
+```
+CSS defaults (gbn.css) 
+    ↓ hereda si no hay override
+Theme Panel (components.principal.*)
+    ↓ hereda si no hay override  
+Bloque individual (block.config.*)
+```
+
+**Archivos afectados:**
+- `ui/panel-fields/utils.js` → `getThemeDefault()` - ¿Está leyendo correctamente de `Gbn.config.themeSettings.components[role]`?
+- `ui/panel-fields/*.js` → Los campos individuales no están usando `getThemeDefault()` como placeholder
+- `services/content/dom.js` → Al normalizar elementos, no aplica defaults del Theme Panel
+- `render/styleManager.js` → Al aplicar estilos, no considera la jerarquía Theme → Individual
+
+**Preguntas clave:**
+1. ¿`getThemeDefault(role, path)` realmente busca en `Gbn.config.themeSettings.components[role][path]`?
+2. ¿Los campos del panel individual usan esa función para mostrar placeholders?
+3. ¿`applyBlockStyles()` considera los valores del Theme Panel cuando `block.config` está vacío?
+
+---
+
+### Progreso parcial (intentos previos)
+
+#### ✅ Parcialmente resuelto: Visibilidad de opciones condicionales en Theme Settings
+- [x] Las opciones dependientes de layout ahora se muestran/ocultan correctamente al cambiar el valor
+- [x] Se agregó lógica en `render.js` para re-renderizar campos condicionales
+- [x] Se mejoró `shouldShowField()` para evaluar condiciones de componentes
+
+#### ⚠️ Pendiente verificar
+- [ ] La visibilidad condicional funciona, pero los valores no se aplican
 
 #### 🟡 Refactorización: Automatización de Opciones de Componentes (SOLID)
 - [ ] **Problema**: La lógica actual en `renderThemeSettingsForm` define manualmente qué campos mostrar para cada componente, lo cual es repetitivo y propenso a errores.

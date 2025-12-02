@@ -426,13 +426,13 @@
                 Gbn.ui.panelTheme.applyThemeSettings(current);
             }
             
-            // Dispatch event
+            // Dispatch event (incluir path para campos condicionales)
             var event;
             if (typeof global.CustomEvent === 'function') {
-                event = new CustomEvent('gbn:configChanged', { detail: { id: 'theme-settings' } });
+                event = new CustomEvent('gbn:configChanged', { detail: { id: 'theme-settings', path: path } });
             } else {
                 event = document.createEvent('CustomEvent');
-                event.initCustomEvent('gbn:configChanged', false, false, { id: 'theme-settings' });
+                event.initCustomEvent('gbn:configChanged', false, false, { id: 'theme-settings', path: path });
             }
             global.dispatchEvent(event);
             

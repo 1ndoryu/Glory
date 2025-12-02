@@ -34,6 +34,17 @@
         } else {
             root.style.removeProperty('padding');
         }
+        
+        // Ancho Máximo
+        if (settings.maxAncho !== undefined && settings.maxAncho !== null && settings.maxAncho !== '') {
+            root.style.maxWidth = toCssValue(settings.maxAncho);
+            root.style.marginLeft = 'auto';
+            root.style.marginRight = 'auto';
+        } else {
+            root.style.removeProperty('max-width');
+            root.style.removeProperty('margin-left');
+            root.style.removeProperty('margin-right');
+        }
     }
 
     function applyThemeSettings(settings) {

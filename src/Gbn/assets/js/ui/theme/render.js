@@ -383,7 +383,12 @@
                     }
                 };
                 
+                // Variable para rastrear el rol actual y permitir re-render
+                var currentDetailRole = null;
+                var configChangeHandler = null;
+                
                 var renderComponentDetail = function(role) {
+                    currentDetailRole = role;
                     componentListContainer.style.display = 'none';
                     componentDetailContainer.style.display = 'block';
                     componentDetailContainer.innerHTML = '';
@@ -405,6 +410,7 @@
                     backBtn.style.height = '24px';
                     backBtn.title = 'Volver a la lista';
                     backBtn.onclick = function() {
+                        currentDetailRole = null;
                         renderComponentList();
                     };
                     
@@ -417,24 +423,56 @@
                     detailHeader.appendChild(title);
                     componentDetailContainer.appendChild(detailHeader);
                     
-                    // Fields
-                    var defaults = Gbn.content.roles.getRoleDefaults(role);
-                    if (defaults && defaults.schema) {
-                    var allowedTypes = ['color', 'spacing', 'typography', 'slider', 'icon_group', 'select', 'text'];
-                        var relevantFields = defaults.schema.filter(function(f) {
-                            return allowedTypes.indexOf(f.tipo) !== -1 && f.id !== 'texto' && f.id !== 'tag';
-                        });
-                        
-                        var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
-                        if (builder) {
-                            relevantFields.forEach(function(field) {
-                                var f = Gbn.utils.assign({}, field);
-                                f.id = 'components.' + role + '.' + f.id;
-                                var control = builder(mockBlock, f);
-                                if (control) componentDetailContainer.appendChild(control);
+                    // Container para los campos (para re-render parcial)
+                    var fieldsContainer = document.createElement('div');
+                    fieldsContainer.className = 'gbn-component-fields';
+                    componentDetailContainer.appendChild(fieldsContainer);
+                    
+                    // Función para renderizar los campos
+                    var renderFields = function() {
+                        fieldsContainer.innerHTML = '';
+                        var defaults = Gbn.content.roles.getRoleDefaults(role);
+                        if (defaults && defaults.schema) {
+                            var allowedTypes = ['color', 'spacing', 'typography', 'slider', 'icon_group', 'select', 'text'];
+                            var relevantFields = defaults.schema.filter(function(f) {
+                                return allowedTypes.indexOf(f.tipo) !== -1 && f.id !== 'texto' && f.id !== 'tag';
                             });
+                            
+                            var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
+                            if (builder) {
+                                relevantFields.forEach(function(field) {
+                                    var f = Gbn.utils.assign({}, field);
+                                    f.id = 'components.' + role + '.' + f.id;
+                                    var control = builder(mockBlock, f);
+                                    if (control) fieldsContainer.appendChild(control);
+                                });
+                            }
                         }
+                    };
+                    
+                    // Renderizar campos inicialmente
+                    renderFields();
+                    
+                    // Escuchar cambios de config para re-renderizar campos condicionales
+                    if (configChangeHandler) {
+                        window.removeEventListener('gbn:configChanged', configChangeHandler);
                     }
+                    
+                    var conditionalFields = ['layout', 'display_mode'];
+                    configChangeHandler = function(e) {
+                        if (!currentDetailRole) return;
+                        var detail = e.detail || {};
+                        if (detail.id === 'theme-settings') {
+                            // Verificar si el cambio fue en un campo condicional
+                            var path = detail.path || '';
+                            var fieldId = path.split('.').pop();
+                            if (conditionalFields.indexOf(fieldId) !== -1) {
+                                // Re-renderizar campos
+                                renderFields();
+                            }
+                        }
+                    };
+                    window.addEventListener('gbn:configChanged', configChangeHandler);
                 };
                 
                 // Initial call
