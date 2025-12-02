@@ -111,6 +111,51 @@
         });
     }
 
+    /**
+     * Aplica indicador visual de herencia a un campo
+     * Muestra de dónde proviene el valor cuando el campo está heredando (CSS o Tema)
+     * @param {Element} fieldElement - Elemento del campo (wrapper .gbn-field-*)
+     * @param {*} currentValue - Valor actual del campo (puede ser null/undefined si está heredando)
+     * @param {*} defaultValue - Valor por defecto (del CSS o Tema)
+     * @param {string} source - Origen del default ('css' | 'theme')
+     */
+    function aplicarIndicadorHerencia(fieldElement, currentValue, defaultValue, source) {
+        if (!fieldElement) return;
+        
+        // Determinar si el campo está heredando
+        var isInherited = !currentValue && defaultValue !== undefined && defaultValue !== null;
+        var existingIndicator = fieldElement.querySelector('.gbn-inheritance-indicator');
+        
+        if (isInherited) {
+            // Crear o actualizar indicador
+            var indicator = existingIndicator;
+            if (!indicator) {
+                indicator = document.createElement('span');
+                indicator.className = 'gbn-inheritance-indicator';
+                
+                // Buscar donde insertar el indicador (legend o label)
+                var label = fieldElement.querySelector('legend') || fieldElement.querySelector('.gbn-field-label');
+                if (label) {
+                    label.appendChild(indicator);
+                }
+            }
+            
+            // Actualizar contenido y estilos
+            var sourceText = source === 'css' ? 'CSS' : 'Tema';
+            indicator.textContent = '↓ ' + sourceText;
+            indicator.title = 'Heredado de ' + sourceText + ' defaults';
+            indicator.style.fontSize = '11px';
+            indicator.style.color = '#999';
+            indicator.style.fontStyle = 'italic';
+            indicator.style.marginLeft = '6px';
+            indicator.style.fontWeight = 'normal';
+            
+        } else if (existingIndicator) {
+            // Remover indicador si el campo tiene valor propio
+            existingIndicator.remove();
+        }
+    }
+
     // Escuchar evento global de cambio de defaults
     if (typeof window !== 'undefined') {
         window.addEventListener('gbn:themeDefaultsChanged', function(e) {
@@ -124,8 +169,10 @@
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.fieldSync = {
         addSyncIndicator: addSyncIndicator,
-        updatePlaceholdersFromTheme: updatePlaceholdersFromTheme
+        updatePlaceholdersFromTheme: updatePlaceholdersFromTheme,
+        aplicarIndicadorHerencia: aplicarIndicadorHerencia
     };
 
 })(window);
+
 

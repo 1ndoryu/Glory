@@ -304,6 +304,34 @@
         }
     }
 
+    /**
+     * Obtiene el schema completo de un role desde ContainerRegistry
+     * Prioridad: 1) gloryGbnCfg.roleSchemas (del servidor), 2) Gbn.content.roles (runtime)
+     * @param {string} role - Nombre del role ('principal', 'secundario', 'content', etc.)
+     * @returns {Array} - Schema del role (array de definiciones de campos)
+     */
+    function obtenerSchemaDelRole(role) {
+        if (!role) return [];
+        
+        // 1. Intentar desde gloryGbnCfg.roleSchemas (pasado desde PHP)
+        if (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.roleSchemas && gloryGbnCfg.roleSchemas[role]) {
+            var roleData = gloryGbnCfg.roleSchemas[role];
+            if (roleData.schema && Array.isArray(roleData.schema)) {
+                return roleData.schema;
+            }
+        }
+        
+        // 2. Fallback: usar Gbn.content.roles si está disponible (estado runtime)
+        if (Gbn.content && Gbn.content.roles && Gbn.content.roles.getRoleDefaults) {
+            var defaults = Gbn.content.roles.getRoleDefaults(role);
+            if (defaults && defaults.schema && Array.isArray(defaults.schema)) {
+                return defaults.schema;
+            }
+        }
+        
+        return [];
+    }
+
     // Exportar utilidades
     Gbn.ui.fieldUtils = {
         getDeepValue: getDeepValue,
@@ -315,6 +343,7 @@
         appendFieldDescription: appendFieldDescription,
         parseSpacingValue: parseSpacingValue,
         shouldShowField: shouldShowField,
+        obtenerSchemaDelRole: obtenerSchemaDelRole,
         CONFIG_TO_CSS_MAP: CONFIG_TO_CSS_MAP,
         ICONS: ICONS
     };

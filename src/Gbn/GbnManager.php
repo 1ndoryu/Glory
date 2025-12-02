@@ -344,6 +344,7 @@ class GbnManager
             'isEditor' => current_user_can('edit_posts'),
             'roles' => RoleConfig::all(),
             'containers' => ContainerRegistry::all(),
+            'roleSchemas' => ContainerRegistry::rolePayload(), // Schemas completos para automatización
             'devMode' => self::shouldBustVersion(),
             'presets' => $presets,
             'contentMode' => method_exists(\Glory\Manager\PageManager::class, 'getModoContenidoParaPagina') && $pageId 

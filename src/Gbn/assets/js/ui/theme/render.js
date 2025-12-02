@@ -433,7 +433,7 @@
                         fieldsContainer.innerHTML = '';
                         var defaults = Gbn.content.roles.getRoleDefaults(role);
                         if (defaults && defaults.schema) {
-                            var allowedTypes = ['color', 'spacing', 'typography', 'slider', 'icon_group', 'select', 'text'];
+                            var allowedTypes = ['color', 'spacing', 'typography', 'slider', 'icon_group', 'select', 'text', 'fraction'];
                             var relevantFields = defaults.schema.filter(function(f) {
                                 return allowedTypes.indexOf(f.tipo) !== -1 && f.id !== 'texto' && f.id !== 'tag';
                             });
