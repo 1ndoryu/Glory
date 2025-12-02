@@ -47,11 +47,61 @@
         }
     }
 
-    function applyThemeSettings(settings) {
+    function getEffectiveComponentConfig(comp, breakpoint) {
+        if (!comp) return {};
+        // Copia superficial inicial (Desktop/Base)
+        var effective = {};
+        Object.keys(comp).forEach(function(key) {
+            if (key !== '_responsive') {
+                effective[key] = comp[key];
+            }
+        });
+
+        if (!breakpoint || breakpoint === 'desktop') return effective;
+
+        var overrides = [];
+        if (comp._responsive) {
+            // En Mobile, heredar primero de Tablet
+            if (breakpoint === 'mobile' && comp._responsive.tablet) {
+                overrides.push(comp._responsive.tablet);
+            }
+            // Luego aplicar el breakpoint actual
+            if (comp._responsive[breakpoint]) {
+                overrides.push(comp._responsive[breakpoint]);
+            }
+        }
+
+        overrides.forEach(function(override) {
+            Object.keys(override).forEach(function(key) {
+                // Manejo especial para objetos (como padding) para hacer merge y no reemplazo total
+                if (key === 'padding' && typeof override[key] === 'object' && effective[key] && typeof effective[key] === 'object') {
+                    // Merge de propiedades de padding
+                    var pOverride = override[key];
+                    var pEffective = effective[key];
+                    Object.keys(pOverride).forEach(function(pKey) {
+                        pEffective[pKey] = pOverride[pKey];
+                    });
+                } else {
+                    // Para otros tipos (o si cambia de objeto a valor simple), reemplazar
+                    effective[key] = override[key];
+                }
+            });
+        });
+
+        return effective;
+    }
+
+    function applyThemeSettings(settings, breakpoint) {
         // Use data-gbn-root for scoping, fallback to documentElement if not found (but prefer root)
         var root = document.querySelector('[data-gbn-root]') || document.documentElement;
         if (!settings) return;
         
+        // Default breakpoint to global state if not provided
+        if (!breakpoint && Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) {
+            breakpoint = Gbn.responsive.getCurrentBreakpoint();
+        }
+        breakpoint = breakpoint || 'desktop';
+
         // Helper to set or remove property
         function setOrRemove(prop, val) {
             if (val !== null && val !== undefined && val !== '') {
@@ -179,8 +229,11 @@
              }
              
              Object.keys(settings.components).forEach(function(role) {
-                 var comp = settings.components[role];
-                 if (!comp) return;
+                 var rawComp = settings.components[role];
+                 if (!rawComp) return;
+
+                 // Obtener configuración efectiva para el breakpoint actual
+                 var comp = getEffectiveComponentConfig(rawComp, breakpoint);
                  
                  var prefix = '--gbn-' + role;
                  

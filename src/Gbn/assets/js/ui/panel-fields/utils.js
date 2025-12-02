@@ -165,6 +165,16 @@
     function getConfigValue(block, path) {
         if (!block || !path) return undefined;
         
+        console.log('[Utils] getConfigValue:', { role: block.role, path: path });
+
+        // 0. Intentar obtener valor responsive si el sistema está activo
+        if (Gbn.responsive && Gbn.responsive.getResponsiveValue && Gbn.responsive.getCurrentBreakpoint) {
+            var bp = Gbn.responsive.getCurrentBreakpoint();
+            var val = Gbn.responsive.getResponsiveValue(block, path, bp);
+            // if (val !== undefined) console.log('[Utils] Got Responsive Value:', val);
+            return val;
+        }
+        
         // 1. Intentar desde config del bloque
         var value = getDeepValue(block.config, path);
         if (value !== undefined && value !== null && value !== '') {
@@ -257,12 +267,47 @@
     function getComputedValue(element, cssProperty) {
         if (!element || !cssProperty) return undefined;
         try {
-            // Forzar un reflow para asegurar que los estilos CSS estén completamente aplicados
-            // Esto resuelve el problema donde los colores de clase CSS no se detectan al inicio
-            void element.offsetHeight; // Trigger reflow
+            // Remover clases y atributos del inspector/GBN temporalmente (Bug 7 fix)
+            // Esto previene interferencia de estilos hover (#1d8ff1) que usan selectores de atributo [data-gbnPrincipal]:hover
+            var removedClasses = [];
+            var classesToRemove = ['gbn-show-controls', 'gbn-block', 'gbn-block-active', 'gbn-node'];
+            
+            classesToRemove.forEach(function(className) {
+                if (element.classList.contains(className)) {
+                    removedClasses.push(className);
+                    element.classList.remove(className);
+                }
+            });
+            
+            // También remover atributos data-gbn* que disparan estilos
+            var removedAttributes = {};
+            var attributesToRemove = ['data-gbnPrincipal', 'data-gbnSecundario', 'data-gbn-role'];
+            
+            attributesToRemove.forEach(function(attr) {
+                if (element.hasAttribute(attr)) {
+                    removedAttributes[attr] = element.getAttribute(attr);
+                    element.removeAttribute(attr);
+                }
+            });
+            
+            // Si removimos algo, forzar reflow
+            if (removedClasses.length > 0 || Object.keys(removedAttributes).length > 0) {
+                void element.offsetHeight; // Trigger reflow
+            }
             
             var computed = window.getComputedStyle(element);
             var value = computed[cssProperty];
+            
+            // Restaurar atributos
+            Object.keys(removedAttributes).forEach(function(attr) {
+                element.setAttribute(attr, removedAttributes[attr]);
+            });
+            
+            // Restaurar clases
+            removedClasses.forEach(function(className) {
+                element.classList.add(className);
+            });
+            
             // Retornar undefined si es vacío o no existe
             if (value === '' || value === undefined || value === null) {
                 return undefined;
@@ -300,8 +345,10 @@
         
         // 1. Valor guardado en config del bloque (máxima prioridad)
         var savedValue;
-        if (Gbn.responsive && Gbn.responsive.getBlockResponsiveValue) {
-            savedValue = Gbn.responsive.getBlockResponsiveValue(block, path);
+        // Usar getResponsiveValue para aprovechar la lógica de theme settings
+        if (Gbn.responsive && Gbn.responsive.getResponsiveValue) {
+            var bp = Gbn.responsive.getCurrentBreakpoint();
+            savedValue = Gbn.responsive.getResponsiveValue(block, path, bp);
         } else {
             savedValue = getDeepValue(block.config, path);
         }

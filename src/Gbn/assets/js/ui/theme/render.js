@@ -45,6 +45,15 @@
         }
     }
 
+    // Estado persistente para navegación de componentes (Bug 6 fix - Global Module Scope)
+    var componentState = {
+        currentDetailRole: null,
+        renderComponentDetail: null
+    };
+    
+    // Vista actual persistente (Bug 6 fix)
+    var currentView = 'menu';
+
     function renderThemeSettingsForm(settings, container, footer) {
         if (!container) return;
         container.innerHTML = '';
@@ -86,11 +95,12 @@
         }
         
         // Initial apply
+        // Initial apply
         if (Gbn.ui.theme.applicator && Gbn.ui.theme.applicator.applyThemeSettings) {
             Gbn.ui.theme.applicator.applyThemeSettings(mockBlock.config);
         }
         
-        var currentView = 'menu'; // menu, text, colors, pages
+        // var currentView = 'menu'; // Eliminado, ahora es global de módulo
         
         function render() {
             container.innerHTML = '';
@@ -153,6 +163,9 @@
             backBtn.className = 'gbn-theme-back-btn';
             backBtn.textContent = '← Volver';
             backBtn.onclick = function() {
+                // Resetear estado de componentes al volver al menú (Bug 6 fix)
+                componentState.currentDetailRole = null;
+                componentState.renderComponentDetail = null;
                 currentView = 'menu';
                 render();
             };
@@ -384,11 +397,11 @@
                 };
                 
                 // Variable para rastrear el rol actual y permitir re-render
-                var currentDetailRole = null;
+                // Ahora usa componentState para persistencia entre cambios de breakpoint
                 var configChangeHandler = null;
                 
                 var renderComponentDetail = function(role) {
-                    currentDetailRole = role;
+                    componentState.currentDetailRole = role;
                     componentListContainer.style.display = 'none';
                     componentDetailContainer.style.display = 'block';
                     componentDetailContainer.innerHTML = '';
@@ -410,7 +423,7 @@
                     backBtn.style.height = '24px';
                     backBtn.title = 'Volver a la lista';
                     backBtn.onclick = function() {
-                        currentDetailRole = null;
+                        componentState.currentDetailRole = null;
                         renderComponentList();
                     };
                     
@@ -460,7 +473,7 @@
                     
                     var conditionalFields = ['layout', 'display_mode'];
                     configChangeHandler = function(e) {
-                        if (!currentDetailRole) return;
+                        if (!componentState.currentDetailRole) return;
                         var detail = e.detail || {};
                         if (detail.id === 'theme-settings') {
                             // Verificar si el cambio fue en un campo condicional
@@ -475,8 +488,16 @@
                     window.addEventListener('gbn:configChanged', configChangeHandler);
                 };
                 
-                // Initial call
-                renderComponentList();
+                // Exponer renderComponentDetail en componentState para acceso desde listener
+                componentState.renderComponentDetail = renderComponentDetail;
+
+                
+                // Initial call - Restaurar estado si existe (Bug 6 fix)
+                if (componentState.currentDetailRole) {
+                    renderComponentDetail(componentState.currentDetailRole);
+                } else {
+                    renderComponentList();
+                }
             }
             
             var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
@@ -493,30 +514,8 @@
         
         render();
         
-        // Listener para actualizar el panel cuando cambia el breakpoint
-        // Removemos listener anterior si existe para evitar duplicados/leaks
-        if (container._gbnBreakpointHandler) {
-            window.removeEventListener('gbn:breakpointChanged', container._gbnBreakpointHandler);
-        }
-        
-        container._gbnBreakpointHandler = function() {
-            // Preservar el estado actual antes de re-renderizar
-            if (currentView === 'components' && currentDetailRole) {
-                // Si estamos en vista de detalle de componente, re-renderizar solo los campos
-                // En lugar de volver al menú principal
-                renderSection('components');
-                // Después del render, volver a abrir el detalle del componente actual
-                setTimeout(function() {
-                    if (currentDetailRole && typeof renderComponentDetail === 'function') {
-                        renderComponentDetail(currentDetailRole);
-                    }
-                }, 0);
-            } else {
-                // Para otras vistas, hacer render normal
-                render();
-            }
-        };
-        window.addEventListener('gbn:breakpointChanged', container._gbnBreakpointHandler);
+        // El manejo de breakpoint se realiza via re-render completo desde panel-core.js
+        // Gracias a componentState y currentView globales, el estado se restaura automáticamente.
 
         // Disable panel footer button as we use global dock save
         if (footer) {

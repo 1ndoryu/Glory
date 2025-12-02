@@ -760,27 +760,11 @@ Contenido permanece centrado con `margin: 0 auto`.
 
 ---
 
-#### ⚠️ Bugs Pendientes (Investigación Requerida)
-
-##### Bug 6: Panel Theme - Mantener Subvista
-**Problema**: Al cambiar breakpoint en "Theme > Componentes > Principal", vuelve al menú principal.
-
-**Intento fallido**: Modificado listener para preservar `currentDetailRole` ([theme/render.js:502-518](file:///c:/Users/1u/Local%20Sites/glorybuilder/app/public/wp-content/themes/glory/Glory/src/Gbn/assets/js/ui/theme/render.js#L502-L518))
-
-**Próximos pasos**: Variable global para estado del panel, logging para debug.
-
----
-
-##### Bug 7: Color de Fondo - Detección Inicial  
-**Problema**: Muestra `#1d8ff1` (azul del hover) en lugar del color CSS de clase. Al cambiar vista SÍ aparece correcto.
-
-**Teoría**: Hover del inspector interfiere con `getComputedStyle`.  
-**Intento fallido**: Reflow forzado ([utils.js:257-261](file:///c:/Users/1u/Local%20Sites/glorybuilder/app/public/wp-content/themes/glory/Glory/src/Gbn/assets/js/ui/panel-fields/utils.js#L257-L261))
-
-**Próximos pasos**: 
-- Buscar definición de `#1d8ff1` en `inspector.js` y `gbn.css`
-- Leer background después de remover clases del inspector temporalmente
-- Esperar evento "inspector ready" antes de leer estilos
+#### ✅ Bugs Resueltos
+- **Bug 6: Panel Theme - Mantener Subvista** ✅ (Resuelto: Persistencia de estado global en `render.js`)
+- **Bug 7: Color de Fondo - Detección Inicial** ✅ (Resuelto: Remoción de atributos/clases en `utils.js`)
+- **Bug 8: Persistencia de Valores Responsive en Tema** ✅ (Resuelto: `getConfigValue` en `utils.js` ahora delega a `getResponsiveValue`)
+- **Bug 9: Precedencia de Estilos (Clases vs Defaults)** ✅ (Resuelto: `panel-render.js` ya no inyecta defaults como estilos inline, permitiendo que clases CSS ganen a variables CSS)
 
 ---
 
