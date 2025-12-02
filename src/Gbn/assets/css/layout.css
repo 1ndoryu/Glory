@@ -256,13 +256,16 @@
 .gbn-dock-save.has-changes::after {
     content: '';
     position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 8px;
-    height: 8px;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
     background: #f59e0b;
     border-radius: 50%;
-    border: 2px solid #fff;
+    top: auto;
+    right: auto;
+    border: none;
 }
 
 .gbn-dock-save.is-loading svg {

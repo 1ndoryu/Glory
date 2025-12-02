@@ -4,6 +4,11 @@
     position: relative;
 }
 
+.gbn-active .gbn-node {
+    min-width: 20px;
+    min-height: 20px;
+}
+
 .gbn-active [data-gbnPrincipal] {
     min-height: 40px;
     position: relative;
@@ -22,14 +27,14 @@
 
 .gbn-active [data-gbnPrincipal]:hover {
     outline-color: rgba(29, 143, 241, 0.9);
-    background-color: rgba(29, 143, 241, 0.08);
+    background-color: rgba(29, 143, 241, 0.08) !important; /* Force background */
     box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.18);
     z-index: 10;
 }
 
 .gbn-active [data-gbnSecundario]:hover {
     outline-color: rgba(245, 158, 11, 0.9);
-    background-color: rgba(245, 158, 11, 0.08);
+    background-color: rgba(245, 158, 11, 0.08) !important; /* Force background */
     box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
     z-index: 11;
 }
@@ -59,12 +64,12 @@
 
 .gbn-active .gbn-show-controls > .gbn-controls-group {
     opacity: 1;
-    transform: translateY(-2px);
+    /* transform: translateY(-2px); Removed to fix centering */
 }
 
 .gbn-active .gbn-block-active > .gbn-controls-group {
     opacity: 1;
-    transform: translateY(-2px);
+    /* transform: translateY(-2px); Removed to fix centering */
 }
 
 /* Cursor en los títulos de la lista para arrastrar */

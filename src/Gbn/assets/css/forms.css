@@ -1,6 +1,7 @@
 /* Forms & Inputs */
 
-#gbn-panel .gbn-panel-form {
+#gbn-panel .gbn-panel-form,
+.gbn-theme-section-content {
     display: flex;
     flex-direction: column;
     gap: 12px; /* Reduced gap */
@@ -621,6 +622,42 @@
 
 .gbn-typo-col input:focus {
     border-color: #1d8ff1 !important;
+}
+
+/* Typography Input with Icon */
+.gbn-input-icon-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.gbn-input-icon {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    color: #999;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.gbn-input-icon svg {
+    width: 12px;
+    height: 12px;
+    display: block;
+}
+
+.gbn-input-with-icon {
+    padding-left: 24px !important; /* Space for icon */
+    height: 30px !important;
+    background: #fff !important;
+    border: 1px solid #e0e0e0 !important;
+    border-radius: 4px !important;
+    width: 100%;
 }
 
 /* Estilos para herencia de valores del tema */

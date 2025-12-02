@@ -136,14 +136,23 @@
 
 /* Centered Controls (Components) */
 .gbn-controls-centered {
+    position: absolute;
     top: 50%;
     left: 50%;
     right: auto;
+    bottom: auto;
     transform: translate(-50%, -50%) scale(0.9);
     background: rgba(107, 33, 168, 0.95); /* Purple for components */
     border-color: rgba(107, 33, 168, 0.2);
     opacity: 0;
     pointer-events: none; /* Prevent blocking when hidden */
+    box-shadow: 0 0 15px rgba(107, 33, 168, 0.4); /* Glow effect */
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    z-index: 100; /* Ensure it's on top */
+    display: flex; /* Ensure content centers */
+    align-items: center;
+    justify-content: center;
+    margin: 0; /* Remove any margin */
 }
 
 .gbn-active .gbn-show-controls > .gbn-controls-centered {
@@ -166,12 +175,12 @@
 
 .gbn-active .gbn-show-controls > .gbn-controls-group {
     opacity: 1;
-    transform: translateY(-2px);
+    /* transform: translateY(-2px); Removed to fix centering */
 }
 
 .gbn-active .gbn-block-active > .gbn-controls-group {
     opacity: 1;
-    transform: translateY(-2px);
+    /* transform: translateY(-2px); Removed to fix centering */
 }
 
 .gbn-config-btn,

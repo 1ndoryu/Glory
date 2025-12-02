@@ -223,13 +223,20 @@ final class ContainerRegistry
                         'defecto' => null,
                     ],
                     [
+                        'id' => 'fondo',
+                        'tipo' => 'color',
+                        'etiqueta' => 'Color de fondo',
+                        'permiteTransparencia' => true,
+                    ],
+                    [
                         'id' => 'gap',
                         'tipo' => 'slider',
-                        'etiqueta' => 'Separación entre elementos',
+                        'etiqueta' => 'Separación (Gap)',
                         'unidad' => 'px',
                         'min' => 0,
                         'max' => 120,
                         'paso' => 2,
+                        'condicion' => ['layout', 'flex'],
                     ],
                     [
                         'id' => 'flexDirection',

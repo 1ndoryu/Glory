@@ -134,7 +134,40 @@ GBN no usa componentes propietarios opacos.
 
 ---
 
-## 4. Historial de Cambios y Resoluciones (Detallado)
+- **Bug 12 (UI):** Inconsistencia en etiquetas ("Separación (Gap)" vs "Separación entre elementos") y orden de opciones Flex en Secundario. **Estado:** Resuelto.
+- **Bug 13 (UI):** Falta opción de Fondo en componente Secundario. **Estado:** Resuelto.
+- **Bug 14 (UI):** Bug visual en opciones de Tipografía (botones cortados) y mejora estética con iconos. **Estado:** Resuelto.
+- **Bug 15 (JS):** Error de sintaxis en `roles.js` (falta de cierre de array). **Estado:** Resuelto.
+- **Bug 16 (UI):** Indicador de cambios en botón Guardar del Dock mal posicionado. **Estado:** Resuelto.
+- **Bug 17 (UI):** Barra de herramientas de componentes descentrada y sin efecto hover. **Estado:** Resuelto.
+- **Bug 18 (UI):** Elementos vacíos invisibles en el builder (falta de dimensiones mínimas). **Estado:** Resuelto.
+- **Bug 19 (UI):** Refinamiento de Tipografía (iconos dentro de inputs, limpieza de clases). **Estado:** Resuelto.
+- **Bug 20 (UI):** Hover de componentes sin fondo de color. **Estado:** Resuelto.
+- **Bug 21 (UI):** Barra de herramientas descentrada por conflicto de estilos `transform` (corregido en múltiples selectores). **Estado:** Resuelto.
+- **Bug 22 (UI):** Orden incorrecto de opciones Flex en componente Secundario. **Estado:** Resuelto.
+
+## 6. Estrategia de Refactorización (Futuro)
+
+Para evitar inconsistencias futuras entre PHP (`ContainerRegistry`) y JS (`roles.js`), se propone:
+
+1.  **Fuente Única de Verdad:** Migrar la definición de esquemas completamente a PHP.
+2.  **Inyección Automática:** El frontend (`roles.js`) no debería tener definiciones hardcoded. Debe recibir todo el esquema vía `wp_localize_script` desde PHP.
+3.  **Generación Dinámica:** El panel (`render.js`) debe construir la UI iterando ciegamente sobre el esquema recibido, sin lógica condicional específica por rol (como `if (role === 'secundario')`).
+
+---
+
+## 7. Historial de Cambios y Resoluciones (Resumen)
+
+- **Bug 1-5 (Responsive):** Corregidos problemas de simulación de viewport, persistencia de breakpoints y detección de estilos computados.
+- **Bug 6 (Panel State):** Implementada persistencia de estado de navegación del panel al cambiar breakpoints.
+- **Bug 7 (Color Detection):** Corregida detección de color de fondo inicial.
+- **Bug 8 (Responsive Persistence):** Solucionado. Los valores responsive ahora persisten y se aplican correctamente en el editor.
+- **Bug 10 (Layout Persistence):** Solucionado. Las opciones de layout (Flexbox) ahora persisten y se aplican correctamente al recargar.
+- **Bug 12-14 (UI Consistency):** Unificadas etiquetas, reordenadas opciones, añadido fondo a Secundario y mejorada UI de tipografía con iconos.
+- **Bug 15-18 (UI/UX):** Corregido error en `roles.js`, mejorado botón Dock, centrada barra de herramientas y asegurada visibilidad de elementos vacíos.
+- **Bug 19-20 (UI Refinements):** Tipografía más limpia (iconos internos) y mejor feedback visual en hover de componentes.
+
+## 7. Historial de Cambios y Resoluciones (Detallado)
 
 ### Diciembre 2025
 
@@ -174,7 +207,7 @@ GBN no usa componentes propietarios opacos.
 ### 🚨 Prioridades Inmediatas
 - [ ] **gloryContentRender Avanzado**
     -   Implementar opciones avanzadas de layout (Grid/List), paginación AJAX y filtrado por taxonomías.
-    -   Paridad funcional con constructores como Avada o Elementor Loop Builder.
+    -   Paridad funcional con su version en avada.
 
 ### Candidatos a Refactorización (Por Complejidad)
 Archivos que han crecido significativamente y deberían ser divididos en módulos más pequeños (Principio de Responsabilidad Única):
