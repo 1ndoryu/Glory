@@ -760,13 +760,30 @@ Contenido permanece centrado con `margin: 0 auto`.
 
 ---
 
-#### ✅ Bugs Resueltos
-- **Bug 6: Panel Theme - Mantener Subvista** ✅ (Resuelto: Persistencia de estado global en `render.js`)
-- **Bug 7: Color de Fondo - Detección Inicial** ✅ (Resuelto: Remoción de atributos/clases en `utils.js`)
-- **Bug 8: Persistencia de Valores Responsive en Tema** ✅ (Resuelto: `getConfigValue` en `utils.js` ahora delega a `getResponsiveValue`)
-- **Bug 9: Precedencia de Estilos (Clases vs Defaults)** ✅ (Resuelto: `panel-render.js` ya no inyecta defaults como estilos inline, permitiendo que clases CSS ganen a variables CSS)
+### Bugs Pendientes
 
----
+> [!IMPORTANT]
+> **Bug 10: Persistencia de Opciones de Layout (Flexbox)**
+> - **Problema:** Cambios en opciones de layout (ej. `flex-wrap: nowrap`) en Theme Settings se aplican en tiempo real pero se pierden al recargar la página hasta que se reabre el panel.
+> - **Observación:** El estado original (deslogeado) muestra `flex-wrap` por defecto (wrap), ignorando la configuración guardada.
+> - **Hipótesis:** Las variables CSS o estilos inline para layout no se están inicializando correctamente en el frontend (PHP/JS de carga) o `applicator.js` no se ejecuta al cargar la página para aplicar estos valores específicos.
+
+> [!IMPORTANT]
+> **Bug 11: Salida HTML Limpia**
+> - **Problema:** Los elementos `div` renderizados contienen múltiples atributos `data-gbn-*` (incluyendo esquemas completos en `data-gbn-schema`) incluso para usuarios deslogeados.
+> - **Objetivo:** Limpiar el HTML final para producción, eliminando atributos de construcción innecesarios para usuarios finales.
+
+### Bugs Resueltos
+
+> [!NOTE]
+> **Bug 8: Persistencia de Valores Responsive en Tema**
+> - **Estado:** Resuelto.
+> - **Solución:** Se actualizó `responsive.js` para manejar correctamente la estructura anidada de Theme Settings (`components.{role}._responsive`) y `utils.js` para usar `getResponsiveValue` en lugar de `getBlockResponsiveValue`. También se actualizó `applicator.js` para mezclar y aplicar visualmente los overrides responsive.
+
+> [!NOTE]
+> **Bug 9: Precedencia de Estilos (Clases vs Defaults)**
+> - **Estado:** Resuelto.
+> - **Solución:** Se modificó `panel-render.js` para evitar aplicar defaults del tema como estilos inline. Ahora dependen exclusivamente de variables CSS, permitiendo que las clases CSS personalizadas tengan precedencia. CSS)
 
 ---
 

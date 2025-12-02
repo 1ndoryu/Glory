@@ -165,13 +165,10 @@
     function getConfigValue(block, path) {
         if (!block || !path) return undefined;
         
-        console.log('[Utils] getConfigValue:', { role: block.role, path: path });
-
         // 0. Intentar obtener valor responsive si el sistema está activo
         if (Gbn.responsive && Gbn.responsive.getResponsiveValue && Gbn.responsive.getCurrentBreakpoint) {
             var bp = Gbn.responsive.getCurrentBreakpoint();
             var val = Gbn.responsive.getResponsiveValue(block, path, bp);
-            // if (val !== undefined) console.log('[Utils] Got Responsive Value:', val);
             return val;
         }
         

@@ -586,8 +586,6 @@
                 var pathParts = path.split('.');
                 var role = pathParts[1]; // "principal"
                 
-                console.log('[PanelRender] Updating Theme Responsive:', { role: role, path: path, bp: breakpoint, value: value });
-
                 // Asegurar estructura _responsive en el componente
                 if (!current.components) current.components = {};
                 if (!current.components[role]) current.components[role] = {};
@@ -608,7 +606,6 @@
                 cursor[relativePath[relativePath.length - 1]] = value;
             } else {
                 // Desktop o paths no-components: escribir en raíz como siempre
-                console.log('[PanelRender] Updating Theme Desktop:', { path: path, value: value });
                 cursor = current;
                 for (var i = 0; i < segments.length - 1; i++) {
                     var key = segments[i];

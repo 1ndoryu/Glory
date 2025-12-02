@@ -44,28 +44,23 @@
                 var role = parts[1];
                 var subPath = parts.slice(2).join('.');
                 
-                console.log('[Responsive] Reading Theme:', { role: role, path: subPath, bp: breakpoint });
-
                 if (block.config && block.config.components && block.config.components[role]) {
                     var compConfig = block.config.components[role];
                     
                     // 1. Buscar override en breakpoint actual
                     if (compConfig._responsive && compConfig._responsive[breakpoint]) {
                         var val = utils.getDeepValue(compConfig._responsive[breakpoint], subPath);
-                        console.log('[Responsive] Found in BP:', val);
                         if (val !== undefined) return val;
                     }
                     
                     // 2. Heredar de breakpoint superior
                     if (breakpoint === 'mobile' && compConfig._responsive && compConfig._responsive.tablet) {
                         var tabletVal = utils.getDeepValue(compConfig._responsive.tablet, subPath);
-                        console.log('[Responsive] Inherited from Tablet:', tabletVal);
                         if (tabletVal !== undefined) return tabletVal;
                     }
                     
                     // 3. Heredar de desktop
                     var desktopVal = utils.getDeepValue(compConfig, subPath);
-                    console.log('[Responsive] Inherited from Desktop:', desktopVal);
                     if (desktopVal !== undefined) return desktopVal;
                 }
                 return undefined;
