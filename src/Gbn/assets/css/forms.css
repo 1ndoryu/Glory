@@ -1,7 +1,8 @@
 /* Forms & Inputs */
 
 #gbn-panel .gbn-panel-form,
-.gbn-theme-section-content {
+.gbn-theme-section-content,
+.gbn-component-fields {
     display: flex;
     flex-direction: column;
     gap: 12px; /* Reduced gap */
