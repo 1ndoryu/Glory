@@ -146,18 +146,61 @@
         }
     }
     
+    // Almacenar el max-width original del root para restaurarlo en Desktop
+    var originalMaxWidth = null;
+    
+    function captureOriginalMaxWidth() {
+        var root = document.querySelector('[data-gbn-root]');
+        if (!root) return;
+        
+        // Capturar el max-width original solo la primera vez
+        if (originalMaxWidth === null) {
+            // Leer de los estilos computados o del atributo style
+            var computedStyle = window.getComputedStyle(root);
+            var inlineMaxWidth = root.style.maxWidth;
+            
+            // Priorizar inline style, luego computed style
+            originalMaxWidth = inlineMaxWidth || computedStyle.maxWidth || 'none';
+            
+            // Si es 'none', ver si hay configuración en pageSettings
+            if (originalMaxWidth === 'none' && Gbn.config && Gbn.config.pageSettings && Gbn.config.pageSettings.maxAncho) {
+                originalMaxWidth = Gbn.config.pageSettings.maxAncho;
+            }
+        }
+    }
+    
     function applyViewportSimulation(breakpoint) {
         var root = document.querySelector('[data-gbn-root]');
         if (!root) return;
         
+        // Capturar el max-width original si aún no lo hemos hecho
+        captureOriginalMaxWidth();
+        
         var widths = {
-            desktop: '100%',
+            desktop: originalMaxWidth || 'none', // Restaurar el original en desktop
             tablet: '768px',
             mobile: '375px'
         };
         
-        root.style.maxWidth = widths[breakpoint] || '100%';
-        root.style.margin = breakpoint === 'desktop' ? '0' : '0 auto';
+        root.style.maxWidth = widths[breakpoint] || originalMaxWidth || 'none';
+        
+        // Aplicar margin según el contexto
+        if (breakpoint === 'desktop') {
+            // En desktop, si hay max-width configurado, mantener centrado con margin auto
+            if (originalMaxWidth && originalMaxWidth !== 'none') {
+                root.style.marginLeft = 'auto';
+                root.style.marginRight = 'auto';
+            } else {
+                // Sin max-width, limpiar margins
+                root.style.marginLeft = '';
+                root.style.marginRight = '';
+            }
+        } else {
+            // En tablet/mobile, siempre centrar
+            root.style.marginLeft = 'auto';
+            root.style.marginRight = 'auto';
+        }
+        
         root.style.transition = 'max-width 0.3s ease';
     }
     

@@ -131,7 +131,28 @@
             if (themeDesktop !== undefined) return 'theme';
         }
         
-        // 7. CSS
+        // 7. Valores computados del DOM (estilos de clases CSS o inline sin estar en config)
+        if (block.element) {
+            var computedValue = getComputedValueForPath(block.element, path);
+            if (computedValue !== undefined && computedValue !== null && computedValue !== '') {
+                // Verificar si es diferente a valores por defecto del navegador
+                var isDefaultValue = false;
+                if (path.indexOf('padding') === 0 && (computedValue === '0px' || computedValue === '0')) {
+                    isDefaultValue = true;
+                } else if ((path === 'fondo' || path === 'background') && 
+                          (computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent')) {
+                    isDefaultValue = true;
+                } else if (path === 'gap' && (computedValue === 'normal' || computedValue === '0px')) {
+                    isDefaultValue = true;
+                }
+                
+                if (!isDefaultValue) {
+                    return 'computed';
+                }
+            }
+        }
+        
+        // 8. CSS defaults (sin valor real, solo herencia de CSS)
         return 'css';
     }
 
@@ -236,6 +257,10 @@
     function getComputedValue(element, cssProperty) {
         if (!element || !cssProperty) return undefined;
         try {
+            // Forzar un reflow para asegurar que los estilos CSS estén completamente aplicados
+            // Esto resuelve el problema donde los colores de clase CSS no se detectan al inicio
+            void element.offsetHeight; // Trigger reflow
+            
             var computed = window.getComputedStyle(element);
             var value = computed[cssProperty];
             // Retornar undefined si es vacío o no existe

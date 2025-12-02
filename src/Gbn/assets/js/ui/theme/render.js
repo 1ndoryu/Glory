@@ -500,7 +500,21 @@
         }
         
         container._gbnBreakpointHandler = function() {
-            render();
+            // Preservar el estado actual antes de re-renderizar
+            if (currentView === 'components' && currentDetailRole) {
+                // Si estamos en vista de detalle de componente, re-renderizar solo los campos
+                // En lugar de volver al menú principal
+                renderSection('components');
+                // Después del render, volver a abrir el detalle del componente actual
+                setTimeout(function() {
+                    if (currentDetailRole && typeof renderComponentDetail === 'function') {
+                        renderComponentDetail(currentDetailRole);
+                    }
+                }, 0);
+            } else {
+                // Para otras vistas, hacer render normal
+                render();
+            }
         };
         window.addEventListener('gbn:breakpointChanged', container._gbnBreakpointHandler);
 

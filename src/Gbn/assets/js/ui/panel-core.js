@@ -99,6 +99,32 @@
                     panel.close();
                 }
             });
+            
+            // Listener para refrescar panel cuando cambia el breakpoint
+            window.addEventListener('gbn:breakpointChanged', function(event) {
+                // Solo refrescar si el panel está abierto
+                if (!panel.isOpen()) return;
+                
+                var detail = event.detail || {};
+                utils.debug('Breakpoint cambiado a: ' + detail.current + ', refrescando panel');
+                
+                // Si hay un bloque activo, re-renderizar sus controles
+                if (panelMode === 'block' && activeBlock) {
+                    if (Gbn.ui.panelRender && Gbn.ui.panelRender.renderBlockControls) {
+                        Gbn.ui.panelRender.renderBlockControls(activeBlock, panelBody);
+                    }
+                }
+                
+                // Si está en modo tema, re-renderizar settings
+                if (panelMode === 'theme') {
+                    panel.openTheme(); // Forzar re-render completo
+                }
+                
+                // Si está en modo página, re-renderizar settings
+                if (panelMode === 'page') {
+                    panel.openPage(); // Forzar re-render completo
+                }
+            });
         }
         return panelRoot;
     }

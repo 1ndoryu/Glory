@@ -738,63 +738,59 @@ El sistema **ya estaba automatizado** - `ui/theme/render.js` usa factory pattern
 - Archivos: `spacing.js`, `color.js`, `slider.js`, `select.js`, `icon-group.js`
 - Impacto: ~5 líneas por archivo × 5 archivos = ~25 líneas
 
----
+**1. Simulación de Viewport** ✅  
+Preserva `max-width` correctamente al cambiar entre breakpoints.  
+[Solución: responsive.js:149-203](file:///c:/Users/1u/Local%20Sites/glorybuilder/app/public/wp-content/themes/glory/Glory/src/Gbn/assets/js/services/responsive.js#L149-L203)
 
-### 📋 FASE 2 COMPLETADA: Responsive Breakpoints (Diciembre 2025)
+**2. Refresco de Panel** ✅  
+Panel se actualiza automáticamente al cambiar breakpoint.  
+[Solución: panel-core.js:101-127](file:///c:/Users/1u/Local%20Sites/glorybuilder/app/public/wp-content/themes/glory/Glory/src/Gbn/assets/js/ui/panel-core.js#L101-L127)
 
-> **Estado**: SemiCoompleta (Diciembre 2025)
-> **Feedback de Usuario**: Implementación exitosa con ajustes pendientes.
+**3. Propagación en Panel de Tema** ✅  
+Cambios responsive se almacenan en `_responsive[bp]` sin afectar otros breakpoints.  
+[Solución: panel-render.js:566-644](file:///c:/Users/1u/Local%20Sites/glorybuilder/app/public/wp-content/themes/glory/Glory/src/Gbn/assets/js/ui/panel-render.js#L566-L644)
 
-#### 📌 Resumen de Implementación
-Se implementó un sistema responsive completo con selector de vistas, herencia inteligente (Mobile < Tablet < Desktop < Theme < CSS), persistencia de overrides en `_responsive` y generación de CSS optimizado.
+**4. Estilos de Clases CSS** ⚠️ PARCIAL  
+Funciona para padding, pero colores siguen con bug (ver Bug 7).  
+[Solución: utils.js:134-154](file:///c:/Users/1u/Local%20Sites/glorybuilder/app/public/wp-content/themes/glory/Glory/src/Gbn/assets/js/ui/panel-fields/utils.js#L134-L154)
 
-#### 🐛 Bugs y Ajustes Detectados (Pendientes de Corrección)
-
-1. **Simulación de Viewport**:
-   - **Problema**: Al volver a Desktop, el ancho se fuerza a `100%` ignorando el `max-width` configurado en la página (ej. 800px).
-   - **Solución**: Leer el `max-width` real del contenedor root antes de aplicar la simulación y restaurarlo correctamente.
-
-2. **Refresco de Panel**:
-   - **Problema**: Los campos del panel no se actualizan automáticamente al cambiar de breakpoint. Requiere cerrar y abrir.
-   - **Solución**: Implementar listener `gbn:breakpointChanged` en `panel-core.js` que fuerce un re-render de los controles activos.
-
-3. **Propagación en Panel de Tema**:
-   - **Problema**: Cambios en una vista específica (ej. Mobile) sobrescriben la configuración de TODAS las vistas.
-   - **Solución**: Revisar `ui/theme/applicator.js` para asegurar que escribe en `config._responsive[bp]` en lugar de la raíz cuando no es Desktop.
-
-4. **Estilos de Clases CSS (Nuevo Bug)**:
-   - **Problema**: Estilos definidos en clases CSS (ej. `.miClase { padding: 50px }`) no son reconocidos por el panel, mostrando "Default" en lugar del valor computado.
-   - **Solución**: Mejorar `getValueSource` y `getResponsiveValue` para leer `getComputedStyle` como fallback antes de asumir "css default".
-
-5. **Refinamiento Visual de Campos (UI)**:
-   - **Problema**: La implementación actual usa bordes de colores pero falta la información explícita propuesta en el diseño original.
-   - **Requerimiento**: Implementar el diseño detallado:
-     ```
-     ┌─────────────────────────────────┐
-     │ Padding Superior          [📱] │  ← Icono del dispositivo actual si tiene override
-     │ [    20    ] px                 │
-     │ ↓ Heredado de Desktop           │  ← Texto explícito de herencia
-     └─────────────────────────────────┘
-     ```
-   - **Solución**: Modificar `panel-fields/*.js` para inyectar el icono en el label y un elemento de texto debajo del input cuando sea heredado.
+**5. Margin de Viewport** ✅  
+Contenido permanece centrado con `margin: 0 auto`.  
+[Solución: responsive.js:185-203](file:///c:/Users/1u/Local%20Sites/glorybuilder/app/public/wp-content/themes/glory/Glory/src/Gbn/assets/js/services/responsive.js#L185-L203)
 
 ---
 
-### 📋 FASE 3: Refinamiento y Correcciones (SIGUIENTE)
+#### ⚠️ Bugs Pendientes (Investigación Requerida)
 
-> **PREREQUISITO**: La Fase 1 (SOLID) debe estar **100% completada** antes de iniciar esta fase.
+##### Bug 6: Panel Theme - Mantener Subvista
+**Problema**: Al cambiar breakpoint en "Theme > Componentes > Principal", vuelve al menú principal.
 
-#### 🎯 Visión General
+**Intento fallido**: Modificado listener para preservar `currentDetailRole` ([theme/render.js:502-518](file:///c:/Users/1u/Local%20Sites/glorybuilder/app/public/wp-content/themes/glory/Glory/src/Gbn/assets/js/ui/theme/render.js#L502-L518))
 
-Sistema responsive integrado que permite configurar estilos específicos por tipo de pantalla, manteniendo herencia inteligente y principios SOLID.
+**Próximos pasos**: Variable global para estado del panel, logging para debug.
 
-**Ventajas de hacer esto DESPUÉS de SOLID**:
-1. ✅ **Código reutilizable**: `buildFieldFromSchema()` se llama 1 vez por breakpoint, no código triplicado
-2. ✅ **Bugs resueltos**: Los bugs de indicadores visuales ya estarán solucionados para todos los breakpoints
-3. ✅ **Extensibilidad**: Cualquier campo nuevo funcionará automáticamente en Desktop/Tablet/Mobile
-4. ✅ **Mantenibilidad**: Un solo lugar para lógica de renderizado, multiplicado por contexto de breakpoint
+---
 
-#### 📱 Componentes del Sistema
+##### Bug 7: Color de Fondo - Detección Inicial  
+**Problema**: Muestra `#1d8ff1` (azul del hover) en lugar del color CSS de clase. Al cambiar vista SÍ aparece correcto.
+
+**Teoría**: Hover del inspector interfiere con `getComputedStyle`.  
+**Intento fallido**: Reflow forzado ([utils.js:257-261](file:///c:/Users/1u/Local%20Sites/glorybuilder/app/public/wp-content/themes/glory/Glory/src/Gbn/assets/js/ui/panel-fields/utils.js#L257-L261))
+
+**Próximos pasos**: 
+- Buscar definición de `#1d8ff1` en `inspector.js` y `gbn.css`
+- Leer background después de remover clases del inspector temporalmente
+- Esperar evento "inspector ready" antes de leer estilos
+
+---
+
+---
+
+## 📐 ARQUITECTURA Y DOCUMENTACIÓN TÉCNICA
+
+### Detalles Técnicos: Sistema Responsive
+
+#### Componentes Implementados
 
 ##### 1. Selector de Vista en GBN Dock
 - **Ubicación**: Nuevo icono en el dock (junto a Guardar, Config Tema, etc.)
@@ -1120,14 +1116,6 @@ Resultado: Código limpio, extensible, mantenible
 
 ---
 
-### 📋 Fase 4 - Expansión General (PLANIFICADO)
-- [ ] Adaptación de componentes agnósticos (`GloryImage`, etc.)
-- [ ] Sistema de plantillas robusto y extensible
-- [ ] Historial de cambios (undo/redo)
-- [ ] Export/import de configuraciones
-- [ ] Biblioteca de presets y bloques predefinidos
-
----
 
 ## Marcado Base y Atributos
 

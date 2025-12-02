@@ -567,21 +567,51 @@
         if (block.id === 'theme-settings') {
             var current = cloneConfig(block.config);
             var segments = path.split('.');
-            var cursor = current;
             
-            // Ensure path exists
-            for (var i = 0; i < segments.length - 1; i++) {
-                var key = segments[i];
-                if (!cursor[key] || typeof cursor[key] !== 'object') {
-                    cursor[key] = {};
+            // NUEVO: Detectar breakpoint activo
+            var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
+            
+            // Si estamos en Mobile/Tablet, escribir en _responsive[bp] en lugar de raíz
+            var cursor;
+            if (breakpoint !== 'desktop' && path.startsWith('components.')) {
+                // Path ejemplo: "components.principal.padding.superior"
+                var pathParts = path.split('.');
+                var role = pathParts[1]; // "principal"
+                
+                // Asegurar estructura _responsive en el componente
+                if (!current.components) current.components = {};
+                if (!current.components[role]) current.components[role] = {};
+                if (!current.components[role]._responsive) current.components[role]._responsive = {};
+                if (!current.components[role]._responsive[breakpoint]) current.components[role]._responsive[breakpoint] = {};
+                
+                // Navegar dentro de _responsive para escribir el valor
+                var relativePath = pathParts.slice(2); // ['padding', 'superior']
+                cursor = current.components[role]._responsive[breakpoint];
+                
+                for (var i = 0; i < relativePath.length - 1; i++) {
+                    var key = relativePath[i];
+                    if (!cursor[key] || typeof cursor[key] !== 'object') {
+                        cursor[key] = {};
+                    }
+                    cursor = cursor[key];
                 }
-                cursor = cursor[key];
+                cursor[relativePath[relativePath.length - 1]] = value;
+            } else {
+                // Desktop o paths no-components: escribir en raíz como siempre
+                cursor = current;
+                for (var i = 0; i < segments.length - 1; i++) {
+                    var key = segments[i];
+                    if (!cursor[key] || typeof cursor[key] !== 'object') {
+                        cursor[key] = {};
+                    }
+                    cursor = cursor[key];
+                }
+                cursor[segments[segments.length - 1]] = value;
             }
-            cursor[segments[segments.length - 1]] = value;
             
             // DETECTAR CAMBIOS MANUALES: Marcar como 'manual' en __sync
-            // Si estamos editando configuración de componentes (path empieza con "components.")
-            if (path.startsWith('components.')) {
+            // Solo para desktop (los overrides responsive ya son "manuales" por definición)
+            if (breakpoint === 'desktop' && path.startsWith('components.')) {
                 // Ejemplo path: "components.principal.padding.superior"
                 var pathParts = path.split('.');
                 if (pathParts.length >= 3) {
@@ -609,18 +639,19 @@
                 Gbn.ui.panelTheme.applyThemeSettings(current);
             }
             
-            // Dispatch event (incluir path para campos condicionales)
+            // Dispatch event (incluir path y breakpoint)
             var event;
             if (typeof global.CustomEvent === 'function') {
-                event = new CustomEvent('gbn:configChanged', { detail: { id: 'theme-settings', path: path } });
+                event = new CustomEvent('gbn:configChanged', { detail: { id: 'theme-settings', path: path, breakpoint: breakpoint } });
             } else {
                 event = document.createEvent('CustomEvent');
-                event.initCustomEvent('gbn:configChanged', false, false, { id: 'theme-settings', path: path });
+                event.initCustomEvent('gbn:configChanged', false, false, { id: 'theme-settings', path: path, breakpoint: breakpoint });
             }
             global.dispatchEvent(event);
             
             // NUEVO: Disparar evento específico para actualización en tiempo real de defaults
-            if (path.startsWith('components.')) {
+            // Solo para desktop (los overrides responsive no afectan a otros bloques como "defaults")
+            if (breakpoint === 'desktop' && path.startsWith('components.')) {
                 var pathParts = path.split('.');
                 if (pathParts.length >= 3) {
                     var role = pathParts[1];
