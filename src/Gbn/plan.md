@@ -769,16 +769,15 @@ Contenido permanece centrado con `margin: 0 auto`.
 
 ---
 
-### Bugs Pendientes
 
-
-
-> [!IMPORTANT]
-> **Bug 11: Salida HTML Limpia**
-> - **Problema:** Los elementos `div` renderizados contienen múltiples atributos `data-gbn-*` (incluyendo esquemas completos en `data-gbn-schema`) incluso para usuarios deslogeados.
-> - **Objetivo:** Limpiar el HTML final para producción, eliminando atributos de construcción innecesarios para usuarios finales.
 
 ### Bugs Resueltos
+
+> [!NOTE]
+> **Bug 11: Salida HTML Limpia**
+> - **Estado:** Resuelto.
+> - **Solución:** Se modificó `dom.js` para inyectar `data-gbn-schema` únicamente si `config.isEditor` es verdadero. Esto reduce significativamente el peso del DOM para usuarios finales sin afectar la funcionalidad del constructor.
+
 
 > [!NOTE]
 > **Bug 8: Persistencia de Valores Responsive en Tema**

@@ -50,9 +50,15 @@
             // Mantener configuración existente (persistida o del atributo data-gbn-config)
             el.setAttribute('data-gbn-config', JSON.stringify(existingConfig));
         }
+        var config = utils.getConfig();
         var existingSchema = configHelpers.readJsonAttr(el, 'data-gbn-schema');
-        if (!Array.isArray(existingSchema) || existingSchema.length === 0) {
-            el.setAttribute('data-gbn-schema', JSON.stringify(defaults.schema || []));
+        
+        // Bug 11: Solo inyectar schema si el usuario es editor
+        // Esto limpia la salida HTML para usuarios finales
+        if (config.isEditor) {
+            if (!Array.isArray(existingSchema) || existingSchema.length === 0) {
+                el.setAttribute('data-gbn-schema', JSON.stringify(defaults.schema || []));
+            }
         }
     }
 
