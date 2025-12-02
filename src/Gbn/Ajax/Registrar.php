@@ -20,6 +20,7 @@ class Registrar
         add_action('wp_ajax_gbn_delete_item', [DeleteHandler::class, 'deleteItem']);
         add_action('wp_ajax_gbn_get_theme_settings', [ThemeSettingsHandler::class, 'getSettings']);
         add_action('wp_ajax_gbn_save_theme_settings', [ThemeSettingsHandler::class, 'saveSettings']);
+        add_action('wp_ajax_gbn_log_client_event', [Handlers\LoggerHandler::class, 'handle']);
     }
 }
 

@@ -138,9 +138,21 @@ class GbnManager
                 'deps' => ['jquery', 'glory-ajax'],
                 'ver'  => time(), // Force reload for debugging
             ],
+            'glory-gbn-validator' => [
+                'file' => '/js/core/validator.js',
+                'deps' => ['glory-gbn-core'],
+            ],
+            'glory-gbn-logger' => [
+                'file' => '/js/services/logger.js',
+                'deps' => ['glory-gbn-core'],
+            ],
+            'glory-gbn-store' => [
+                'file' => '/js/core/store.js',
+                'deps' => ['glory-gbn-core', 'glory-gbn-validator'],
+            ],
             'glory-gbn-state' => [
                 'file' => '/js/core/state.js',
-                'deps' => ['glory-gbn-core'],
+                'deps' => ['glory-gbn-store'],
             ],
             'glory-gbn-css-sync' => [
                 'file' => '/js/services/css-sync.js',
@@ -362,9 +374,17 @@ class GbnManager
                 'file' => '/js/ui/inspector.js',
                 'deps' => ['glory-gbn-ui-dragdrop', 'glory-gbn-ui-library', 'glory-gbn-ui-dock'],
             ],
+            'glory-gbn-debug-overlay' => [
+                'file' => '/js/ui/debug/overlay.js',
+                'deps' => ['glory-gbn-ui-panel'],
+            ],
+            'glory-gbn-store-subscriber' => [
+                'file' => '/js/ui/store-subscriber.js',
+                'deps' => ['glory-gbn-store', 'glory-gbn-ui-panel-render'],
+            ],
             'glory-gbn' => [
                 'file' => '/js/gbn.js',
-                'deps' => ['glory-gbn-ui-inspector'],
+                'deps' => ['glory-gbn-ui-inspector', 'glory-gbn-debug-overlay', 'glory-gbn-store-subscriber', 'glory-gbn-logger'],
             ],
         ];
 

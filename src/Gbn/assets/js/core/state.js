@@ -3,9 +3,11 @@
 
     var Gbn = global.Gbn = global.Gbn || {};
     var utils = Gbn.utils;
-    var registry = new Map();
     var elementsIndex = new WeakMap();
     var usedIds = new Set();
+
+    // Ensure Store is available (it should be loaded before state.js in dependency order)
+    var store = Gbn.core && Gbn.core.store ? Gbn.core.store : null;
 
     function ensureId(el) {
         var existing = el.getAttribute('data-gbn-id');
@@ -28,35 +30,26 @@
     }
 
     function parseJsonAttr(el, attr, fallback) {
-        if (!el || !attr) {
-            return fallback || null;
-        }
+        if (!el || !attr) return fallback || null;
         var raw = el.getAttribute(attr);
-        if (!raw) {
-            return fallback || null;
-        }
-        try {
-            return JSON.parse(raw);
-        } catch (_) {
-            return fallback || null;
-        }
+        if (!raw) return fallback || null;
+        try { return JSON.parse(raw); } catch (_) { return fallback || null; }
     }
 
     function registerBlock(role, el, meta) {
-        if (!el) {
-            return null;
-        }
+        if (!el) return null;
+        
+        // Check if already indexed
         var existing = elementsIndex.get(el);
         if (existing) {
-            if (meta) {
-                existing.meta = utils.assign({}, existing.meta, meta);
-            }
+            // Update meta if needed?
             return existing;
         }
 
         var id = ensureId(el);
         var initialConfig = parseJsonAttr(el, 'data-gbn-config', {}) || {};
         var initialSchema = parseJsonAttr(el, 'data-gbn-schema', []);
+        
         var block = {
             id: id,
             role: role,
@@ -70,52 +63,93 @@
             }
         };
 
-        registry.set(id, block);
+        // Dispatch to Store
+        if (store) {
+            store.dispatch({
+                type: store.Actions.ADD_BLOCK,
+                payload: block
+            });
+        }
+
         elementsIndex.set(el, block);
         return block;
     }
 
     function updateConfig(id, nextConfig) {
-        var block = registry.get(id);
-        if (!block) {
-            return null;
+        // Dispatch update to Store
+        if (store) {
+            store.dispatch({
+                type: store.Actions.UPDATE_BLOCK,
+                id: id,
+                payload: nextConfig,
+                breakpoint: 'desktop' // Force base update since nextConfig is already fully processed
+            });
+            
+            // Return updated block from store
+            var state = store.getState();
+            var block = state.blocks[id];
+            
+            // Sync DOM attribute for persistence (legacy behavior, but good for backup)
+            if (block && block.element) {
+                 block.element.setAttribute('data-gbn-config', JSON.stringify(block.config));
+            }
+            return block;
         }
-        block.config = utils.assign({}, block.config, nextConfig || {});
-        block.element.setAttribute('data-gbn-config', JSON.stringify(block.config));
-        return block;
+        return null;
     }
 
     function all() {
-        return Array.from(registry.values());
+        if (store) {
+            var state = store.getState();
+            return Object.values(state.blocks);
+        }
+        return [];
     }
 
     function getByElement(el) {
-        return elementsIndex.get(el) || null;
+        var block = elementsIndex.get(el);
+        // Ensure we return the latest state from store if possible
+        if (block && store) {
+            var state = store.getState();
+            if (state.blocks[block.id]) {
+                return state.blocks[block.id];
+            }
+        }
+        return block || null;
     }
 
     function get(id) {
-        return registry.get(id) || null;
-    }
-
-    function clear() {
-        registry.clear();
-        elementsIndex = new WeakMap();
-        usedIds.clear();
+        if (store) {
+            var state = store.getState();
+            return state.blocks[id] || null;
+        }
+        return null;
     }
 
     function deleteBlock(id) {
-        var block = registry.get(id);
-        if (!block) return false;
-        
-        if (block.element) {
-            elementsIndex.delete(block.element);
-            if (block.element.parentNode) {
-                block.element.parentNode.removeChild(block.element);
+        if (store) {
+            var state = store.getState();
+            var block = state.blocks[id];
+            if (block && block.element) {
+                elementsIndex.delete(block.element);
+                if (block.element.parentNode) {
+                    block.element.parentNode.removeChild(block.element);
+                }
             }
+            store.dispatch({
+                type: store.Actions.DELETE_BLOCK,
+                id: id
+            });
+            usedIds.delete(id);
+            return true;
         }
-        registry.delete(id);
-        usedIds.delete(id);
-        return true;
+        return false;
+    }
+    
+    function clear() {
+        // Not implemented in store yet, but usually for full reset
+        elementsIndex = new WeakMap();
+        usedIds.clear();
     }
 
     Gbn.state = {

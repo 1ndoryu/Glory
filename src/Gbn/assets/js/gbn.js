@@ -20,6 +20,7 @@
     }
 
     utils.debug('Iniciando GBN modular');
+    if (Gbn.log) Gbn.log.info('GBN Initialized', { version: config.version || 'unknown' });
 
     var content = Gbn.content;
     var inspector = Gbn.ui && Gbn.ui.inspector;
@@ -35,5 +36,13 @@
     if (inspector && typeof inspector.init === 'function') {
         inspector.init(blocks, config);
     }
+    
+    // Initialize Debug Overlay
+    if (Gbn.ui.debug && Gbn.ui.debug.overlay) {
+        Gbn.ui.debug.overlay.init();
+    }
+    
+    // Note: store-subscriber.js auto-initializes on load if store exists
+    // Note: validator.js is a static module, no init needed
 })(window);
 

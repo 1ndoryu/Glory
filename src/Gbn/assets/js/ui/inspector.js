@@ -40,6 +40,18 @@
             event.preventDefault(); event.stopPropagation();
             if (Gbn.ui && Gbn.ui.panel && typeof Gbn.ui.panel.open === 'function') {
                 Gbn.ui.panel.open(block);
+                
+                // Dispatch selection event for Debug Overlay (Legacy/Direct)
+                var evt = new CustomEvent('gbn:block-selected', { detail: { blockId: block.id } });
+                document.dispatchEvent(evt);
+                
+                // Dispatch to Store
+                if (Gbn.core && Gbn.core.store) {
+                    Gbn.core.store.dispatch({
+                        type: Gbn.core.store.Actions.SELECT_BLOCK,
+                        id: block.id
+                    });
+                }
             }
         });
         
@@ -250,8 +262,8 @@
             }
 
             // Ocultar UI antigua si existe
-            var oldWrapper = document.getElementById('glory-gbn-root');
-            if (oldWrapper) { oldWrapper.style.display = 'none'; }
+            // var oldWrapper = document.getElementById('glory-gbn-root');
+            // if (oldWrapper) { oldWrapper.style.display = 'none'; }
 
             var stored = readStoredState(); var initial = typeof stored === 'boolean' ? stored : !!cfg.initialActive; setActive(initial);
             global.addEventListener('gbn:contentHydrated', handleHydrated);
