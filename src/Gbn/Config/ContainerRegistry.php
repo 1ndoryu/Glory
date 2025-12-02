@@ -2,7 +2,7 @@
 
 namespace Glory\Gbn\Config;
 
-use Glory\Components\ContentRender;
+
 
 final class ContainerRegistry
 {
@@ -306,13 +306,7 @@ final class ContainerRegistry
                 ],
             ],
         ],
-        'content' => [
-            'selector' => [
-                'attribute' => 'gloryContentRender',
-                'dataAttribute' => 'data-gbnContent',
-            ],
-            'provider' => [ContentRender::class, 'gbnDefaults'],
-        ],
+
     ];
 
     private static ?array $resolved = null;

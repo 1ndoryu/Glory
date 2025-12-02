@@ -20,21 +20,7 @@
             role: 'secundario',
             html: '<div gloryDivSecundario class="divSecundario"></div>'
         },
-        content_list: {
-            label: 'Lista de Entradas',
-            role: 'content',
-            html: '<div gloryContentRender="post" opciones="publicacionesPorPagina: 3, claseContenedor: \'gbn-content-grid\', claseItem: \'gbn-content-card\'"></div>'
-        },
-        term_list: {
-            label: 'Lista de Términos',
-            role: 'term_list',
-            html: '<div gloryTermRender="category" opciones="numero: 5"></div>'
-        },
-        image: {
-            label: 'Imagen',
-            role: 'image',
-            html: '<div gloryImage="1" opciones="image_url: \'https://via.placeholder.com/300\'"></div>'
-        },
+
         text: {
             label: 'Texto (gloryTexto)',
             role: 'text',

@@ -145,6 +145,7 @@ GBN no usa componentes propietarios opacos.
 - **Bug 20 (UI):** Hover de componentes sin fondo de color. **Estado:** Resuelto.
 - **Bug 21 (UI):** Barra de herramientas descentrada por conflicto de estilos `transform` (corregido en múltiples selectores). **Estado:** Resuelto.
 - **Bug 22 (UI):** Orden incorrecto de opciones Flex en componente Secundario. **Estado:** Resuelto.
+- **Bug 23 (UI):** Estilos inconsistentes en `gbn-component-fields` (unificado con `gbn-panel-form`). **Estado:** Resuelto.
 
 ## 6. Estrategia de Refactorización (Futuro)
 
@@ -194,44 +195,47 @@ Para evitar inconsistencias futuras entre PHP (`ContainerRegistry`) y JS (`roles
 
 ---
 
-## 5. Roadmap Activo
+## 5. Roadmap de Refactorización y Hardening
 
-### ✅ Completado Recientemente
-- [x] **Bug 10: Persistencia de Layout Options**
-    -   *Solución*: Se aseguró que las propiedades de layout (`flex-wrap`, `direction`, `justify`) se guarden y apliquen correctamente tanto en `applicator.js` como en la generación de CSS estático.
-- [x] **Bug 11: Salida HTML Limpia**
-- [x] **Bug 8: Persistencia Responsive en Tema**
-- [x] **Refactorización panel-render.js**
-    -   *Solución*: Se extrajo la lógica de renderizado y actualización a `ui/renderers/` (`principal.js`, `secundario.js`, `text.js`, etc.), dejando `panel-render.js` como un orquestador limpio. Se movieron helpers a `shared.js`.
+Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil de mantener antes de escalar la biblioteca de componentes.
 
-### 🚨 Prioridades Inmediatas
-- [ ] **gloryContentRender Avanzado**
-    -   Implementar opciones avanzadas de layout (Grid/List), paginación AJAX y filtrado por taxonomías.
-    -   Paridad funcional con su version en avada.
+### Fase 1: Auditoría y Estandarización del Core (Actual)
+**Objetivo:** Asegurar que la base sea sólida antes de agregar más peso.
 
-### Candidatos a Refactorización (Por Complejidad)
-Archivos que han crecido significativamente y deberían ser divididos en módulos más pequeños (Principio de Responsabilidad Única):
+- [ ] **Auditoría de Opciones y Modulariad**
+    -   **Problema:** ¿Están las opciones (padding, layout, etc.) bien ordenadas y modulares?
+    -   **Acción:** Revisar `ui/panel-fields/` y `ContainerRegistry.php`.
+    -   **Meta:** Confirmar que añadir una opción nueva (ej. "Borde") sea tan simple como registrar un archivo y añadir una línea en el esquema, sin tocar lógica central.
+    -   **Validación:** Crear una opción de prueba dummy y verificar su flujo completo.
 
+- [ ] **Automatización de Opciones**
+    -   **Problema:** ¿Están preparadas para su automatización default en el panel del tema?
+    -   **Acción:** Verificar que `theme-settings.js` y `applicator.js` iteren dinámicamente sobre los esquemas en lugar de tener listas hardcoded de propiedades.
+    -   **Meta:** Que al añadir una opción a un componente, automáticamente aparezca su contraparte global en "Ajustes del Tema" si se desea.
 
+- [ ] **Prevención de Código Repetitivo (DRY)**
+    -   **Problema:** ¿Se evita código repetitivo entre componentes?
+    -   **Acción:** Refactorizar `ContainerRegistry.php` para usar "Traits" o arrays de configuración compartidos (ej. `$commonSpacing`, `$commonLayout`) en lugar de repetir arrays gigantes.
+    -   **Meta:** Definir un set de opciones estándar una vez y reutilizarlo en `principal`, `secundario`, `text`, etc.
 
-2.  **`ui/theme/render.js` (520 líneas)**:
-    -   *Responsabilidad*: Renderiza el panel de configuración global del tema.
-    -   *Problema*: Monolito que maneja colores, tipografía y layout global en un solo archivo.
-    -   *Solución*: Dividir en `theme-colors.js`, `theme-typography.js`, etc.
+### Fase 2: Implementación de Componentes Nativos
+**Objetivo:** Reimplementar los componentes base con la nueva arquitectura limpia.
 
-3.  **`panel-core.js` (502 líneas)**:
-    -   *Responsabilidad*: Gestión del estado del panel (abrir/cerrar, placeholder, footer).
-    -   *Problema*: Mezcla lógica de presentación con lógica de estado y persistencia (Restore).
-    -   *Solución*: Extraer la lógica de "Restaurar" a un módulo `restore-ui.js`.
+- [ ] **Estructura de Directorios**
+    -   Crear `Glory/src/Gbn/components/` para alojar la lógica específica de cada componente (si es necesaria fuera del core).
 
-4.  **`core/utils.js` (471 líneas)**:
-    -   *Problema*: "Cajón de sastre" de utilidades.
-    -   *Solución*: Agrupar en `math-utils.js`, `dom-utils.js`, `object-utils.js`.
+- [ ] **Componente: Principal (Sección)**
+    -   Revisar implementación actual en `ContainerRegistry` y `principal.js`.
+    -   Asegurar soporte total para HTML semántico (`section`, `header`, `footer`).
 
-5.  **`ContainerRegistry.php` (416 líneas)**:
-    -   *Estado*: Aceptable por ahora, ya que es configuración pura, pero podría dividirse en archivos de configuración por rol si crece más.
+- [ ] **Componente: Secundario (Contenedor/Columna)**
+    -   Estandarizar el manejo de anchos fraccionarios y flexbox.
+    -   Asegurar que las opciones de Layout (Flex/Grid) sean consistentes con Principal.
 
-### Fases Futuras
-- [ ] **Adaptación de Componentes**: Estandarizar `TermRender`, `GloryImage` para usar el sistema `gbnDefaults` y `data-gbn-schema`.
-- [ ] **CSS Sync Avanzado**: Sincronización bidireccional completa donde editar el archivo `.css` actualice los valores en el panel (parsing de CSS).
-- [ ] **Grid Layout Nativo**: Soporte visual para CSS Grid (columnas, filas, áreas) con interfaz drag & drop.
+- [ ] **Componente: Texto (Rich Text)**
+    -   Mejorar la integración con opciones de tipografía global.
+    -   Asegurar limpieza de HTML al pegar contenido.
+
+### Fase 3: Hardening y Futuro
+- [ ] **Tests de Regresión Visual:** Implementar un sistema básico para verificar que los cambios en el core no rompen estilos existentes.
+- [ ] **Documentación de API:** Documentar cómo registrar un nuevo componente externo (3rd party) en GBN.

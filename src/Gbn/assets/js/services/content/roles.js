@@ -13,9 +13,7 @@
     var FALLBACK_SELECTORS = {
         principal: { attribute: 'gloryDiv', dataAttribute: 'data-gbnPrincipal' },
         secundario: { attribute: 'gloryDivSecundario', dataAttribute: 'data-gbnSecundario' },
-        content: { attribute: 'gloryContentRender', dataAttribute: 'data-gbnContent' },
-        term_list: { attribute: 'gloryTermRender', dataAttribute: 'data-gbn-term-list' },
-        image: { attribute: 'gloryImage', dataAttribute: 'data-gbn-image' },
+
         text: { attribute: 'gloryTexto', dataAttribute: 'data-gbn-text' }
     };
 
@@ -292,7 +290,7 @@
 
     var ROLE_PRIORITY = [];
     function initPriority() {
-        ['content', 'secundario', 'principal'].forEach(function (role) {
+        ['secundario', 'principal'].forEach(function (role) {
             if (ROLE_MAP[role] && ROLE_PRIORITY.indexOf(role) === -1) {
                 ROLE_PRIORITY.push(role);
             }
