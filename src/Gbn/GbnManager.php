@@ -270,9 +270,50 @@ class GbnManager
                 'file' => '/js/ui/panel-fields.js',
                 'deps' => ['glory-gbn-ui-fields-index'],
             ],
+            // Renderers - Módulos refactorizados
+            'glory-gbn-ui-renderers-shared' => [
+                'file' => '/js/ui/renderers/shared.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
+            'glory-gbn-ui-renderers-layout-flex' => [
+                'file' => '/js/ui/renderers/layout-flex.js',
+                'deps' => ['glory-gbn-ui-renderers-shared'],
+            ],
+            'glory-gbn-ui-renderers-layout-grid' => [
+                'file' => '/js/ui/renderers/layout-grid.js',
+                'deps' => ['glory-gbn-ui-renderers-shared'],
+            ],
+            'glory-gbn-ui-renderers-principal' => [
+                'file' => '/js/ui/renderers/principal.js',
+                'deps' => ['glory-gbn-ui-renderers-layout-flex', 'glory-gbn-ui-renderers-layout-grid'],
+            ],
+            'glory-gbn-ui-renderers-secundario' => [
+                'file' => '/js/ui/renderers/secundario.js',
+                'deps' => ['glory-gbn-ui-renderers-layout-flex', 'glory-gbn-ui-renderers-layout-grid'],
+            ],
+            'glory-gbn-ui-renderers-text' => [
+                'file' => '/js/ui/renderers/text.js',
+                'deps' => ['glory-gbn-ui-renderers-shared'],
+            ],
+            'glory-gbn-ui-renderers-page-settings' => [
+                'file' => '/js/ui/renderers/page-settings.js',
+                'deps' => ['glory-gbn-ui-renderers-shared'],
+            ],
+            'glory-gbn-ui-renderers-theme-settings' => [
+                'file' => '/js/ui/renderers/theme-settings.js',
+                'deps' => ['glory-gbn-ui-renderers-shared'],
+            ],
+
             'glory-gbn-ui-panel-render' => [
                 'file' => '/js/ui/panel-render.js',
-                'deps' => ['glory-gbn-ui-panel-fields'],
+                'deps' => [
+                    'glory-gbn-ui-panel-fields',
+                    'glory-gbn-ui-renderers-principal',
+                    'glory-gbn-ui-renderers-secundario',
+                    'glory-gbn-ui-renderers-text',
+                    'glory-gbn-ui-renderers-page-settings',
+                    'glory-gbn-ui-renderers-theme-settings'
+                ],
             ],
             'glory-gbn-theme-applicator' => [
                 'file' => '/js/ui/theme/applicator.js',
