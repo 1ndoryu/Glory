@@ -20,6 +20,12 @@
             return null;
         }
         
+        // Try registry first
+        if (Gbn.ui.panelFields.registry) {
+            var builder = Gbn.ui.panelFields.registry.get(field.tipo);
+            if (builder) return builder(block, field);
+        }
+
         switch (field.tipo) {
             case 'header':
                 return Gbn.ui.headerField && Gbn.ui.headerField.build(block, field);

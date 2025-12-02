@@ -169,90 +169,67 @@
         
         // Component Defaults (Principal, Secundario, etc)
         if (settings.components) {
-             // Helper para aplicar padding descompuesto
-             function applyPadding(prefix, paddingObj) {
-                 if (paddingObj && typeof paddingObj === 'object') {
-                     // Mapeo de nombres en español a nombres CSS
-                     var map = {
-                         superior: 'top',
-                         derecha: 'right',
-                         inferior: 'bottom',
-                         izquierda: 'left'
-                     };
-                     
-                     Object.keys(map).forEach(function(key) {
-                         var cssName = map[key];
-                         var varName = prefix + '-padding-' + cssName;
-                         setOrRemoveValue(varName, paddingObj[key]);
-                     });
-                 } else if (paddingObj) {
-                     // Si es un valor único, aplicarlo a todas las direcciones
-                     ['top', 'right', 'bottom', 'left'].forEach(function(dir) {
-                         setOrRemoveValue(prefix + '-padding-' + dir, paddingObj);
-                     });
-                 } else {
-                     // Remover todas las direcciones
-                     ['top', 'right', 'bottom', 'left'].forEach(function(dir) {
-                         root.style.removeProperty(prefix + '-padding-' + dir);
-                     });
-                 }
-             }
-             
-             // Helper para aplicar propiedades de layout
-             function applyLayoutProperties(prefix, comp) {
-                 // Layout type
-                 setOrRemove(prefix + '-layout', comp.layout);
-                 
-                 // Flex properties
-                 setOrRemove(prefix + '-direction', comp.direction || comp.flexDirection);
-                 setOrRemove(prefix + '-wrap', comp.wrap || comp.flexWrap);
-                 setOrRemove(prefix + '-justify', comp.justify || comp.flexJustify);
-                 setOrRemove(prefix + '-align', comp.align || comp.flexAlign);
-                 
-                 // Grid properties
-                 if (comp.gridColumns) {
-                     setOrRemove(prefix + '-grid-columns', comp.gridColumns);
-                 }
-                 if (comp.gridGap !== undefined) {
-                     setOrRemoveValue(prefix + '-grid-gap', comp.gridGap);
-                 }
-                 
-                 // Max width
-                 if (comp.maxAncho !== undefined && comp.maxAncho !== null && comp.maxAncho !== '') {
-                     setOrRemoveValue(prefix + '-max-width', comp.maxAncho);
-                 } else {
-                     root.style.removeProperty(prefix + '-max-width');
-                 }
-                 
-                 // Height
-                 setOrRemove(prefix + '-height', comp.height);
-             }
-             
+             var roleSchemas = (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.roleSchemas) ? gloryGbnCfg.roleSchemas : {};
+
              Object.keys(settings.components).forEach(function(role) {
                  var rawComp = settings.components[role];
                  if (!rawComp) return;
 
                  // Obtener configuración efectiva para el breakpoint actual
                  var comp = getEffectiveComponentConfig(rawComp, breakpoint);
-                 
                  var prefix = '--gbn-' + role;
-                 
-                 // Aplicar padding
-                 applyPadding(prefix, comp.padding);
-                 
-                 // Aplicar background
-                 setOrRemove(prefix + '-background', comp.background);
-                 
-                 // Aplicar gap
-                 setOrRemoveValue(prefix + '-gap', comp.gap);
-                 
-                 // Aplicar propiedades de layout (layout, direction, wrap, justify, align, grid, maxAncho, height)
-                 applyLayoutProperties(prefix, comp);
-                 
-                 // Propiedades específicas por rol
-                 if (role === 'secundario') {
-                     setOrRemoveValue(prefix + '-width', comp.width);
+                 var schema = roleSchemas[role];
+
+                 if (!schema || !schema.fields) {
+                     // Fallback legacy behavior if no schema found
+                     // (We could keep the old code here as fallback, but for now assuming schema exists for core roles)
+                     return;
                  }
+
+                 schema.fields.forEach(function(field) {
+                     var value = comp[field.id];
+                     
+                     // Special handling based on field type
+                     if (field.tipo === 'spacing') {
+                         if (value && typeof value === 'object') {
+                             var map = { superior: 'top', derecha: 'right', inferior: 'bottom', izquierda: 'left' };
+                             Object.keys(map).forEach(function(key) {
+                                 var cssName = map[key];
+                                 var varName = prefix + '-' + field.id + '-' + cssName;
+                                 setOrRemoveValue(varName, value[key]);
+                             });
+                         } else if (value) {
+                             ['top', 'right', 'bottom', 'left'].forEach(function(dir) {
+                                 setOrRemoveValue(prefix + '-' + field.id + '-' + dir, value);
+                             });
+                         } else {
+                             ['top', 'right', 'bottom', 'left'].forEach(function(dir) {
+                                 root.style.removeProperty(prefix + '-' + field.id + '-' + dir);
+                             });
+                         }
+                     } else {
+                         // Default handling
+                         // Handle specific overrides if needed (e.g. flex properties mapping)
+                         // But if schema id matches css var suffix, it's automatic.
+                         // Current schema ids: layout, background, gap, width, height, maxAncho...
+                         
+                         // Mapping for legacy property names if they differ from schema id
+                         // (In new schema, ids should match what we want in CSS roughly)
+                         
+                         var varName = prefix + '-' + field.id;
+                         
+                         // Special case: maxAncho -> max-width
+                         if (field.id === 'maxAncho') varName = prefix + '-max-width';
+                         
+                         setOrRemoveValue(varName, value);
+                     }
+                 });
+                 
+                 // Handle legacy/extra properties that might not be in schema fields directly or need special mapping
+                 // e.g. Flex properties might be individual fields in schema or part of a 'layout' group?
+                 // In the new architecture, traits like 'HasFlexbox' add fields like 'direction', 'wrap', etc.
+                 // So if they are in schema.fields, they are handled above.
+                 // We just need to ensure schema.fields includes everything.
              });
         }
     }

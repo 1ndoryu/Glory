@@ -198,7 +198,14 @@ Para evitar inconsistencias futuras entre PHP (`ContainerRegistry`) y JS (`roles
 
 ---
 
-## 5. Roadmap de Refactorización y Hardening
+## 5. Bugs Conocidos y Regresiones
+
+### Regresiones Post-Refactorización (Fase 4)
+- **Bug 24 (Critical):** Padding en componentes Principales no se aplica (ni en vivo ni al recargar), aunque el valor persiste.
+- **Bug 25 (Critical):** Opciones de Flexbox no se aplican en el frontend/editor (Grid sí funciona).
+- **Bug 26 (Critical):** Alineación de contenido desde Panel de Tema (Defaults) no aplica cambios visuales.
+
+## 6. Roadmap de Refactorización y Hardening
 
 Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil de mantener antes de escalar la biblioteca de componentes.
 
@@ -253,19 +260,33 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 ### Fase 4: Refactorización JS (SOLID & DRY)
 **Objetivo:** Alinear la arquitectura Frontend con los principios de modularidad y automatización del Backend.
 
-- [ ] **Auditoría de Renderers (DRY)**
+- [ ] **Implementación de `StyleComposer` (DRY)**
     -   **Problema:** `principal.js` y `secundario.js` duplican lógica de estilos (padding, background, layout).
-    -   **Acción:** Crear `SharedStyles.js` (o `StyleTraits.js`) para centralizar la generación de CSS común.
-    -   **Meta:** Que los renderers específicos solo definan lo que es único de su rol.
+    -   **Solución Técnica:** Crear `assets/js/ui/renderers/style-composer.js`.
+        -   Debe exponer un método `compose(block, schema, bp)`.
+        -   Iterará sobre los "traits" definidos en el esquema del componente (inyectado vía `gloryGbnCfg.roleSchemas`).
+        -   Mapeará traits a generadores de estilo:
+            -   `hasSpacing` -> `shared.extractSpacingStyles`
+            -   `hasFlexbox` -> `layoutFlex`
+            -   `hasGrid` -> `layoutGrid`
+            -   `hasBackground` -> `background styles`
+            -   `hasTypography` -> `typography styles`
+    -   **Meta:** Eliminar duplicación y facilitar la creación de nuevos renderers.
 
-- [ ] **Automatización de Tema (Applicator)**
-    -   **Problema:** `applicator.js` tiene listas hardcoded de propiedades y no escala automáticamente con nuevos campos.
-    -   **Acción:** Refactorizar para iterar dinámicamente sobre el esquema de configuración inyectado.
-    -   **Meta:** Añadir una opción en PHP y que funcione en el tema sin tocar JS.
+- [ ] **Automatización de Tema (`applicator.js`)**
+    -   **Problema:** `applicator.js` tiene listas hardcoded y no escala automáticamente.
+    -   **Solución Técnica:**
+        -   Refactorizar `applicator.js` para iterar sobre `gloryGbnCfg.themeSettings.schema` (o similar).
+        -   Generar variables CSS dinámicamente basado en el tipo de campo del esquema (e.g., si es `color`, genera `--gbn-{role}-{field}: value`).
+    -   **Meta:** Configuración "Zero-Config" en JS para nuevos campos del tema.
 
-- [ ] **Registro de Campos Modular**
+- [ ] **Registro de Campos (Field Registry - OCP)**
     -   **Problema:** `panel-fields/index.js` usa un switch gigante.
-    -   **Acción:** Implementar un `FieldRegistry` para que los campos se auto-registren.
+    -   **Solución Técnica:** Crear `assets/js/ui/panel-fields/registry.js`.
+        -   Métodos: `register(type, component)` y `get(type)`.
+        -   Los campos (`text.js`, `color.js`) se auto-registrarán al cargarse.
+        -   `index.js` solo delegará al registry.
+    -   **Meta:** Arquitectura abierta a extensión sin modificación (Open/Closed).
 
 ### Fase 5: Futuro y Escalabilidad
 - [ ] **Tests Automatizados:** Implementar tests unitarios para `SchemaBuilder` y `ComponentLoader`.

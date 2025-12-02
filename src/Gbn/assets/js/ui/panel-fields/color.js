@@ -236,5 +236,9 @@
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.colorField = { build: buildColorField };
 
+    if (Gbn.ui.panelFields && Gbn.ui.panelFields.registry) {
+        Gbn.ui.panelFields.registry.register('color', buildColorField);
+    }
+
 })(window);
 

@@ -203,6 +203,10 @@ class GbnManager
                 'deps' => ['glory-gbn-services'],
             ],
             // Panel Fields - Módulos refactorizados
+            'glory-gbn-ui-fields-registry' => [
+                'file' => '/js/ui/panel-fields/registry.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
             'glory-gbn-ui-fields-utils' => [
                 'file' => '/js/ui/panel-fields/utils.js',
                 'deps' => ['glory-gbn-persistence'],
@@ -217,7 +221,7 @@ class GbnManager
             ],
             'glory-gbn-ui-fields-spacing' => [
                 'file' => '/js/ui/panel-fields/spacing.js',
-                'deps' => ['glory-gbn-ui-fields-sync'],
+                'deps' => ['glory-gbn-ui-fields-sync', 'glory-gbn-ui-fields-registry'],
             ],
             'glory-gbn-ui-fields-slider' => [
                 'file' => '/js/ui/panel-fields/slider.js',
@@ -233,11 +237,11 @@ class GbnManager
             ],
             'glory-gbn-ui-fields-text' => [
                 'file' => '/js/ui/panel-fields/text.js',
-                'deps' => ['glory-gbn-ui-fields-utils'],
+                'deps' => ['glory-gbn-ui-fields-utils', 'glory-gbn-ui-fields-registry'],
             ],
             'glory-gbn-ui-fields-color' => [
                 'file' => '/js/ui/panel-fields/color.js',
-                'deps' => ['glory-gbn-ui-fields-sync'],
+                'deps' => ['glory-gbn-ui-fields-sync', 'glory-gbn-ui-fields-registry'],
             ],
             'glory-gbn-ui-fields-typography' => [
                 'file' => '/js/ui/panel-fields/typography.js',
@@ -258,6 +262,7 @@ class GbnManager
             'glory-gbn-ui-fields-index' => [
                 'file' => '/js/ui/panel-fields/index.js',
                 'deps' => [
+                    'glory-gbn-ui-fields-registry',
                     'glory-gbn-ui-fields-header',
                     'glory-gbn-ui-fields-spacing',
                     'glory-gbn-ui-fields-slider',
@@ -281,6 +286,10 @@ class GbnManager
                 'file' => '/js/ui/renderers/shared.js',
                 'deps' => ['glory-gbn-ui-fields-utils'],
             ],
+            'glory-gbn-ui-renderers-style-composer' => [
+                'file' => '/js/ui/renderers/style-composer.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-layout-flex', 'glory-gbn-ui-renderers-layout-grid'],
+            ],
             'glory-gbn-ui-renderers-layout-flex' => [
                 'file' => '/js/ui/renderers/layout-flex.js',
                 'deps' => ['glory-gbn-ui-renderers-shared'],
@@ -291,11 +300,11 @@ class GbnManager
             ],
             'glory-gbn-ui-renderers-principal' => [
                 'file' => '/js/ui/renderers/principal.js',
-                'deps' => ['glory-gbn-ui-renderers-layout-flex', 'glory-gbn-ui-renderers-layout-grid'],
+                'deps' => ['glory-gbn-ui-renderers-style-composer'],
             ],
             'glory-gbn-ui-renderers-secundario' => [
                 'file' => '/js/ui/renderers/secundario.js',
-                'deps' => ['glory-gbn-ui-renderers-layout-flex', 'glory-gbn-ui-renderers-layout-grid'],
+                'deps' => ['glory-gbn-ui-renderers-style-composer'],
             ],
             'glory-gbn-ui-renderers-text' => [
                 'file' => '/js/ui/renderers/text.js',

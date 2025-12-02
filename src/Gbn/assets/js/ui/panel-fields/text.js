@@ -66,5 +66,9 @@
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.textField = { build: buildTextField };
 
+    if (Gbn.ui.panelFields && Gbn.ui.panelFields.registry) {
+        Gbn.ui.panelFields.registry.register('text', buildTextField);
+    }
+
 })(window);
 

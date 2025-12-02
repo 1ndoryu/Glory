@@ -200,5 +200,9 @@
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.spacingField = { build: buildSpacingField };
 
+    if (Gbn.ui.panelFields && Gbn.ui.panelFields.registry) {
+        Gbn.ui.panelFields.registry.register('spacing', buildSpacingField);
+    }
+
 })(window);
 
