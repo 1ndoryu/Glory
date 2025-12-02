@@ -646,6 +646,15 @@ Bloque individual (block.config.*)
 
 ---
 
+### ✅ Problema 4: Persistencia de Opciones de Layout (Flexbox) - RESUELTO
+
+**Solución aplicada:**
+- [x] Se reemplazó el script obsoleto `render/theme-applicator.js` por `ui/theme/applicator.js` en el frontend.
+- [x] El nuevo script contiene la lógica correcta para aplicar propiedades de layout (flex-wrap, justify-content, etc.) desde Theme Settings.
+- [x] Se añadió lógica de inicialización al cargar el DOM para asegurar que los estilos se apliquen inmediatamente.
+
+---
+
 ## 🎯 PRIORIDADES FUTURAS (Orden de Implementación)
 
 > **IMPORTANTE**: El orden de estas fases es crítico. Cada fase construye sobre la anterior.
@@ -762,11 +771,7 @@ Contenido permanece centrado con `margin: 0 auto`.
 
 ### Bugs Pendientes
 
-> [!IMPORTANT]
-> **Bug 10: Persistencia de Opciones de Layout (Flexbox)**
-> - **Problema:** Cambios en opciones de layout (ej. `flex-wrap: nowrap`) en Theme Settings se aplican en tiempo real pero se pierden al recargar la página hasta que se reabre el panel.
-> - **Observación:** El estado original (deslogeado) muestra `flex-wrap` por defecto (wrap), ignorando la configuración guardada.
-> - **Hipótesis:** Las variables CSS o estilos inline para layout no se están inicializando correctamente en el frontend (PHP/JS de carga) o `applicator.js` no se ejecuta al cargar la página para aplicar estos valores específicos.
+
 
 > [!IMPORTANT]
 > **Bug 11: Salida HTML Limpia**

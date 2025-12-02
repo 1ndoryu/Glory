@@ -257,10 +257,33 @@
         }
     }
 
+    // Expose functions
     Gbn.ui.theme.applicator = {
         toCssValue: toCssValue,
         applyPageSettings: applyPageSettings,
         applyThemeSettings: applyThemeSettings
     };
+
+    // Alias for backward compatibility and frontend usage
+    Gbn.ui.themeApplicator = Gbn.ui.theme.applicator;
+
+    // Initialize Settings on Load
+    document.addEventListener('DOMContentLoaded', function() {
+        // 1. Load Config
+        var config = window.gloryGbnCfg || {};
+        if (window.Gbn) {
+            if (!window.Gbn.config) window.Gbn.config = {};
+            if (config.themeSettings) window.Gbn.config.themeSettings = config.themeSettings;
+            if (config.pageSettings) window.Gbn.config.pageSettings = config.pageSettings;
+        }
+        
+        // 2. Apply Settings
+        if (config.themeSettings) {
+            applyThemeSettings(config.themeSettings);
+        }
+        if (config.pageSettings) {
+            applyPageSettings(config.pageSettings);
+        }
+    });
 
 })(window);

@@ -141,7 +141,7 @@ class GbnManager
                 'deps' => ['glory-gbn-core'],
             ],
             'glory-gbn-theme-applicator' => [
-                'file' => '/js/render/theme-applicator.js',
+                'file' => '/js/ui/theme/applicator.js',
                 'deps' => ['glory-gbn-state', 'glory-gbn-css-sync'],
             ],
             'glory-gbn-style' => [
@@ -274,13 +274,13 @@ class GbnManager
                 'file' => '/js/ui/panel-render.js',
                 'deps' => ['glory-gbn-ui-panel-fields'],
             ],
-            'glory-gbn-ui-theme-applicator' => [
+            'glory-gbn-theme-applicator' => [
                 'file' => '/js/ui/theme/applicator.js',
                 'deps' => ['glory-gbn-state', 'glory-gbn-css-sync'],
             ],
             'glory-gbn-ui-theme-render' => [
                 'file' => '/js/ui/theme/render.js',
-                'deps' => ['glory-gbn-ui-panel-fields', 'glory-gbn-ui-theme-applicator'],
+                'deps' => ['glory-gbn-ui-panel-fields', 'glory-gbn-theme-applicator'],
             ],
             'glory-gbn-ui-theme-index' => [
                 'file' => '/js/ui/theme/index.js',
