@@ -18,6 +18,12 @@ class GbnManager
         if (!$isActive) { return; }
         if (self::$booted) { return; }
         self::$booted = true;
+
+        // Cargar componentes dinámicos
+        if (class_exists(\Glory\Gbn\Components\ComponentLoader::class)) {
+            \Glory\Gbn\Components\ComponentLoader::load();
+        }
+
         // Registrar endpoints AJAX de GBN en init
         add_action('init', [GbnManager::class, 'registerAjax']);
         add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);

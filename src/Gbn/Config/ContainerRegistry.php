@@ -10,306 +10,26 @@ final class ContainerRegistry
      * @var array<string,array<string,mixed>>
      */
     private const BASE_DEFINITIONS = [
-        'principal' => [
-            'selector' => [
-                'attribute' => 'gloryDiv',
-                'dataAttribute' => 'data-gbnPrincipal',
-            ],
-            'defaults' => [
-                'config' => [
-                    // Defaults handled by CSS variables
-                    'layout' => 'flex',
-                    'flexDirection' => 'row',
-                    'flexWrap' => 'wrap',
-                    'flexJustify' => 'flex-start',
-                    'flexAlign' => 'stretch',
-                ],
-                'schema' => [
-                    [
-                        'id' => 'height',
-                        'tipo' => 'select',
-                        'etiqueta' => 'Altura',
-                        'opciones' => [
-                            ['valor' => 'auto', 'etiqueta' => 'Automática'],
-                            ['valor' => 'min-content', 'etiqueta' => 'Mínima'],
-                            ['valor' => '100vh', 'etiqueta' => 'Altura completa'],
-                        ],
-                    ],
-                    [
-                        'id' => 'padding',
-                        'tipo' => 'spacing',
-                        'etiqueta' => 'Padding (Auto)',
-                        'unidades' => ['px', '%', 'rem'],
-                        'paso' => 4,
-                        'min' => 0,
-                        'max' => 240,
-                        'campos' => ['superior', 'derecha', 'inferior', 'izquierda'],
-                        'defecto' => null,
-                    ],
-                    [
-                        'id' => 'alineacion',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Alineación del contenido',
-                        'opciones' => [
-                            ['valor' => 'inherit', 'etiqueta' => 'Hereda', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/></svg>'],
-                            ['valor' => 'left', 'etiqueta' => 'Izquierda', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h12"/></svg>'],
-                            ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M6 18h12"/></svg>'],
-                            ['valor' => 'right', 'etiqueta' => 'Derecha', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M10 12h10"/><path d="M8 18h12"/></svg>'],
-                        ],
-                    ],
-                    [
-                        'id' => 'maxAncho',
-                        'tipo' => 'text',
-                        'etiqueta' => 'Ancho máximo',
-                        'defecto' => '1200px',
-                    ],
-                    [
-                        'id' => 'fondo',
-                        'tipo' => 'color',
-                        'etiqueta' => 'Color de fondo',
-                        'permiteTransparencia' => true,
-                    ],
-                    [
-                        'id' => 'gap',
-                        'tipo' => 'slider',
-                        'etiqueta' => 'Separación (Gap)',
-                        'unidad' => 'px',
-                        'min' => 0,
-                        'max' => 120,
-                        'paso' => 2,
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'layout',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Layout',
-                        'opciones' => [
-                            ['valor' => 'block', 'etiqueta' => 'Bloque', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>'],
-                            ['valor' => 'flex', 'etiqueta' => 'Flexbox', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>'],
-                            ['valor' => 'grid', 'etiqueta' => 'Grid', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>'],
-                        ],
-                    ],
-                    [
-                        'id' => 'flexDirection',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Dirección',
-                        'opciones' => [
-                            ['valor' => 'row', 'etiqueta' => 'Horizontal', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><path d="M16 8l4 4-4 4"/></svg>'],
-                            ['valor' => 'column', 'etiqueta' => 'Vertical', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16"/><path d="M8 16l4 4 4-4"/></svg>'],
-                        ],
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'flexWrap',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Envoltura',
-                        'opciones' => [
-                            ['valor' => 'nowrap', 'etiqueta' => 'No envolver', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/></svg>'],
-                            ['valor' => 'wrap', 'etiqueta' => 'Envolver', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4"/><path d="M8 12l-4 4 4 4"/></svg>'],
-                        ],
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'flexJustify',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Justificación',
-                        'opciones' => [
-                            ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="18" rx="1"/></svg>'],
-                            ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="18" rx="1"/></svg>'],
-                            ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="15" y="3" width="6" height="18" rx="1"/></svg>'],
-                            ['valor' => 'space-between', 'etiqueta' => 'Espacio entre', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>'],
-                            ['valor' => 'space-around', 'etiqueta' => 'Espacio alrededor', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/></svg>'],
-                        ],
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'flexAlign',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Alineación',
-                        'opciones' => [
-                            ['valor' => 'stretch', 'etiqueta' => 'Estirar', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3v18"/><path d="M20 3v18"/><rect x="8" y="6" width="8" height="12" rx="1"/></svg>'],
-                            ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h16"/><rect x="8" y="7" width="8" height="8" rx="1"/></svg>'],
-                            ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'],
-                            ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21h16"/><rect x="8" y="9" width="8" height="8" rx="1"/></svg>'],
-                        ],
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'gridColumns',
-                        'tipo' => 'slider',
-                        'etiqueta' => 'Columnas Grid',
-                        'unidad' => '',
-                        'min' => 1,
-                        'max' => 12,
-                        'paso' => 1,
-                        'condicion' => ['layout', 'grid'],
-                    ],
-                    [
-                        'id' => 'gridGap',
-                        'tipo' => 'slider',
-                        'etiqueta' => 'Separación Grid',
-                        'unidad' => 'px',
-                        'min' => 0,
-                        'max' => 120,
-                        'paso' => 2,
-                        'condicion' => ['layout', 'grid'],
-                    ],
-                ],
-            ],
-        ],
-        'secundario' => [
-            'selector' => [
-                'attribute' => 'gloryDivSecundario',
-                'dataAttribute' => 'data-gbnSecundario',
-            ],
-            'defaults' => [
-                'config' => [
-                    // Defaults handled by CSS variables
-                    'layout' => 'block',
-                    'flexDirection' => 'row',
-                    'flexWrap' => 'nowrap',
-                    'flexJustify' => 'flex-start',
-                    'flexAlign' => 'stretch',
-                ],
-                'schema' => [
-                    [
-                        'id' => 'width',
-                        'tipo' => 'fraction',
-                        'etiqueta' => 'Ancho',
-                        'opciones' => [
-                            ['valor' => '1/1', 'etiqueta' => '1/1'],
-                            ['valor' => '5/6', 'etiqueta' => '5/6'],
-                            ['valor' => '4/5', 'etiqueta' => '4/5'],
-                            ['valor' => '3/4', 'etiqueta' => '3/4'],
-                            ['valor' => '2/3', 'etiqueta' => '2/3'],
-                            ['valor' => '3/5', 'etiqueta' => '3/5'],
-                            ['valor' => '1/2', 'etiqueta' => '1/2'],
-                            ['valor' => '2/5', 'etiqueta' => '2/5'],
-                            ['valor' => '1/3', 'etiqueta' => '1/3'],
-                            ['valor' => '1/4', 'etiqueta' => '1/4'],
-                            ['valor' => '1/5', 'etiqueta' => '1/5'],
-                            ['valor' => '1/6', 'etiqueta' => '1/6'],
-                        ],
-                    ],
-                    [
-                        'id' => 'height',
-                        'tipo' => 'select',
-                        'etiqueta' => 'Altura',
-                        'opciones' => [
-                            ['valor' => 'auto', 'etiqueta' => 'Automática'],
-                            ['valor' => 'min-content', 'etiqueta' => 'Mínima'],
-                            ['valor' => '100vh', 'etiqueta' => 'Altura completa'],
-                        ],
-                    ],
-                    [
-                        'id' => 'layout',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Layout',
-                        'opciones' => [
-                            ['valor' => 'block', 'etiqueta' => 'Bloque', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>'],
-                            ['valor' => 'flex', 'etiqueta' => 'Flexbox', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>'],
-                            ['valor' => 'grid', 'etiqueta' => 'Grid', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>'],
-                        ],
-                    ],
-                    [
-                        'id' => 'padding',
-                        'tipo' => 'spacing',
-                        'etiqueta' => 'Padding Interno (Auto)',
-                        'unidades' => ['px', '%', 'rem'],
-                        'paso' => 4,
-                        'min' => 0,
-                        'max' => 160,
-                        'campos' => ['superior', 'derecha', 'inferior', 'izquierda'],
-                        'defecto' => null,
-                    ],
-                    [
-                        'id' => 'fondo',
-                        'tipo' => 'color',
-                        'etiqueta' => 'Color de fondo',
-                        'permiteTransparencia' => true,
-                    ],
-                    [
-                        'id' => 'gap',
-                        'tipo' => 'slider',
-                        'etiqueta' => 'Separación (Gap)',
-                        'unidad' => 'px',
-                        'min' => 0,
-                        'max' => 120,
-                        'paso' => 2,
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'flexDirection',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Dirección Flex',
-                        'opciones' => [
-                            ['valor' => 'row', 'etiqueta' => 'Horizontal', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><path d="M16 8l4 4-4 4"/></svg>'],
-                            ['valor' => 'column', 'etiqueta' => 'Vertical', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16"/><path d="M8 16l4 4 4-4"/></svg>'],
-                        ],
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'flexWrap',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Envoltura',
-                        'opciones' => [
-                            ['valor' => 'nowrap', 'etiqueta' => 'Sin envoltura', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/></svg>'],
-                            ['valor' => 'wrap', 'etiqueta' => 'Con envoltura', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4"/><path d="M8 12l-4 4 4 4"/></svg>'],
-                        ],
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'flexJustify',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Justificación',
-                        'opciones' => [
-                            ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="18" rx="1"/></svg>'],
-                            ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="18" rx="1"/></svg>'],
-                            ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="15" y="3" width="6" height="18" rx="1"/></svg>'],
-                            ['valor' => 'space-between', 'etiqueta' => 'Espacio entre', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>'],
-                            ['valor' => 'space-around', 'etiqueta' => 'Espacio alrededor', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/></svg>'],
-                        ],
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'flexAlign',
-                        'tipo' => 'icon_group',
-                        'etiqueta' => 'Alineación',
-                        'opciones' => [
-                            ['valor' => 'stretch', 'etiqueta' => 'Estirar', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3v18"/><path d="M20 3v18"/><rect x="8" y="6" width="8" height="12" rx="1"/></svg>'],
-                            ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h16"/><rect x="8" y="7" width="8" height="8" rx="1"/></svg>'],
-                            ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'],
-                            ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21h16"/><rect x="8" y="9" width="8" height="8" rx="1"/></svg>'],
-                        ],
-                        'condicion' => ['layout', 'flex'],
-                    ],
-                    [
-                        'id' => 'gridColumns',
-                        'tipo' => 'slider',
-                        'etiqueta' => 'Columnas Grid',
-                        'unidad' => '',
-                        'min' => 1,
-                        'max' => 12,
-                        'paso' => 1,
-                        'condicion' => ['layout', 'grid'],
-                    ],
-                    [
-                        'id' => 'gridGap',
-                        'tipo' => 'slider',
-                        'etiqueta' => 'Separación Grid',
-                        'unidad' => 'px',
-                        'min' => 0,
-                        'max' => 120,
-                        'paso' => 2,
-                        'condicion' => ['layout', 'grid'],
-                    ],
-                ],
-            ],
-        ],
-
+        // Componentes migrados a src/Gbn/Components/
     ];
 
+    private static array $dynamicDefinitions = [];
+
+    /**
+     * @var array<string,array<string,mixed>>|null
+     */
     private static ?array $resolved = null;
+
+    /**
+     * Registra un nuevo componente o sobrescribe uno existente.
+     * @param string $role
+     * @param array $definition
+     */
+    public static function register(string $role, array $definition): void
+    {
+        self::$dynamicDefinitions[$role] = $definition;
+        self::$resolved = null; // Reset cache
+    }
 
     /**
      * @return array<string,array<string,mixed>>
@@ -321,7 +41,10 @@ final class ContainerRegistry
         }
 
         $result = [];
-        foreach (self::BASE_DEFINITIONS as $role => $definition) {
+        // Merge base and dynamic. Dynamic overwrites base.
+        $allDefinitions = array_merge(self::BASE_DEFINITIONS, self::$dynamicDefinitions);
+
+        foreach ($allDefinitions as $role => $definition) {
             $result[$role] = self::resolveSingle($role, $definition);
         }
 

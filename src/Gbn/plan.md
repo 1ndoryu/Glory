@@ -31,9 +31,12 @@ El backend (PHP) actúa como el cerebro del sistema, gestionando la carga de rec
 - **`GbnAjaxHandler.php`**: Proxy que delega el registro de endpoints AJAX a `Registrar`.
 - **`Logger.php`**: Sistema de logs dedicado (`gbn.log`) para depuración interna.
 
-#### Configuración (`src/Gbn/Config/`)
-- **`ContainerRegistry.php`**: **Fuente de Verdad**. Define los roles de componentes (`principal`, `secundario`, `content`, `text`), sus selectores CSS, y sus esquemas de configuración (campos del panel) y valores por defecto.
-- **`RoleConfig.php`**: Define la configuración base de roles permitidos en el sistema.
+#### Sistema de Componentes (`src/Gbn/Components/`, `Schema/` y `Traits/`)
+- **`ComponentLoader.php`**: **Nuevo Núcleo**. Escanea y registra automáticamente las clases de componentes que implementan `ComponentInterface`.
+- **`AbstractComponent.php`**: Clase base que provee funcionalidad común.
+- **`Traits/`**: Módulos reutilizables (`HasFlexbox`, `HasSpacing`) que inyectan lógica y esquema a los componentes.
+- **`SchemaBuilder.php`**: API fluida para definir los campos del panel de control de forma legible y orientada a objetos.
+- **`ContainerRegistry.php`**: (Legacy/Transición) Mantiene compatibilidad mientras se migra totalmente al sistema de clases.
 
 #### Sistema AJAX (`src/Gbn/Ajax/`)
 - **`Registrar.php`**: Centraliza todos los `add_action('wp_ajax_...')`. Mapea cada acción a su Handler correspondiente.
@@ -199,43 +202,71 @@ Para evitar inconsistencias futuras entre PHP (`ContainerRegistry`) y JS (`roles
 
 Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil de mantener antes de escalar la biblioteca de componentes.
 
-### Fase 1: Auditoría y Estandarización del Core (Actual)
-**Objetivo:** Asegurar que la base sea sólida antes de agregar más peso.
+### Fase 1: Infraestructura y Core (COMPLETADO)
+**Objetivo:** Establecer los cimientos arquitectónicos para el nuevo sistema de componentes.
 
-- [ ] **Auditoría de Opciones y Modulariad**
-    -   **Problema:** ¿Están las opciones (padding, layout, etc.) bien ordenadas y modulares?
-    -   **Acción:** Revisar `ui/panel-fields/` y `ContainerRegistry.php`.
-    -   **Meta:** Confirmar que añadir una opción nueva (ej. "Borde") sea tan simple como registrar un archivo y añadir una línea en el esquema, sin tocar lógica central.
-    -   **Validación:** Crear una opción de prueba dummy y verificar su flujo completo.
+- [x] **Definición de Contratos e Interfaces**
+    -   **Acción:** Crear `Glory/src/Gbn/Components/ComponentInterface.php` y `AbstractComponent.php`.
+    -   **Estado:** Completado. Define el contrato estricto para componentes.
 
-- [ ] **Automatización de Opciones**
-    -   **Problema:** ¿Están preparadas para su automatización default en el panel del tema?
-    -   **Acción:** Verificar que `theme-settings.js` y `applicator.js` iteren dinámicamente sobre los esquemas en lugar de tener listas hardcoded de propiedades.
-    -   **Meta:** Que al añadir una opción a un componente, automáticamente aparezca su contraparte global en "Ajustes del Tema" si se desea.
+- [x] **Sistema de Carga Dinámica**
+    -   **Acción:** Crear `Glory/src/Gbn/Components/ComponentLoader.php`.
+    -   **Estado:** Completado. Escanea y registra componentes automáticamente.
 
-- [ ] **Prevención de Código Repetitivo (DRY)**
-    -   **Problema:** ¿Se evita código repetitivo entre componentes?
-    -   **Acción:** Refactorizar `ContainerRegistry.php` para usar "Traits" o arrays de configuración compartidos (ej. `$commonSpacing`, `$commonLayout`) en lugar de repetir arrays gigantes.
-    -   **Meta:** Definir un set de opciones estándar una vez y reutilizarlo en `principal`, `secundario`, `text`, etc.
+- [x] **SchemaBuilder (Fluent Interface)**
+    -   **Acción:** Crear `Glory/src/Gbn/Schema/SchemaBuilder.php` y `Option.php`.
+    -   **Estado:** Completado. API fluida implementada.
 
-### Fase 2: Implementación de Componentes Nativos
-**Objetivo:** Reimplementar los componentes base con la nueva arquitectura limpia.
+- [x] **Traits de Configuración Compartida (DRY)**
+    -   **Acción:** Crear Traits reutilizables (`HasFlexbox`, `HasSpacing`, `HasTypography`, `HasGrid`).
+    -   **Estado:** Completado.
 
-- [ ] **Estructura de Directorios**
-    -   Crear `Glory/src/Gbn/components/` para alojar la lógica específica de cada componente (si es necesaria fuera del core).
+### Fase 2: Migración de Componentes Base (COMPLETADO)
+**Objetivo:** Migrar los componentes esenciales a la nueva arquitectura.
 
-- [ ] **Componente: Principal (Sección)**
-    -   Revisar implementación actual en `ContainerRegistry` y `principal.js`.
-    -   Asegurar soporte total para HTML semántico (`section`, `header`, `footer`).
+- [x] **Componente Principal (Root)**
+    -   **Acción:** Migrado a `Glory/src/Gbn/Components/Principal/PrincipalComponent.php`.
+    -   **Estado:** Usa Traits y SchemaBuilder.
 
-- [ ] **Componente: Secundario (Contenedor/Columna)**
-    -   Estandarizar el manejo de anchos fraccionarios y flexbox.
-    -   Asegurar que las opciones de Layout (Flex/Grid) sean consistentes con Principal.
+- [x] **Componente Secundario (Layout)**
+    -   **Acción:** Migrado a `Glory/src/Gbn/Components/Secundario/SecundarioComponent.php`.
+    -   **Estado:** Implementado con opciones de Layout y Grid.
 
-- [ ] **Componente: Texto (Rich Text)**
-    -   Mejorar la integración con opciones de tipografía global.
-    -   Asegurar limpieza de HTML al pegar contenido.
+- [x] **Componente Texto**
+    -   **Acción:** Migrado a `Glory/src/Gbn/Components/Text/TextComponent.php`.
+    -   **Estado:** Implementado con opciones de tipografía y contenido.
 
-### Fase 3: Hardening y Futuro
-- [ ] **Tests de Regresión Visual:** Implementar un sistema básico para verificar que los cambios en el core no rompen estilos existentes.
-- [ ] **Documentación de API:** Documentar cómo registrar un nuevo componente externo (3rd party) en GBN.
+### Fase 3: Limpieza y Finalización (EN PROGRESO)
+**Objetivo:** Eliminar deuda técnica y asegurar estabilidad.
+
+- [x] **Desactivación de Legacy**
+    -   **Acción:** Eliminadas referencias a componentes antiguos en `ContainerRegistry.php`.
+    -   **Estado:** Completado.
+
+- [ ] **Limpieza de JS (Roles Legacy)**
+    -   **Acción:** Eliminar definiciones hardcoded en `roles.js` que ya no son necesarias gracias a la inyección dinámica desde PHP.
+    -   **Prioridad:** Media (No bloqueante, el JS prioriza la config inyectada).
+
+- [ ] **Tests de Regresión**
+    -   **Acción:** Verificar manualmente que los componentes migrados funcionan idénticamente a sus versiones anteriores. (Esto lo hara el usuario)
+
+### Fase 4: Refactorización JS (SOLID & DRY)
+**Objetivo:** Alinear la arquitectura Frontend con los principios de modularidad y automatización del Backend.
+
+- [ ] **Auditoría de Renderers (DRY)**
+    -   **Problema:** `principal.js` y `secundario.js` duplican lógica de estilos (padding, background, layout).
+    -   **Acción:** Crear `SharedStyles.js` (o `StyleTraits.js`) para centralizar la generación de CSS común.
+    -   **Meta:** Que los renderers específicos solo definan lo que es único de su rol.
+
+- [ ] **Automatización de Tema (Applicator)**
+    -   **Problema:** `applicator.js` tiene listas hardcoded de propiedades y no escala automáticamente con nuevos campos.
+    -   **Acción:** Refactorizar para iterar dinámicamente sobre el esquema de configuración inyectado.
+    -   **Meta:** Añadir una opción en PHP y que funcione en el tema sin tocar JS.
+
+- [ ] **Registro de Campos Modular**
+    -   **Problema:** `panel-fields/index.js` usa un switch gigante.
+    -   **Acción:** Implementar un `FieldRegistry` para que los campos se auto-registren.
+
+### Fase 5: Futuro y Escalabilidad
+- [ ] **Tests Automatizados:** Implementar tests unitarios para `SchemaBuilder` y `ComponentLoader`.
+- [ ] **API de Terceros:** Documentar cómo registrar componentes externos.
