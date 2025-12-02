@@ -104,8 +104,8 @@
         global.dispatchEvent(event);
         
         // NUEVO: Disparar evento específico para actualización en tiempo real de defaults
-        // Solo para desktop (los overrides responsive no afectan a otros bloques como "defaults")
-        if (breakpoint === 'desktop' && path.startsWith('components.')) {
+        // Para todos los breakpoints (Desktop, Tablet, Mobile)
+        if (path.startsWith('components.')) {
             var pathParts = path.split('.');
             if (pathParts.length >= 3) {
                 var role = pathParts[1];
@@ -113,7 +113,7 @@
                 var property = pathParts.slice(2).join('.');
                 
                 var defaultsEvent;
-                var detail = { role: role, property: property, value: value };
+                var detail = { role: role, property: property, value: value, breakpoint: breakpoint };
                 
                 if (typeof global.CustomEvent === 'function') {
                     defaultsEvent = new CustomEvent('gbn:themeDefaultsChanged', { detail: detail });

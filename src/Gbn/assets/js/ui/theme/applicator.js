@@ -178,15 +178,17 @@
                  // Obtener configuración efectiva para el breakpoint actual
                  var comp = getEffectiveComponentConfig(rawComp, breakpoint);
                  var prefix = '--gbn-' + role;
-                 var schema = roleSchemas[role];
+                 var rolePayload = roleSchemas[role];
+                 // rolePayload is { config: ..., schema: [...] }
+                 
+                 var fields = rolePayload ? rolePayload.schema : null;
 
-                 if (!schema || !schema.fields) {
+                 if (!fields || !Array.isArray(fields)) {
                      // Fallback legacy behavior if no schema found
-                     // (We could keep the old code here as fallback, but for now assuming schema exists for core roles)
                      return;
                  }
 
-                 schema.fields.forEach(function(field) {
+                 fields.forEach(function(field) {
                      var value = comp[field.id];
                      
                      // Special handling based on field type
@@ -216,10 +218,16 @@
                          // Mapping for legacy property names if they differ from schema id
                          // (In new schema, ids should match what we want in CSS roughly)
                          
-                         var varName = prefix + '-' + field.id;
+                         // Default handling
+                         // Convert camelCase ID to kebab-case for CSS variable
+                         // e.g. flexDirection -> flex-direction
+                         var kebabId = field.id.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+                         var varName = prefix + '-' + kebabId;
                          
                          // Special case: maxAncho -> max-width
                          if (field.id === 'maxAncho') varName = prefix + '-max-width';
+                         // Special case: fondo -> background
+                         if (field.id === 'fondo') varName = prefix + '-background';
                          
                          setOrRemoveValue(varName, value);
                      }

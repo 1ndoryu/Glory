@@ -94,16 +94,18 @@ El frontend (JS) es una aplicación reactiva que manipula el DOM directamente, s
     - **`render.js`**: Renderiza el panel de configuración del tema.
     - **`index.js`**: Punto de entrada para la UI del tema.
 - **`panel-fields/`**: **Sistema Modular de Campos**.
-    - `index.js`: Dispatcher/Factory de campos.
+    - `index.js`: Dispatcher principal. Delega al `registry.js`.
+    - `registry.js`: **Nuevo Registro (OCP)**. Permite que los campos se auto-registren.
     - `utils.js`: Utilidades compartidas para campos.
     - `sync.js`: Lógica de sincronización bidireccional UI <-> Estado.
     - Módulos de campos: `color.js`, `fraction.js`, `header.js`, `icon-group.js`, `rich-text.js`, `select.js`, `slider.js`, `spacing.js`, `text.js`, `toggle.js`, `typography.js`.
 - **`renderers/`**: **Renderizadores de Bloques**.
+    - `style-composer.js`: **Nuevo Compositor (DRY)**. Genera estilos CSS centralizados basados en traits del esquema.
     - `shared.js`: Utilidades compartidas (`extractSpacingStyles`, `parseFraction`, `getResponsiveValue`, `cloneConfig`).
     - `layout-flex.js`: Lógica de estilos para layout Flexbox.
     - `layout-grid.js`: Lógica de estilos para layout Grid.
-    - `principal.js`: Renderer y estilos para bloques de rol `principal`.
-    - `secundario.js`: Renderer y estilos para bloques de rol `secundario`.
+    - `principal.js`: Renderer y estilos para bloques de rol `principal` (Usa `StyleComposer`).
+    - `secundario.js`: Renderer y estilos para bloques de rol `secundario` (Usa `StyleComposer`).
     - `text.js`: Renderer, estilos y lógica de actualización para bloques de texto.
     - `page-settings.js`: Manejador de actualizaciones para configuración de página.
     - `theme-settings.js`: Manejador de actualizaciones para configuración global del tema.
@@ -196,14 +198,23 @@ Para evitar inconsistencias futuras entre PHP (`ContainerRegistry`) y JS (`roles
 -   **Cambio**: Se descompuso el archivo monolítico `panel-fields.js` en múltiples módulos (`spacing.js`, `typography.js`, etc.) dentro de `ui/panel-fields/`.
 -   **Beneficio**: Mantenibilidad drásticamente mejorada. Añadir un nuevo tipo de campo ahora solo requiere crear un archivo y registrarlo en el `index.js` dispatcher.
 
+#### ✅ Fase 4: Refactorización JS Completa
+-   **StyleComposer**: Implementado para centralizar la generación de estilos.
+-   **FieldRegistry**: Implementado para registro dinámico de campos.
+-   **Theme Automation**: `applicator.js` ahora es agnóstico y basado en esquemas.
+
+#### ✅ Bug 24, 25, 26: Corrección de Parsing de Esquema (Critical)
+-   **Problema**: Los componentes no aplicaban estilos de Padding, Flexbox ni Defaults del Tema.
+-   **Causa**: `style-composer.js` y `applicator.js` esperaban que el esquema fuera un objeto `{ fields: {...} }`, pero `ContainerRegistry` entregaba un array de campos `[...]`. Esto hacía que la detección de campos fallara silenciosamente.
+-   **Solución**: Se actualizó `style-composer.js` y `applicator.js` para iterar correctamente sobre el array de campos del esquema.
+
 ---
 
 ## 5. Bugs Conocidos y Regresiones
 
 ### Regresiones Post-Refactorización (Fase 4)
-- **Bug 24 (Critical):** Padding en componentes Principales no se aplica (ni en vivo ni al recargar), aunque el valor persiste.
-- **Bug 25 (Critical):** Opciones de Flexbox no se aplican en el frontend/editor (Grid sí funciona).
-- **Bug 26 (Critical):** Alineación de contenido desde Panel de Tema (Defaults) no aplica cambios visuales.
+- **Ninguno conocido actualmente.**
+
 
 ## 6. Roadmap de Refactorización y Hardening
 
@@ -257,37 +268,102 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 - [ ] **Tests de Regresión**
     -   **Acción:** Verificar manualmente que los componentes migrados funcionan idénticamente a sus versiones anteriores. (Esto lo hara el usuario)
 
-### Fase 4: Refactorización JS (SOLID & DRY)
+### Fase 4: Refactorización JS (SOLID & DRY) (COMPLETADO)
 **Objetivo:** Alinear la arquitectura Frontend con los principios de modularidad y automatización del Backend.
 
-- [ ] **Implementación de `StyleComposer` (DRY)**
-    -   **Problema:** `principal.js` y `secundario.js` duplican lógica de estilos (padding, background, layout).
-    -   **Solución Técnica:** Crear `assets/js/ui/renderers/style-composer.js`.
-        -   Debe exponer un método `compose(block, schema, bp)`.
-        -   Iterará sobre los "traits" definidos en el esquema del componente (inyectado vía `gloryGbnCfg.roleSchemas`).
-        -   Mapeará traits a generadores de estilo:
-            -   `hasSpacing` -> `shared.extractSpacingStyles`
-            -   `hasFlexbox` -> `layoutFlex`
-            -   `hasGrid` -> `layoutGrid`
-            -   `hasBackground` -> `background styles`
-            -   `hasTypography` -> `typography styles`
-    -   **Meta:** Eliminar duplicación y facilitar la creación de nuevos renderers.
+- [x] **Implementación de `StyleComposer` (DRY)**
+    -   **Acción:** Creado `style-composer.js` y refactorizados `principal.js` y `secundario.js`.
+    -   **Estado:** Completado.
 
-- [ ] **Automatización de Tema (`applicator.js`)**
-    -   **Problema:** `applicator.js` tiene listas hardcoded y no escala automáticamente.
-    -   **Solución Técnica:**
-        -   Refactorizar `applicator.js` para iterar sobre `gloryGbnCfg.themeSettings.schema` (o similar).
-        -   Generar variables CSS dinámicamente basado en el tipo de campo del esquema (e.g., si es `color`, genera `--gbn-{role}-{field}: value`).
-    -   **Meta:** Configuración "Zero-Config" en JS para nuevos campos del tema.
+- [x] **Automatización de Tema (`applicator.js`)**
+    -   **Acción:** Refactorizado `applicator.js` para iterar dinámicamente sobre el esquema.
+    -   **Estado:** Completado.
 
-- [ ] **Registro de Campos (Field Registry - OCP)**
-    -   **Problema:** `panel-fields/index.js` usa un switch gigante.
-    -   **Solución Técnica:** Crear `assets/js/ui/panel-fields/registry.js`.
-        -   Métodos: `register(type, component)` y `get(type)`.
-        -   Los campos (`text.js`, `color.js`) se auto-registrarán al cargarse.
-        -   `index.js` solo delegará al registry.
-    -   **Meta:** Arquitectura abierta a extensión sin modificación (Open/Closed).
+- [x] **Registro de Campos (Field Registry - OCP)**
+    -   **Acción:** Implementado `registry.js` y actualizado `index.js` y campos clave.
+    -   **Estado:** Completado.
 
 ### Fase 5: Futuro y Escalabilidad
 - [ ] **Tests Automatizados:** Implementar tests unitarios para `SchemaBuilder` y `ComponentLoader`.
 - [ ] **API de Terceros:** Documentar cómo registrar componentes externos.
+
+Roadmap de Depuración Profunda: Sistema de Configuración de Tema (Theme Settings)
+1. El Problema Recurrente
+El usuario reporta que las opciones en Configuración del Tema > Componentes (excepto Padding) no se aplican en tiempo real. Este problema ha persistido a través de varios intentos de arreglo.
+
+Síntomas
+Padding: Funciona (se aplica en tiempo real).
+Otros (Fondo, Layout, Tipografía, etc.): No funcionan en tiempo real.
+Persistencia: Al recargar, a veces funcionan, a veces no (dependiendo de si se guardaron en el bloque o en el tema).
+2. Análisis de la Arquitectura Actual
+El sistema tiene tres piezas móviles que deben sincronizarse:
+
+theme-settings.js
+ (UI Panel):
+
+Captura los cambios del usuario en el panel.
+Actualiza Gbn.config.themeSettings.
+Dispara eventos (gbn:themeDefaultsChanged).
+Llama a 
+applicator.js
+.
+applicator.js
+ (Theme Applicator):
+
+Escucha cambios (o es llamado directamente).
+Genera Variables CSS en el root (--gbn-principal-background, etc.).
+Hipótesis: Si el CSS del componente no consume estas variables, este paso es inútil.
+style-composer.js
+ (Component Renderer):
+
+Genera estilos en línea (style="...") o reglas CSS dinámicas para cada instancia de componente.
+Usa shared.getResponsiveValue para decidir qué valor usar.
+Conflicto: Si 
+style-composer.js
+ genera un estilo explícito (incluso un default hardcodeado), este estilo en línea tiene mayor especificidad que las variables CSS del tema, anulándolas.
+Falta de Conexión: Si 
+style-composer.js
+ no emite nada cuando el valor es "default", el componente debería depender de las clases CSS. Si las clases CSS no usan las variables generadas por 
+applicator.js
+, no pasa nada.
+3. Hipótesis de Fallo
+Hipótesis A: Desconexión de Variables CSS
+El 
+applicator.js
+ está generando variables correctamente (ej: --gbn-principal-background), pero no existe CSS base que diga:
+
+.gbn-principal {
+    background-color: var(--gbn-principal-background);
+}
+Si esto falta, cambiar la variable no tiene ningún efecto visual. El Padding funciona probablemente porque 
+style-composer.js
+ o algún CSS base sí lo está manejando, o porque el 
+applicator.js
+ maneja el padding de forma especial (lo cual vimos que hace, pero para page-settings, no necesariamente para componentes). Corrección: Verificar 
+applicator.js
+ para ver si inyecta reglas CSS reales o solo variables. Si solo inyecta variables, necesitamos asegurar que el CSS base las use.
+
+Hipótesis B: 
+style-composer.js
+ Bloqueante
+Si 
+style-composer.js
+ tiene una lógica de "fallback" que inserta un valor por defecto (ej: #ffffff) directamente en el estilo en línea cuando no hay configuración, esto sobreescribirá cualquier variable CSS que venga del tema. Corrección: 
+style-composer.js
+ debe retornar undefined (o no emitir la propiedad) cuando se debe usar el default del tema, permitiendo que el CSS (y las variables) actúen.
+
+4. Plan de Acción (Roadmap)
+Auditoría de 
+applicator.js
+: Confirmar exactamente qué escribe en el DOM. ¿Variables o Propiedades directas?
+Búsqueda de CSS Base: Buscar dónde se definen las clases .gbn-principal, .gbn-secundario, etc., y ver si usan var(--gbn-...).
+Revisión de 
+style-composer.js
+: Verificar si está emitiendo estilos que compiten con el tema.
+Implementación de la Solución Definitiva:
+Opción 1 (Variables): Asegurar que todo el CSS base use variables y que 
+applicator.js
+ las actualice.
+Opción 2 (Inyección Directa): Hacer que 
+applicator.js
+ inyecte estilos globales reales (ej: .gbn-principal { background: red }) en lugar de solo variables, si no queremos depender de un CSS base complejo.

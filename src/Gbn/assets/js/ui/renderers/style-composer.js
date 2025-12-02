@@ -10,22 +10,50 @@
     var layoutGrid = Gbn.ui.renderers.layoutGrid;
 
     /**
+     * Helper to find a field in the schema array by ID
+     */
+    function findField(schemaArray, id) {
+        if (!Array.isArray(schemaArray)) return null;
+        for (var i = 0; i < schemaArray.length; i++) {
+            if (schemaArray[i].id === id) return schemaArray[i];
+        }
+        return null;
+    }
+
+    /**
      * Composes styles for a block based on its schema traits.
      * @param {Object} block - The block data.
-     * @param {Object} schema - The component schema (from roleSchemas).
+     * @param {Object} roleSchema - The component schema payload (contains .schema array and .config).
      * @param {string} bp - Current breakpoint.
      * @returns {Object} - Computed CSS styles.
      */
-    function compose(block, schema, bp) {
+    function compose(block, roleSchema, bp) {
         var config = block.config || {};
         var styles = {};
-        var traits = schema.traits || [];
+        
+        // roleSchema comes from ContainerRegistry::rolePayload() -> { config: {}, schema: [] }
+        var schemaFields = roleSchema.schema || [];
+        var traits = roleSchema.traits || []; // Currently not populated by PHP, but kept for future
+
+        // Helper to get value with fallback to component defaults
+        function getValue(path) {
+            var val = shared.getResponsiveValue(block, path, bp);
+            if (val !== undefined) return val;
+            
+            // Fallback to role defaults
+            if (roleSchema.config && roleSchema.config[path] !== undefined) {
+                return roleSchema.config[path];
+            }
+            return undefined;
+        }
 
         // 1. Spacing (Padding/Margin)
         // Checks for 'HasSpacing' trait or explicit 'padding' field in schema
-        if (traits.indexOf('HasSpacing') !== -1 || schema.fields && schema.fields.padding) {
-            var paddingConfig = shared.getResponsiveValue(block, 'padding', bp);
-            if (paddingConfig === undefined) paddingConfig = config.padding; // Legacy fallback
+        var paddingField = findField(schemaFields, 'padding');
+        if (traits.indexOf('HasSpacing') !== -1 || paddingField) {
+            var paddingConfig = getValue('padding');
+            // Fallback for legacy or if getResponsiveValue returns undefined
+            if (paddingConfig === undefined) paddingConfig = config.padding; 
             
             var spacingStyles = shared.extractSpacingStyles(paddingConfig);
             Object.assign(styles, spacingStyles);
@@ -33,7 +61,7 @@
 
         // 2. Dimensions (Height/Width)
         // Height
-        var height = shared.getResponsiveValue(block, 'height', bp);
+        var height = getValue('height');
         if (height && height !== 'auto') {
             if (height === 'min-content') {
                 styles['height'] = 'min-content';
@@ -45,7 +73,7 @@
         }
 
         // Width (Specific to Secundario/Flex items usually, but good to have generic)
-        var width = shared.getResponsiveValue(block, 'width', bp);
+        var width = getValue('width');
         if (width) {
              var pct = shared.parseFraction(width);
              if (pct) {
@@ -57,7 +85,7 @@
         }
         
         // Max Width (Principal usually)
-        var maxAncho = shared.getResponsiveValue(block, 'maxAncho', bp);
+        var maxAncho = getValue('maxAncho');
         if (maxAncho !== null && maxAncho !== undefined && maxAncho !== '') {
             var val = String(maxAncho).trim();
             if (/^-?\d+(\.\d+)?$/.test(val)) {
@@ -68,15 +96,15 @@
         }
 
         // 3. Typography (Alignment)
-        var alineacion = shared.getResponsiveValue(block, 'alineacion', bp);
+        var alineacion = getValue('alineacion');
         if (alineacion && alineacion !== 'inherit') { styles['text-align'] = alineacion; }
 
         // 4. Background
-        var fondo = shared.getResponsiveValue(block, 'fondo', bp) || shared.getResponsiveValue(block, 'background', bp);
+        var fondo = getValue('fondo') || getValue('background');
         if (fondo) { styles.background = fondo; }
 
         // 5. Gap
-        var gap = shared.getResponsiveValue(block, 'gap', bp);
+        var gap = getValue('gap');
         if (gap !== null && gap !== undefined && gap !== '') {
             var gapVal = parseFloat(gap);
             if (!isNaN(gapVal)) { styles.gap = gapVal + 'px'; }
@@ -84,7 +112,7 @@
 
         // 6. Layout (Flex/Grid)
         // Checks for 'HasFlexbox' or 'HasGrid' traits, or just checks the 'layout' value
-        var layout = shared.getResponsiveValue(block, 'layout', bp);
+        var layout = getValue('layout');
         
         // Default layout logic based on component type/traits could go here, 
         // but for now we rely on the value being present or defaulting in the specific renderer if needed.
