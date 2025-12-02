@@ -91,14 +91,28 @@
         // Guardar el valor original computado para usarlo como placeholder al borrar
         var originalComputedHex = computedColorHex;
         
-        if (effective.source === 'none' || !effective.value) {
+        // Determinar origen para indicador visual
+        var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
+        var source = u.getValueSource(block, field.id, breakpoint);
+        
+        // Limpiar clases anteriores
+        wrapper.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+        
+        if (source === 'override') {
+            wrapper.classList.add('gbn-field-override');
+        } else {
             wrapper.classList.add('gbn-field-inherited');
+            if (source === 'theme') wrapper.classList.add('gbn-source-theme');
+            else if (source === 'tablet') wrapper.classList.add('gbn-source-tablet');
+            else if (source === 'block') wrapper.classList.add('gbn-source-block');
+        }
+        
+        if (effective.source === 'none' || !effective.value) {
             // Usar el color computado como placeholder si existe, sino el theme default
             var placeholderColor = originalComputedHex || themeDefaultHex || field.defecto || '#000000';
             inputColor.value = placeholderColor;
             inputText.placeholder = placeholderColor;
         } else {
-            wrapper.classList.add('gbn-field-override');
             inputColor.value = effective.value;
             inputText.value = effective.value;
             // Placeholder es el valor original (computado o tema)

@@ -493,6 +493,17 @@
         
         render();
         
+        // Listener para actualizar el panel cuando cambia el breakpoint
+        // Removemos listener anterior si existe para evitar duplicados/leaks
+        if (container._gbnBreakpointHandler) {
+            window.removeEventListener('gbn:breakpointChanged', container._gbnBreakpointHandler);
+        }
+        
+        container._gbnBreakpointHandler = function() {
+            render();
+        };
+        window.addEventListener('gbn:breakpointChanged', container._gbnBreakpointHandler);
+
         // Disable panel footer button as we use global dock save
         if (footer) {
             footer.disabled = true;

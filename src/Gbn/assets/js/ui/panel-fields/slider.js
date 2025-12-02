@@ -58,22 +58,34 @@
         var effectiveNumeric = extractNumeric(effective.value);
         var themeNumeric = extractNumeric(themeDefault);
         
-        if (effective.source === 'none' || effectiveNumeric === null) {
-            wrapper.classList.add('gbn-field-inherited');
-            if (themeNumeric !== null && !isNaN(themeNumeric)) {
-                input.value = themeNumeric;
-                displayValue = themeNumeric + (field.unidad ? field.unidad : '') + ' (auto)';
-            } else {
-                input.value = field.min !== undefined ? field.min : 0;
-                displayValue = 'auto';
-            }
-        } else {
+        // Determinar origen para indicador visual
+        var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
+        var source = u.getValueSource(block, field.id, breakpoint);
+        
+        // Limpiar clases anteriores
+        wrapper.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+        
+        if (source === 'override') {
             wrapper.classList.add('gbn-field-override');
             input.value = effectiveNumeric;
             displayValue = effectiveNumeric + (field.unidad ? field.unidad : '');
-            // Indicar si viene de computedStyle (inline/clase)
-            if (effective.source === 'computed') {
-                displayValue += ' (inline)';
+        } else {
+            wrapper.classList.add('gbn-field-inherited');
+            if (source === 'theme') wrapper.classList.add('gbn-source-theme');
+            else if (source === 'tablet') wrapper.classList.add('gbn-source-tablet');
+            else if (source === 'block') wrapper.classList.add('gbn-source-block');
+            
+            if (effectiveNumeric !== null && !isNaN(effectiveNumeric)) {
+                input.value = effectiveNumeric;
+                displayValue = effectiveNumeric + (field.unidad ? field.unidad : '');
+                // Agregar sufijo de origen
+                if (source === 'theme') displayValue += ' (tema)';
+                else if (source === 'tablet') displayValue += ' (tablet)';
+                else if (source === 'block') displayValue += ' (desktop)';
+                else displayValue += ' (auto)';
+            } else {
+                input.value = field.min !== undefined ? field.min : 0;
+                displayValue = 'auto';
             }
         }
         

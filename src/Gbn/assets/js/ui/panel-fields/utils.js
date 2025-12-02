@@ -31,6 +31,12 @@
      */
     function getThemeDefault(role, path) {
         if (!role) return undefined;
+
+        // Delegar a responsive.js si está disponible
+        if (Gbn.responsive && Gbn.responsive.getThemeResponsiveValue && Gbn.responsive.getCurrentBreakpoint) {
+             var bp = Gbn.responsive.getCurrentBreakpoint();
+             return Gbn.responsive.getThemeResponsiveValue(role, path, bp);
+        }
         
         // 1. PRIMERO: Intentar desde estado local (Gbn.config.themeSettings)
         // Este tiene prioridad porque puede contener cambios no guardados
@@ -67,6 +73,66 @@
         }
         
         return undefined;
+    }
+
+    /**
+     * Obtiene valor considerando breakpoint activo y herencia responsive
+     */
+    function getResponsiveConfigValue(block, path, breakpoint) {
+        if (!Gbn.responsive || !Gbn.responsive.getResponsiveValue) {
+            // Fallback si responsive no está disponible
+            return getConfigValue(block, path);
+        }
+        
+        return Gbn.responsive.getResponsiveValue(block, path, breakpoint);
+    }
+
+    /**
+     * Determina el origen del valor actual para mostrar indicador correcto
+     */
+    function getValueSource(block, path, breakpoint) {
+        breakpoint = breakpoint || (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint()) || 'desktop';
+        
+        var utils = Gbn.ui.fieldUtils;
+        if (!utils) return 'css';
+        
+        // 1. Override específico del breakpoint
+        if (breakpoint !== 'desktop' && block.config._responsive && block.config._responsive[breakpoint]) {
+            var val = utils.getDeepValue(block.config._responsive[breakpoint], path);
+            if (val !== undefined) return 'override';
+        }
+        
+        // 2. Heredado de tablet (solo para mobile)
+        if (breakpoint === 'mobile' && block.config._responsive && block.config._responsive.tablet) {
+            var tabletVal = utils.getDeepValue(block.config._responsive.tablet, path);
+            if (tabletVal !== undefined) return 'tablet';
+        }
+        
+        // 3. Desktop (base del bloque)
+        var desktopVal = utils.getDeepValue(block.config, path);
+        if (desktopVal !== undefined) return 'block';
+        
+        // 4-6. Theme settings
+        var themeSettings = (Gbn.config && Gbn.config.themeSettings) || (gloryGbnCfg && gloryGbnCfg.themeSettings) || {};
+        var roleConfig = themeSettings.components && themeSettings.components[block.role];
+        
+        if (roleConfig && roleConfig._responsive && roleConfig._responsive[breakpoint]) {
+            var themeVal = utils.getDeepValue(roleConfig._responsive[breakpoint], path);
+            if (themeVal !== undefined) return 'theme';
+        }
+        
+        if (breakpoint === 'mobile' && roleConfig && roleConfig._responsive && roleConfig._responsive.tablet) {
+            var themeTablet = utils.getDeepValue(roleConfig._responsive.tablet, path);
+            if (themeTablet !== undefined) return 'theme';
+        }
+        
+        if (roleConfig) {
+            var themeDesktop = utils.getDeepValue(roleConfig, path);
+            if (themeDesktop !== undefined) return 'theme';
+        }
+        
+        // 7. CSS
+        return 'css';
     }
 
     /**
@@ -208,7 +274,13 @@
         var result = { value: undefined, source: 'none', placeholder: undefined };
         
         // 1. Valor guardado en config del bloque (máxima prioridad)
-        var savedValue = getDeepValue(block.config, path);
+        var savedValue;
+        if (Gbn.responsive && Gbn.responsive.getBlockResponsiveValue) {
+            savedValue = Gbn.responsive.getBlockResponsiveValue(block, path);
+        } else {
+            savedValue = getDeepValue(block.config, path);
+        }
+        
         if (savedValue !== undefined && savedValue !== null && savedValue !== '') {
             result.value = savedValue;
             result.source = 'config';
@@ -344,6 +416,8 @@
         parseSpacingValue: parseSpacingValue,
         shouldShowField: shouldShowField,
         obtenerSchemaDelRole: obtenerSchemaDelRole,
+        getResponsiveConfigValue: getResponsiveConfigValue,
+        getValueSource: getValueSource,
         CONFIG_TO_CSS_MAP: CONFIG_TO_CSS_MAP,
         ICONS: ICONS
     };

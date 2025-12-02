@@ -121,11 +121,21 @@
                 displayValue = parsedValue.valor;
             }
             
-            // Heredado (usa theme default) vs override (tiene valor propio)
-            if (displayValue === '' || displayValue === null || displayValue === undefined) {
-                item.classList.add('gbn-field-inherited');
-            } else {
+            // Determinar origen del valor para indicador visual
+            var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
+            var source = u.getValueSource(block, field.id + '.' + nombre, breakpoint);
+            
+            // Limpiar clases anteriores
+            item.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+            
+            // Agregar clase según source
+            if (source === 'override') {
                 item.classList.add('gbn-field-override');
+            } else {
+                item.classList.add('gbn-field-inherited');
+                if (source === 'theme') item.classList.add('gbn-source-theme');
+                else if (source === 'tablet') item.classList.add('gbn-source-tablet');
+                else if (source === 'block') item.classList.add('gbn-source-block');
             }
             
             input.value = displayValue;
@@ -133,16 +143,19 @@
             input.dataset.configPath = field.id + '.' + nombre;
             input.dataset.role = block.role;
             input.dataset.prop = field.id + '.' + nombre;
-            input.dataset.source = effective.source; // Guardar origen para debug
+            input.dataset.source = source; // Guardar origen para debug
             
             input.addEventListener('input', handleSpacingInput);
             input.addEventListener('input', function() {
-                if (input.value === '') {
-                    item.classList.add('gbn-field-inherited');
-                    item.classList.remove('gbn-field-override');
-                } else {
-                    item.classList.remove('gbn-field-inherited');
+                // Al escribir, se convierte en override para este breakpoint
+                if (input.value !== '') {
+                    item.classList.remove('gbn-field-inherited', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
                     item.classList.add('gbn-field-override');
+                } else {
+                    // Si se borra, volverá a ser heredado (pero necesitamos recargar para saber de dónde)
+                    // Visualmente lo marcamos como heredado genérico hasta que se guarde y recargue
+                    item.classList.remove('gbn-field-override');
+                    item.classList.add('gbn-field-inherited');
                 }
             });
             

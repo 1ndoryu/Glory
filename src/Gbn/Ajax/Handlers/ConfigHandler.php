@@ -57,6 +57,13 @@ class ConfigHandler
 
         update_post_meta($pageId, 'gbn_config', $configById);
         update_post_meta($pageId, 'gbn_styles', $stylesById);
+        
+        // Guardar CSS Responsive generado por el frontend
+        $responsiveCss = isset($_POST['responsiveCss']) ? wp_unslash($_POST['responsiveCss']) : '';
+        // Sanitize CSS (básico, permitir media queries y selectores)
+        // wp_strip_all_tags es demasiado agresivo para CSS, pero wp_kses no permite style tags.
+        // Como es CSS puro, lo guardamos tal cual pero asegurando que venga de un usuario con permisos (ya verificado arriba).
+        update_post_meta($pageId, 'gbn_responsive_css', $responsiveCss);
 
         $mode = method_exists(PageManager::class, 'getModoContenidoParaPagina')
             ? PageManager::getModoContenidoParaPagina($pageId)

@@ -46,6 +46,47 @@
         saveBtn = createButton(ICONS.save, 'Guardar', 'save', 'gbn-dock-save');
         saveBtn.disabled = true; // Inicialmente deshabilitado
 
+        // Selector de Breakpoint
+        var breakpointSelector = document.createElement('div');
+        breakpointSelector.className = 'gbn-breakpoint-selector';
+        breakpointSelector.innerHTML = 
+            '<button class="gbn-breakpoint-btn active" data-bp="desktop" title="Vista Desktop">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                    '<rect x="2" y="3" width="20" height="14" rx="2"></rect>' +
+                    '<line x1="8" y1="21" x2="16" y2="21"></line>' +
+                    '<line x1="12" y1="17" x2="12" y2="21"></line>' +
+                '</svg>' +
+            '</button>' +
+            '<button class="gbn-breakpoint-btn" data-bp="tablet" title="Vista Tablet">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                    '<rect x="5" y="2" width="14" height="20" rx="2"></rect>' +
+                    '<line x1="12" y1="18" x2="12" y2="18"></line>' +
+                '</svg>' +
+            '</button>' +
+            '<button class="gbn-breakpoint-btn" data-bp="mobile" title="Vista Móvil">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                    '<rect x="7" y="2" width="10" height="20" rx="2"></rect>' +
+                    '<line x1="12" y1="18" x2="12" y2="18"></line>' +
+                '</svg>' +
+            '</button>';
+
+        // Event listeners para breakpoints
+        var bpBtns = breakpointSelector.querySelectorAll('.gbn-breakpoint-btn');
+        for (var i = 0; i < bpBtns.length; i++) {
+            bpBtns[i].addEventListener('click', function() {
+                var bp = this.getAttribute('data-bp');
+                if (Gbn.responsive && Gbn.responsive.setBreakpoint) {
+                    Gbn.responsive.setBreakpoint(bp);
+                    
+                    // Update active state
+                    for (var j = 0; j < bpBtns.length; j++) {
+                        bpBtns[j].classList.remove('active');
+                    }
+                    this.classList.add('active');
+                }
+            });
+        }
+
         // Event Listeners
         toggleBtn.addEventListener('click', function() {
             if (Gbn.ui && Gbn.ui.inspector && typeof Gbn.ui.inspector.setActive === 'function') {
@@ -113,6 +154,7 @@
         dockRoot.appendChild(themeBtn);
         dockRoot.appendChild(pageBtn);
         dockRoot.appendChild(restoreBtn);
+        dockRoot.appendChild(breakpointSelector); // Selector antes del guardar
         dockRoot.appendChild(saveBtn);
 
         document.body.appendChild(dockRoot);

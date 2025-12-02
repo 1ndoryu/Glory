@@ -35,7 +35,21 @@
             { val: '1/6', label: '1/6' }
         ];
         
-        var current = u.getConfigValue(block, field.id);
+        // Lógica responsive
+        var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
+        var source = u.getValueSource(block, field.id, breakpoint);
+        var current = u.getResponsiveConfigValue(block, field.id, breakpoint);
+        
+        // Clases visuales
+        wrapper.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+        if (source === 'override') {
+             wrapper.classList.add('gbn-field-override');
+        } else {
+             wrapper.classList.add('gbn-field-inherited');
+             if (source === 'theme') wrapper.classList.add('gbn-source-theme');
+             else if (source === 'tablet') wrapper.classList.add('gbn-source-tablet');
+             else if (source === 'block') wrapper.classList.add('gbn-source-block');
+        }
         
         fractions.forEach(function(frac) {
             var btn = document.createElement('button');
@@ -51,6 +65,10 @@
                         b.classList.remove('active');
                     });
                     btn.classList.add('active');
+                    
+                    // Actualizar visualmente a override
+                    wrapper.classList.remove('gbn-field-inherited', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+                    wrapper.classList.add('gbn-field-override');
                 }
             });
             container.appendChild(btn);

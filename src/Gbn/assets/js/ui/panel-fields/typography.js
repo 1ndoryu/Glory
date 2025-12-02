@@ -25,9 +25,31 @@
 
         var baseId = field.id;
 
+        // Helper para obtener valor responsive y source
+        function getResponsiveData(subId) {
+            var path = baseId + '.' + subId;
+            var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
+            var val = u.getResponsiveConfigValue(block, path, breakpoint);
+            var source = u.getValueSource(block, path, breakpoint);
+            return { val: val, source: source };
+        }
+
+        // Helper para aplicar clases visuales
+        function applySourceClasses(element, source) {
+            element.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+            if (source === 'override') {
+                element.classList.add('gbn-field-override');
+            } else {
+                element.classList.add('gbn-field-inherited');
+                if (source === 'theme') element.classList.add('gbn-source-theme');
+                else if (source === 'tablet') element.classList.add('gbn-source-tablet');
+                else if (source === 'block') element.classList.add('gbn-source-block');
+            }
+        }
+
         // 1. Font Family (ancho completo)
         var fontRow = document.createElement('div');
-        fontRow.className = 'gbn-typo-row';
+        fontRow.className = 'gbn-typo-row gbn-spacing-input'; // Usar clase spacing-input para el indicador
         
         var fontSelect = document.createElement('select');
         fontSelect.className = 'gbn-select';
@@ -39,13 +61,16 @@
             fontSelect.appendChild(opt);
         });
         
-        var currentFont = u.getConfigValue(block, baseId + '.font');
-        if (currentFont) fontSelect.value = currentFont;
+        var fontData = getResponsiveData('font');
+        if (fontData.val) fontSelect.value = fontData.val;
+        applySourceClasses(fontRow, fontData.source);
         
         fontSelect.addEventListener('change', function() {
             var api = Gbn.ui && Gbn.ui.panelApi;
             if (api && api.updateConfigValue && block) {
                 api.updateConfigValue(block, baseId + '.font', fontSelect.value);
+                // Actualizar visualmente a override
+                applySourceClasses(fontRow, 'override');
             }
         });
         fontRow.appendChild(fontSelect);
@@ -57,7 +82,7 @@
         
         function createInput(subId, placeholder, labelText) {
             var col = document.createElement('div');
-            col.className = 'gbn-typo-col';
+            col.className = 'gbn-typo-col gbn-spacing-input'; // Clase para indicador
             
             var lbl = document.createElement('label');
             lbl.textContent = labelText;
@@ -67,8 +92,9 @@
             inp.className = 'gbn-input';
             inp.placeholder = placeholder;
             
-            var val = u.getConfigValue(block, baseId + '.' + subId);
-            if (val) inp.value = val;
+            var data = getResponsiveData(subId);
+            if (data.val) inp.value = data.val;
+            applySourceClasses(col, data.source);
             
             inp.addEventListener('input', function() {
                 var api = Gbn.ui && Gbn.ui.panelApi;
@@ -79,6 +105,10 @@
                         v += 'px';
                     }
                     api.updateConfigValue(block, baseId + '.' + subId, v === '' ? null : v);
+                    
+                    // Actualizar visualmente
+                    if (v !== '') applySourceClasses(col, 'override');
+                    else applySourceClasses(col, 'inherited'); // Simplificado, idealmente recargar
                 }
             });
             
@@ -94,7 +124,7 @@
 
         // 3. Text Transform (grupo de íconos)
         var transformRow = document.createElement('div');
-        transformRow.className = 'gbn-typo-row';
+        transformRow.className = 'gbn-typo-row gbn-spacing-input'; // Clase para indicador
         
         var transformLabel = document.createElement('label');
         transformLabel.className = 'gbn-field-label';
@@ -111,7 +141,9 @@
             { val: 'capitalize', label: 'Capitalize', icon: 'Ab' }
         ];
         
-        var currentTransform = u.getConfigValue(block, baseId + '.transform');
+        var transformData = getResponsiveData('transform');
+        var currentTransform = transformData.val;
+        applySourceClasses(transformRow, transformData.source);
         
         transforms.forEach(function(opt) {
             var btn = document.createElement('button');
@@ -130,6 +162,7 @@
                         b.classList.remove('active');
                     });
                     btn.classList.add('active');
+                    applySourceClasses(transformRow, 'override');
                 }
             });
             transformGroup.appendChild(btn);

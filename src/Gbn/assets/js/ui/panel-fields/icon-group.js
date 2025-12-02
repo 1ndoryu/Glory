@@ -45,12 +45,25 @@
             }
         }
         
+        // Determinar origen para indicador visual
+        var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
+        var source = u.getValueSource(block, field.id, breakpoint);
+        
+        // Limpiar clases anteriores
+        wrapper.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+        
+        if (source === 'override') {
+            wrapper.classList.add('gbn-field-override');
+        } else {
+            wrapper.classList.add('gbn-field-inherited');
+            if (source === 'theme') wrapper.classList.add('gbn-source-theme');
+            else if (source === 'tablet') wrapper.classList.add('gbn-source-tablet');
+            else if (source === 'block') wrapper.classList.add('gbn-source-block');
+        }
+        
         // Si no hay valor, usar el default (primera opción)
         if (current === undefined || current === null || current === '') {
             current = defaultValue;
-            wrapper.classList.add('gbn-field-inherited');
-        } else {
-            wrapper.classList.add('gbn-field-override');
         }
         
         opciones.forEach(function(opt) {

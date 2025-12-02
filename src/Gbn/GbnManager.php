@@ -101,6 +101,15 @@ class GbnManager
             }
         }
 
+        // Inyectar CSS Responsive generado por GBN
+        $pageId = get_queried_object_id();
+        if ($pageId) {
+            $responsiveCss = get_post_meta($pageId, 'gbn_responsive_css', true);
+            if ($responsiveCss) {
+                wp_add_inline_style('glory-gbn-gbn', $responsiveCss);
+            }
+        }
+
         if (!wp_script_is('glory-ajax', 'enqueued')) {
             if (!wp_script_is('glory-ajax', 'registered')) {
                 $ajaxFile = get_template_directory() . '/Glory/assets/js/genericAjax/gloryAjax.js';
@@ -177,6 +186,14 @@ class GbnManager
         $builderScripts = [
             'glory-gbn-persistence' => [
                 'file' => '/js/services/persistence.js',
+                'deps' => ['glory-gbn-services'],
+            ],
+            'glory-gbn-responsive' => [
+                'file' => '/js/services/responsive.js',
+                'deps' => ['glory-gbn-services'],
+            ],
+            'glory-gbn-style-generator' => [
+                'file' => '/js/services/style-generator.js',
                 'deps' => ['glory-gbn-services'],
             ],
             // Panel Fields - Módulos refactorizados

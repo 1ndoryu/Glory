@@ -281,3 +281,91 @@
     padding: 5px; /* Smaller padding when only one button */
     border-radius: 50%; /* Circle shape */
 }
+
+/* Breakpoint Selector */
+.gbn-breakpoint-selector {
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 20px;
+    margin: 0 4px;
+}
+
+.gbn-breakpoint-btn {
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gbn-breakpoint-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2px;
+}
+
+.gbn-breakpoint-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #555;
+}
+
+.gbn-breakpoint-btn.active {
+    background: #fff;
+    color: #1d8ff1;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Indicadores de Origen Responsive */
+.gbn-spacing-input {
+    position: relative;
+}
+
+.gbn-spacing-input::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: none;
+}
+
+/* Theme Source (Naranja) */
+.gbn-source-theme .gbn-spacing-icon {
+    color: #f39c12;
+}
+.gbn-source-theme input {
+    border-color: rgba(243, 156, 18, 0.3);
+}
+
+/* Tablet Source (Púrpura) */
+.gbn-source-tablet .gbn-spacing-icon {
+    color: #9b59b6;
+}
+.gbn-source-tablet input {
+    border-color: rgba(155, 89, 182, 0.3);
+}
+
+/* Block/Desktop Source (Azul) */
+.gbn-source-block .gbn-spacing-icon {
+    color: #3498db;
+}
+.gbn-source-block input {
+    border-color: rgba(52, 152, 219, 0.3);
+}
+
+/* Override (Valor propio en breakpoint actual) */
+.gbn-field-override input {
+    font-weight: 600;
+    color: #333;
+}

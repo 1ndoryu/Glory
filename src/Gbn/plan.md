@@ -740,7 +740,47 @@ El sistema **ya estaba automatizado** - `ui/theme/render.js` usa factory pattern
 
 ---
 
-### 📋 FASE 2: Responsive Breakpoints (DESPUÉS de SOLID)
+### 📋 FASE 2 COMPLETADA: Responsive Breakpoints (Diciembre 2025)
+
+> **Estado**: SemiCoompleta (Diciembre 2025)
+> **Feedback de Usuario**: Implementación exitosa con ajustes pendientes.
+
+#### 📌 Resumen de Implementación
+Se implementó un sistema responsive completo con selector de vistas, herencia inteligente (Mobile < Tablet < Desktop < Theme < CSS), persistencia de overrides en `_responsive` y generación de CSS optimizado.
+
+#### 🐛 Bugs y Ajustes Detectados (Pendientes de Corrección)
+
+1. **Simulación de Viewport**:
+   - **Problema**: Al volver a Desktop, el ancho se fuerza a `100%` ignorando el `max-width` configurado en la página (ej. 800px).
+   - **Solución**: Leer el `max-width` real del contenedor root antes de aplicar la simulación y restaurarlo correctamente.
+
+2. **Refresco de Panel**:
+   - **Problema**: Los campos del panel no se actualizan automáticamente al cambiar de breakpoint. Requiere cerrar y abrir.
+   - **Solución**: Implementar listener `gbn:breakpointChanged` en `panel-core.js` que fuerce un re-render de los controles activos.
+
+3. **Propagación en Panel de Tema**:
+   - **Problema**: Cambios en una vista específica (ej. Mobile) sobrescriben la configuración de TODAS las vistas.
+   - **Solución**: Revisar `ui/theme/applicator.js` para asegurar que escribe en `config._responsive[bp]` en lugar de la raíz cuando no es Desktop.
+
+4. **Estilos de Clases CSS (Nuevo Bug)**:
+   - **Problema**: Estilos definidos en clases CSS (ej. `.miClase { padding: 50px }`) no son reconocidos por el panel, mostrando "Default" en lugar del valor computado.
+   - **Solución**: Mejorar `getValueSource` y `getResponsiveValue` para leer `getComputedStyle` como fallback antes de asumir "css default".
+
+5. **Refinamiento Visual de Campos (UI)**:
+   - **Problema**: La implementación actual usa bordes de colores pero falta la información explícita propuesta en el diseño original.
+   - **Requerimiento**: Implementar el diseño detallado:
+     ```
+     ┌─────────────────────────────────┐
+     │ Padding Superior          [📱] │  ← Icono del dispositivo actual si tiene override
+     │ [    20    ] px                 │
+     │ ↓ Heredado de Desktop           │  ← Texto explícito de herencia
+     └─────────────────────────────────┘
+     ```
+   - **Solución**: Modificar `panel-fields/*.js` para inyectar el icono en el label y un elemento de texto debajo del input cuando sea heredado.
+
+---
+
+### 📋 FASE 3: Refinamiento y Correcciones (SIGUIENTE)
 
 > **PREREQUISITO**: La Fase 1 (SOLID) debe estar **100% completada** antes de iniciar esta fase.
 

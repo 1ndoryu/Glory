@@ -89,10 +89,18 @@
             utils.warn('Persistencia: gloryAjax o configuración no disponibles');
             return { success: false, message: 'Persistencia no disponible' };
         }
+        // Generar CSS responsive
+        var blocksMap = {};
+        state.all().forEach(function(b) { blocksMap[b.id] = b; });
+        var responsiveCss = (Gbn.services && Gbn.services.styleGenerator) 
+            ? Gbn.services.styleGenerator.generateCss(blocksMap) 
+            : '';
+
         var payload = {
             nonce: cfg.nonce,
             pageId: cfg.pageId,
             blocks: JSON.stringify(collectBlocksPayload()),
+            responsiveCss: responsiveCss,
         };
         return ajaxFn('gbn_save_config', payload);
     }

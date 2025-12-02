@@ -142,6 +142,49 @@
     function updateConfigValue(block, path, value) {
         if (!block || !path) { return; }
 
+        // Lógica Responsive: Si no estamos en desktop, usar setResponsiveValue
+        var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
+        
+        if (breakpoint !== 'desktop' && Gbn.responsive && Gbn.responsive.setResponsiveValue) {
+            var current = cloneConfig(block.config);
+            
+            // Usar helper para escribir en la estructura correcta dentro de current
+            // Pasamos un objeto mock {config: current} porque setResponsiveValue espera block.config
+            var mockBlock = { config: current };
+            Gbn.responsive.setResponsiveValue(mockBlock, path, value, breakpoint);
+            
+            // Continuar con el flujo normal de guardado usando 'current' actualizado
+            var updated = state.updateConfig(block.id, current);
+            applyBlockStyles(updated);
+            
+            // Notify core
+            if (Gbn.ui.panel && Gbn.ui.panel.updateActiveBlock) {
+                Gbn.ui.panel.updateActiveBlock(updated);
+            }
+            
+            if (Gbn.ui.panel && Gbn.ui.panel.flashStatus) {
+                Gbn.ui.panel.flashStatus('Cambios aplicados (' + breakpoint + ')');
+            }
+
+            var event;
+            if (typeof global.CustomEvent === 'function') {
+                event = new CustomEvent('gbn:configChanged', { detail: { id: block.id } });
+            } else {
+                event = document.createEvent('CustomEvent');
+                event.initCustomEvent('gbn:configChanged', false, false, { id: block.id });
+            }
+            global.dispatchEvent(event);
+
+            var conditionalFields = ['layout', 'display_mode', 'img_show', 'title_show', 'interaccion_modo'];
+            if (conditionalFields.indexOf(path) !== -1) {
+                if (Gbn.ui.panel && Gbn.ui.panel.refreshControls) {
+                    Gbn.ui.panel.refreshControls(updated);
+                }
+            }
+            
+            return updated;
+        }
+
         var current = cloneConfig(block.config);
         var segments = path.split('.');
         var cursor = current;
@@ -237,16 +280,25 @@
     var styleResolvers = {
         principal: function (config, block) {
             var role = 'principal';
+            var bp = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
             
-            // Helper para obtener valor con fallback a theme
+            // Helper para obtener valor responsive
             function get(path) {
+                if (Gbn.responsive && Gbn.responsive.getResponsiveValue) {
+                     return Gbn.responsive.getResponsiveValue(block, path, bp);
+                }
                 return getConfigWithThemeFallback(config, role, path);
             }
             
-            // Padding - usa la función extractSpacingStyles con fallback
-            var paddingConfig = config.padding;
-            if (!paddingConfig || (typeof paddingConfig === 'object' && Object.keys(paddingConfig).length === 0)) {
-                paddingConfig = getThemeSettingsValue(role, 'padding');
+            // Padding responsive
+            var paddingConfig;
+            if (Gbn.responsive && Gbn.responsive.getResponsiveValue) {
+                paddingConfig = Gbn.responsive.getResponsiveValue(block, 'padding', bp);
+            } else {
+                paddingConfig = config.padding;
+                if (!paddingConfig || (typeof paddingConfig === 'object' && Object.keys(paddingConfig).length === 0)) {
+                    paddingConfig = getThemeSettingsValue(role, 'padding');
+                }
             }
             var styles = extractSpacingStyles(paddingConfig);
             
@@ -313,16 +365,25 @@
         },
         secundario: function (config, block) {
             var role = 'secundario';
+            var bp = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
             
-            // Helper para obtener valor con fallback a theme
+            // Helper para obtener valor responsive
             function get(path) {
+                if (Gbn.responsive && Gbn.responsive.getResponsiveValue) {
+                     return Gbn.responsive.getResponsiveValue(block, path, bp);
+                }
                 return getConfigWithThemeFallback(config, role, path);
             }
             
-            // Padding - usa la función extractSpacingStyles con fallback
-            var paddingConfig = config.padding;
-            if (!paddingConfig || (typeof paddingConfig === 'object' && Object.keys(paddingConfig).length === 0)) {
-                paddingConfig = getThemeSettingsValue(role, 'padding');
+            // Padding responsive
+            var paddingConfig;
+            if (Gbn.responsive && Gbn.responsive.getResponsiveValue) {
+                paddingConfig = Gbn.responsive.getResponsiveValue(block, 'padding', bp);
+            } else {
+                paddingConfig = config.padding;
+                if (!paddingConfig || (typeof paddingConfig === 'object' && Object.keys(paddingConfig).length === 0)) {
+                    paddingConfig = getThemeSettingsValue(role, 'padding');
+                }
             }
             var styles = extractSpacingStyles(paddingConfig);
             
@@ -726,6 +787,17 @@
         window.addEventListener('gbn:themeDefaultsChanged', function(e) {
             if (e.detail && e.detail.role) {
                 applyThemeDefaultsToBlocks(e.detail.role, e.detail.property, e.detail.value);
+            }
+        });
+        
+        // Re-aplicar estilos cuando cambia el breakpoint para simular media queries en el editor
+        window.addEventListener('gbn:breakpointChanged', function(e) {
+            applyThemeStylesToAllBlocks(); // Reutilizamos esta función que itera y aplica estilos
+            
+            // También actualizar el panel activo si hay uno seleccionado
+            if (Gbn.ui.panel && Gbn.ui.panel.refreshControls && state.activeBlockId) {
+                var block = state.get(state.activeBlockId);
+                if (block) Gbn.ui.panel.refreshControls(block);
             }
         });
     }
