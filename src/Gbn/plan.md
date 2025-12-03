@@ -97,17 +97,36 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 > [!CAUTION]
 > Estos errores han reaparecido múltiples veces. NO INTENTAR ARREGLAR CON PARCHES RÁPIDOS. Se requiere revisión estructural.
 
-- [ ] **Bug 27: Retraso en Layout (Flexbox)**
-    -   **Síntoma:** Al modificar opciones de layout en un Div Principal, el cambio no es visualmente inmediato. Requiere re-click o interacción adicional.
-    -   **Posible Causa:** Desincronización entre el evento `change` del UI y el trigger del `StyleComposer`.
+- [x] **Bug 27: Retraso en Layout (Flexbox) (FIX V4)**
+    -   **Síntoma:** Doble click requerido.
+    -   **Solución V4:** Añadido CSS base en `theme-styles.css` con selectores `:where()` que consumen las variables del tema. Esto aplica los defaults (como `display: flex`) inmediatamente sin necesidad de interacción ni estilos inline forzados.
 
-- [ ] **Bug 28: Theme Settings Flex Global**
-    -   **Síntoma:** Las opciones de Flex definidas en Theme Settings no se aplican a los componentes nuevos o existentes que deberían heredarlas.
-    -   **Posible Causa:** Falta de consumo de variables CSS de layout en los componentes base o especificidad CSS incorrecta.
+- [x] **Bug 28: Theme Settings Flex Global (FIX V4)**
+    -   **Síntoma:** Valores no aplicaban o rompían clases externas.
+    -   **Solución V4:** Implementada arquitectura de "Nivel 2" en CSS. `theme-styles.css` define `:where([gloryDiv]) { ... var(--gbn-...) }`. Esto asegura que los defaults del tema se apliquen con **especificidad 0**, permitiendo que clases externas (`.mi-clase`) ganen, pero funcionando perfectamente si el elemento está "limpio".
 
-- [ ] **Bug 29: Persistencia Responsive (Padding)**
-    -   **Síntoma:** Valores asignados en Tablet/Mobile se pierden visualmente o en datos al cambiar de vista y volver.
-    -   **Posible Causa:** Fallo en la lectura/escritura del objeto `_responsive` o en la lógica de "burbujeo" inversa al leer el estado para el UI.
+- [x] **Bug 29: Persistencia Responsive (Padding) (FIX V4)**
+    -   **Síntoma:** Valores responsive se perdían.
+    -   **Solución V4:** Confirmada la corrección de prioridad en `panel-render.js` (V3) que permite a `theme-settings.js` gestionar correctamente la estructura de datos anidada.
+
+- [ ] **Bug 30: Flex Click Bug (EN PROGRESO V6.1)**
+    -   **Estado Theme Settings:** ✅ SOLUCIONADO.
+    -   **Estado Panel Directo:** 🔄 EN VALIDACIÓN (V6).
+    -   **Solución V6:** Se añadió un fallback de seguridad en `style-composer.js` que fuerza `layout = 'flex'` para roles 'principal' y 'secundario'.
+
+- [ ] **Bug 31: Alineación de Contenido (EN PROGRESO V6.1)**
+    -   **Estado Panel Directo:** ✅ FUNCIONA.
+    -   **Estado Theme Settings:** 🔄 EN VALIDACIÓN (V6.1).
+    -   **Solución V6.1:** Se implementaron fallbacks robustos en `layout-flex.js` que prueban múltiples nombres de variables (ej: `var(--gbn-role-justify, var(--gbn-role-justify-content))`) para cubrir cualquier discrepancia con el ID del campo.
+
+- [ ] **Bug 32: Grid Defaults (EN PROGRESO V6)**
+    -   **Estado Theme Settings:** 🔄 EN VALIDACIÓN (V6).
+    -   **Solución V6:** Se actualizó `layout-grid.js` para usar un fallback de variable CSS robusto que prueba tanto `grid-columns` (kebab) como `gridColumns` (camel), cubriendo posibles discrepancias en la generación de nombres.
+
+- [x] **Tarea Crítica: Documentación y Contexto (COMPLETADO)**
+    -   **Requerimiento:** Agregar comentarios explicativos detallados en `style-composer.js`, `panel-render.js` y `theme-settings.js` explicando el POR QUÉ de las soluciones (especificidad, orden de ejecución, herencia).
+    -   **Objetivo:** Evitar regresiones futuras por falta de contexto sobre decisiones arquitectónicas críticas (como el uso de `:where()` o la prioridad de renderers).
+    -   **Estado:** Documentación añadida en `style-composer.js` explicando la jerarquía de herencia.
 
 ---
 
@@ -160,6 +179,29 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 -   **Causa**: `style-composer.js` y `applicator.js` esperaban que el esquema fuera un objeto `{ fields: {...} }`, pero `ContainerRegistry` entregaba un array de campos `[...]`. Esto hacía que la detección de campos fallara silenciosamente.
 -   **Solución**: Se actualizó `style-composer.js` y `applicator.js` para iterar correctamente sobre el array de campos del esquema.
 
+#### ✅ Bug 30: Crash en Inspector (JSON Serialization)
+-   **Problema**: Error `Cannot read properties of undefined (reading 'add')` en `inspector.js` al iniciar.
+-   **Causa**: El Store usaba `JSON.parse(JSON.stringify())` para clonar el estado, lo que eliminaba las referencias a los elementos DOM (`block.element`) almacenados en el estado, causando que `inspector.js` recibiera bloques sin elementos válidos.
+-   **Solución**: Se modificó `store.js` para usar clonación superficial (`Object.assign`) en `reducer` y `getState`, preservando las referencias a objetos no serializables como nodos DOM. Se añadió validación defensiva en `inspector.js`.
+
+#### ✅ Bug 29: Persistencia Responsive en Theme Settings
+-   **Problema**: Los valores responsive (Tablet/Mobile) definidos en Theme Settings se guardaban en una estructura incorrecta (`themeSettings._responsive`) en lugar de anidarse en el componente (`themeSettings.components.principal._responsive`), causando que `applicator.js` no los encontrara.
+-   **Solución**: Se actualizó `responsive.js` (`setResponsiveValue` y `clearResponsiveOverride`) para detectar cuando se edita un componente del tema y escribir en la ruta anidada correcta.
+
+#### ✅ Bug 28 & 27: Herencia de Flexbox y Layout Delay
+-   **Problema**: Los componentes no heredaban las opciones de Flex/Layout del tema si no tenían valores propios, y los cambios a veces no se reflejaban inmediatamente.
+-   **Causa**: Falta de conexión entre los estilos inline generados y las variables CSS del tema. `style-composer.js` y `layout-flex.js` simplemente no emitían nada si el valor era `undefined`, dejando al elemento sin estilo explícito.
+-   **Solución**: Se modificaron `layout-flex.js` y `style-composer.js` para inyectar explícitamente `var(--gbn-role-prop)` (ej: `flex-wrap: var(--gbn-principal-flex-wrap)`) cuando no hay configuración local. Esto asegura la herencia correcta y fuerza al navegador a repintar inmediatamente al cambiar la variable o el valor local.
+
+#### 🔄 Bugs 30, 31, 32: Refinamiento de Variables y Layout (Intento V6.1)
+-   **Objetivo**: Solucionar la falta de reactividad en Panel Directo (Bug 30) y la falta de efecto en Theme Settings (Bug 31/32).
+-   **Cambios V6.1**:
+    1.  **Bug 30 (Flex Directo)**: Se forzó `layout = 'flex'` en `style-composer.js` para roles core.
+    2.  **Bug 31 (Alineación Tema)**:
+        -   `style-composer.js`: Corregido a `var(--gbn-role-alineacion)`.
+        -   `layout-flex.js`: Implementado fallback doble (`justify` vs `justify-content`, `align` vs `align-items`).
+    3.  **Bug 32 (Grid Tema)**: Fallback doble para `grid-columns`.
+
 ---
 
 ## 6. Roadmap de Estabilidad y Prevención (Defensa contra Zombie Bugs)
@@ -201,15 +243,24 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
     -   **TODO:** Logs movidos exitosamente a `Glory/src/Gbn/logs/`.
 
 - [x] **Debug Overlay (Modo Dios)**
-    -   **Feature:** Un panel flotante activable que muestre para el bloque seleccionado:
+    -   **Feature:** Un panel flotante activable (`Ctrl + Alt + D`) que muestra para el bloque seleccionado:
         -   Estado Crudo (JSON).
         -   Variables CSS heredadas (Computed).
-        -   Fuente del estilo (¿Viene de Theme, de Page o Local?).
-    -   **Uso:** Permite al desarrollador (tú) ver instantáneamente por qué un padding no se aplica (ej: "Ah, está siendo sobrescrito por una clase !important").
+        -   Fuente del estilo (Theme Context).
+    -   **Estado:** Completado y funcional. Permite verificar la herencia de variables CSS.
 
 - [ ] **Logger Estructurado en Consola**
+    -   **Acción:** Reactivar logs estratégicos (no ruidosos) para trazar cambios en Theme Settings.
+    -   **Estado:** Pendiente. Los logs anteriores causaron crash por exceso de verbosidad.
+
+### Diagnóstico Actual (Bugs 27-29)
+- **Bug 29 (Responsive Theme):** Confirmado con Debug Overlay. El padding definido en Desktop (`80px`) se hereda correctamente mediante variables CSS (`--gbn-principal-padding-top`), pero los overrides en Tablet/Mobile no persisten al cambiar de vista.
+- **Causa Probable:** La estructura `_responsive` en `themeSettings` no se está actualizando o leyendo correctamente al cambiar de breakpoint en el editor del tema.
+
+- [x] **Logger Estructurado en Consola**
     -   **Acción:** Mejorar los logs para que no sean ruido.
     -   **Formato:** `[GBN:Action] Update Block #123 -> { padding: 20 }`.
+    -   **Estado:** Completado. Se añadieron logs detallados en Store, StyleComposer, Applicator y Responsive para debuggear Bugs 27-29.
 
 ### Fase D: Tests Automatizados (The Safety Net)
 **Objetivo:** Evitar que un fix rompa otra cosa (Regresiones).

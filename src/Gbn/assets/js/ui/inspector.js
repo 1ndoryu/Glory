@@ -6,7 +6,7 @@
     var state = Gbn.state;
 
     function ensureBaseline(block) {
-        if (!block || !block.element) { return; }
+        if (!block || !block.element || !block.element.classList) { return; }
         block.element.classList.add('gbn-node');
         block.element.setAttribute('data-gbn-ready', '1');
         if (Gbn.ui && Gbn.ui.panelApi && typeof Gbn.ui.panelApi.applyBlockStyles === 'function') {

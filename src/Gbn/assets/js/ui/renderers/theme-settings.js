@@ -19,13 +19,15 @@
     }
 
     function handleUpdate(block, path, value) {
+        if (Gbn.log) Gbn.log.info('Theme Settings Update Start', { path: path, value: value });
+
         var current = cloneConfig(block.config);
         var segments = path.split('.');
         
-        // NUEVO: Detectar breakpoint activo
+        // 1. Detectar breakpoint activo
         var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
         
-        // Si estamos en Mobile/Tablet, escribir en _responsive[bp] en lugar de raíz
+        // 2. Lógica Responsive: Escribir en _responsive[bp] si no es desktop
         var cursor;
         if (breakpoint !== 'desktop' && path.startsWith('components.')) {
             // Path ejemplo: "components.principal.padding.superior"
@@ -51,7 +53,7 @@
             }
             cursor[relativePath[relativePath.length - 1]] = value;
         } else {
-            // Desktop o paths no-components: escribir en raíz como siempre
+            // Desktop o paths no-components: escribir en raíz
             cursor = current;
             for (var i = 0; i < segments.length - 1; i++) {
                 var key = segments[i];
@@ -63,37 +65,36 @@
             cursor[segments[segments.length - 1]] = value;
         }
         
-        // DETECTAR CAMBIOS MANUALES: Marcar como 'manual' en __sync
-        // Solo para desktop (los overrides responsive ya son "manuales" por definición)
+        // 3. Marcar cambios manuales (__sync) solo en desktop
         if (breakpoint === 'desktop' && path.startsWith('components.')) {
-            // Ejemplo path: "components.principal.padding.superior"
             var pathParts = path.split('.');
             if (pathParts.length >= 3) {
-                var role = pathParts[1];      // "principal" o "secundario"
-                var prop = pathParts[2];      // "padding", "background", etc.
-                
-                // Asegurar que existe el objeto __sync
+                var role = pathParts[1];
+                var prop = pathParts[2];
                 if (!current.components[role].__sync) {
                     current.components[role].__sync = {};
                 }
-                
-                // Marcar como modificado manualmente
                 current.components[role].__sync[prop] = 'manual';
             }
         }
         
-        // Update block config reference
-        block.config = current;
+        // 4. Persistir en Store (CRÍTICO: Usar state.updateConfig)
+        if (Gbn.state && Gbn.state.updateConfig) {
+            Gbn.state.updateConfig(block.id, current, breakpoint);
+        }
         
-        // Sync to global config
+        // 5. Sincronizar config global
         if (!Gbn.config) Gbn.config = {};
         Gbn.config.themeSettings = current;
         
+        // 6. Aplicar cambios visuales inmediatos (Applicator)
         if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.applyThemeSettings) {
-            Gbn.ui.panelTheme.applyThemeSettings(current);
+            Gbn.ui.panelTheme.applyThemeSettings(current); // Esto dispara el estilo inline en el root
+        } else if (Gbn.ui.theme && Gbn.ui.theme.applicator && Gbn.ui.theme.applicator.applyThemeSettings) {
+             Gbn.ui.theme.applicator.applyThemeSettings(current);
         }
         
-        // Dispatch event (incluir path y breakpoint)
+        // 7. Disparar evento de cambio de configuración
         var event;
         if (typeof global.CustomEvent === 'function') {
             event = new CustomEvent('gbn:configChanged', { detail: { id: 'theme-settings', path: path, breakpoint: breakpoint } });
@@ -103,13 +104,11 @@
         }
         global.dispatchEvent(event);
         
-        // NUEVO: Disparar evento específico para actualización en tiempo real de defaults
-        // Para todos los breakpoints (Desktop, Tablet, Mobile)
+        // 8. Disparar evento específico para defaults (Bug 27/28 Fix)
         if (path.startsWith('components.')) {
             var pathParts = path.split('.');
             if (pathParts.length >= 3) {
                 var role = pathParts[1];
-                // Reconstruir la propiedad relativa al componente (ej: 'padding.superior')
                 var property = pathParts.slice(2).join('.');
                 
                 var defaultsEvent;
@@ -122,10 +121,13 @@
                     defaultsEvent.initCustomEvent('gbn:themeDefaultsChanged', false, false, detail);
                 }
                 global.dispatchEvent(defaultsEvent);
+                
+                if (Gbn.log) Gbn.log.info('Theme Defaults Changed Event Dispatched', detail);
             }
         }
         
-        return current;
+        // Retornar TRUE para indicar que ya manejamos todo y panel-render no debe hacer nada más
+        return true;
     }
 
     Gbn.ui.renderers.themeSettings = {

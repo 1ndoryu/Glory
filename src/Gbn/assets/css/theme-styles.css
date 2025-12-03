@@ -82,3 +82,55 @@
     text-transform: var(--gbn-h6-transform, none);
     margin-bottom: 0.5em;
 }
+
+/* 
+   Component Base Styles (Level 2) 
+   Uses :where() to have 0 specificity, allowing external classes to override easily.
+   Consumes Theme Variables (Level 3) to apply defaults.
+*/
+
+:where([gloryDiv]), :where([data-gbn-role="principal"]) {
+    /* Layout & Flex Defaults */
+    display: var(--gbn-principal-display, flex);
+    flex-direction: var(--gbn-principal-flex-direction, row);
+    flex-wrap: var(--gbn-principal-flex-wrap, wrap);
+    justify-content: var(--gbn-principal-justify-content, flex-start);
+    align-items: var(--gbn-principal-align-items, stretch);
+    gap: var(--gbn-principal-gap, 0px);
+
+    /* Spacing & Sizing */
+    padding-top: var(--gbn-principal-padding-top, 0px);
+    padding-right: var(--gbn-principal-padding-right, 0px);
+    padding-bottom: var(--gbn-principal-padding-bottom, 0px);
+    padding-left: var(--gbn-principal-padding-left, 0px);
+    
+    background: var(--gbn-principal-background, transparent);
+    max-width: var(--gbn-principal-max-width, none);
+    
+    /* Ensure box-sizing */
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+:where([gloryDivSecundario]), :where([data-gbn-role="secundario"]) {
+    /* Layout & Flex Defaults */
+    display: var(--gbn-secundario-display, flex);
+    flex-direction: var(--gbn-secundario-flex-direction, column);
+    flex-wrap: var(--gbn-secundario-flex-wrap, nowrap);
+    justify-content: var(--gbn-secundario-justify-content, flex-start);
+    align-items: var(--gbn-secundario-align-items, stretch);
+    gap: var(--gbn-secundario-gap, 0px);
+
+    /* Spacing & Sizing */
+    width: var(--gbn-secundario-width, 100%);
+    
+    padding-top: var(--gbn-secundario-padding-top, 0px);
+    padding-right: var(--gbn-secundario-padding-right, 0px);
+    padding-bottom: var(--gbn-secundario-padding-bottom, 0px);
+    padding-left: var(--gbn-secundario-padding-left, 0px);
+    
+    background: var(--gbn-secundario-background, transparent);
+    
+    box-sizing: border-box;
+}

@@ -102,6 +102,9 @@
         }
         breakpoint = breakpoint || 'desktop';
 
+        // if (Gbn.log) Gbn.log.debug('Applying Theme Settings', { breakpoint: breakpoint, settings: settings });
+        if (Gbn.log) Gbn.log.info('Theme Applicator Run', { breakpoint: breakpoint });
+
         // Helper to set or remove property
         function setOrRemove(prop, val) {
             if (val !== null && val !== undefined && val !== '') {
@@ -177,6 +180,9 @@
 
                  // Obtener configuración efectiva para el breakpoint actual
                  var comp = getEffectiveComponentConfig(rawComp, breakpoint);
+                 
+                 // if (Gbn.log) Gbn.log.debug('Applying Component Theme', { role: role, effectiveConfig: comp });
+
                  var prefix = '--gbn-' + role;
                  var rolePayload = roleSchemas[role];
                  // rolePayload is { config: ..., schema: [...] }
@@ -268,6 +274,17 @@
         }
         if (config.pageSettings) {
             applyPageSettings(config.pageSettings);
+        }
+    });
+
+    // Re-apply theme settings when breakpoint changes to handle responsive overrides
+    window.addEventListener('gbn:breakpointChanged', function(event) {
+        var settings = (Gbn.config && Gbn.config.themeSettings) || (window.gloryGbnCfg && window.gloryGbnCfg.themeSettings);
+        var breakpoint = event.detail ? event.detail.current : null;
+        
+        if (settings) {
+            if (Gbn.log) Gbn.log.info('Re-applying Theme Settings due to breakpoint change', { breakpoint: breakpoint });
+            applyThemeSettings(settings, breakpoint);
         }
     });
 

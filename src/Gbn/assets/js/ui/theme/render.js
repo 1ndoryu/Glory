@@ -95,9 +95,13 @@
         }
         
         // Initial apply
-        // Initial apply
         if (Gbn.ui.theme.applicator && Gbn.ui.theme.applicator.applyThemeSettings) {
             Gbn.ui.theme.applicator.applyThemeSettings(mockBlock.config);
+            if (Gbn.log) Gbn.log.info('Theme Settings Applied', { 
+                view: currentView, 
+                role: componentState.currentDetailRole,
+                configKeys: Object.keys(mockBlock.config)
+            });
         }
         
         // var currentView = 'menu'; // Eliminado, ahora es global de módulo

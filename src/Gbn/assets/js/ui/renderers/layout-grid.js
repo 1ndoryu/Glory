@@ -14,9 +14,16 @@
         var styles = {};
         styles.display = 'grid';
         
+        var role = block.role;
+        var prefix = role ? '--gbn-' + role + '-' : null;
+
         var gridColumns = get(block, 'gridColumns', bp);
         if (gridColumns) {
             styles['grid-template-columns'] = 'repeat(' + gridColumns + ', 1fr)';
+        } else if (prefix) {
+            // Fallback a variable del tema. 
+            // Bug 32 Fix V6: Intentamos con el ID exacto 'gridColumns' y su versión kebab 'grid-columns'
+            styles['grid-template-columns'] = 'repeat(var(' + prefix + 'grid-columns, var(' + prefix + 'gridColumns, 1)), 1fr)';
         }
         
         var gridRows = get(block, 'gridRows', bp);
@@ -27,8 +34,13 @@
         var gridGap = get(block, 'gridGap', bp);
         var gap = get(block, 'gap', bp);
         
-        if (gridGap) { styles.gap = gridGap + 'px'; }
-        else if (gap) { styles.gap = gap + 'px'; }
+        if (gridGap) { 
+            styles.gap = gridGap + 'px'; 
+        } else if (gap) { 
+            styles.gap = gap + 'px'; 
+        } else if (prefix) {
+            styles.gap = 'var(' + prefix + 'gap)';
+        }
         
         return styles;
     }

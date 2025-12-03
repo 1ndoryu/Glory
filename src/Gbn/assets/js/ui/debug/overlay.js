@@ -15,10 +15,10 @@
 
         overlay = document.createElement('div');
         overlay.id = 'gbn-debug-overlay';
-        overlay.style.cssText = 'position: fixed; bottom: 10px; right: 10px; width: 400px; max-height: 80vh; background: rgba(0, 0, 0, 0.9); color: #0f0; font-family: monospace; font-size: 12px; z-index: 99999; overflow-y: auto; padding: 10px; border-radius: 4px; display: none; box-shadow: 0 0 10px rgba(0,0,0,0.5); border: 1px solid #333;';
+        overlay.style.cssText = 'position: fixed; top: 100px; right: 10px; width: 400px; max-height: 80vh; background: rgba(0, 0, 0, 0.9); color: #0f0; font-family: monospace; font-size: 12px; z-index: 99999; overflow-y: auto; padding: 10px; border-radius: 4px; display: none; box-shadow: 0 0 10px rgba(0,0,0,0.5); border: 1px solid #333;';
         
         var header = document.createElement('div');
-        header.style.cssText = 'display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; font-weight: bold; color: #fff;';
+        header.style.cssText = 'display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #333; padding-bottom: 5px; font-weight: bold; color: #fff; cursor: move; user-select: none;';
         header.innerHTML = '<span>GBN GOD MODE</span><button id="gbn-debug-close" style="background:none;border:none;color:#f00;cursor:pointer;">X</button>';
         
         content = document.createElement('div');
@@ -29,6 +29,51 @@
         document.body.appendChild(overlay);
 
         document.getElementById('gbn-debug-close').addEventListener('click', toggle);
+        
+        // Drag functionality
+        var isDragging = false;
+        var currentX;
+        var currentY;
+        var initialX;
+        var initialY;
+        var xOffset = 0;
+        var yOffset = 0;
+
+        header.addEventListener("mousedown", dragStart);
+        document.addEventListener("mouseup", dragEnd);
+        document.addEventListener("mousemove", drag);
+
+        function dragStart(e) {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+
+            if (e.target === header || e.target.parentNode === header) {
+                isDragging = true;
+            }
+        }
+
+        function dragEnd(e) {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                setTranslate(currentX, currentY, overlay);
+            }
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
+        }
     }
 
     function toggle() {
@@ -64,9 +109,19 @@
             return;
         }
 
-        var block = Gbn.state ? Gbn.state.getBlock(currentBlockId) : null;
+        var block = null;
+        if (Gbn.store) {
+            var state = Gbn.store.getState();
+            if (state && state.blocks) {
+                block = state.blocks[currentBlockId];
+            }
+        } else if (Gbn.state && typeof Gbn.state.getBlock === 'function') {
+            // Fallback for legacy
+            block = Gbn.state.getBlock(currentBlockId);
+        }
+
         if (!block) {
-            content.innerHTML = '<div style="color:#f00;">Block not found in State</div>';
+            content.innerHTML = '<div style="color:#f00;">Block not found in Store</div>';
             return;
         }
 
@@ -166,15 +221,15 @@
             });
         }
 
-        // Keyboard Shortcut: Alt+Shift+D (Avoids Ctrl+Shift+D bookmark conflict)
+        // Keyboard Shortcut: Ctrl+Alt+D
         document.addEventListener('keydown', function(e) {
-            if (e.altKey && e.shiftKey && e.key === 'D') {
+            if (e.ctrlKey && e.altKey && (e.key === 'd' || e.key === 'D')) {
                 e.preventDefault();
                 toggle();
             }
         });
         
-        console.log('GBN Debug Overlay Initialized. Press Alt+Shift+D to toggle.');
+        console.log('GBN Debug Overlay Initialized. Press Ctrl+Alt+D to toggle.');
     }
 
     Gbn.ui.debug.overlay = {

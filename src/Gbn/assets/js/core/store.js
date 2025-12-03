@@ -27,7 +27,11 @@
 
     // Reducer
     function reducer(currentState, action) {
-        var nextState = JSON.parse(JSON.stringify(currentState)); // Deep clone for immutability (simple version)
+        // Shallow clone state and blocks map to preserve references (like DOM elements)
+        var nextState = Object.assign({}, currentState);
+        if (nextState.blocks) {
+            nextState.blocks = Object.assign({}, nextState.blocks);
+        }
 
         switch (action.type) {
             case Actions.INIT_BLOCKS:
@@ -40,7 +44,13 @@
                 var breakpoint = action.breakpoint || nextState.mode;
 
                 if (nextState.blocks[blockId]) {
-                    var block = nextState.blocks[blockId];
+                    // Shallow clone the block to avoid mutating previous state
+                    var block = Object.assign({}, nextState.blocks[blockId]);
+                    // Deep clone config to avoid mutation (config should be serializable)
+                    if (block.config) {
+                        block.config = JSON.parse(JSON.stringify(block.config));
+                    }
+                    nextState.blocks[blockId] = block;
                     
                     // If updating specific breakpoint that is NOT desktop/base
                     if (breakpoint !== 'desktop') {
@@ -93,7 +103,12 @@
     // Store API
     var Store = {
         getState: function() {
-            return JSON.parse(JSON.stringify(state)); // Return copy to prevent direct mutation
+            // Shallow clone to preserve DOM references
+            var copy = Object.assign({}, state);
+            if (copy.blocks) {
+                copy.blocks = Object.assign({}, copy.blocks);
+            }
+            return copy;
         },
 
         dispatch: function(action) {
@@ -103,7 +118,10 @@
                 return;
             }
 
-            if (Gbn.log) Gbn.log.info('Action Dispatched', { type: action.type, id: action.id });
+            // if (Gbn.log) Gbn.log.info('Action Dispatched', { type: action.type, id: action.id });
+            if (Gbn.log && (action.type === 'UPDATE_BLOCK' || action.type === 'UPDATE_THEME')) {
+                 Gbn.log.info('Store Action', { type: action.type, id: action.id, breakpoint: action.breakpoint });
+            }
             
             var prevState = state;
             state = reducer(state, action);

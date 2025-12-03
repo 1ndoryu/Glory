@@ -18,7 +18,27 @@
     function updateConfigValue(block, path, value) {
         if (!block || !path) { return; }
 
-        // Lógica Responsive: Si no estamos en desktop, usar setResponsiveValue
+        // 1. Delegate to role-specific update handler FIRST
+        // This is critical for Theme Settings which has its own responsive logic
+        var role = block.id === 'page-settings' ? 'pageSettings' : 
+                   block.id === 'theme-settings' ? 'themeSettings' : 
+                   block.role;
+                   
+        if (role && Gbn.ui.renderers[role] && Gbn.ui.renderers[role].handleUpdate) {
+            if (Gbn.log) Gbn.log.info('Delegating update to renderer', { role: role, path: path });
+            var result = Gbn.ui.renderers[role].handleUpdate(block, path, value);
+            if (result === true) {
+                if (Gbn.log) Gbn.log.info('Renderer handled update completely', { role: role });
+                return state.get(block.id); // Return latest state
+            } else if (typeof result === 'object') {
+                if (Gbn.log) Gbn.log.info('Renderer returned updated config', { role: role });
+                return result;
+            }
+        } else {
+             if (Gbn.log && role === 'themeSettings') Gbn.log.warn('Theme Settings Renderer NOT found or has no handleUpdate', { role: role, available: !!(Gbn.ui.renderers[role]) });
+        }
+
+        // 2. Generic Responsive Logic: If not desktop, use setResponsiveValue
         var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
         
         if (breakpoint !== 'desktop' && Gbn.responsive && Gbn.responsive.setResponsiveValue) {
@@ -61,20 +81,7 @@
             return updated;
         }
 
-        // Delegate to role-specific update handler if available
-        var role = block.id === 'page-settings' ? 'pageSettings' : 
-                   block.id === 'theme-settings' ? 'themeSettings' : 
-                   block.role;
-                   
-        if (role && Gbn.ui.renderers[role] && Gbn.ui.renderers[role].handleUpdate) {
-            var result = Gbn.ui.renderers[role].handleUpdate(block, path, value);
-            if (result === true) {
-                // Handled
-            } else if (typeof result === 'object') {
-                return result;
-            }
-        }
-
+        // 3. Generic Desktop Logic
         var current = cloneConfig(block.config);
         var segments = path.split('.');
         var cursor = current;

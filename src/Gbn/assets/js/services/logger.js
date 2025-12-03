@@ -16,7 +16,8 @@
     }
 
     function sendLogs() {
-        if (logQueue.length === 0) return;
+        if (logQueue.length === 0 || isSending) return;
+        isSending = true;
 
         // Take logs from queue
         var batch = logQueue.splice(0, MAX_BATCH_SIZE);
@@ -35,15 +36,15 @@
                     // If failed, put back in queue? Or just drop to avoid loops?
                     // For now, drop but log to console as fallback
                     console.error('Failed to send remote logs', batch);
+                })
+                .always(function() {
+                    isSending = false;
+                    if (logQueue.length > 0) scheduleFlush();
                 });
         } else {
             // Fallback fetch
-            var formData = new FormData();
-            formData.append('action', LOG_ENDPOINT);
-            formData.append('nonce', payload.nonce);
-            // Complex objects in FormData need special handling or JSON stringification if backend expects it
-            // But standard WP ajax expects $_POST. Let's stick to jQuery if possible or simple URL encoded
-            // For simplicity in this environment, assuming jQuery is present as it's a WP theme.
+            // ... (simplified for now, just reset flag)
+            isSending = false;
         }
     }
 
@@ -56,7 +57,15 @@
         }
     }
 
+    var isSending = false;
+    var MAX_QUEUE_SIZE = 1000;
+
     function log(level, message, context) {
+        if (logQueue.length >= MAX_QUEUE_SIZE) {
+            // Drop oldest logs to prevent memory leak
+            logQueue.shift();
+        }
+
         var entry = {
             timestamp: getTimestamp(),
             level: level,

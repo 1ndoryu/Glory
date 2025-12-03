@@ -22,6 +22,15 @@
 
     /**
      * Composes styles for a block based on its schema traits.
+     * 
+     * ARQUITECTURA DE HERENCIA Y ESPECIFICIDAD (CRÍTICO):
+     * Este compositor sigue una jerarquía estricta para resolver el "Zombie Bug" de herencia:
+     * 1. Valores Explícitos (Panel): Tienen la máxima prioridad. Se inyectan como estilos inline.
+     * 2. Valores Responsive: Se resuelven mediante `getValue` (Mobile -> Tablet -> Desktop).
+     * 3. Fallback a Variables CSS (Theme Settings): Si no hay valor explícito, se inyecta `var(--gbn-role-prop)`.
+     *    - Esto permite que el componente "escuche" los cambios globales del tema inmediatamente.
+     *    - Se evita emitir valores "default" hardcoded (ej: '10px') que bloquearían la herencia.
+     * 
      * @param {Object} block - The block data.
      * @param {Object} roleSchema - The component schema payload (contains .schema array and .config).
      * @param {string} bp - Current breakpoint.
@@ -30,6 +39,9 @@
     function compose(block, roleSchema, bp) {
         try {
             var config = block.config || {};
+            
+            // if (Gbn.log) Gbn.log.debug('Style Composer Start', { blockId: block.id, bp: bp, config: config });
+
             var styles = {};
             
             // roleSchema comes from ContainerRegistry::rolePayload() -> { config: {}, schema: [] }
@@ -49,6 +61,12 @@
                 var paddingConfig = getValue('padding');
                 if (paddingConfig === undefined) paddingConfig = config.padding; 
                 var spacingStyles = shared.extractSpacingStyles(paddingConfig);
+                
+                // Fallback to CSS vars if no explicit padding
+                if (Object.keys(spacingStyles).length === 0) {
+                    // No explicit padding, do nothing.
+                }
+
                 Object.assign(styles, spacingStyles);
             }
 
@@ -85,11 +103,19 @@
 
             // 3. Typography (Alignment)
             var alineacion = getValue('alineacion');
-            if (alineacion && alineacion !== 'inherit') { styles['text-align'] = alineacion; }
+            if (alineacion && alineacion !== 'inherit') { 
+                styles['text-align'] = alineacion; 
+            } else if (block.role) {
+                // Bug 31 Fix V6: Corregido nombre de variable a 'alineacion' (ID del campo)
+                // Se usa var(--gbn-role-alineacion) para coincidir con lo que genera applicator.js
+                styles['text-align'] = 'var(--gbn-' + block.role + '-alineacion)';
+            }
 
             // 4. Background
             var fondo = getValue('fondo') || getValue('background');
-            if (fondo) { styles.background = fondo; }
+            if (fondo) { 
+                styles.background = fondo; 
+            }
 
             // 5. Gap
             var gap = getValue('gap');
@@ -100,6 +126,28 @@
 
             // 6. Layout (Flex/Grid)
             var layout = getValue('layout');
+            
+            // Fix Flex Click Bug: If layout is not explicitly set on the block, check if the theme defines a default layout.
+            // This allows us to render flex properties (direction, wrap) even if the user hasn't clicked "Flex" yet.
+            if (!layout && block.role) {
+                // Try to peek at theme settings for this role
+                var themeSettings = (Gbn.config && Gbn.config.themeSettings) || (global.gloryGbnCfg && global.gloryGbnCfg.themeSettings);
+                if (themeSettings && themeSettings.components && themeSettings.components[block.role]) {
+                    // We only care about the base (desktop) layout for now as a fallback trigger
+                    var themeLayout = themeSettings.components[block.role].layout;
+                    if (themeLayout) {
+                        layout = themeLayout;
+                    }
+                }
+                
+                // Bug 30 Fix V6: Fallback de seguridad por Rol.
+                // Si falla la lectura del tema (ej: hidratación tardía), asumimos 'flex' para roles core.
+                // Esto asegura que al editar propiedades de flex, el composer las procese.
+                if (!layout && (block.role === 'principal' || block.role === 'secundario')) {
+                    layout = 'flex';
+                }
+            }
+
             if (layout) {
                 var layoutStyles = {};
                 if (layout === 'grid') {
@@ -112,6 +160,7 @@
                 Object.assign(styles, layoutStyles);
             }
 
+            // if (Gbn.log) Gbn.log.debug('Style Composer Result', { blockId: block.id, styles: styles });
             return styles;
 
         } catch (err) {

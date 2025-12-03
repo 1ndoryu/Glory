@@ -37,6 +37,11 @@
         var utils = Gbn.ui.fieldUtils;
         if (!utils || !utils.getDeepValue) return undefined;
         
+        // Log retrieval attempt for critical properties
+        // if (Gbn.log && (path.indexOf('padding') !== -1 || path.indexOf('layout') !== -1 || path.indexOf('flex') !== -1)) {
+        //      Gbn.log.debug('getResponsiveValue', { blockId: block.id, path: path, bp: breakpoint });
+        // }
+        
         // 0. Manejo especial para Theme Settings (block.role === 'theme')
         if (block.role === 'theme' && path.indexOf('components.') === 0) {
             var parts = path.split('.');
@@ -150,6 +155,29 @@
     function setResponsiveValue(block, path, value, breakpoint) {
         breakpoint = breakpoint || currentBreakpoint;
         
+        // Manejo especial para Theme Settings
+        if (block.role === 'theme' && path.indexOf('components.') === 0) {
+            var parts = path.split('.');
+            if (parts.length >= 3) {
+                var role = parts[1];
+                var subPath = parts.slice(2).join('.');
+                
+                if (!block.config.components) block.config.components = {};
+                if (!block.config.components[role]) block.config.components[role] = {};
+                
+                var targetConfig = block.config.components[role];
+                
+                if (breakpoint === 'desktop') {
+                    setDeepValue(targetConfig, subPath, value);
+                } else {
+                    if (!targetConfig._responsive) targetConfig._responsive = {};
+                    if (!targetConfig._responsive[breakpoint]) targetConfig._responsive[breakpoint] = {};
+                    setDeepValue(targetConfig._responsive[breakpoint], subPath, value);
+                }
+                return;
+            }
+        }
+        
         if (breakpoint === 'desktop') {
             // Desktop es la base, guardar directamente en config
             setDeepValue(block.config, path, value);
@@ -165,6 +193,29 @@
     function clearResponsiveOverride(block, path, breakpoint) {
         breakpoint = breakpoint || currentBreakpoint;
         if (breakpoint === 'desktop') return; // No se puede limpiar el base
+        
+        // Manejo especial para Theme Settings
+        if (block.role === 'theme' && path.indexOf('components.') === 0) {
+            var parts = path.split('.');
+            if (parts.length >= 3) {
+                var role = parts[1];
+                var subPath = parts.slice(2).join('.');
+                
+                if (block.config.components && block.config.components[role]) {
+                    var targetConfig = block.config.components[role];
+                    
+                    if (targetConfig._responsive && targetConfig._responsive[breakpoint]) {
+                        deleteDeepValue(targetConfig._responsive[breakpoint], subPath);
+                        
+                        // Limpiar estructura vacía
+                        if (Object.keys(targetConfig._responsive[breakpoint]).length === 0) {
+                            delete targetConfig._responsive[breakpoint];
+                        }
+                    }
+                }
+                return;
+            }
+        }
         
         if (block.config._responsive && block.config._responsive[breakpoint]) {
             deleteDeepValue(block.config._responsive[breakpoint], path);

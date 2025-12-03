@@ -75,14 +75,14 @@
         return block;
     }
 
-    function updateConfig(id, nextConfig) {
+    function updateConfig(id, nextConfig, breakpoint) {
         // Dispatch update to Store
         if (store) {
             store.dispatch({
                 type: store.Actions.UPDATE_BLOCK,
                 id: id,
                 payload: nextConfig,
-                breakpoint: 'desktop' // Force base update since nextConfig is already fully processed
+                breakpoint: breakpoint || 'desktop' // Use provided breakpoint or default to desktop
             });
             
             // Return updated block from store
