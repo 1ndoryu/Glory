@@ -84,6 +84,7 @@ final class AssetManager
             'area'      => $config['area'] ?? 'frontend',
             'feature'   => $config['feature'] ?? null,
             'defer'     => $config['defer'],
+            'exclude_on' => $config['exclude_on'] ?? [],
         ];
     }
 
@@ -140,7 +141,6 @@ final class AssetManager
                 $cacheContent = '<?php return ' . var_export($discoveredAssets, true) . ';';
                 file_put_contents($cacheFile, $cacheContent, LOCK_EX);
             }
-
         } catch (\Exception $e) {
             GloryLogger::error("AssetManager: Error al iterar la carpeta '{$rutaCompleta}': " . $e->getMessage());
         }
@@ -206,7 +206,7 @@ final class AssetManager
                 //GloryLogger::info('AssetManager: CSS crítico activo; estilos se mantienen síncronos (compatibilidad)');
             }
         } else {
-        // GloryLogger::info('AssetManager: sin CSS crítico para esta vista');
+            // GloryLogger::info('AssetManager: sin CSS crítico para esta vista');
         }
 
         self::enqueueForArea('frontend');
@@ -227,6 +227,14 @@ final class AssetManager
             foreach ($assetsPorTipo as $handle => $config) {
                 if ($config['area'] !== 'both' && $config['area'] !== $currentArea) {
                     continue;
+                }
+
+                // Verificar exclusiones por página
+                if (!empty($config['exclude_on'])) {
+                    $excludedPages = (array) $config['exclude_on'];
+                    if (function_exists('is_page') && is_page($excludedPages)) {
+                        continue;
+                    }
                 }
 
                 // Si el asset declara explícitamente una feature y esta está desactivada, omitirlo.
@@ -332,7 +340,7 @@ final class AssetManager
     {
         self::$modoDesarrolloGlobal = $activado;
     }
-    
+
     public static function isGlobalDevMode(): bool
     {
         return self::$modoDesarrolloGlobal;

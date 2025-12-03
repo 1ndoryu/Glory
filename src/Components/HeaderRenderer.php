@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Renderizador de Cabecera (Header)
  *
@@ -33,6 +34,16 @@ class HeaderRenderer
      */
     public static function render(array $config = []): void
     {
+        // Verificar exclusión explícita por configuración
+        if (!empty($config['exclude_on']) && function_exists('is_page') && is_page($config['exclude_on'])) {
+            return;
+        }
+
+        // Exclusión forzada para el panel de control de GBN
+        if (function_exists('is_page') && is_page('gbn-control-panel')) {
+            return;
+        }
+
         // Valores desde el array de config
         $logoModo    = $config['modoLogo'] ?? (Compatibility::avadaActivo() ? 'default' : 'image');
         $idMenu      = $config['idMenu'] ?? 'mainMenu';
@@ -58,7 +69,7 @@ class HeaderRenderer
             && function_exists('avada_main_menu')
             && (!defined('GLORY_USE_FULL_HEADER') || !GLORY_USE_FULL_HEADER)
             && (!defined('GLORY_HEADER_USE_AVADA_MENU') || GLORY_HEADER_USE_AVADA_MENU);
-        ?>
+?>
         <?php if ($menuActivo) : ?>
             <header class="<?php echo esc_attr(trim($claseHeader)); ?>" role="banner">
                 <div class="siteMenuContainer">
@@ -105,6 +116,6 @@ class HeaderRenderer
 
             </header>
         <?php endif; ?>
-        <?php
+<?php
     }
 }

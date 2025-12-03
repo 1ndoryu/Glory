@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Botón de Cambio de Tema (Dark/Light Mode)
  *
@@ -26,6 +27,11 @@ class ThemeToggle
      */
     public static function render(): string
     {
+        // Exclusión forzada para el panel de control de GBN
+        if (function_exists('is_page') && is_page('gbn-control-panel')) {
+            return '';
+        }
+
         // ID y clases estandarizadas para que JS las encuentre y enlace la funcionalidad.
         $html  = '<button id="themeToggle" class="borde gloryThemeToggle" aria-label="Alternar tema" title="Alternar tema" type="button">';
         $html .= '</button>';

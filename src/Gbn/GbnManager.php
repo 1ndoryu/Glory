@@ -15,13 +15,22 @@ class GbnManager
     public static function bootstrap(): void
     {
         $isActive = method_exists(GloryFeatures::class, 'isActive') ? GloryFeatures::isActive('gbn', 'glory_gbn_activado') : true;
-        if (!$isActive) { return; }
-        if (self::$booted) { return; }
+        if (!$isActive) {
+            return;
+        }
+        if (self::$booted) {
+            return;
+        }
         self::$booted = true;
 
         // Cargar componentes dinámicos
         if (class_exists(\Glory\Gbn\Components\ComponentLoader::class)) {
             \Glory\Gbn\Components\ComponentLoader::load();
+        }
+
+        // Registrar Panel de Control (Diagnóstico)
+        if (class_exists(\Glory\Gbn\Diagnostics\ControlPanelManager::class)) {
+            \Glory\Gbn\Diagnostics\ControlPanelManager::register();
         }
 
         // Registrar endpoints AJAX de GBN en init
@@ -60,7 +69,9 @@ class GbnManager
 
     public static function isBuilderActive(): bool
     {
-        if (isset($_GET['fb-edit'])) { return true; }
+        if (isset($_GET['fb-edit'])) {
+            return true;
+        }
         if (function_exists('fusion_is_builder_frame') && (fusion_is_builder_frame() || function_exists('fusion_is_preview_frame') && fusion_is_preview_frame())) {
             return true;
         }
@@ -69,8 +80,13 @@ class GbnManager
 
     public static function enqueueAssets(): void
     {
-        if (self::isBuilderActive()) { return; }
-        
+        if (self::isBuilderActive()) {
+            return;
+        }
+        if (is_page('gbn-control-panel')) {
+            return;
+        }
+
         // Remove early return for non-editors to allow frontend assets
         // if (!current_user_can('edit_posts')) { return; }
 
@@ -83,7 +99,7 @@ class GbnManager
             'layout'      => 'layout.css',
             'components'  => 'components.css',
             'gbn'         => 'gbn.css',
-            'theme-styles'=> 'theme-styles.css'
+            'theme-styles' => 'theme-styles.css'
         ];
 
         // 2. Builder CSS (Only for editors)
@@ -422,8 +438,12 @@ class GbnManager
         if ($pageId) {
             $savedCfg = get_post_meta($pageId, 'gbn_config', true);
             $savedSty = get_post_meta($pageId, 'gbn_styles', true);
-            if (is_array($savedCfg)) { $presets['config'] = $savedCfg; }
-            if (is_array($savedSty)) { $presets['styles'] = $savedSty; }
+            if (is_array($savedCfg)) {
+                $presets['config'] = $savedCfg;
+            }
+            if (is_array($savedSty)) {
+                $presets['styles'] = $savedSty;
+            }
         }
 
         $localizedData = [
@@ -440,8 +460,8 @@ class GbnManager
             'roleSchemas' => ContainerRegistry::rolePayload(), // Schemas completos para automatización
             'devMode' => self::shouldBustVersion(),
             'presets' => $presets,
-            'contentMode' => method_exists(\Glory\Manager\PageManager::class, 'getModoContenidoParaPagina') && $pageId 
-                ? \Glory\Manager\PageManager::getModoContenidoParaPagina($pageId) 
+            'contentMode' => method_exists(\Glory\Manager\PageManager::class, 'getModoContenidoParaPagina') && $pageId
+                ? \Glory\Manager\PageManager::getModoContenidoParaPagina($pageId)
                 : 'code',
             'themeSettings' => get_option('gbn_theme_settings', []),
             'pageSettings' => $pageId ? get_post_meta($pageId, 'gbn_page_settings', true) : [],
@@ -459,4 +479,3 @@ class GbnManager
 
     // injectEditButtons removed as it is no longer needed
 }
-
