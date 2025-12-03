@@ -217,14 +217,6 @@
                          }
                      } else {
                          // Default handling
-                         // Handle specific overrides if needed (e.g. flex properties mapping)
-                         // But if schema id matches css var suffix, it's automatic.
-                         // Current schema ids: layout, background, gap, width, height, maxAncho...
-                         
-                         // Mapping for legacy property names if they differ from schema id
-                         // (In new schema, ids should match what we want in CSS roughly)
-                         
-                         // Default handling
                          // Convert camelCase ID to kebab-case for CSS variable
                          // e.g. flexDirection -> flex-direction
                          var kebabId = field.id.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
@@ -235,6 +227,11 @@
                          // Special case: fondo -> background
                          if (field.id === 'fondo') varName = prefix + '-background';
                          
+                         // [GBN-DEBUG] Trazar aplicación de variable
+                         if (value !== undefined && value !== null && value !== '') {
+                             console.log('[GBN-DEBUG] Applicator Set:', varName, '=', value);
+                         }
+
                          setOrRemoveValue(varName, value);
                      }
                  });

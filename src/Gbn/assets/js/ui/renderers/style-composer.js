@@ -127,25 +127,31 @@
             // 6. Layout (Flex/Grid)
             var layout = getValue('layout');
             
+            // Definir themeSettings aquí para que esté disponible para el fallback
+            var themeSettings = (Gbn.config && Gbn.config.themeSettings) || (global.gloryGbnCfg && global.gloryGbnCfg.themeSettings);
+
             // Fix Flex Click Bug: If layout is not explicitly set on the block, check if the theme defines a default layout.
             // This allows us to render flex properties (direction, wrap) even if the user hasn't clicked "Flex" yet.
             if (!layout && block.role) {
-                // Try to peek at theme settings for this role
-                var themeSettings = (Gbn.config && Gbn.config.themeSettings) || (global.gloryGbnCfg && global.gloryGbnCfg.themeSettings);
+                // Bug 30 & 32 Fix V7: Fallback inteligente de Layout
+                // 1. Intentar leer del tema (Theme Settings)
+                var themeLayout = null;
                 if (themeSettings && themeSettings.components && themeSettings.components[block.role]) {
-                    // We only care about the base (desktop) layout for now as a fallback trigger
-                    var themeLayout = themeSettings.components[block.role].layout;
-                    if (themeLayout) {
-                        layout = themeLayout;
-                    }
+                    themeLayout = themeSettings.components[block.role].layout;
                 }
-                
-                // Bug 30 Fix V6: Fallback de seguridad por Rol.
-                // Si falla la lectura del tema (ej: hidratación tardía), asumimos 'flex' para roles core.
-                // Esto asegura que al editar propiedades de flex, el composer las procese.
-                if (!layout && (block.role === 'principal' || block.role === 'secundario')) {
+
+                if (themeLayout) {
+                    // Si el tema tiene un layout definido (flex o grid), lo usamos.
+                    layout = themeLayout;
+                    console.log('[GBN-DEBUG] Composer Layout Decision: Theme Fallback ->', layout, 'Role:', block.role);
+                } else if (block.role === 'principal' || block.role === 'secundario') {
+                    // Fallback final de seguridad: Si no hay nada, asumimos 'flex' para roles core
+                    // para asegurar que las propiedades de flex sean editables.
                     layout = 'flex';
+                    console.log('[GBN-DEBUG] Composer Layout Decision: Security Fallback -> flex Role:', block.role);
                 }
+            } else {
+                 console.log('[GBN-DEBUG] Composer Layout Decision: Local Config ->', layout, 'Role:', block.role);
             }
 
             if (layout) {

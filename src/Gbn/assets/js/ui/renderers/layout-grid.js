@@ -21,6 +21,9 @@
         if (gridColumns) {
             styles['grid-template-columns'] = 'repeat(' + gridColumns + ', 1fr)';
         } else if (prefix) {
+            // [GBN-DEBUG] Trazar lectura de fallback Grid
+            console.log('[GBN-DEBUG] Grid Fallback:', prefix + 'grid-columns');
+            
             // Fallback a variable del tema. 
             // Bug 32 Fix V6: Intentamos con el ID exacto 'gridColumns' y su versión kebab 'grid-columns'
             styles['grid-template-columns'] = 'repeat(var(' + prefix + 'grid-columns, var(' + prefix + 'gridColumns, 1)), 1fr)';
