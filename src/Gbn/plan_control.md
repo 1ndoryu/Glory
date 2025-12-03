@@ -129,16 +129,16 @@ La página recibirá un objeto JSON masivo (`gloryGbnSystemMap`) inyectado por P
 
 **Objetivo:** Cruzar los datos del esquema con las variables CSS y valores defaults.
 
--   [ ] **3.1 Tabla de Variables CSS:**
+-   [x] **3.1 Tabla de Variables CSS:**
     -   Para cada campo del componente, generar dinámicamente el nombre de la variable CSS esperada (ej: `padding` → `--gbn-principal-padding-top`).
     -   Mostrar columnas: **Campo**, **Variable CSS**, **Valor Esperado (Schema)**, **Valor Real (DB)**.
--   [ ] **3.2 Auditoría de Defaults:**
+-   [x] **3.2 Auditoría de Defaults:**
     -   Comparar `ContainerRegistry::rolePayload()` (Schemas PHP) vs `get_option('gbn_theme_settings')` (Valores guardados).
     -   Resaltar campos con valores **divergentes** (valor en DB ≠ default del schema).
--   [ ] **3.3 Visualizador de Herencia:**
+-   [x] **3.3 Visualizador de Herencia:**
     -   Gráfico de cascada que muestre: `Configuración Local > Theme Settings > CSS Base`.
     -   Indicador visual de qué nivel está "ganando" para cada propiedad.
--   [ ] **3.4 Estadísticas de Rendimiento:**
+-   [x] **3.4 Estadísticas de Rendimiento:**
     -   **Número total de componentes** registrados en `ContainerRegistry`.
     -   **Tamaño del payload** `gloryGbnCfg` (en KB) para detectar payloads excesivamente grandes.
     -   **Gráfico de "Campos por Componente"** (detectar componentes sobrecargados que ralentizan el panel).
@@ -148,17 +148,17 @@ La página recibirá un objeto JSON masivo (`gloryGbnSystemMap`) inyectado por P
 
 **Objetivo:** Detectar inconsistencias entre PHP, JS y DB sin depender del DOM.
 
--   [ ] **4.1 Comparador de Esquemas:**
+-   [x] **4.1 Comparador de Esquemas:**
     -   Comparar `ContainerRegistry::rolePayload()` (Backend PHP) vs `gloryGbnCfg.roleSchemas` (Frontend JS).
     -   Detectar campos que existen en el schema PHP pero no se inyectaron en JS (problema de serialización).
--   [ ] **4.2 Detector de Campos Huérfanos:**
+-   [x] **4.2 Detector de Campos Huérfanos:**
     -   Buscar propiedades en `gbn_theme_settings` (DB) que ya no existen en ningún schema registrado.
     -   Mostrar lista de "Campos obsoletos" que pueden eliminarse de forma segura.
--   [ ] **4.3 Validador de Tipos de Datos:**
+-   [x] **4.3 Validador de Tipos de Datos:**
     -   Para cada campo, verificar que el tipo guardado en DB coincida con el esperado en el schema.
     -   Ejemplo: Schema espera `slider` (int), pero DB tiene `"20px"` (string con unidad).
     -   Marcar en **ROJO** si hay discrepancia crítica.
--   [ ] **4.4 Reporte de Salud del Sistema:**
+-   [x] **4.4 Reporte de Salud del Sistema:**
     -   Dashboard con scoring: **Verde** (0 errores), **Amarillo** (warnings), **Rojo** (errores críticos).
     -   Exportar reporte en formato JSON para compartir en debugging.
 

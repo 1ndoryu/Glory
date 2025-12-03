@@ -9,25 +9,6 @@
     var currentTarget = null;
     var insertPosition = 'append'; // 'append', 'after'
 
-    var COMPONENT_TEMPLATES = {
-        section: {
-            label: 'Sección (divPrincipal)',
-            role: 'principal',
-            html: '<div gloryDiv class="divPrincipal"><div gloryDivSecundario class="divSecundario"></div></div>'
-        },
-        container: {
-            label: 'Contenedor (divSecundario)',
-            role: 'secundario',
-            html: '<div gloryDivSecundario class="divSecundario"></div>'
-        },
-
-        text: {
-            label: 'Texto (gloryTexto)',
-            role: 'text',
-            html: '<div gloryTexto="p" opciones="texto: \'Nuevo texto\'">Nuevo texto</div>'
-        }
-    };
-
     function createModal() {
         if (modal) return modal;
 
@@ -58,16 +39,25 @@
         var grid = modal.querySelector('#gbn-library-grid');
         grid.innerHTML = '';
 
-        Object.keys(COMPONENT_TEMPLATES).forEach(function (key) {
-            var tpl = COMPONENT_TEMPLATES[key];
+        var config = utils.getConfig();
+        var components = config.containers || {};
+
+        Object.keys(components).forEach(function (key) {
+            var comp = components[key];
             // Filtrar según contexto
-            if (allowedRoles && allowedRoles.length > 0 && allowedRoles.indexOf(tpl.role) === -1) {
+            if (allowedRoles && allowedRoles.length > 0 && allowedRoles.indexOf(comp.role) === -1) {
                 return;
             }
 
             var item = document.createElement('div');
             item.className = 'gbn-library-item';
-            item.textContent = tpl.label;
+            
+            var iconHtml = comp.icon || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>';
+            
+            item.innerHTML = 
+                '<div class="gbn-library-icon">' + iconHtml + '</div>' +
+                '<div class="gbn-library-label">' + (comp.label || comp.role) + '</div>';
+                
             item.addEventListener('click', function () {
                 insertComponent(key);
             });
@@ -76,11 +66,20 @@
     }
 
     function insertComponent(key) {
-        var tpl = COMPONENT_TEMPLATES[key];
-        if (!tpl || !currentTarget) return;
+        var config = utils.getConfig();
+        var components = config.containers || {};
+        var comp = components[key];
+        
+        if (!comp || !currentTarget) return;
+
+        var html = comp.template;
+        if (!html) {
+            utils.error('Library: No template for component ' + key);
+            return;
+        }
 
         var temp = document.createElement('div');
-        temp.innerHTML = tpl.html;
+        temp.innerHTML = html;
         var newEl = temp.firstElementChild;
 
         if (insertPosition === 'append') {
@@ -90,28 +89,14 @@
         }
 
         // Escanear e hidratar el nuevo bloque
-        // content.scan devuelve un array de bloques
         var newBlocks = content.scan(newEl.parentNode); 
-        // Nota: scan escanea todo el padre, así que puede devolver bloques ya existentes.
-        // Pero hydrate es idempotente si se maneja bien.
-        // Sin embargo, queremos identificar SOLO los nuevos para el evento.
-        // Una mejor estrategia es escanear solo el nuevo elemento si es posible, 
-        // pero scan suele requerir contexto.
-        // Dado que scan devuelve TODOS los bloques encontrados en el root pasado,
-        // podemos filtrar los que correspondan a newEl o sus hijos.
-        
-        // Simplificación: scan devuelve todos. Hydrate los registra.
-        // Vamos a recoger los IDs de los bloques que corresponden a newEl y sus descendientes.
-        
-        var hydrationResult = content.hydrate(newBlocks); // Asumimos que hydrate devuelve algo o actualiza state
+        var hydrationResult = content.hydrate(newBlocks);
         
         // Buscar los bloques recién creados.
-        // Podemos usar state.getByElement(newEl)
         var createdBlock = Gbn.state.getByElement(newEl);
         var createdIds = [];
         if (createdBlock) {
             createdIds.push(createdBlock.id);
-            // Si tiene hijos, también.
             var descendants = newEl.querySelectorAll('[data-gbn-role]');
             descendants.forEach(function(child) {
                 var childBlock = Gbn.state.getByElement(child);

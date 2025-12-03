@@ -1,4 +1,5 @@
 <?php
+
 namespace Glory\Gbn\Components\Principal;
 
 use Glory\Gbn\Components\AbstractComponent;
@@ -8,20 +9,23 @@ use Glory\Gbn\Traits\HasFlexbox;
 use Glory\Gbn\Traits\HasGrid;
 use Glory\Gbn\Traits\HasSpacing;
 
-class PrincipalComponent extends AbstractComponent {
+class PrincipalComponent extends AbstractComponent
+{
     use HasFlexbox, HasGrid, HasSpacing;
 
     protected string $id = 'principal';
     protected string $label = 'Contenedor Principal';
 
-    public function getSelector(): array {
+    public function getSelector(): array
+    {
         return [
             'attribute' => 'gloryDiv',
             'dataAttribute' => 'data-gbnPrincipal',
         ];
     }
 
-    public function getDefaults(): array {
+    public function getDefaults(): array
+    {
         return [
             'layout' => 'flex',
             'flexDirection' => 'row',
@@ -32,7 +36,8 @@ class PrincipalComponent extends AbstractComponent {
         ];
     }
 
-    public function getSchema(): array {
+    public function getSchema(): array
+    {
         $schema = SchemaBuilder::create();
 
         // 1. Altura
@@ -89,9 +94,9 @@ class PrincipalComponent extends AbstractComponent {
         // Pero gap tiene condicion ['layout', 'flex']. Si layout está después, ¿cómo funciona la condición inicial?
         // Probablemente el JS maneja la reactividad sin importar el orden.
         // Usaré el trait HasFlexbox que pone layout primero, lo cual tiene más sentido lógico (definir layout antes de sus opciones).
-        
+
         foreach ($this->getFlexboxOptions() as $option) {
-             $schema->addOption($option);
+            $schema->addOption($option);
         }
 
         // 7. Grid (from Trait)
@@ -100,5 +105,15 @@ class PrincipalComponent extends AbstractComponent {
         }
 
         return $schema->toArray();
+    }
+
+    public function getIcon(): string
+    {
+        return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line></svg>';
+    }
+
+    public function getTemplate(): string
+    {
+        return '<div gloryDiv class="divPrincipal"><div gloryDivSecundario class="divSecundario"></div></div>';
     }
 }

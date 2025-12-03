@@ -71,10 +71,10 @@
                     allowed = ['secundario'];
                 } else if (block.role === 'secundario') {
                     position = 'append';
-                    allowed = ['content', 'term_list', 'image'];
+                    allowed = ['secundario', 'text', 'image', 'button'];
                 } else {
                     position = 'after';
-                    allowed = ['content', 'term_list', 'image'];
+                    allowed = ['secundario', 'text', 'image', 'button'];
                 }
                 
                 Gbn.ui.library.open(block.element, position, allowed);

@@ -17,36 +17,27 @@ class DiagnosticsHandler
 
         $componentFilter = isset($_REQUEST['component']) ? sanitize_text_field($_REQUEST['component']) : null;
 
-        // Recopilar datos del sistema
-        $registry = ContainerRegistry::all();
-        $schemas = ContainerRegistry::rolePayload();
-        $traits = \Glory\Gbn\Diagnostics\SystemMapper::getTraitMap();
+        // Usar SystemMapper para obtener el snapshot base
+        $data = \Glory\Gbn\Diagnostics\SystemMapper::dump();
 
         // Filtrar si se solicita un componente específico
         if ($componentFilter) {
-            if (isset($registry[$componentFilter])) {
-                $registry = [$componentFilter => $registry[$componentFilter]];
-                // Filtrar schemas (la estructura es ['role' => ...])
-                $schemas = isset($schemas[$componentFilter]) ? [$componentFilter => $schemas[$componentFilter]] : [];
-                // Filtrar traits
-                $traits = isset($traits[$componentFilter]) ? [$componentFilter => $traits[$componentFilter]] : [];
+            if (isset($data['components'][$componentFilter])) {
+                $data['components'] = [$componentFilter => $data['components'][$componentFilter]];
+                $data['payload']['schemas'] = isset($data['payload']['schemas'][$componentFilter])
+                    ? [$componentFilter => $data['payload']['schemas'][$componentFilter]]
+                    : [];
+                $data['traits'] = isset($data['traits'][$componentFilter])
+                    ? [$componentFilter => $data['traits'][$componentFilter]]
+                    : [];
             } else {
                 wp_send_json_error(['message' => "Componente '{$componentFilter}' no encontrado"]);
             }
         }
 
-        $data = [
-            'components' => $registry,
-            'themeSettings' => get_option('gbn_theme_settings', []),
-            'traits' => $traits,
-            'payload' => [
-                'schemas' => $schemas
-            ],
-            'timestamp' => current_time('mysql'),
-            'version' => wp_get_theme()->get('Version'),
-            'php_version' => phpversion(),
-            'memory_limit' => ini_get('memory_limit'),
-        ];
+        // Agregar datos de entorno adicionales
+        $data['php_version'] = phpversion();
+        $data['memory_limit'] = ini_get('memory_limit');
 
         wp_send_json_success($data);
     }
@@ -88,7 +79,7 @@ class DiagnosticsHandler
                     // Create map of valid field IDs
                     $validFields = [];
                     foreach ($roleSchema as $field) {
-                        if (isset($field['id'])) $validFields[$field['id']] = true;
+                        if (isset($field['id'])) $validFields[$field['id']] = $field;
                     }
 
                     foreach ($settings as $key => $val) {

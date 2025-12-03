@@ -273,20 +273,30 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 
 ### 6.1 Integración Profunda con API de Diagnóstico
 **Regla:** Antes de registrar cualquier *nuevo* componente, el sistema debe validar su integridad usando la API de Diagnóstico.
-- [ ] **Validación Automática de Componentes:**
+- [x] **Validación Automática de Componentes:**
     -   Crear un hook o script que, al detectar un nuevo componente registrado en PHP, consulte `gbn_diagnostics_validate`.
     -   Si la API devuelve errores (ej: falta selector, schema inválido), el componente debe marcarse como "Inestable" o no cargarse en el UI.
     -   **Actualizar `reglas.md`:** Añadir regla explícita sobre esta validación obligatoria.
 
 ### 6.2 Refactorización de la Biblioteca de Componentes (UI/UX)
 **Problema Actual:** El modal de "Añadir bloque" es legacy, solo muestra `divSecundario` y carece de jerarquía visual.
-- [ ] **Nueva Lógica de Inserción:**
+- [x] **Nueva Lógica de Inserción:**
     -   **Contexto Inteligente:**
         -   Si el usuario está en la raíz -> Mostrar solo Contenedores Principales (Div Principal).
         -   Si está dentro de un Div Principal -> Mostrar Contenedores Secundarios (Div Secundario).
         -   Si está dentro de un Div Secundario -> Mostrar Componentes Atómicos (Texto, Botón, Imagen) Y Divs Secundarios anidados.
     -   **Iconografía:** Todos los componentes deben tener iconos SVG representativos y minimalistas.
     -   **Carga Dinámica:** La lista de componentes disponibles debe poblarse automáticamente leyendo `gloryGbnCfg.components` (filtrando por rol/tipo), sin hardcodear nada en JS.
+
+### 6.2.1 Hotfix Críticos (UX y Persistencia)
+**Problema Crítico:** Los cambios no perduran al recargar y falta una forma intuitiva de agregar contenedores principales.
+- [ ] **Persistencia de Nuevos Bloques:**
+    -   Diagnosticar por qué `content.hydrate` o el evento `gbn:contentHydrated` no están actualizando el `state` correctamente para ser recogidos por `persistence.js`.
+    -   Asegurar que al agregar un bloque, el botón "Guardar" se habilite y el payload incluya los nuevos IDs.
+- [ ] **Inserción de Contenedores Principales (Root UX):**
+    -   Implementar "Zonas de Inserción" o botones flotantes "+" que aparezcan al hacer hover en los bordes superior/inferior de los bloques principales existentes.
+    -   Si no hay bloques, mostrar un botón "Agregar Sección" visible.
+    -   Permitir insertar un `divPrincipal` antes o después del bloque actual.
 
 ### 6.3 Mejoras en Componentes Base
 **Objetivo:** Estandarizar capacidades de estilo en todos los componentes.

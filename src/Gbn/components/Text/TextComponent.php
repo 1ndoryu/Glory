@@ -1,22 +1,26 @@
 <?php
+
 namespace Glory\Gbn\Components\Text;
 
 use Glory\Gbn\Components\AbstractComponent;
 use Glory\Gbn\Schema\SchemaBuilder;
 use Glory\Gbn\Schema\Option;
 
-class TextComponent extends AbstractComponent {
+class TextComponent extends AbstractComponent
+{
     protected string $id = 'text';
     protected string $label = 'Texto';
 
-    public function getSelector(): array {
+    public function getSelector(): array
+    {
         return [
             'attribute' => 'gloryTexto',
             'dataAttribute' => 'data-gbn-text',
         ];
     }
 
-    public function getDefaults(): array {
+    public function getDefaults(): array
+    {
         return [
             'tag' => 'p',
             'texto' => 'Nuevo texto',
@@ -26,7 +30,8 @@ class TextComponent extends AbstractComponent {
         ];
     }
 
-    public function getSchema(): array {
+    public function getSchema(): array
+    {
         return SchemaBuilder::create()
             ->addOption(
                 Option::select('tag', 'Etiqueta HTML')
@@ -55,5 +60,15 @@ class TextComponent extends AbstractComponent {
             )
             ->addOption(Option::color('color', 'Color'))
             ->toArray();
+    }
+
+    public function getIcon(): string
+    {
+        return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>';
+    }
+
+    public function getTemplate(): string
+    {
+        return '<div gloryTexto="p" opciones="texto: \'Nuevo texto\'">Nuevo texto</div>';
     }
 }

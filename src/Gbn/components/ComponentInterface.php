@@ -1,10 +1,12 @@
 <?php
+
 namespace Glory\Gbn\Components;
 
 /**
  * Interfaz que deben implementar todos los componentes de GBN.
  */
-interface ComponentInterface {
+interface ComponentInterface
+{
     /**
      * Obtiene el ID único del componente (ej. 'principal', 'secundario').
      * @return string
@@ -40,4 +42,16 @@ interface ComponentInterface {
      * @return array ['scripts' => [], 'styles' => []]
      */
     public function getAssets(): array;
+
+    /**
+     * Retorna el icono SVG del componente.
+     * @return string
+     */
+    public function getIcon(): string;
+
+    /**
+     * Retorna el HTML template para insertar el componente.
+     * @return string
+     */
+    public function getTemplate(): string;
 }

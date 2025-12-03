@@ -66,6 +66,9 @@ final class ContainerRegistry
         $defaults = self::resolveDefaults($definition);
         $payload = [
             'role' => $role,
+            'label' => $definition['label'] ?? $role,
+            'icon' => $definition['icon'] ?? '',
+            'template' => $definition['template'] ?? '',
             'selector' => $definition['selector'] ?? [],
             'config' => $defaults['config'],
             'schema' => $defaults['schema'],
@@ -157,5 +160,3 @@ final class ContainerRegistry
         return $payload;
     }
 }
-
-

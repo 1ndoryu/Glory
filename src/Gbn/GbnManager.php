@@ -230,6 +230,10 @@ class GbnManager
                 'file' => '/js/services/style-generator.js',
                 'deps' => ['glory-gbn-services'],
             ],
+            'glory-gbn-diagnostics' => [
+                'file' => '/js/services/diagnostics.js',
+                'deps' => ['glory-gbn-services'],
+            ],
             // Panel Fields - Módulos refactorizados
             'glory-gbn-ui-fields-registry' => [
                 'file' => '/js/ui/panel-fields/registry.js',
