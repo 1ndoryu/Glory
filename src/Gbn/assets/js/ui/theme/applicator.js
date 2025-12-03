@@ -226,13 +226,21 @@
                          if (field.id === 'maxAncho') varName = prefix + '-max-width';
                          // Special case: fondo -> background
                          if (field.id === 'fondo') varName = prefix + '-background';
+                         // Special case: layout -> display
+                         if (field.id === 'layout') varName = prefix + '-display';
+                         // Special case: gridColumns -> grid-columns
+                         if (field.id === 'gridColumns') varName = prefix + '-grid-columns';
                          
-                         // [GBN-DEBUG] Trazar aplicación de variable
-                         if (value !== undefined && value !== null && value !== '') {
-                             console.log('[GBN-DEBUG] Applicator Set:', varName, '=', value);
+                         // Fix Bug 32: Grid Columns Unit Issue
+                         // `gridColumns` must be a unitless integer to work correctly in `repeat(N, 1fr)`.
+                         // The standard `setOrRemoveValue` helper (and `toCssValue`) automatically appends 'px' 
+                         // to numbers, which results in invalid CSS like `repeat(2px, 1fr)`.
+                         // Therefore, we bypass the unit conversion for this specific field.
+                         if (field.id === 'gridColumns') {
+                             setOrRemove(varName, value);
+                         } else {
+                             setOrRemoveValue(varName, value);
                          }
-
-                         setOrRemoveValue(varName, value);
                      }
                  });
                  

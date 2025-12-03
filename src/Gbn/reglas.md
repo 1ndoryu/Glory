@@ -31,6 +31,7 @@ El backend (PHP) actúa como el cerebro del sistema, gestionando la carga de rec
     - **Localización**: Inyecta el objeto global `gloryGbnCfg` en JS con datos vitales: `nonce`, `pageId`, `isEditor`, `themeSettings`, y `roleSchemas` (generados desde `ContainerRegistry`).
 - **`GbnAjaxHandler.php`**: Proxy que delega el registro de endpoints AJAX a `Registrar`.
 - **`Logger.php`**: Sistema de logs dedicado (`gbn.log`) para depuración interna.
+- **`GbnFeatures.php`**: Control de activación de características experimentales.
 
 #### Sistema de Componentes (`src/Gbn/Components/`, `Schema/` y `Traits/`)
 - **`ComponentLoader.php`**: **Nuevo Núcleo**. Escanea y registra automáticamente las clases de componentes que implementan `ComponentInterface`.
@@ -64,14 +65,18 @@ El frontend (JS) es una aplicación reactiva que manipula el DOM directamente, s
 
 #### Core (`assets/js/core/`)
 - **`utils.js`**: Utilidades generales (helpers, debounce, deepClone) y acceso global a configuración.
-- **`state.js`**: **Store Central**. Mantiene el registro (`registry`) de bloques activos y el índice (`elementsIndex`) para acceso O(1). Gestiona la "verdad única" en memoria.
+- **`utils.js`**: Utilidades generales (helpers, debounce, deepClone) y acceso global a configuración.
+- **`state.js`**: **Store Central (Redux-lite)**. Mantiene el registro (`registry`) de bloques activos y el índice (`elementsIndex`) para acceso O(1). Gestiona la "verdad única" en memoria mediante `dispatch`, `actions` y `subscribers`.
+- **`store-subscriber.js`**: Conecta el Store con el DOM. Escucha cambios de estado y dispara actualizaciones visuales.
 
 #### Servicios (`assets/js/services/`)
 - **`content.js`**: Facade principal. Expone la API pública `Gbn.content`.
 - **`css-sync.js`**: Sincronización de estilos. Genera CSS dinámico en tiempo real.
 - **`persistence.js`**: Recolecta el estado del DOM (`collectBlocksPayload`) y lo envía al backend.
 - **`responsive.js`**: Gestiona breakpoints, herencia de valores y simulación de viewport.
+- **`responsive.js`**: Gestiona breakpoints, herencia de valores y simulación de viewport.
 - **`style-generator.js`**: Genera cadenas de CSS estático para guardar en la base de datos.
+- **`logger.js`**: **Remote Logger**. Servicio de diagnóstico que envía logs al servidor (Desactivado por defecto `ENABLED=false`).
 - **`content/`**:
     - **`builder.js`**: Construye nuevos bloques HTML desde esquemas JSON.
     - **`config.js`**: Motor de configuración. Parsea opciones y sincroniza estilos inline.
@@ -89,7 +94,9 @@ El frontend (JS) es una aplicación reactiva que manipula el DOM directamente, s
 - **`drag-drop.js`**: Sistema de arrastrar y soltar bloques.
 - **`library.js`**: Gestión de la biblioteca de componentes reutilizables.
 - **`dock.js`**: Barra de herramientas flotante o acoplada.
+- **`dock.js`**: Barra de herramientas flotante o acoplada.
 - **`inspector.js`**: Inspector visual de elementos (hover, selección).
+- **`overlay.js`**: **Debug Overlay**. Panel flotante (`Ctrl+Alt+D`) para inspección profunda de estado y estilos computados.
 - **`theme/`**:
     - **`applicator.js`**: Aplica configuraciones globales al DOM (Variables CSS).
     - **`render.js`**: Renderiza el panel de configuración del tema.
@@ -101,7 +108,7 @@ El frontend (JS) es una aplicación reactiva que manipula el DOM directamente, s
     - `sync.js`: Lógica de sincronización bidireccional UI <-> Estado.
     - Módulos de campos: `color.js`, `fraction.js`, `header.js`, `icon-group.js`, `rich-text.js`, `select.js`, `slider.js`, `spacing.js`, `text.js`, `toggle.js`, `typography.js`.
 - **`renderers/`**: **Renderizadores de Bloques**.
-    - `style-composer.js`: **Nuevo Compositor (DRY)**. Genera estilos CSS centralizados basados en traits del esquema.
+    - `style-composer.js`: **Pure Style Composer (DRY)**. Función pura `(config, schema) => css` que genera estilos centralizados. No tiene efectos secundarios.
     - `shared.js`: Utilidades compartidas (`extractSpacingStyles`, `parseFraction`, `getResponsiveValue`, `cloneConfig`).
     - `layout-flex.js`: Lógica de estilos para layout Flexbox.
     - `layout-grid.js`: Lógica de estilos para layout Grid.

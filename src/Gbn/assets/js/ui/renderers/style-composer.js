@@ -131,27 +131,49 @@
             var themeSettings = (Gbn.config && Gbn.config.themeSettings) || (global.gloryGbnCfg && global.gloryGbnCfg.themeSettings);
 
             // Fix Flex Click Bug: If layout is not explicitly set on the block, check if the theme defines a default layout.
-            // This allows us to render flex properties (direction, wrap) even if the user hasn't clicked "Flex" yet.
-            if (!layout && block.role) {
-                // Bug 30 & 32 Fix V7: Fallback inteligente de Layout
-                // 1. Intentar leer del tema (Theme Settings)
-                var themeLayout = null;
-                if (themeSettings && themeSettings.components && themeSettings.components[block.role]) {
-                    themeLayout = themeSettings.components[block.role].layout;
-                }
+            // [GBN-ARCH-FIX V10] HYBRID LAYOUT STRATEGY (The "Implicit" Mode)
+            // Resolves conflict between Bug 27 (Flex options need processing) and Bug 32 (Grid needs CSS var control).
+            // Logic:
+            // 1. If no local layout, check Theme Settings.
+            // 2. If Theme has layout, use it to calculate child props (justify, align, gap).
+            // 3. BUT mark it as 'isImplicit'.
+            // 4. If 'isImplicit', DELETE 'display' property from result. Let CSS Base handle 'display'.
+            
+            var isImplicit = false;
+            
+            // [GBN-FIX V11] Smart Layout Detection
+            // If the user has customized specific layout properties (like wrap or columns),
+            // we must infer the layout type and FORCE it explicitly (isImplicit = false).
+            // This ensures that local customizations always work, even if they contradict the theme default.
+            
+            // Check for local Flex overrides
+            var hasFlexOverride = config.direction || config.wrap || config.justify || config.align || 
+                                  config.flexDirection || config.flexWrap || config.flexJustify || config.flexAlign;
+                                  
+            // Check for local Grid overrides
+            var hasGridOverride = config.gridColumns || config.gridRows || config.gridGap;
 
-                if (themeLayout) {
-                    // Si el tema tiene un layout definido (flex o grid), lo usamos.
-                    layout = themeLayout;
-                    console.log('[GBN-DEBUG] Composer Layout Decision: Theme Fallback ->', layout, 'Role:', block.role);
-                } else if (block.role === 'principal' || block.role === 'secundario') {
-                    // Fallback final de seguridad: Si no hay nada, asumimos 'flex' para roles core
-                    // para asegurar que las propiedades de flex sean editables.
+            if (!layout && block.role) {
+                if (hasFlexOverride) {
                     layout = 'flex';
-                    console.log('[GBN-DEBUG] Composer Layout Decision: Security Fallback -> flex Role:', block.role);
+                    isImplicit = false; // Force explicit display:flex
+                    // console.log('[GBN-DEBUG] Composer: Auto-detected Flex from overrides');
+                } else if (hasGridOverride) {
+                    layout = 'grid';
+                    isImplicit = false; // Force explicit display:grid
+                    // console.log('[GBN-DEBUG] Composer: Auto-detected Grid from overrides');
+                } else {
+                    // No local overrides, fallback to Theme
+                    var themeLayout = null;
+                    if (themeSettings && themeSettings.components && themeSettings.components[block.role]) {
+                        themeLayout = themeSettings.components[block.role].layout;
+                    }
+
+                    if (themeLayout) {
+                        layout = themeLayout;
+                        isImplicit = true; // Pure theme inheritance, let CSS vars handle display
+                    }
                 }
-            } else {
-                 console.log('[GBN-DEBUG] Composer Layout Decision: Local Config ->', layout, 'Role:', block.role);
             }
 
             if (layout) {
@@ -159,10 +181,19 @@
                 if (layout === 'grid') {
                     layoutStyles = layoutGrid(block, bp);
                 } else if (layout === 'flex') {
+                    // console.log('[GBN-DEBUG] Composer: Applying Flex Layout', { blockId: block.id, bp: bp });
                     layoutStyles = layoutFlex(block, bp);
                 } else if (layout === 'block') {
                     layoutStyles.display = 'block';
                 }
+                
+                // [GBN-FIX V10] Critical: If layout comes from theme (Implicit), DO NOT inline 'display'.
+                // This lets CSS variables control the display mode (switching Flex/Grid instantly),
+                // while still applying the calculated child properties (justify, gap, etc.) inline.
+                if (isImplicit && layoutStyles.display) {
+                    delete layoutStyles.display;
+                }
+                
                 Object.assign(styles, layoutStyles);
             }
 

@@ -89,7 +89,7 @@
    Consumes Theme Variables (Level 3) to apply defaults.
 */
 
-:where([gloryDiv]), :where([data-gbn-role="principal"]) {
+:where([gloryDiv]), [data-gbn-role="principal"] {
     /* Layout & Flex Defaults */
     display: var(--gbn-principal-display, flex);
     flex-direction: var(--gbn-principal-flex-direction, row);
@@ -97,6 +97,7 @@
     justify-content: var(--gbn-principal-justify-content, flex-start);
     align-items: var(--gbn-principal-align-items, stretch);
     gap: var(--gbn-principal-gap, 0px);
+    grid-template-columns: repeat(var(--gbn-principal-grid-columns, 1), 1fr);
 
     /* Spacing & Sizing */
     padding-top: var(--gbn-principal-padding-top, 0px);
@@ -113,7 +114,7 @@
     margin-right: auto;
 }
 
-:where([gloryDivSecundario]), :where([data-gbn-role="secundario"]) {
+:where([gloryDivSecundario]), [data-gbn-role="secundario"] {
     /* Layout & Flex Defaults */
     display: var(--gbn-secundario-display, flex);
     flex-direction: var(--gbn-secundario-flex-direction, column);
@@ -121,6 +122,7 @@
     justify-content: var(--gbn-secundario-justify-content, flex-start);
     align-items: var(--gbn-secundario-align-items, stretch);
     gap: var(--gbn-secundario-gap, 0px);
+    grid-template-columns: repeat(var(--gbn-secundario-grid-columns, 1), 1fr);
 
     /* Spacing & Sizing */
     width: var(--gbn-secundario-width, 100%);

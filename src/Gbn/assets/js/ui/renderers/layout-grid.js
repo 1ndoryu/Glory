@@ -26,7 +26,9 @@
             
             // Fallback a variable del tema. 
             // Bug 32 Fix V6: Intentamos con el ID exacto 'gridColumns' y su versión kebab 'grid-columns'
-            styles['grid-template-columns'] = 'repeat(var(' + prefix + 'grid-columns, var(' + prefix + 'gridColumns, 1)), 1fr)';
+            var tpl = 'repeat(var(' + prefix + 'grid-columns, var(' + prefix + 'gridColumns, 1)), 1fr)';
+            console.log('[GBN-DEBUG] Grid Fallback Template:', tpl);
+            styles['grid-template-columns'] = tpl;
         }
         
         var gridRows = get(block, 'gridRows', bp);

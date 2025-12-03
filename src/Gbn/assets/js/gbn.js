@@ -21,7 +21,7 @@
 
     utils.debug('Iniciando GBN modular');
     if (Gbn.log) Gbn.log.info('GBN Initialized', { version: config.version || 'unknown' });
-    console.log('[GBN-DEBUG] GBN Main Init');
+    // console.log('[GBN-DEBUG] GBN Main Init');
 
     var content = Gbn.content;
     var inspector = Gbn.ui && Gbn.ui.inspector;

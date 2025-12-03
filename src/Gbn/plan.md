@@ -115,22 +115,18 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 - [x] **Bug 31: Alineación de Contenido (SOLUCIONADO)**
     -   **Estado:** COMPLETADO (V6.1).
 
-- [ ] **Bug 32: Grid Defaults (PERSISTE)**
-    -   **Estado:** FALLIDO (V7.1).
-    -   **Análisis Logs:** `applicator.js` escribe `--gbn-principal-grid-columns = 2`. `layout-grid.js` lee el fallback.
-    -   **Síntoma:** El cambio de variable ocurre (logs lo confirman), pero el layout visual no cambia en elementos "sucios" o con clases.
-    -   **Hipótesis V8:** Conflicto de especificidad. Es posible que el elemento tenga `display: flex` definido en una regla CSS con `!important` o alta especificidad que gana al `display: grid` que intenta aplicar el composer (o el composer no está aplicando `display: grid` porque cree que ya lo tiene).
-    -   **Acción V8:** Verificar qué `display` está ganando en el navegador.
+- [x] **Bug 32 & 27: Grid/Flex Conflict (SOLUCIONADO)**
+    -   **Estado:** COMPLETADO (V13).
+    -   **Síntoma:** El Grid en Theme Settings no actualiza las columnas visualmente.
+    -   **Causa Real:** `applicator.js` añadía automáticamente `px` a `gridColumns` (ej: `2px`), generando CSS inválido `repeat(2px, 1fr)`.
+    -   **Solución V13:** Se modificó `applicator.js` para excluir `gridColumns` de la conversión de unidades (`toCssValue`), aplicando el valor crudo (entero) a la variable CSS.
 
-- [ ] **Bug 33: Flash de Contenido Flex (PERSISTE)**
-    -   **Estado:** FALLIDO (V7.1).
-    -   **Análisis Logs:** `[GBN-DEBUG] GBN Main Init` sigue apareciendo ANTES de `[GBN-DEBUG] Applicator Set`.
-    -   **Causa:** Aunque movimos la llamada en `gbn.js`, es probable que el módulo `applicator.js` aún no se haya cargado o registrado en `Gbn.ui.theme` cuando `gbn.js` se ejecuta (Race Condition de carga de scripts).
-    -   **Solución V8:** Asegurar la carga síncrona o usar un mecanismo de eventos más robusto. Mover la lógica de aplicación inicial a `utils.js` o un script inline crítico.
+- [x] **Bug 33: Flash de Contenido Flex (SOLUCIONADO)**
+    -   **Estado:** COMPLETADO (V8).
+    -   **Causa Real:** `style-composer.js` forzaba un "Security Fallback" a `flex` e inyectaba estilos inline (`display: flex`) incluso cuando no había configuración explícita, sobrescribiendo el CSS base y causando un repintado visible (Flash).
+    -   **Solución V8:** Se eliminó el fallback forzado en `style-composer.js`. Ahora, si no hay configuración local ni en Theme Settings, el componente no emite estilos inline y respeta totalmente el CSS base (y sus variables), eliminando el conflicto y el flash.
 
-- [ ] **Bug 32: Grid Defaults (EN PROGRESO V6)**
-    -   **Estado Theme Settings:** 🔄 EN VALIDACIÓN (V6).
-    -   **Solución V6:** Se actualizó `layout-grid.js` para usar un fallback de variable CSS robusto que prueba tanto `grid-columns` (kebab) como `gridColumns` (camel), cubriendo posibles discrepancias en la generación de nombres.
+
 
 - [x] **Tarea Crítica: Documentación y Contexto (COMPLETADO)**
     -   **Requerimiento:** Agregar comentarios explicativos detallados en `style-composer.js`, `panel-render.js` y `theme-settings.js` explicando el POR QUÉ de las soluciones (especificidad, orden de ejecución, herencia).
@@ -202,11 +198,15 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 -   **Causa**: Falta de conexión entre los estilos inline generados y las variables CSS del tema. `style-composer.js` y `layout-flex.js` simplemente no emitían nada si el valor era `undefined`, dejando al elemento sin estilo explícito.
 -   **Solución**: Se modificaron `layout-flex.js` y `style-composer.js` para inyectar explícitamente `var(--gbn-role-prop)` (ej: `flex-wrap: var(--gbn-principal-flex-wrap)`) cuando no hay configuración local. Esto asegura la herencia correcta y fuerza al navegador a repintar inmediatamente al cambiar la variable o el valor local.
 
-#### 🔄 Bugs 32 y 33: Sincronización y Grid (Intento V8)
--   **Objetivo**: Resolver Race Condition en carga (Bug 33) y asegurar aplicación de Grid (Bug 32).
--   **Plan V8**:
-    1.  **Bug 33 (Flash)**: Implementar una verificación de dependencias en `gbn.js`. Si `applicator` no está listo, esperar o forzar su carga. O mejor, mover la aplicación de variables a un punto garantizado antes del renderizado.
-    2.  **Bug 32 (Grid)**: Añadir logs en `style-composer.js` para ver qué decisión de layout toma (`flex` vs `grid`). Si decide `grid`, verificar por qué el navegador no lo muestra (posible `display: flex !important` en CSS base).
+#### ✅ Bug 33: Flash de Contenido Flex (Fix V8)
+-   **Problema**: Flash of Unstyled Content (FOUC) al cargar la página. El layout saltaba visiblemente.
+-   **Causa**: `style-composer.js` tenía un "Security Fallback" que forzaba `layout = 'flex'` si no encontraba configuración. Esto inyectaba `style="display: flex"` inline tardíamente, causando un repintado sobre el CSS base.
+-   **Solución**: Se eliminó el fallback forzado. Ahora el composer no emite estilos si no hay configuración explícita, permitiendo que el CSS base (cargado antes) controle el layout sin interferencias.
+
+#### ✅ Bug 32: Grid Defaults (Fix V13)
+-   **Problema**: El layout Grid no se aplicaba correctamente desde Theme Settings.
+-   **Causa**: `applicator.js` convertía el número de columnas (ej: 2) a pixeles (2px), invalidando la función `repeat()`.
+-   **Solución**: Se añadió una excepción en `applicator.js` para que `gridColumns` se aplique sin unidades.
 
 ---
 
@@ -255,26 +255,14 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
         -   Fuente del estilo (Theme Context).
     -   **Estado:** Completado y funcional. Permite verificar la herencia de variables CSS.
 
-- [ ] **Logger Estructurado en Consola**
-    -   **Acción:** Reactivar logs estratégicos (no ruidosos) para trazar cambios en Theme Settings.
-    -   **Estado:** Pendiente. Los logs anteriores causaron crash por exceso de verbosidad.
+- [x] **Desactivar Remote Logger (Log Físico)**
+    -   **Motivo:** Ya no son necesarios para el diagnóstico actual y consumen recursos.
+    -   **Acción:** Desactivado el envío de logs al servidor en `logger.js` (`ENABLED = false`).
 
-### Diagnóstico Actual (Bugs 32 y 33)
-- **Estrategia de Logging:** Se activarán logs específicos en `applicator.js` y los renderers (`layout-grid.js`) para trazar el ciclo de vida de las variables CSS.
+### Fase E: Documentación Viva (Mantenimiento)
+**Objetivo:** Mantener la documentación sincronizada con la realidad del código.
 
-- [ ] **Logger Estratégico (Bug 32 & 33)**
-    -   **Acción:** Añadir `console.log` con prefijo `[GBN-DEBUG]` en:
-        1.  `applicator.js`: Al aplicar variables (ver qué nombres y valores exactos se escriben).
-        2.  `layout-grid.js`: Al intentar leer el fallback (ver si `prefix` es correcto).
-        3.  `gbn.js` / `index.js`: Al momento de la hidratación inicial (ver si `applyThemeSettings` se llama al inicio).
-    -   **Objetivo:** Descubrir por qué las variables no están disponibles o aplicadas al cargar la página (Bug 33) y por qué Grid las ignora (Bug 32).
-
-### Fase D: Tests Automatizados (The Safety Net)
-**Objetivo:** Evitar que un fix rompa otra cosa (Regresiones).
-
-- [ ] **Tests Unitarios para Lógica Core**
-    -   **Scope:** Testear `style-composer.js` y `utils.js` con Jest/Vitest.
-    -   **Caso de Prueba:** "Dado un config `{ padding: 20 }` y un Theme Setting `{ padding: 10 }`, el composer debe retornar `padding: 20px`".
-    -   **Caso de Prueba:** "Dado un config vacio, debe retornar `undefined` (para que actúen las variables)".
-
+- [x] **Actualizar `reglas.md`**
+    -   **Acción:** Actualizada la lista de archivos y descripciones en `reglas.md` para reflejar la refactorización reciente (Store Centralizado, Pure Render Pipeline, Logger, Overlay).
+    -   **Estado:** Completado. La documentación ahora coincide con la implementación actual.
 ---

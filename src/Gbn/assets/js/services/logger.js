@@ -7,6 +7,7 @@
     var LOG_ENDPOINT = 'gbn_log_client_event';
     var FLUSH_INTERVAL = 5000; // 5 seconds
     var MAX_BATCH_SIZE = 50;
+    var ENABLED = false; // [GBN-CONFIG] Remote logging disabled to save resources
 
     var logQueue = [];
     var flushTimer = null;
@@ -61,6 +62,8 @@
     var MAX_QUEUE_SIZE = 1000;
 
     function log(level, message, context) {
+        if (!ENABLED) return;
+
         if (logQueue.length >= MAX_QUEUE_SIZE) {
             // Drop oldest logs to prevent memory leak
             logQueue.shift();
