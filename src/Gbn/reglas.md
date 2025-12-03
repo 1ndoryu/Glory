@@ -297,3 +297,14 @@ Para evitar la pérdida de datos al cambiar vistas:
 -   Si un componente no responde a un cambio global, es porque **no está consumiendo la variable**.
 -   **Regla:** Todo estilo default en `style-composer.js` debe ser `undefined` o `var(--gbn-...)`. NUNCA un valor fijo (`10px`, `flex`, `block`).
 
+
+### 5. Protocolo de Registro de Componentes
+**Regla de Integridad:** Antes de que un nuevo componente sea accesible en la UI del constructor, debe pasar una validación automatizada.
+1.  **Validación API:** El sistema debe consultar `gbn_diagnostics_validate` para el nuevo componente.
+2.  **Criterios de Aceptación:**
+    -   Debe tener un `role` único.
+    -   Debe tener un `selector` DOM válido (Atributo o Clase) para permitir la observabilidad.
+    -   Debe tener un Schema JSON válido.
+3.  **Fallo:** Si la validación falla, el componente debe ser rechazado o marcado como "Inestable" (no visible en producción).
+
+

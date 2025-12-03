@@ -218,7 +218,9 @@ GET /wp-admin/admin-ajax.php?action=gbn_diagnostics_dump
 -   [x] ✅ **Fase 0 (API)**: Endpoints REST antes de la UI (Completado)
 -   [x] ✅ **Fase 1.5**: Integración con `overlay.js` (Logger completado)
 -   [x] ✅ **Fase 2**: Interfaz de usuario minimalista (Sidebar + Dashboard + Detalles implementados)
--   [x] ✅ **Fase 3**: Mapeo profundo y métricas (Tabla de variables CSS + Auditoría de Defaults)
+-   [x] ✅ **Fase 3**: Mapeo profundo y métricas (Tabla de variables CSS + Auditoría de Defaults + Métricas de Rendimiento)
+    -   *Nota:* Se implementó un dashboard de métricas (Payload Size, Top Traits, Heaviest Components).
+    -   *Fix:* Se solucionó un bug de parsing SVG en la consola escapando la salida JSON.
 -   [x] ✅ **Fase 4**: Validación de integridad automática (Health Check implementado)
 
 ### Futuro (Opcional):
@@ -305,3 +307,6 @@ curl -X POST "http://localhost/wp-admin/admin-ajax.php" \
 mkdir Glory/src/Gbn/Diagnostics
 mkdir Glory/src/Gbn/assets/control-panel
 ```
+
+
+

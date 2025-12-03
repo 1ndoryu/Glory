@@ -118,8 +118,44 @@
         },
 
         renderDashboard: function ($container) {
-            const {components, traits, php_version, memory_limit} = this.data;
+            const {components, traits, php_version, memory_limit, payload} = this.data;
             const componentCount = Object.keys(components).length;
+            
+            // --- Phase 3.4: Metrics Calculations ---
+            
+            // 1. Payload Size
+            const payloadSizeKB = (payload.size / 1024).toFixed(2) + ' KB';
+            
+            // 2. Most Used Traits
+            const traitCounts = {};
+            Object.values(traits).forEach(traitList => {
+                if (Array.isArray(traitList)) {
+                    traitList.forEach(t => {
+                        const name = t.split('\\').pop();
+                        traitCounts[name] = (traitCounts[name] || 0) + 1;
+                    });
+                }
+            });
+            const topTraits = Object.entries(traitCounts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 5);
+
+            // 3. Heaviest Components (Fields per Component)
+            const componentFields = [];
+            Object.entries(this.data.payload.schemas).forEach(([role, data]) => {
+                if (data && data.schema) {
+                    componentFields.push({ role: role, count: data.schema.length });
+                }
+            });
+            const heaviestComponents = componentFields.sort((a, b) => b.count - a.count).slice(0, 5);
+
+            // 4. Configuration Drift (Overrides)
+            let totalOverrides = 0;
+            if (this.data.themeSettings && this.data.themeSettings.components) {
+                Object.values(this.data.themeSettings.components).forEach(comp => {
+                    totalOverrides += Object.keys(comp).length;
+                });
+            }
 
             const html = `
                 <div class="gbn-cp-main-header">
@@ -128,6 +164,7 @@
                 </div>
                 
                 <div class="gbn-cp-grid">
+                    <!-- Basic Status -->
                     <div class="gbn-cp-card">
                         <h3>System Status</h3>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -150,7 +187,51 @@
                         </div>
                     </div>
 
+                    <!-- Performance Metrics (Phase 3.4) -->
                     <div class="gbn-cp-card">
+                        <h3>Performance Metrics</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <div style="color: var(--gbn-cp-text-muted); font-size: 12px;">PAYLOAD SIZE</div>
+                                <div style="font-size: 1.2rem;">${payloadSizeKB}</div>
+                                <div style="font-size: 10px; color: var(--gbn-cp-text-muted);">gloryGbnCfg JSON</div>
+                            </div>
+                            <div>
+                                <div style="color: var(--gbn-cp-text-muted); font-size: 12px;">THEME OVERRIDES</div>
+                                <div style="font-size: 1.2rem;">${totalOverrides}</div>
+                                <div style="font-size: 10px; color: var(--gbn-cp-text-muted);">Modified Fields</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Traits -->
+                    <div class="gbn-cp-card">
+                        <h3>Most Used Traits</h3>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            ${topTraits.map(([name, count]) => `
+                                <li style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.9rem;">
+                                    <span>${name}</span>
+                                    <span class="gbn-cp-badge gbn-cp-badge-neutral">${count}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+
+                    <!-- Heaviest Components -->
+                    <div class="gbn-cp-card">
+                        <h3>Heaviest Components</h3>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            ${heaviestComponents.map(c => `
+                                <li style="display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.9rem;">
+                                    <span>${c.role}</span>
+                                    <span style="color: var(--gbn-cp-text-muted);">${c.count} fields</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="gbn-cp-card" style="grid-column: 1 / -1;">
                         <h3>Quick Actions</h3>
                         <p style="color: var(--gbn-cp-text-muted);">Common maintenance tasks.</p>
                         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
@@ -376,7 +457,7 @@
                     <!-- Raw Debug -->
                     <details>
                         <summary style="cursor:pointer; color:var(--gbn-cp-text-muted); margin-bottom:1rem;">View Raw Schema JSON</summary>
-                        <div class="gbn-cp-code-block">${JSON.stringify(schemaData, null, 2)}</div>
+                        <div class="gbn-cp-code-block">${this.escapeHtml(JSON.stringify(schemaData, null, 2))}</div>
                     </details>
                 </div>
             `;
@@ -390,7 +471,7 @@
                 </div>
                 <div class="gbn-cp-card">
                     <h3>Global Configuration (wp_options)</h3>
-                    <div class="gbn-cp-code-block">${JSON.stringify(this.data.themeSettings, null, 2)}</div>
+                    <div class="gbn-cp-code-block">${this.escapeHtml(JSON.stringify(this.data.themeSettings, null, 2))}</div>
                 </div>
             `;
             $container.html(html);
@@ -427,7 +508,7 @@
                                 logsHtml += `
                                     <div class="gbn-cp-card gbn-cp-mb-4">
                                         <h3>${filename}</h3>
-                                        <div class="gbn-cp-code-block" style="white-space: pre-wrap;">${content}</div>
+                                        <div class="gbn-cp-code-block" style="white-space: pre-wrap;">${this.escapeHtml(content)}</div>
                                     </div>
                                 `;
                             }
@@ -442,6 +523,16 @@
 
         renderError: function (msg) {
             $('#gbn-control-app').html(`<div style="padding:2rem; color:red;">Error: ${msg}</div>`);
+        },
+
+        escapeHtml: function(text) {
+            if (text == null) return '';
+            return String(text)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
     };
 

@@ -266,3 +266,42 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
     -   **Acción:** Actualizada la lista de archivos y descripciones en `reglas.md` para reflejar la refactorización reciente (Store Centralizado, Pure Render Pipeline, Logger, Overlay).
     -   **Estado:** Completado. La documentación ahora coincide con la implementación actual.
 ---
+
+## 7. Fase 6: Expansión de Biblioteca y UX (Roadmap)
+
+**Objetivo:** Escalar la biblioteca de componentes y mejorar drásticamente la experiencia de usuario (UX) en el constructor.
+
+### 6.1 Integración Profunda con API de Diagnóstico
+**Regla:** Antes de registrar cualquier *nuevo* componente, el sistema debe validar su integridad usando la API de Diagnóstico.
+- [ ] **Validación Automática de Componentes:**
+    -   Crear un hook o script que, al detectar un nuevo componente registrado en PHP, consulte `gbn_diagnostics_validate`.
+    -   Si la API devuelve errores (ej: falta selector, schema inválido), el componente debe marcarse como "Inestable" o no cargarse en el UI.
+    -   **Actualizar `reglas.md`:** Añadir regla explícita sobre esta validación obligatoria.
+
+### 6.2 Refactorización de la Biblioteca de Componentes (UI/UX)
+**Problema Actual:** El modal de "Añadir bloque" es legacy, solo muestra `divSecundario` y carece de jerarquía visual.
+- [ ] **Nueva Lógica de Inserción:**
+    -   **Contexto Inteligente:**
+        -   Si el usuario está en la raíz -> Mostrar solo Contenedores Principales (Div Principal).
+        -   Si está dentro de un Div Principal -> Mostrar Contenedores Secundarios (Div Secundario).
+        -   Si está dentro de un Div Secundario -> Mostrar Componentes Atómicos (Texto, Botón, Imagen) Y Divs Secundarios anidados.
+    -   **Iconografía:** Todos los componentes deben tener iconos SVG representativos y minimalistas.
+    -   **Carga Dinámica:** La lista de componentes disponibles debe poblarse automáticamente leyendo `gloryGbnCfg.components` (filtrando por rol/tipo), sin hardcodear nada en JS.
+
+### 6.3 Mejoras en Componentes Base
+**Objetivo:** Estandarizar capacidades de estilo en todos los componentes.
+- [ ] **Campo "Estilos Personalizados" (Custom CSS):**
+    -   Añadir un campo `textarea` (o editor de código) al final de *todos* los paneles de configuración.
+    -   Debe permitir escribir CSS libre que se aplique al selector único del componente.
+    -   **Requisito:** Debe soportar breakpoints (Responsive) y aparecer en los Defaults del Tema.
+- [ ] **Estandarización de Spacing:**
+    -   Asegurar que *todos* los componentes (sin excepción) implementen el Trait `HasSpacing` (Margin/Padding).
+- [ ] **Organización por Tabs:**
+    -   Refactorizar el renderizado del panel (`panel-render.js`) para soportar pestañas (ej: Contenido | Estilo | Avanzado).
+    -   Usar iconos para las pestañas para ahorrar espacio y mejorar la estética.
+
+### 6.4 Gestión de Configuración de Página
+- [ ] **Auditoría de Page Settings:**
+    -   Revisar dónde y cómo se guardan las configuraciones a nivel de página (no de componente).
+    -   Unificar su ubicación en la UI (posiblemente un panel lateral separado o una pestaña global).
+
