@@ -98,7 +98,7 @@
 
         // Capturar HTML del contenido para persistencia estructural (Nuevos bloques)
         var rootHtml = '';
-        var rootEl = document.querySelector('main') || document.querySelector('[data-gbn-root]');
+        var rootEl = document.querySelector('[data-gbn-root]') || document.querySelector('main');
         if (rootEl) {
             // Clonar para limpiar clases de UI si es necesario, aunque el backend debería limpiar
             // Por ahora enviamos raw, DomProcessor limpiará

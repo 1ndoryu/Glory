@@ -238,6 +238,37 @@
                          // Therefore, we bypass the unit conversion for this specific field.
                          if (field.id === 'gridColumns') {
                              setOrRemove(varName, value);
+                         } else if (field.id === 'custom_css') {
+                             // Handle Global Custom CSS
+                             var styleId = 'gbn-theme-custom-' + role;
+                             var styleEl = document.getElementById(styleId);
+                             if (!styleEl) {
+                                 styleEl = document.createElement('style');
+                                 styleEl.id = styleId;
+                                 document.head.appendChild(styleEl);
+                             }
+                             
+                             if (value) {
+                                 // Replace & with role selector
+                                 // We need to know the selector for the role.
+                                 // Usually it's [data-gbnRole] or .class
+                                 // We can infer it from the prefix or hardcode/map it.
+                                 // Principal -> [data-gbnPrincipal], Secundario -> [data-gbnSecundario], Text -> [data-gbn-text]
+                                 
+                                 var selector = '';
+                                 if (role === 'principal') selector = '[data-gbnPrincipal]';
+                                 else if (role === 'secundario') selector = '[data-gbnSecundario]';
+                                 else if (role === 'text') selector = '[data-gbn-text]';
+                                 else selector = '[data-gbn-' + role + ']'; // Fallback
+                                 
+                                 var processed = value.replace(/&/g, selector);
+                                 if (processed.indexOf(selector) === -1) {
+                                     processed = selector + ' { ' + processed + ' }';
+                                 }
+                                 styleEl.textContent = processed;
+                             } else {
+                                 styleEl.textContent = '';
+                             }
                          } else {
                              setOrRemoveValue(varName, value);
                          }

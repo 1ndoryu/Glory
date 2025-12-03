@@ -5,9 +5,13 @@ namespace Glory\Gbn\Components\Text;
 use Glory\Gbn\Components\AbstractComponent;
 use Glory\Gbn\Schema\SchemaBuilder;
 use Glory\Gbn\Schema\Option;
+use Glory\Gbn\Traits\HasSpacing;
+use Glory\Gbn\Traits\HasCustomCSS;
 
 class TextComponent extends AbstractComponent
 {
+    use HasSpacing, HasCustomCSS;
+
     protected string $id = 'text';
     protected string $label = 'Texto';
 
@@ -32,34 +36,65 @@ class TextComponent extends AbstractComponent
 
     public function getSchema(): array
     {
-        return SchemaBuilder::create()
-            ->addOption(
-                Option::select('tag', 'Etiqueta HTML')
-                    ->options([
-                        ['valor' => 'p', 'etiqueta' => 'Párrafo (p)'],
-                        ['valor' => 'h1', 'etiqueta' => 'Encabezado 1 (h1)'],
-                        ['valor' => 'h2', 'etiqueta' => 'Encabezado 2 (h2)'],
-                        ['valor' => 'h3', 'etiqueta' => 'Encabezado 3 (h3)'],
-                        ['valor' => 'h4', 'etiqueta' => 'Encabezado 4 (h4)'],
-                        ['valor' => 'h5', 'etiqueta' => 'Encabezado 5 (h5)'],
-                        ['valor' => 'h6', 'etiqueta' => 'Encabezado 6 (h6)'],
-                        ['valor' => 'span', 'etiqueta' => 'Span'],
-                        ['valor' => 'div', 'etiqueta' => 'Div'],
-                    ])
-            )
-            ->addOption(Option::richText('texto', 'Contenido'))
-            ->addOption(Option::typography('typography', 'Tipografía'))
-            ->addOption(
-                Option::iconGroup('alineacion', 'Alineación')
-                    ->options([
-                        ['valor' => 'left', 'etiqueta' => 'Izquierda', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M17 9.5H3M21 4.5H3M21 14.5H3M17 19.5H3"/></svg>'],
-                        ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 9.5H5M21 4.5H3M21 14.5H3M19 19.5H5"/></svg>'],
-                        ['valor' => 'right', 'etiqueta' => 'Derecha', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9.5H7M21 4.5H3M21 14.5H3M21 19.5H7"/></svg>'],
-                        ['valor' => 'justify', 'etiqueta' => 'Justificado', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9.5H3M21 4.5H3M21 14.5H3M21 19.5H3"/></svg>'],
-                    ])
-            )
-            ->addOption(Option::color('color', 'Color'))
-            ->toArray();
+        $schema = SchemaBuilder::create();
+
+        // 1. Tag - Tab: Contenido
+        $schema->addOption(
+            Option::select('tag', 'Etiqueta HTML')
+                ->options([
+                    ['valor' => 'p', 'etiqueta' => 'Párrafo (p)'],
+                    ['valor' => 'h1', 'etiqueta' => 'Encabezado 1 (h1)'],
+                    ['valor' => 'h2', 'etiqueta' => 'Encabezado 2 (h2)'],
+                    ['valor' => 'h3', 'etiqueta' => 'Encabezado 3 (h3)'],
+                    ['valor' => 'h4', 'etiqueta' => 'Encabezado 4 (h4)'],
+                    ['valor' => 'h5', 'etiqueta' => 'Encabezado 5 (h5)'],
+                    ['valor' => 'h6', 'etiqueta' => 'Encabezado 6 (h6)'],
+                    ['valor' => 'span', 'etiqueta' => 'Span'],
+                    ['valor' => 'div', 'etiqueta' => 'Div'],
+                ])
+                ->tab('Contenido')
+        );
+
+        // 2. Texto - Tab: Contenido
+        $schema->addOption(
+            Option::richText('texto', 'Contenido')
+                ->tab('Contenido')
+        );
+
+        // 3. Typography - Tab: Estilo
+        $schema->addOption(
+            Option::typography('typography', 'Tipografía')
+                ->tab('Estilo')
+        );
+
+        // 4. Alineación - Tab: Estilo
+        $schema->addOption(
+            Option::iconGroup('alineacion', 'Alineación')
+                ->options([
+                    ['valor' => 'left', 'etiqueta' => 'Izquierda', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M17 9.5H3M21 4.5H3M21 14.5H3M17 19.5H3"/></svg>'],
+                    ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 9.5H5M21 4.5H3M21 14.5H3M19 19.5H5"/></svg>'],
+                    ['valor' => 'right', 'etiqueta' => 'Derecha', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9.5H7M21 4.5H3M21 14.5H3M21 19.5H7"/></svg>'],
+                    ['valor' => 'justify', 'etiqueta' => 'Justificado', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9.5H3M21 4.5H3M21 14.5H3M21 19.5H3"/></svg>'],
+                ])
+                ->tab('Estilo')
+        );
+
+        // 5. Color - Tab: Estilo
+        $schema->addOption(
+            Option::color('color', 'Color')
+                ->tab('Estilo')
+        );
+
+        // 6. Spacing (from Trait) - Tab: Estilo
+        foreach ($this->getSpacingOptions() as $option) {
+            $option->tab('Estilo');
+            $schema->addOption($option);
+        }
+
+        // 7. Custom CSS - Tab: Avanzado
+        $schema->addOption($this->getCustomCSSOption());
+
+        return $schema->toArray();
     }
 
     public function getIcon(): string

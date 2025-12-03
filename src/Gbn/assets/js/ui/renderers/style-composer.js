@@ -197,7 +197,22 @@
                 Object.assign(styles, layoutStyles);
             }
 
+            // 7. Custom CSS
+            var customCss = getValue('custom_css');
+
             // if (Gbn.log) Gbn.log.debug('Style Composer Result', { blockId: block.id, styles: styles });
+            
+            // Return object with styles and customCss
+            // We attach customCss as a non-enumerable property or just a property if consumers handle it.
+            // But to avoid breaking consumers expecting just styles, we can attach it to the styles object 
+            // but that's messy.
+            // Better to return a structured object: { inline: styles, custom: customCss }
+            // BUT this breaks signature.
+            // Let's attach it to the styles object as a special property that styleManager will strip.
+            if (customCss) {
+                styles.__custom_css = customCss;
+            }
+            
             return styles;
 
         } catch (err) {

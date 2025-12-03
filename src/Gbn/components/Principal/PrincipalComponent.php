@@ -9,9 +9,11 @@ use Glory\Gbn\Traits\HasFlexbox;
 use Glory\Gbn\Traits\HasGrid;
 use Glory\Gbn\Traits\HasSpacing;
 
+use Glory\Gbn\Traits\HasCustomCSS;
+
 class PrincipalComponent extends AbstractComponent
 {
-    use HasFlexbox, HasGrid, HasSpacing;
+    use HasFlexbox, HasGrid, HasSpacing, HasCustomCSS;
 
     protected string $id = 'principal';
     protected string $label = 'Contenedor Principal';
@@ -40,25 +42,19 @@ class PrincipalComponent extends AbstractComponent
     {
         $schema = SchemaBuilder::create();
 
-        // 1. Altura
-        $schema->addOption(
-            Option::select('height', 'Altura')
-                ->options([
-                    ['valor' => 'auto', 'etiqueta' => 'Automática'],
-                    ['valor' => 'min-content', 'etiqueta' => 'Mínima'],
-                    ['valor' => '100vh', 'etiqueta' => 'Altura completa'],
-                ])
-        );
-
-        // 2. Padding (from Trait)
-        foreach ($this->getSpacingOptions() as $option) {
-            // Solo queremos padding para Principal por ahora, según ContainerRegistry
-            if ($option->toArray()['id'] === 'padding') {
-                $schema->addOption($option);
-            }
+        // 1. Layout & Flexbox (from Trait) - Tab: Contenido
+        foreach ($this->getFlexboxOptions() as $option) {
+            $option->tab('Contenido');
+            $schema->addOption($option);
         }
 
-        // 3. Alineación
+        // 7. Grid (from Trait) - Tab: Contenido
+        foreach ($this->getGridOptions() as $option) {
+            $option->tab('Contenido');
+            $schema->addOption($option);
+        }
+
+        // 3. Alineación - Tab: Contenido
         $schema->addOption(
             Option::iconGroup('alineacion', 'Alineación del contenido')
                 ->options([
@@ -67,42 +63,44 @@ class PrincipalComponent extends AbstractComponent
                     ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M7 12h10"/><path d="M6 18h12"/></svg>'],
                     ['valor' => 'right', 'etiqueta' => 'Derecha', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M10 12h10"/><path d="M8 18h12"/></svg>'],
                 ])
+                ->tab('Contenido')
         );
 
-        // 4. Ancho Máximo
+        // 1. Altura - Tab: Estilo
+        $schema->addOption(
+            Option::select('height', 'Altura')
+                ->options([
+                    ['valor' => 'auto', 'etiqueta' => 'Automática'],
+                    ['valor' => 'min-content', 'etiqueta' => 'Mínima'],
+                    ['valor' => '100vh', 'etiqueta' => 'Altura completa'],
+                ])
+                ->tab('Estilo')
+        );
+
+        // 4. Ancho Máximo - Tab: Estilo
         $schema->addOption(
             Option::text('maxAncho', 'Ancho máximo')
                 ->default('1200px')
+                ->tab('Estilo')
         );
 
-        // 5. Fondo
+        // 2. Padding (from Trait) - Tab: Estilo
+        foreach ($this->getSpacingOptions() as $option) {
+            if ($option->toArray()['id'] === 'padding') {
+                $option->tab('Estilo');
+                $schema->addOption($option);
+            }
+        }
+
+        // 5. Fondo - Tab: Estilo
         $schema->addOption(
             Option::color('fondo', 'Color de fondo')
                 ->allowTransparency()
+                ->tab('Estilo')
         );
 
-        // 6. Layout & Flexbox (from Trait)
-        // HasFlexbox incluye 'gap' al final, pero en ContainerRegistry 'gap' está antes de layout?
-        // En ContainerRegistry: gap, layout, flexDirection...
-        // En HasFlexbox: layout, flexDirection..., gap.
-        // El orden importa para la UI.
-        // Voy a añadir las opciones manualmente para respetar el orden exacto si es crítico, 
-        // o confiar en el trait si el orden no es estricto.
-        // ContainerRegistry orden: gap (cond flex), layout, flexDir...
-        // Espera, en ContainerRegistry 'gap' está ANTES de 'layout'??
-        // Line 73: gap. Line 83: layout.
-        // Pero gap tiene condicion ['layout', 'flex']. Si layout está después, ¿cómo funciona la condición inicial?
-        // Probablemente el JS maneja la reactividad sin importar el orden.
-        // Usaré el trait HasFlexbox que pone layout primero, lo cual tiene más sentido lógico (definir layout antes de sus opciones).
-
-        foreach ($this->getFlexboxOptions() as $option) {
-            $schema->addOption($option);
-        }
-
-        // 7. Grid (from Trait)
-        foreach ($this->getGridOptions() as $option) {
-            $schema->addOption($option);
-        }
+        // 8. Custom CSS - Tab: Avanzado
+        $schema->addOption($this->getCustomCSSOption());
 
         return $schema->toArray();
     }

@@ -299,18 +299,15 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 
 ### 6.3 Mejoras en Componentes Base
 **Objetivo:** Estandarizar capacidades de estilo en todos los componentes.
-- [ ] **Campo "Estilos Personalizados" (Custom CSS):**
+- [x] **Campo "Estilos Personalizados" (Custom CSS):**
     -   Añadir un campo `textarea` (o editor de código) al final de *todos* los paneles de configuración.
     -   Debe permitir escribir CSS libre que se aplique al selector único del componente.
     -   **Requisito:** Debe soportar breakpoints (Responsive) y aparecer en los Defaults del Tema.
-- [ ] **Estandarización de Spacing:**
+- [x] **Estandarización de Spacing:**
     -   Asegurar que *todos* los componentes (sin excepción) implementen el Trait `HasSpacing` (Margin/Padding).
-- [ ] **Organización por Tabs:**
+- [x] **Organización por Tabs:**
     -   Refactorizar el renderizado del panel (`panel-render.js`) para soportar pestañas (ej: Contenido | Estilo | Avanzado).
     -   Usar iconos para las pestañas para ahorrar espacio y mejorar la estética.
 
-### 6.4 Gestión de Configuración de Página
-- [ ] **Auditoría de Page Settings:**
-    -   Revisar dónde y cómo se guardan las configuraciones a nivel de página (no de componente).
-    -   Unificar su ubicación en la UI (posiblemente un panel lateral separado o una pestaña global).
+
 

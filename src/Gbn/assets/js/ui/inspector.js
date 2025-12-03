@@ -116,19 +116,20 @@
         }
 
         function adjustMainPadding() {
-            var node = ensureMainNode();
-            if (!node) { return; }
-            if (active) {
-                if (!mainPaddingCaptured) { mainPaddingCaptured = true; mainPaddingValue = node.style.paddingTop || ''; }
-                node.style.paddingTop = '100px'; node.classList.add('gbn-main-offset');
-            } else if (mainPaddingCaptured) {
-                if (mainPaddingValue) { node.style.paddingTop = mainPaddingValue; }
-                else {
-                    node.style.removeProperty('padding-top');
-                    if (!node.getAttribute('style')) { node.removeAttribute('style'); }
-                }
-                node.classList.remove('gbn-main-offset');
-            }
+            // Logic removed as per user request to prevent persistent padding issues
+            // var node = ensureMainNode();
+            // if (!node) { return; }
+            // if (active) {
+            //     if (!mainPaddingCaptured) { mainPaddingCaptured = true; mainPaddingValue = node.style.paddingTop || ''; }
+            //     node.style.paddingTop = '100px'; node.classList.add('gbn-main-offset');
+            // } else if (mainPaddingCaptured) {
+            //     if (mainPaddingValue) { node.style.paddingTop = mainPaddingValue; }
+            //     else {
+            //         node.style.removeProperty('padding-top');
+            //         if (!node.getAttribute('style')) { node.removeAttribute('style'); }
+            //     }
+            //     node.classList.remove('gbn-main-offset');
+            // }
         }
 
         function updateToggleLabel() {

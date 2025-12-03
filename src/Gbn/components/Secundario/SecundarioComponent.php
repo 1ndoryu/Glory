@@ -9,9 +9,11 @@ use Glory\Gbn\Traits\HasFlexbox;
 use Glory\Gbn\Traits\HasGrid;
 use Glory\Gbn\Traits\HasSpacing;
 
+use Glory\Gbn\Traits\HasCustomCSS;
+
 class SecundarioComponent extends AbstractComponent
 {
-    use HasFlexbox, HasGrid, HasSpacing;
+    use HasFlexbox, HasGrid, HasSpacing, HasCustomCSS;
 
     protected string $id = 'secundario';
     protected string $label = 'Contenedor Secundario';
@@ -39,7 +41,19 @@ class SecundarioComponent extends AbstractComponent
     {
         $schema = SchemaBuilder::create();
 
-        // 1. Ancho (Fraction)
+        // 3. Layout & Flexbox (from Trait) - Tab: Contenido
+        foreach ($this->getFlexboxOptions() as $option) {
+            $option->tab('Contenido');
+            $schema->addOption($option);
+        }
+
+        // 6. Grid (from Trait) - Tab: Contenido
+        foreach ($this->getGridOptions() as $option) {
+            $option->tab('Contenido');
+            $schema->addOption($option);
+        }
+
+        // 1. Ancho (Fraction) - Tab: Estilo
         $schema->addOption(
             Option::fraction('width', 'Ancho')
                 ->options([
@@ -56,9 +70,10 @@ class SecundarioComponent extends AbstractComponent
                     '1/5',
                     '1/6'
                 ])
+                ->tab('Estilo')
         );
 
-        // 2. Altura
+        // 2. Altura - Tab: Estilo
         $schema->addOption(
             Option::select('height', 'Altura')
                 ->options([
@@ -66,46 +81,30 @@ class SecundarioComponent extends AbstractComponent
                     ['valor' => 'min-content', 'etiqueta' => 'Mínima'],
                     ['valor' => '100vh', 'etiqueta' => 'Altura completa'],
                 ])
+                ->tab('Estilo')
         );
 
-        // 3. Layout & Flexbox (from Trait)
-        foreach ($this->getFlexboxOptions() as $option) {
-            $schema->addOption($option);
-        }
+        // 4. Padding (from Trait) - Tab: Estilo
+        // Manually adding to match previous logic
+        $schema->addOption(
+            Option::spacing('padding', 'Padding Interno (Auto)')
+                ->units(['px', '%', 'rem'])
+                ->step(4)
+                ->min(0)
+                ->max(160)
+                ->fields(['superior', 'derecha', 'inferior', 'izquierda'])
+                ->tab('Estilo')
+        );
 
-        // 4. Padding (from Trait)
-        foreach ($this->getSpacingOptions() as $option) {
-            if ($option->toArray()['id'] === 'padding') {
-                // Override label for Secundario
-                // Option methods return self, but we are iterating objects.
-                // We can't easily modify the object in place without affecting others if it was shared (it's not, getSpacingOptions creates new ones).
-                // But Option class methods mutate the object.
-                // However, Option::spacing creates a new instance.
-                // Let's just create a new Option manually to match exactly or accept the trait's default.
-                // Trait says 'Padding'. Registry says 'Padding Interno (Auto)'.
-                // I'll stick to the Trait for consistency, or I can manually add it.
-                // Let's manually add it to match Registry exactly for now.
-                $schema->addOption(
-                    Option::spacing('padding', 'Padding Interno (Auto)')
-                        ->units(['px', '%', 'rem'])
-                        ->step(4)
-                        ->min(0)
-                        ->max(160)
-                        ->fields(['superior', 'derecha', 'inferior', 'izquierda'])
-                );
-            }
-        }
-
-        // 5. Fondo
+        // 5. Fondo - Tab: Estilo
         $schema->addOption(
             Option::color('fondo', 'Color de fondo')
                 ->allowTransparency()
+                ->tab('Estilo')
         );
 
-        // 6. Grid (from Trait)
-        foreach ($this->getGridOptions() as $option) {
-            $schema->addOption($option);
-        }
+        // 7. Custom CSS - Tab: Avanzado
+        $schema->addOption($this->getCustomCSSOption());
 
         return $schema->toArray();
     }

@@ -105,11 +105,44 @@
         }
     }
 
+    function applyCustomCss(block, css) {
+        if (!block) return;
+        var styleId = block.id + '-custom';
+        var styleEl = ensureStyleElement(styleId);
+        
+        if (!css) {
+            styleEl.textContent = '';
+            return;
+        }
+
+        // Replace & with block selector
+        var selector = '[data-gbn-id="' + block.id + '"]';
+        var processedCss = css.replace(/&/g, selector);
+        
+        // If no & found, wrap it (simple safety, though user should use &)
+        if (processedCss.indexOf(selector) === -1) {
+            processedCss = selector + ' { ' + processedCss + ' }';
+        }
+
+        styleEl.textContent = processedCss;
+    }
+
     function update(blockId, styles) {
         var block = typeof blockId === 'string' ? state.get(blockId) : blockId;
         if (!block) {
             return;
         }
+        
+        // Extract Custom CSS
+        var customCss = null;
+        if (styles && styles.__custom_css !== undefined) {
+            customCss = styles.__custom_css;
+            delete styles.__custom_css;
+        }
+        
+        // Apply Custom CSS
+        applyCustomCss(block, customCss);
+
         // Aplicar estilos directamente al elemento para máxima prioridad
         applyInlineStyles(block, styles);
     }
