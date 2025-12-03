@@ -25,9 +25,13 @@ class ConfigHandler
         $stylesById = [];
 
         foreach ($blocks as $b) {
-            if (!is_array($b)) { continue; }
+            if (!is_array($b)) {
+                continue;
+            }
             $id = isset($b['id']) ? sanitize_text_field((string) $b['id']) : '';
-            if ($id === '') { continue; }
+            if ($id === '') {
+                continue;
+            }
             $role = isset($b['role']) ? sanitize_key((string) $b['role']) : 'block';
             $order = isset($b['order']) ? absint($b['order']) : 0;
             $children = isset($b['children']) && is_array($b['children']) ? $b['children'] : [];
@@ -49,7 +53,7 @@ class ConfigHandler
                 'children' => $children,
                 'clientPath' => isset($b['domPath']) ? $b['domPath'] : '',
             ];
-            
+
             if (!empty($styles)) {
                 $stylesById[$id] = $styles;
             }
@@ -57,7 +61,7 @@ class ConfigHandler
 
         update_post_meta($pageId, 'gbn_config', $configById);
         update_post_meta($pageId, 'gbn_styles', $stylesById);
-        
+
         // Guardar CSS Responsive generado por el frontend
         $responsiveCss = isset($_POST['responsiveCss']) ? wp_unslash($_POST['responsiveCss']) : '';
         // Sanitize CSS (básico, permitir media queries y selectores)
@@ -74,7 +78,7 @@ class ConfigHandler
             $mode = 'editor';
             Logger::log('[saveConfig] Mode switched from code to editor');
         }
-        
+
         Logger::log('[saveConfig] PageID: ' . $pageId . ' Mode: ' . $mode);
 
         $manualEditDetected = false;
@@ -84,7 +88,7 @@ class ConfigHandler
             $currentContent = (string) get_post_field('post_content', $pageId);
             $savedHash = (string) get_post_meta($pageId, '_glory_content_hash', true);
             $currentHash = $currentContent !== '' ? DomProcessor::hashContenidoLocal($currentContent) : '';
-            
+
             Logger::log("Hash Check - Saved: '$savedHash', Current: '$currentHash'");
 
             // Si el usuario editó manualmente, no sobreescribir y notificar
@@ -92,28 +96,43 @@ class ConfigHandler
                 $manualEditDetected = true;
                 Logger::log("Manual edit detected! Overwriting enabled for GBN.");
             }
-            
-            // Volcar HTML baseline renderizado por el handler cuando exista
-            $slug = (string) get_post_field('post_name', $pageId);
-            $def  = method_exists(PageManager::class, 'getDefinicionPorSlug') ? PageManager::getDefinicionPorSlug($slug) : null;
-            if (is_array($def) && !empty($def['funcion']) && method_exists(PageManager::class, 'renderHandlerParaCopiar')) {
-                $html = PageManager::renderHandlerParaCopiar((string) $def['funcion']);
-                if ($html !== '') {
-                    // Procesar HTML para inyectar IDs, eliminar bloques borrados y reordenar
-                    Logger::log('Config items count: ' . count($configById));
-                    
-                    $html = DomProcessor::processHtmlForPersistence($html, $configById);
 
-                    remove_filter('content_save_pre', 'wp_filter_post_kses');
-                    $updateResult = wp_update_post(['ID' => $pageId, 'post_content' => $html]);
-                    
-                    // IMPORTANTE: No actualizar el hash (o borrarlo) para que PageManager
-                    // detecte que el contenido ha sido "editado manualmente" (por GBN) y no
-                    // lo sobrescriba automáticamente con el contenido del código.
-                    delete_post_meta($pageId, '_glory_content_hash');
-                    
-                    $contentUpdated = true;
+            // Volcar HTML baseline renderizado por el handler cuando exista
+            // Volcar HTML
+            $html = '';
+
+            // 1. Preferir HTML enviado por el cliente (WYSIWYG real)
+            if (isset($_POST['htmlContent'])) {
+                $html = wp_unslash($_POST['htmlContent']);
+                // Limpieza básica de seguridad (pero permitiendo estructura)
+                // DomProcessor::processHtmlForPersistence se encargará de sanitizar atributos y normalizar
+            }
+            // 2. Fallback: Regenerar desde código (Solo si no hay input del cliente)
+            else {
+                $slug = (string) get_post_field('post_name', $pageId);
+                $def  = method_exists(PageManager::class, 'getDefinicionPorSlug') ? PageManager::getDefinicionPorSlug($slug) : null;
+                if (is_array($def) && !empty($def['funcion']) && method_exists(PageManager::class, 'renderHandlerParaCopiar')) {
+                    $html = PageManager::renderHandlerParaCopiar((string) $def['funcion']);
                 }
+            }
+
+            if ($html !== '') {
+                // Procesar HTML para inyectar IDs, eliminar bloques borrados y reordenar
+                Logger::log('Config items count: ' . count($configById));
+
+                // Si viene del cliente, ya tiene IDs y estructura, pero necesitamos limpiar basura del editor
+                // y asegurar integridad con la config.
+                $html = DomProcessor::processHtmlForPersistence($html, $configById);
+
+                remove_filter('content_save_pre', 'wp_filter_post_kses');
+                $updateResult = wp_update_post(['ID' => $pageId, 'post_content' => $html]);
+
+                // IMPORTANTE: No actualizar el hash (o borrarlo) para que PageManager
+                // detecte que el contenido ha sido "editado manualmente" (por GBN) y no
+                // lo sobrescriba automáticamente con el contenido del código.
+                delete_post_meta($pageId, '_glory_content_hash');
+
+                $contentUpdated = true;
             }
         }
 
@@ -133,8 +152,12 @@ class ConfigHandler
     {
         check_ajax_referer('glory_gbn_nonce', 'nonce');
         $pageId = isset($_POST['pageId']) ? absint($_POST['pageId']) : 0;
-        if (!$pageId) { wp_send_json_error(['message' => 'Datos inválidos']); }
-        if (!current_user_can('edit_post', $pageId)) { wp_send_json_error(['message' => 'Sin permisos']); }
+        if (!$pageId) {
+            wp_send_json_error(['message' => 'Datos inválidos']);
+        }
+        if (!current_user_can('edit_post', $pageId)) {
+            wp_send_json_error(['message' => 'Sin permisos']);
+        }
 
         // 1. Limpiar metadatos de GBN
         delete_post_meta($pageId, 'gbn_config');
@@ -151,11 +174,11 @@ class ConfigHandler
             $def  = PageManager::getDefinicionPorSlug($slug);
             if (is_array($def) && !empty($def['funcion']) && method_exists(PageManager::class, 'renderHandlerParaCopiar')) {
                 $html = PageManager::renderHandlerParaCopiar((string) $def['funcion']);
-                
+
                 // Aunque esté vacío, si es lo que devuelve el código, eso es lo que debe haber.
                 // Pero generalmente evitamos borrar contenido si algo falla, así que validamos no vacío o explícito.
                 // En este caso, "Restaurar" implica volver a lo que diga el código.
-                
+
                 remove_filter('content_save_pre', 'wp_filter_post_kses');
                 wp_update_post(['ID' => $pageId, 'post_content' => $html]);
                 update_post_meta($pageId, '_glory_content_hash', DomProcessor::hashContenidoLocal($html));
@@ -189,10 +212,16 @@ class ConfigHandler
     {
         $out = [];
         foreach ($styles as $prop => $val) {
-            if (!is_string($prop)) { continue; }
+            if (!is_string($prop)) {
+                continue;
+            }
             $propKey = preg_replace('/[^a-zA-Z0-9\-]/', '', (string) $prop);
-            if ($propKey === '') { continue; }
-            if ($val === null || $val === '') { continue; }
+            if ($propKey === '') {
+                continue;
+            }
+            if ($val === null || $val === '') {
+                continue;
+            }
             $out[$propKey] = is_string($val) ? wp_kses_post($val) : sanitize_text_field((string) $val);
         }
         return $out;

@@ -158,3 +158,52 @@
     pointer-events: none;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
+
+/* Root Insertion Controls */
+.gbn-root-controls {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Let clicks pass through to content */
+    z-index: 90;
+    display: none; /* Controlled by JS */
+}
+
+.gbn-root-add-btn {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 24px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto; /* Re-enable clicks */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    z-index: 100;
+    padding: unset;
+    opacity: 0.8;
+}
+
+.gbn-root-add-btn:hover {
+    background-color: #2563eb;
+    transform: translateX(-50%) scale(1.1);
+}
+
+.gbn-root-add-top {
+    top: -12px;
+}
+
+.gbn-root-add-bottom {
+    bottom: -12px;
+}

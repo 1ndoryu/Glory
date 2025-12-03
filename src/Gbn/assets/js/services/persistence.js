@@ -96,11 +96,21 @@
             ? Gbn.services.styleGenerator.generateCss(blocksMap) 
             : '';
 
+        // Capturar HTML del contenido para persistencia estructural (Nuevos bloques)
+        var rootHtml = '';
+        var rootEl = document.querySelector('main') || document.querySelector('[data-gbn-root]');
+        if (rootEl) {
+            // Clonar para limpiar clases de UI si es necesario, aunque el backend debería limpiar
+            // Por ahora enviamos raw, DomProcessor limpiará
+            rootHtml = rootEl.innerHTML;
+        }
+
         var payload = {
             nonce: cfg.nonce,
             pageId: cfg.pageId,
             blocks: JSON.stringify(collectBlocksPayload()),
             responsiveCss: responsiveCss,
+            htmlContent: rootHtml // Nuevo campo
         };
         return ajaxFn('gbn_save_config', payload);
     }

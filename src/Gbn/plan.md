@@ -290,13 +290,12 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 
 ### 6.2.1 Hotfix Críticos (UX y Persistencia)
 **Problema Crítico:** Los cambios no perduran al recargar y falta una forma intuitiva de agregar contenedores principales.
-- [ ] **Persistencia de Nuevos Bloques:**
-    -   Diagnosticar por qué `content.hydrate` o el evento `gbn:contentHydrated` no están actualizando el `state` correctamente para ser recogidos por `persistence.js`.
-    -   Asegurar que al agregar un bloque, el botón "Guardar" se habilite y el payload incluya los nuevos IDs.
-- [ ] **Inserción de Contenedores Principales (Root UX):**
-    -   Implementar "Zonas de Inserción" o botones flotantes "+" que aparezcan al hacer hover en los bordes superior/inferior de los bloques principales existentes.
-    -   Si no hay bloques, mostrar un botón "Agregar Sección" visible.
-    -   Permitir insertar un `divPrincipal` antes o después del bloque actual.
+- [x] **Persistencia de Nuevos Bloques:**
+    -   **Diagnóstico:** `ConfigHandler` regeneraba el HTML desde el código PHP original, ignorando los bloques añadidos dinámicamente en el frontend.
+    -   **Solución:** Modificado `persistence.js` para enviar el HTML del contenedor raíz (`htmlContent`). Modificado `ConfigHandler.php` para usar este HTML como fuente de verdad en modo editor.
+- [x] **Inserción de Contenedores Principales (Root UX):**
+    -   Implementado "Zonas de Inserción" en `inspector.js` que inyectan botones "+" al hacer hover en bloques principales.
+    -   Soporte añadido en `library.js` para inserción `before`.
 
 ### 6.3 Mejoras en Componentes Base
 **Objetivo:** Estandarizar capacidades de estilo en todos los componentes.

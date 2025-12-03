@@ -170,9 +170,6 @@
             if (controls && !controls.parentElement) { block.element.appendChild(controls); }
             
             // Remove old event listeners if any (to avoid duplicates if called multiple times)
-            // Ideally we should store the handler reference, but for now let's rely on the fact 
-            // that we only add them if active.
-            // Actually, let's just add them once.
             if (!block.element.__gbnEventsAttached) {
                 block.element.addEventListener('mouseover', function(e) {
                     if (!active) return;
@@ -182,13 +179,25 @@
                         el.classList.remove('gbn-show-controls');
                     });
                     block.element.classList.add('gbn-show-controls');
+                    
+                    // Root Insertion Logic on Hover
+                    if (block.role === 'principal') {
+                        ensureRootInsertionButtons(block);
+                    }
                 });
                 
                 block.element.addEventListener('mouseout', function(e) {
                     if (!active) return;
-                    // e.stopPropagation(); // Don't stop propagation here, let it bubble so parent can handle it?
-                    // Actually, if we leave child, we might enter parent.
+                    // Check if moving to a child or parent
+                    var related = e.relatedTarget;
+                    if (related && (block.element.contains(related) || related.closest('.gbn-root-controls'))) {
+                        return;
+                    }
+                    
                     block.element.classList.remove('gbn-show-controls');
+                    if (block.element.__gbnRootControls) {
+                        block.element.__gbnRootControls.style.display = 'none';
+                    }
                 });
                 block.element.__gbnEventsAttached = true;
             }
@@ -206,6 +215,44 @@
                 btns.forEach(function(b) { b.disabled = true; b.tabIndex = -1; });
                 block.element.classList.remove('gbn-show-controls');
             }
+        }
+
+        function ensureRootInsertionButtons(block) {
+            if (block.element.__gbnRootControls) {
+                block.element.__gbnRootControls.style.display = 'block';
+                return;
+            }
+
+            var container = document.createElement('div');
+            container.className = 'gbn-root-controls';
+            
+            // Top Button
+            var btnTop = document.createElement('button');
+            btnTop.className = 'gbn-root-add-btn gbn-root-add-top';
+            btnTop.innerHTML = '+';
+            btnTop.title = 'Añadir Sección Arriba';
+            btnTop.addEventListener('click', function(e) {
+                e.stopPropagation();
+                Gbn.ui.library.open(block.element, 'before', ['principal']); 
+            });
+
+            // Bottom Button
+            var btnBottom = document.createElement('button');
+            btnBottom.className = 'gbn-root-add-btn gbn-root-add-bottom';
+            btnBottom.innerHTML = '+';
+            btnBottom.title = 'Añadir Sección Abajo';
+            btnBottom.addEventListener('click', function(e) {
+                e.stopPropagation();
+                Gbn.ui.library.open(block.element, 'after', ['principal']);
+            });
+
+            container.appendChild(btnTop);
+            container.appendChild(btnBottom);
+            
+            // Append to block element (must be relative positioned via CSS)
+            block.element.appendChild(container);
+            block.element.__gbnRootControls = container;
+            block.element.__gbnRootControls.style.display = 'block';
         }
 
         function setActive(next) {

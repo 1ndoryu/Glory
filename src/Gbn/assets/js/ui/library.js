@@ -86,6 +86,8 @@
             currentTarget.appendChild(newEl);
         } else if (insertPosition === 'after') {
             currentTarget.parentNode.insertBefore(newEl, currentTarget.nextSibling);
+        } else if (insertPosition === 'before') {
+            currentTarget.parentNode.insertBefore(newEl, currentTarget);
         }
 
         // Escanear e hidratar el nuevo bloque
