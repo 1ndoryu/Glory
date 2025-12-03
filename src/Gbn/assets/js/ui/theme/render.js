@@ -8,35 +8,97 @@
     function renderPageSettingsForm(settings, container, footer) {
         if (!container) return;
         container.innerHTML = '';
-        var form = document.createElement('form');
-        form.className = 'gbn-panel-form';
         
-        var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
-        if (!builder) {
-            container.innerHTML = 'Error: panelFields no disponible';
-            return;
-        }
-
-        var schema = [
-            { tipo: 'color', id: 'background', etiqueta: 'Color de Fondo (Main)', defecto: '#ffffff' },
-            { tipo: 'spacing', id: 'padding', etiqueta: 'Padding (Main)', defecto: 20 },
-            { tipo: 'text', id: 'maxAncho', etiqueta: 'Ancho Máximo (Página)', defecto: '100%' }
-        ];
-
         var mockBlock = {
             id: 'page-settings',
             role: 'page',
             config: settings || {}
         };
 
+        var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
+        if (!builder) {
+            container.innerHTML = 'Error: panelFields no disponible';
+            return;
+        }
+
+        // Schema with Tabs
+        var schema = [
+            // Tab: Estilo
+            { tipo: 'color', id: 'background', etiqueta: 'Color de Fondo', defecto: '#ffffff', tab: 'Estilo' },
+            { tipo: 'spacing', id: 'padding', etiqueta: 'Padding', defecto: 20, tab: 'Estilo' },
+            { tipo: 'text', id: 'maxAncho', etiqueta: 'Ancho Máximo', defecto: '100%', tab: 'Estilo' },
+            
+            // Tab: Avanzado
+            { tipo: 'textarea', id: 'custom_css', etiqueta: 'CSS Personalizado', tab: 'Avanzado', description: 'CSS específico para esta página. Usa "selector" para referirte al body.' }
+        ];
+
+        // Render Tabs Logic (Similar to Theme Settings)
+        var tabs = {};
+        var hasTabs = false;
+        var defaultTab = 'Estilo';
+
         schema.forEach(function(field) {
-            var control = builder(mockBlock, field);
-            if (control) {
-                form.appendChild(control);
-            }
+            var tabName = field.tab || defaultTab;
+            if (field.tab) hasTabs = true;
+            if (!tabs[tabName]) tabs[tabName] = [];
+            tabs[tabName].push(field);
         });
 
-        container.appendChild(form);
+        var fieldsContainer = document.createElement('div');
+        fieldsContainer.className = 'gbn-component-fields';
+        
+        var tabNav = document.createElement('div');
+        tabNav.className = 'gbn-panel-tabs';
+        
+        var tabContent = document.createElement('div');
+        tabContent.className = 'gbn-panel-tabs-content';
+        
+        var tabNames = Object.keys(tabs);
+        var order = ['Estilo', 'Avanzado'];
+        tabNames.sort(function(a, b) { return order.indexOf(a) - order.indexOf(b); });
+
+        var icons = {
+            'Estilo': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M14.31 8l5.74 9.94M9.69 8h11.48M7.38 12l5.74-9.94M9.69 16L3.95 6.06M14.31 16H2.83M16.62 12l-5.74 9.94"></path></svg>',
+            'Avanzado': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>'
+        };
+
+        var activeTab = tabNames[0];
+
+        tabNames.forEach(function(name) {
+            var btn = document.createElement('button');
+            btn.className = 'gbn-tab-btn' + (name === activeTab ? ' active' : '');
+            btn.type = 'button';
+            btn.innerHTML = (icons[name] || '') + '<span>' + name + '</span>';
+            btn.onclick = function() {
+                var allBtns = tabNav.querySelectorAll('.gbn-tab-btn');
+                var allPanes = tabContent.querySelectorAll('.gbn-tab-pane');
+                for(var i=0; i<allBtns.length; i++) allBtns[i].classList.remove('active');
+                for(var i=0; i<allPanes.length; i++) allPanes[i].classList.remove('active');
+                btn.classList.add('active');
+                var pane = tabContent.querySelector('.gbn-tab-pane[data-tab="' + name + '"]');
+                if (pane) pane.classList.add('active');
+            };
+            tabNav.appendChild(btn);
+
+            var pane = document.createElement('div');
+            pane.className = 'gbn-tab-pane' + (name === activeTab ? ' active' : '');
+            pane.setAttribute('data-tab', name);
+            
+            var form = document.createElement('form'); 
+            form.className = 'gbn-panel-form';
+            
+            tabs[name].forEach(function (field) { 
+                var control = builder(mockBlock, field);
+                if (control) { form.appendChild(control); } 
+            });
+            
+            pane.appendChild(form);
+            tabContent.appendChild(pane);
+        });
+
+        fieldsContainer.appendChild(tabNav);
+        fieldsContainer.appendChild(tabContent);
+        container.appendChild(fieldsContainer);
         
         // Disable panel footer button as we use global dock save
         if (footer) {
@@ -388,7 +450,7 @@
                                 var item = document.createElement('button');
                                 item.className = 'gbn-menu-item';
                                 item.innerHTML = '<span>' + (role.charAt(0).toUpperCase() + role.slice(1)) + '</span>' + 
-                                                 '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+                                                 (defaults.icon ? defaults.icon : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>');
                                 
                                 item.onclick = function() {
                                     renderComponentDetail(role);
@@ -445,7 +507,6 @@
                     fieldsContainer.className = 'gbn-component-fields';
                     componentDetailContainer.appendChild(fieldsContainer);
                     
-                    // Función para renderizar los campos
                     var renderFields = function() {
                         fieldsContainer.innerHTML = '';
                         var defaults = Gbn.content.roles.getRoleDefaults(role);
@@ -456,13 +517,94 @@
                             });
                             
                             var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
-                            if (builder) {
+                            if (!builder) return;
+
+                            // Group fields by tab
+                            var tabs = {};
+                            var hasTabs = false;
+                            var defaultTab = 'Contenido';
+
+                            relevantFields.forEach(function(field) {
+                                var tabName = field.tab || defaultTab;
+                                if (field.tab) hasTabs = true;
+                                if (!tabs[tabName]) tabs[tabName] = [];
+                                tabs[tabName].push(field);
+                            });
+
+                            if (!hasTabs) {
+                                // Fallback to flat list if no tabs defined
                                 relevantFields.forEach(function(field) {
                                     var f = Gbn.utils.assign({}, field);
                                     f.id = 'components.' + role + '.' + f.id;
                                     var control = builder(mockBlock, f);
                                     if (control) fieldsContainer.appendChild(control);
                                 });
+                            } else {
+                                // Render Tabs
+                                var tabNav = document.createElement('div');
+                                tabNav.className = 'gbn-panel-tabs';
+                                
+                                var tabContent = document.createElement('div');
+                                tabContent.className = 'gbn-panel-tabs-content';
+                                
+                                var tabNames = Object.keys(tabs);
+                                var order = ['Contenido', 'Estilo', 'Avanzado'];
+                                tabNames.sort(function(a, b) {
+                                    var ia = order.indexOf(a);
+                                    var ib = order.indexOf(b);
+                                    if (ia !== -1 && ib !== -1) return ia - ib;
+                                    if (ia !== -1) return -1;
+                                    if (ib !== -1) return 1;
+                                    return a.localeCompare(b);
+                                });
+
+                                var icons = {
+                                    'Contenido': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>',
+                                    'Estilo': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M14.31 8l5.74 9.94M9.69 8h11.48M7.38 12l5.74-9.94M9.69 16L3.95 6.06M14.31 16H2.83M16.62 12l-5.74 9.94"></path></svg>',
+                                    'Avanzado': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>'
+                                };
+
+                                var activeTab = tabNames[0];
+
+                                tabNames.forEach(function(name) {
+                                    var btn = document.createElement('button');
+                                    btn.className = 'gbn-tab-btn' + (name === activeTab ? ' active' : '');
+                                    btn.type = 'button';
+                                    btn.innerHTML = (icons[name] || '') + '<span>' + name + '</span>';
+                                    btn.title = name;
+                                    btn.onclick = function() {
+                                        var allBtns = tabNav.querySelectorAll('.gbn-tab-btn');
+                                        var allPanes = tabContent.querySelectorAll('.gbn-tab-pane');
+                                        
+                                        for(var i=0; i<allBtns.length; i++) allBtns[i].classList.remove('active');
+                                        for(var i=0; i<allPanes.length; i++) allPanes[i].classList.remove('active');
+                                        
+                                        btn.classList.add('active');
+                                        var pane = tabContent.querySelector('.gbn-tab-pane[data-tab="' + name + '"]');
+                                        if (pane) pane.classList.add('active');
+                                    };
+                                    tabNav.appendChild(btn);
+
+                                    var pane = document.createElement('div');
+                                    pane.className = 'gbn-tab-pane' + (name === activeTab ? ' active' : '');
+                                    pane.setAttribute('data-tab', name);
+                                    
+                                    var form = document.createElement('form'); 
+                                    form.className = 'gbn-panel-form';
+                                    
+                                    tabs[name].forEach(function (field) { 
+                                        var f = Gbn.utils.assign({}, field);
+                                        f.id = 'components.' + role + '.' + f.id;
+                                        var control = builder(mockBlock, f);
+                                        if (control) { form.appendChild(control); } 
+                                    });
+                                    
+                                    pane.appendChild(form);
+                                    tabContent.appendChild(pane);
+                                });
+
+                                fieldsContainer.appendChild(tabNav);
+                                fieldsContainer.appendChild(tabContent);
                             }
                         }
                     };

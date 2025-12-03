@@ -45,7 +45,8 @@
             if (def) {
                 ROLE_DEFAULTS[role] = {
                     config: utils.assign({}, def.config || {}),
-                    schema: Array.isArray(def.schema) ? def.schema.slice() : []
+                    schema: Array.isArray(def.schema) ? def.schema.slice() : [],
+                    icon: def.icon || null
                 };
                 if (def.selector) {
                     ensureSelector(role, def.selector);
@@ -53,223 +54,7 @@
             }
         });
 
-        // Definición de defaults para roles principales si no existen
-        if (!ROLE_DEFAULTS.principal) {
-            ROLE_DEFAULTS.principal = {
-                config: {
-                    // Defaults handled by CSS variables
-                },
-                schema: [
-                    { 
-                        id: 'layout', 
-                        tipo: 'icon_group', 
-                        etiqueta: 'Layout', 
-                        defecto: 'flex',
-                        opciones: [
-                            {valor: 'block', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>', etiqueta: 'Bloque'},
-                            {valor: 'flex', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>', etiqueta: 'Flexbox'},
-                            {valor: 'grid', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>', etiqueta: 'Grid'}
-                        ] 
-                    },
-                    { 
-                        id: 'gap', 
-                        tipo: 'slider', 
-                        etiqueta: 'Separación (Gap)', 
-                        unidad: 'px', 
-                        min: 0, 
-                        max: 120, 
-                        paso: 2,
-                        defecto: 0,
-                        condicion: ['layout', 'flex'] // Also for grid, logic handled in panel-render
-                    },
-                    { 
-                        id: 'direction', // Note: PHP uses flexDirection, JS defaults used direction. Let's align to PHP if possible, but panel-render handles both.
-                        tipo: 'icon_group', 
-                        etiqueta: 'Dirección', 
-                        defecto: 'row',
-                        condicion: ['layout', 'flex'],
-                        opciones: [
-                            { valor: 'row', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 12h16m-4-4l4 4-4 4"/></svg>', etiqueta: 'Fila' },
-                            { valor: 'column', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 4v16m-4-4l4 4 4-4"/></svg>', etiqueta: 'Columna' }
-                        ]
-                    },
-                    { 
-                        id: 'wrap', 
-                        tipo: 'icon_group', 
-                        etiqueta: 'Wrap', 
-                        defecto: 'wrap',
-                        condicion: ['layout', 'flex'],
-                        opciones: [
-                            { valor: 'nowrap', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8"/></svg>', etiqueta: 'No Wrap' },
-                            { valor: 'wrap', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 8h16M4 16h10"/></svg>', etiqueta: 'Wrap' }
-                        ]
-                    },
-                    { 
-                        id: 'justify', 
-                        tipo: 'icon_group', 
-                        etiqueta: 'Justify Content', 
-                        defecto: 'flex-start',
-                        condicion: ['layout', 'flex'],
-                        opciones: [
-                            { valor: 'flex-start', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 6h4M4 12h4M4 18h4"/></svg>', etiqueta: 'Start' },
-                            { valor: 'center', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M10 6h4M10 12h4M10 18h4"/></svg>', etiqueta: 'Center' },
-                            { valor: 'flex-end', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 6h4M16 12h4M16 18h4"/></svg>', etiqueta: 'End' },
-                            { valor: 'space-between', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 6h2m14 0h2M4 12h2m14 0h2M4 18h2m14 0h2"/></svg>', etiqueta: 'Space Between' }
-                        ]
-                    },
-                    { 
-                        id: 'align', 
-                        tipo: 'icon_group', 
-                        etiqueta: 'Align Items', 
-                        defecto: 'stretch',
-                        condicion: ['layout', 'flex'],
-                        opciones: [
-                            { valor: 'flex-start', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 6h16M4 10h16"/></svg>', etiqueta: 'Start' },
-                            { valor: 'center', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 11h16M4 13h16"/></svg>', etiqueta: 'Center' },
-                            { valor: 'flex-end', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 14h16M4 18h16"/></svg>', etiqueta: 'End' },
-                            { valor: 'stretch', icon: '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>', etiqueta: 'Stretch' }
-                        ]
-                    },
-                    {
-                        id: 'gridColumns',
-                        tipo: 'slider',
-                        etiqueta: 'Columnas Grid',
-                        min: 1,
-                        max: 12,
-                        paso: 1,
-                        defecto: 4,
-                        condicion: ['layout', 'grid']
-                    },
-                    {
-                        id: 'gridGap',
-                        tipo: 'slider',
-                        etiqueta: 'Separación Grid',
-                        unidad: 'px',
-                        min: 0,
-                        max: 120,
-                        paso: 2,
-                        defecto: 20,
-                        condicion: ['layout', 'grid']
-                    },
-                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding' },
-                    { id: 'background', tipo: 'color', etiqueta: 'Fondo', defecto: 'transparent' }
-                ]
-            };
-        }
 
-        if (!ROLE_DEFAULTS.secundario) {
-            ROLE_DEFAULTS.secundario = {
-                config: {
-                    // Defaults handled by CSS variables
-                },
-                schema: [
-                    { id: 'width', tipo: 'fraction', etiqueta: 'Ancho', defecto: '1/1' },
-                    { 
-                        id: 'layout', 
-                        tipo: 'icon_group', 
-                        etiqueta: 'Layout', 
-                        defecto: 'flex',
-                        opciones: [
-                            {valor: 'block', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>', etiqueta: 'Bloque'},
-                            {valor: 'flex', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>', etiqueta: 'Flexbox'},
-                            {valor: 'grid', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>', etiqueta: 'Grid'}
-                        ] 
-                    },
-                    { 
-                        id: 'flexDirection', 
-                        tipo: 'icon_group', 
-                        etiqueta: 'Dirección Flex', 
-                        opciones: [
-                            {valor: 'row', etiqueta: 'Horizontal', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><path d="M16 8l4 4-4 4"/></svg>'},
-                            {valor: 'column', etiqueta: 'Vertical', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16"/><path d="M8 16l4 4 4-4"/></svg>'}
-                        ],
-                        condicion: ['layout', 'flex']
-                    },
-                    { 
-                        id: 'flexWrap', 
-                        tipo: 'icon_group', 
-                        etiqueta: 'Envoltura', 
-                        opciones: [
-                            {valor: 'nowrap', etiqueta: 'Sin envoltura', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/></svg>'},
-                            {valor: 'wrap', etiqueta: 'Con envoltura', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4"/><path d="M8 12l-4 4 4 4"/></svg>'}
-                        ],
-                        condicion: ['layout', 'flex']
-                    },
-                    { 
-                        id: 'flexJustify', 
-                        tipo: 'icon_group', 
-                        etiqueta: 'Justificación', 
-                        opciones: [
-                            {valor: 'flex-start', etiqueta: 'Inicio', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="18" rx="1"/></svg>'},
-                            {valor: 'center', etiqueta: 'Centro', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="18" rx="1"/></svg>'},
-                            {valor: 'flex-end', etiqueta: 'Fin', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="15" y="3" width="6" height="18" rx="1"/></svg>'},
-                            {valor: 'space-between', etiqueta: 'Espacio entre', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>'},
-                            {valor: 'space-around', etiqueta: 'Espacio alrededor', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/></svg>'}
-                        ],
-                        condicion: ['layout', 'flex']
-                    },
-                    { 
-                        id: 'flexAlign', 
-                        tipo: 'icon_group', 
-                        etiqueta: 'Alineación', 
-                        opciones: [
-                            {valor: 'stretch', etiqueta: 'Estirar', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3v18"/><path d="M20 3v18"/><rect x="8" y="6" width="8" height="12" rx="1"/></svg>'},
-                            {valor: 'flex-start', etiqueta: 'Inicio', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h16"/><rect x="8" y="7" width="8" height="8" rx="1"/></svg>'},
-                            {valor: 'center', etiqueta: 'Centro', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'},
-                            {valor: 'flex-end', etiqueta: 'Fin', icon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21h16"/><rect x="8" y="9" width="8" height="8" rx="1"/></svg>'}
-                        ],
-                        condicion: ['layout', 'flex']
-                    },
-                    { 
-                        id: 'gap', 
-                        tipo: 'slider', 
-                        etiqueta: 'Separación (Gap)', 
-                        unidad: 'px', 
-                        min: 0, 
-                        max: 120, 
-                        paso: 2,
-                        condicion: ['layout', 'flex']
-                    },
-                    { id: 'padding', tipo: 'spacing', etiqueta: 'Padding' },
-                    { id: 'background', tipo: 'color', etiqueta: 'Color de fondo', defecto: 'transparent' }
-                ]
-            };
-        }
-
-        // Defaults hardcoded para gloryTexto si no vienen de containerDefs
-        if (!ROLE_DEFAULTS.text) {
-            ROLE_DEFAULTS.text = {
-                config: {
-                    tag: 'p',
-                    texto: 'Nuevo texto',
-                    alineacion: '',
-                    color: '',
-                    size: ''
-                },
-                schema: [
-                    { id: 'tag', tipo: 'select', etiqueta: 'Etiqueta HTML', opciones: [
-                        { valor: 'p', etiqueta: 'Párrafo (p)' },
-                        { valor: 'h1', etiqueta: 'Encabezado 1 (h1)' },
-                        { valor: 'h2', etiqueta: 'Encabezado 2 (h2)' },
-                        { valor: 'h3', etiqueta: 'Encabezado 3 (h3)' },
-                        { valor: 'h4', etiqueta: 'Encabezado 4 (h4)' },
-                        { valor: 'h5', etiqueta: 'Encabezado 5 (h5)' },
-                        { valor: 'h6', etiqueta: 'Encabezado 6 (h6)' },
-                        { valor: 'span', etiqueta: 'Span' },
-                        { valor: 'div', etiqueta: 'Div' }
-                    ]},
-                    { id: 'texto', tipo: 'rich_text', etiqueta: 'Contenido' },
-                    { id: 'typography', tipo: 'typography', etiqueta: 'Tipografía' },
-                    { id: 'alineacion', tipo: 'icon_group', etiqueta: 'Alineación', opciones: [
-                        { valor: 'left', icon: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M17 9.5H3M21 4.5H3M21 14.5H3M17 19.5H3"/></svg>', etiqueta: 'Izquierda' },
-                        { valor: 'center', icon: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 9.5H5M21 4.5H3M21 14.5H3M19 19.5H5"/></svg>', etiqueta: 'Centro' },
-                        { valor: 'right', icon: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9.5H7M21 4.5H3M21 14.5H3M21 19.5H7"/></svg>', etiqueta: 'Derecha' },
-                        { valor: 'justify', icon: '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9.5H3M21 4.5H3M21 14.5H3M21 19.5H3"/></svg>', etiqueta: 'Justificado' }
-                    ]},
-                    { id: 'color', tipo: 'color', etiqueta: 'Color' }
-                ]
-            };
-        }
 
         if (!Object.keys(ROLE_DEFAULTS).length) {
             var legacyRoles = utils.getConfig().roles || {};
@@ -329,6 +114,7 @@
         return {
             config: utils.assign({}, defaults.config || {}),
             schema: Array.isArray(defaults.schema) ? defaults.schema.slice() : [],
+            icon: defaults.icon || null
         };
     }
 

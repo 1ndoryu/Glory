@@ -49,11 +49,12 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
     -   **Acción:** Eliminadas referencias a componentes antiguos en `ContainerRegistry.php`.
     -   **Estado:** Completado.
 
-- [ ] **Limpieza de JS (Roles Legacy)**
+- [x] **Limpieza de JS (Roles Legacy)**
     -   **Acción:** Eliminar definiciones hardcoded en `roles.js` que ya no son necesarias gracias a la inyección dinámica desde PHP.
     -   **Prioridad:** Media (No bloqueante, el JS prioriza la config inyectada).
+    -   **Estado:** Completado. Definiciones hardcoded eliminadas.
 
-- [ ] **Tests de Regresión**
+- [x] **Tests de Regresión**
     -   **Acción:** Verificar manualmente que los componentes migrados funcionan idénticamente a sus versiones anteriores. (Esto lo hara el usuario)
 
 ### Fase 4: Refactorización JS (SOLID & DRY) (COMPLETADO)
@@ -133,6 +134,17 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
     -   **Objetivo:** Evitar regresiones futuras por falta de contexto sobre decisiones arquitectónicas críticas (como el uso de `:where()` o la prioridad de renderers).
     -   **Estado:** Documentación añadida en `style-composer.js` explicando la jerarquía de herencia.
 
+- [x] **Bug 34: Margen sin efecto real (SOLUCIONADO)**
+    -   **Síntoma:** El margen configurado en el panel no se aplica visualmente.
+    -   **Estado:** COMPLETADO.
+    -   **Solución:** Se actualizó `shared.js` para soportar `extractSpacingStyles` con propiedad dinámica y `style-composer.js` para procesar el campo `margin`.
+
+- [x] **Bug 35: Iconos faltantes en paneles de configuración del tema (SOLUCIONADO)**
+    -   **Síntoma:** Los paneles de configuración de componentes dentro de Theme Settings no muestran iconos para las pestañas o secciones.
+    -   **Requisito:** Debe sincronizarse de forma inteligente y automática con los iconos definidos en los componentes individuales.
+    -   **Estado:** COMPLETADO.
+    -   **Solución:** Se realizó la limpieza de definiciones legacy en `roles.js` y se implementó la propagación de la propiedad `icon` desde PHP.
+
 ---
 
 ## 4. Historial de Cambios y Resoluciones (Resumen)
@@ -207,6 +219,23 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 -   **Problema**: El layout Grid no se aplicaba correctamente desde Theme Settings.
 -   **Causa**: `applicator.js` convertía el número de columnas (ej: 2) a pixeles (2px), invalidando la función `repeat()`.
 -   **Solución**: Se añadió una excepción en `applicator.js` para que `gridColumns` se aplique sin unidades.
+
+#### ✅ Bug 34: Margen sin efecto real
+-   **Problema**: El margen configurado en el panel no se aplicaba visualmente.
+-   **Causa**: `style-composer.js` solo procesaba el campo `padding` y `extractSpacingStyles` en `shared.js` tenía hardcoded las propiedades de padding.
+-   **Solución**: Se refactorizó `extractSpacingStyles` para aceptar una propiedad dinámica y se añadió la lógica de procesamiento de `margin` en `style-composer.js`.
+
+#### ✅ Bug 35: Iconos faltantes en Theme Settings
+-   **Problema**: Los componentes en la lista de Theme Settings mostraban un icono genérico en lugar de su icono específico.
+-   **Causa**: `roles.js` no copiaba la propiedad `icon` de la definición del contenedor (PHP) a los defaults del rol en JS. Además, `getRoleDefaults` devolvía un objeto nuevo sin la propiedad `icon`.
+-   **Solución**: 
+    1. Se limpiaron las definiciones legacy en `roles.js`.
+    2. Se actualizó `getRoleDefaults` en `roles.js` para incluir explícitamente la propiedad `icon`.
+    3. Se actualizó `ContainerRegistry.php` para incluir `icon` y `label` en el payload global `roleSchemas`.
+
+#### ✅ Mejora UX: Unificación de Paneles (Theme Settings)
+-   **Problema**: El panel de configuración de componentes en Theme Settings era plano y diferente al panel de edición directa.
+-   **Solución**: Se implementó la lógica de pestañas (Contenido, Estilo, Avanzado) en `render.js` (Theme Settings) replicando la estructura y clases CSS de `panel-render.js`. Ahora ambos paneles tienen la misma organización visual y funcional.
 
 ---
 
@@ -311,3 +340,35 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 
 
 
+
+### 6.4 Mejoras Visuales y Detalles (Solicitud Usuario)
+**Objetivo:** Refinar la experiencia de usuario y la interacción del panel con la página.
+
+- [x] **Acceso Rápido de Ancho (Controles Secundarios):**
+    -   **Ubicación:** En `<span class="gbn-controls-group gbn-controls-centered">` de los controles secundarios.
+    -   **Funcionalidad:** Mostrar el valor actual del ancho (ej: "1/1", "1/2"). Si no tiene valor, asumir "1/1" (sin forzar estilos).
+    -   **Interacción:** Al hacer clic, desplegar opciones para seleccionar y aplicar el ancho rápidamente.
+    -   **Requisito:** Debe ser totalmente responsive y actualizarse dinámicamente al cambiar de vista (Mobile/Tablet/Desktop).
+    -   **Estado:** COMPLETADO. Implementado en `inspector.js` con dropdown y soporte responsive.
+- [x] **Acceso Rápido de Ancho (Controles Secundarios):**
+    -   **Ubicación:** En `<span class="gbn-controls-group gbn-controls-centered">` de los controles secundarios.
+    -   **Funcionalidad:** Mostrar el valor actual del ancho (ej: "1/1", "1/2"). Si no tiene valor, asumir "1/1" (sin forzar estilos).
+    -   **Interacción:** Al hacer clic, desplegar opciones para seleccionar y aplicar el ancho rápidamente.
+    -   **Requisito:** Debe ser totalmente responsive y actualizarse dinámicamente al cambiar de vista (Mobile/Tablet/Desktop).
+    -   **Estado:** COMPLETADO. Implementado en `inspector.js` con dropdown y soporte responsive.
+    -   **Fix (Feedback):** Mejorada la integración visual (CSS classes), ampliada la lista de opciones (12 fracciones) y corregida la actualización del valor en tiempo real (`state.get`).
+    -   **Fix (Feedback 2):** Ajustado estilo del dropdown (Grid 6 cols), corregido cierre inesperado por gap (CSS bridge) y problema de controles fijos.
+    -   **Fix (Feedback 3):** Implementado ocultamiento automático de controles (`gbn-show-controls`) tras seleccionar un ancho.
+
+- [x] **Interacción Panel-Página (Docking):**
+    -   **Requerimiento:** Al abrir el panel, el ancho de la página debe reducirse para que el panel no cubra el contenido.
+    -   **Restricción Crítica:** Esta reducción de ancho es puramente visual para la edición y **NO** debe guardarse en los estilos persistentes de la página.
+    -   **Estado:** COMPLETADO. Implementado en `panel-core.js` (clase `gbn-panel-open` en body) y `layout.css` (reducción de ancho de `main`).
+
+- [x] **Refactorización de "Configurar Página":**
+    -   **Target:** Botón `<button ... data-gbn-action="page">`.
+    -   **Problema:** Funcionalidad actual no adaptada a la lógica responsive de GBN.
+    -   **Acción:** Refactorizar para integrar con el sistema responsive (breakpoints).
+    -   **Nueva Feature:** Añadir soporte para **Estilos Personalizados (Custom CSS)** específicos de la página (ej: `.mi-clase { ... }`).
+    -   **Validación:** Asegurar que las configuraciones se apliquen y guarden individualmente por página.
+    -   **Estado:** COMPLETADO. Refactorizado `renderPageSettingsForm` en `render.js` para usar pestañas (Estilo, Avanzado) y campos responsive, incluyendo Custom CSS.

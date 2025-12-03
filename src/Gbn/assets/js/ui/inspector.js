@@ -92,12 +92,129 @@
         });
 
         container.appendChild(btnConfig);
+        
+        // Width Control (Only for Secundario)
+        if (block.role === 'secundario') {
+            var widthControl = createWidthControl(block);
+            if (widthControl) {
+                container.appendChild(widthControl);
+            }
+        }
+
         container.appendChild(btnAdd);
         container.appendChild(btnDelete);
         
         block.element.appendChild(container);
         block.element.__gbnControls = container;
         return container;
+    }
+
+    function createWidthControl(block) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'gbn-width-control';
+        
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'gbn-width-btn';
+        btn.title = 'Ancho del bloque';
+        
+        // Dropdown
+        var dropdown = document.createElement('div');
+        dropdown.className = 'gbn-width-dropdown';
+        
+        var fractions = ['1/1', '5/6', '4/5', '3/4', '2/3', '3/5', '1/2', '2/5', '1/3', '1/4', '1/5', '1/6'];
+        
+        fractions.forEach(function(val) {
+            var item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'gbn-width-item';
+            item.textContent = val;
+            
+            item.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (Gbn.ui && Gbn.ui.panelApi && Gbn.ui.panelApi.updateConfigValue) {
+                    Gbn.ui.panelApi.updateConfigValue(block, 'width', val);
+                    // Force update label immediately for responsiveness
+                    btn.textContent = val;
+                    dropdown.classList.remove('is-open');
+                    
+                    // Fix: Hide controls after selection as requested
+                    if (block && block.element) {
+                        block.element.classList.remove('gbn-show-controls');
+                    }
+                }
+            });
+            dropdown.appendChild(item);
+        });
+
+        wrapper.appendChild(btn);
+        wrapper.appendChild(dropdown);
+
+        // Toggle Dropdown
+        btn.addEventListener('click', function(e) {
+            e.preventDefault(); e.stopPropagation();
+            var isOpen = dropdown.classList.contains('is-open');
+            // Close others
+            document.querySelectorAll('.gbn-width-dropdown').forEach(function(d) { d.classList.remove('is-open'); });
+            
+            if (!isOpen) {
+                dropdown.classList.add('is-open');
+            } else {
+                dropdown.classList.remove('is-open');
+            }
+        });
+
+        // Close on click outside
+        document.addEventListener('click', function(e) {
+            if (!wrapper.contains(e.target)) {
+                dropdown.classList.remove('is-open');
+            }
+        });
+
+        function updateLabel() {
+            // Fetch fresh block state to avoid stale closure
+            var freshBlock = (Gbn.state && Gbn.state.get) ? Gbn.state.get(block.id) : block;
+            if (!freshBlock) freshBlock = block;
+
+            var bp = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
+            var val = '1/1'; // Default
+            
+            // Try to get value using fieldUtils if available
+            if (Gbn.ui && Gbn.ui.fieldUtils && Gbn.ui.fieldUtils.getResponsiveConfigValue) {
+                val = Gbn.ui.fieldUtils.getResponsiveConfigValue(freshBlock, 'width', bp) || '1/1';
+            } else if (freshBlock.config) {
+                // Fallback manual logic
+                if (bp === 'desktop') val = freshBlock.config.width || '1/1';
+                else if (freshBlock.config._responsive && freshBlock.config._responsive[bp] && freshBlock.config._responsive[bp].width) {
+                    val = freshBlock.config._responsive[bp].width;
+                } else {
+                    // Inherit logic simplified
+                    val = freshBlock.config.width || '1/1'; 
+                }
+            }
+            btn.textContent = val;
+        }
+
+        // Initial update
+        updateLabel();
+
+        // Listen for updates
+        var updateHandler = function(e) {
+            // Update on config change or breakpoint change
+            if (e.type === 'gbn:configChanged') {
+                if (e.detail && e.detail.id === block.id) updateLabel();
+            } else {
+                updateLabel();
+            }
+        };
+
+        window.addEventListener('gbn:configChanged', updateHandler);
+        window.addEventListener('gbn:breakpointChanged', updateHandler);
+        
+        // Attach handler to element to allow cleanup if needed (though we don't have a destroy lifecycle here easily)
+        // A simple check inside handler if element is connected could work, but for now this is standard.
+
+        return wrapper;
     }
 
     var inspector = (function () {

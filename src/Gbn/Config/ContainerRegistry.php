@@ -153,6 +153,8 @@ final class ContainerRegistry
         $payload = [];
         foreach (self::resolveAll() as $role => $data) {
             $payload[$role] = [
+                'label' => $data['label'] ?? $role,
+                'icon' => $data['icon'] ?? '',
                 'config' => isset($data['config']) && is_array($data['config']) ? $data['config'] : [],
                 'schema' => isset($data['schema']) && is_array($data['schema']) ? $data['schema'] : [],
             ];

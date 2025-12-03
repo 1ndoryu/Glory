@@ -207,3 +207,99 @@
 .gbn-root-add-bottom {
     bottom: -12px;
 }
+
+/* Width Control (Inspector) */
+.gbn-width-control {
+    position: relative;
+    display: inline-block;
+    margin: 0 2px;
+}
+
+.gbn-width-btn {
+    appearance: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 0 6px;
+    height: 20px;
+    min-width: 34px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gbn-width-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.gbn-width-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    background: #fff;
+    border-radius: 6px;
+    padding: 4px;
+    width: 200px;
+    display: none;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: unset;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Keep shadow for visibility */
+}
+
+.gbn-width-dropdown.is-open {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0px;
+}
+
+/* Bridge the gap between button and dropdown to prevent mouseout */
+.gbn-width-dropdown::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    height: 8px; /* Slightly larger than 6px to be safe */
+    background: transparent;
+}
+
+.gbn-width-item {
+    appearance: none;
+    border: none;
+    background: transparent;
+    padding: 6px 2px; /* Reduced padding for 6 cols */
+    font-size: 11px; /* Smaller font */
+    color: #374151;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: center;
+    transition: background 0.1s;
+    white-space: nowrap;
+}
+
+.gbn-width-item:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+/* Triangle for dropdown (Adjusted position) */
+.gbn-width-dropdown::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #fff transparent transparent transparent;
+    pointer-events: none; /* Let clicks pass through if needed */
+    margin-top: 0px; /* Reset */
+}

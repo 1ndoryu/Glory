@@ -29,6 +29,18 @@
     transform: translateX(0);
 }
 
+/* Docking Effect */
+body.gbn-panel-open main {
+    width: calc(100% - 280px);
+    margin-right: 280px;
+    transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), margin-right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Ensure transition back */
+main {
+    transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), margin-right 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
 #gbn-panel .gbn-header {
     display: flex;
     align-items: center;

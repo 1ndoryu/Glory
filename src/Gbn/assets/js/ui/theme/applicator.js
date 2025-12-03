@@ -41,9 +41,23 @@
             root.style.marginLeft = 'auto';
             root.style.marginRight = 'auto';
         } else {
-            root.style.removeProperty('max-width');
-            root.style.removeProperty('margin-left');
             root.style.removeProperty('margin-right');
+        }
+
+        // Custom CSS
+        if (settings.custom_css) {
+            var styleId = 'gbn-page-custom-css';
+            var styleEl = document.getElementById(styleId);
+            if (!styleEl) {
+                styleEl = document.createElement('style');
+                styleEl.id = styleId;
+                document.head.appendChild(styleEl);
+            }
+            var css = settings.custom_css.replace(/selector/g, 'body');
+            styleEl.textContent = css;
+        } else {
+            var styleEl = document.getElementById('gbn-page-custom-css');
+            if (styleEl) styleEl.textContent = '';
         }
     }
 

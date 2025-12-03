@@ -84,12 +84,10 @@ class PrincipalComponent extends AbstractComponent
                 ->tab('Estilo')
         );
 
-        // 2. Padding (from Trait) - Tab: Estilo
+        // 2. Spacing (Padding & Margin) - Tab: Estilo
         foreach ($this->getSpacingOptions() as $option) {
-            if ($option->toArray()['id'] === 'padding') {
-                $option->tab('Estilo');
-                $schema->addOption($option);
-            }
+            $option->tab('Estilo');
+            $schema->addOption($option);
         }
 
         // 5. Fondo - Tab: Estilo

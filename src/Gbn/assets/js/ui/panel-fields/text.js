@@ -17,9 +17,18 @@
         label.textContent = field.etiqueta || field.id;
         wrapper.appendChild(label);
         
-        var input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'gbn-input';
+        var input;
+        if (field.tipo === 'textarea') {
+            input = document.createElement('textarea');
+            input.className = 'gbn-input gbn-textarea';
+            input.style.minHeight = '100px';
+            input.style.fontFamily = 'monospace';
+            input.style.fontSize = '12px';
+        } else {
+            input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'gbn-input';
+        }
         
         var current = u.getConfigValue(block, field.id);
         var themeDefault = u.getThemeDefault(block.role, field.id);

@@ -57,17 +57,20 @@
 
             // 1. Spacing (Padding/Margin)
             var paddingField = findField(schemaFields, 'padding');
+            var marginField = findField(schemaFields, 'margin');
+
             if (traits.indexOf('HasSpacing') !== -1 || paddingField) {
                 var paddingConfig = getValue('padding');
                 if (paddingConfig === undefined) paddingConfig = config.padding; 
-                var spacingStyles = shared.extractSpacingStyles(paddingConfig);
-                
-                // Fallback to CSS vars if no explicit padding
-                if (Object.keys(spacingStyles).length === 0) {
-                    // No explicit padding, do nothing.
-                }
+                var paddingStyles = shared.extractSpacingStyles(paddingConfig, 'padding');
+                Object.assign(styles, paddingStyles);
+            }
 
-                Object.assign(styles, spacingStyles);
+            if (traits.indexOf('HasSpacing') !== -1 || marginField) {
+                var marginConfig = getValue('margin');
+                if (marginConfig === undefined) marginConfig = config.margin; 
+                var marginStyles = shared.extractSpacingStyles(marginConfig, 'margin');
+                Object.assign(styles, marginStyles);
             }
 
             // 2. Dimensions (Height/Width)

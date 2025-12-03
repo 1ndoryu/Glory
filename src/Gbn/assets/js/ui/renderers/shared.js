@@ -7,21 +7,23 @@
 
     var utils = Gbn.utils;
 
-    function extractSpacingStyles(spacingConfig) {
+    function extractSpacingStyles(spacingConfig, property) {
         var styles = {};
         if (spacingConfig === null || spacingConfig === undefined || spacingConfig === '') { return styles; }
+        
+        var prop = property || 'padding';
         
         // Handle single value (string or number)
         if (typeof spacingConfig !== 'object') {
             var val = typeof spacingConfig === 'number' ? spacingConfig + 'px' : spacingConfig;
-            styles['padding-top'] = val;
-            styles['padding-right'] = val;
-            styles['padding-bottom'] = val;
-            styles['padding-left'] = val;
+            styles[prop + '-top'] = val;
+            styles[prop + '-right'] = val;
+            styles[prop + '-bottom'] = val;
+            styles[prop + '-left'] = val;
             return styles;
         }
         
-        var map = { superior: 'padding-top', derecha: 'padding-right', inferior: 'padding-bottom', izquierda: 'padding-left' };
+        var map = { superior: prop + '-top', derecha: prop + '-right', inferior: prop + '-bottom', izquierda: prop + '-left' };
         Object.keys(map).forEach(function (key) {
             var raw = spacingConfig[key];
             if (raw === null || raw === undefined || raw === '') { return; }

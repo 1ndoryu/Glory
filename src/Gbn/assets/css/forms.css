@@ -838,9 +838,7 @@
     width: 100%;
 }
 
-.gbn-has-sync-indicator .gbn-field-label {
-    /* Ensure label takes available space if needed, but indicator is usually right aligned */
-}
+
 
 /* Padding Control Header Fix */
 .gbn-field-spacing legend {

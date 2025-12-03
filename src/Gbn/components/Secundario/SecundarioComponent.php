@@ -84,13 +84,22 @@ class SecundarioComponent extends AbstractComponent
                 ->tab('Estilo')
         );
 
-        // 4. Padding (from Trait) - Tab: Estilo
-        // Manually adding to match previous logic
+        // 4. Spacing (Padding & Margin) - Tab: Estilo
         $schema->addOption(
             Option::spacing('padding', 'Padding Interno (Auto)')
                 ->units(['px', '%', 'rem'])
                 ->step(4)
                 ->min(0)
+                ->max(160)
+                ->fields(['superior', 'derecha', 'inferior', 'izquierda'])
+                ->tab('Estilo')
+        );
+
+        $schema->addOption(
+            Option::spacing('margin', 'Margen')
+                ->units(['px', '%', 'rem'])
+                ->step(4)
+                ->min(-100)
                 ->max(160)
                 ->fields(['superior', 'derecha', 'inferior', 'izquierda'])
                 ->tab('Estilo')

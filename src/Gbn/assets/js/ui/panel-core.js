@@ -172,6 +172,7 @@
             if (panelRoot) { 
                 panelRoot.classList.add('is-open'); 
                 panelRoot.setAttribute('aria-hidden', 'false'); 
+                document.body.classList.add('gbn-panel-open'); // Visual Docking 
                 
                 // Reset classes
                 panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme', 'gbn-panel-page');
@@ -211,7 +212,8 @@
             ensurePanelMounted(); setActiveBlock(null); panelMode = 'theme';
             if (panelRoot) { 
                 panelRoot.classList.add('is-open'); 
-                panelRoot.setAttribute('aria-hidden', 'false');
+                panelRoot.setAttribute('aria-hidden', 'false'); 
+                document.body.classList.add('gbn-panel-open'); // Visual Docking
                 panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-page');
                 panelRoot.classList.add('gbn-panel-theme');
             }
@@ -273,7 +275,8 @@
             ensurePanelMounted(); setActiveBlock(null); panelMode = 'page';
             if (panelRoot) { 
                 panelRoot.classList.add('is-open'); 
-                panelRoot.setAttribute('aria-hidden', 'false');
+                panelRoot.setAttribute('aria-hidden', 'false'); 
+                document.body.classList.add('gbn-panel-open'); // Visual Docking
                 panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme');
                 panelRoot.classList.add('gbn-panel-page');
             }
@@ -485,6 +488,7 @@
         
         close: function () {
             if (panelRoot) { panelRoot.classList.remove('is-open'); panelRoot.setAttribute('aria-hidden', 'true'); }
+            document.body.classList.remove('gbn-panel-open'); // Visual Docking
             setActiveBlock(null); renderPlaceholder(); utils.debug('Panel cerrado');
         },
         
