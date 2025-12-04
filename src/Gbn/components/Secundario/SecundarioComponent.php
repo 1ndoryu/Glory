@@ -14,7 +14,7 @@ use Glory\Gbn\Traits\HasCustomCSS;
 
 class SecundarioComponent extends AbstractComponent
 {
-    use HasFlexbox, HasGrid, HasSpacing, HasBackground, HasCustomCSS;
+    use HasFlexbox, HasGrid, HasSpacing, HasBackground, HasCustomCSS, HasPositioning;
 
     protected string $id = 'secundario';
     protected string $label = 'Contenedor Secundario';
@@ -74,15 +74,20 @@ class SecundarioComponent extends AbstractComponent
                 ->tab('Estilo')
         );
 
-        // 2. Altura - Tab: Estilo
+        // 2. Altura (Smart Control) - Tab: Estilo
         $schema->addOption(
-            Option::select('height', 'Altura')
-                ->options([
-                    ['valor' => 'auto', 'etiqueta' => 'Automática'],
-                    ['valor' => 'min-content', 'etiqueta' => 'Mínima'],
-                    ['valor' => '100vh', 'etiqueta' => 'Altura completa'],
-                ])
+            Option::text('height', 'Altura')
+                ->default('auto')
                 ->tab('Estilo')
+                ->description('Ej: auto, 100vh, 500px')
+        );
+
+        // 3. Ancho Máximo - Tab: Estilo
+        $schema->addOption(
+            Option::text('maxAncho', 'Ancho máximo')
+                ->default('')
+                ->tab('Estilo')
+                ->description('Ej: 1200px, 100%')
         );
 
         // 4. Spacing (Padding & Margin) - Tab: Estilo
@@ -119,7 +124,12 @@ class SecundarioComponent extends AbstractComponent
             $schema->addOption($option);
         }
 
-        // 7. Custom CSS - Tab: Avanzado
+        // 7. Positioning (from Trait) - Tab: Avanzado
+        foreach ($this->getPositioningOptions() as $option) {
+            $schema->addOption($option);
+        }
+
+        // 8. Custom CSS - Tab: Avanzado
         $schema->addOption($this->getCustomCSSOption());
 
         return $schema->toArray();

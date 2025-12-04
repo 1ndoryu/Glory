@@ -143,6 +143,14 @@
     -   Actualizado `shared.js` para procesar cualquier valor CSS válido.
     -   Estilizado en `forms.css`.
 
+### Fase 6.5: Posicionamiento y Dimensiones Avanzadas
+**Objetivo:** Completar el control de layout y posicionamiento.
+- [ ] **Trait HasPositioning:** Centralizar lógica de `position` y `z-index`.
+- [ ] **Esquemas Componentes:** Integrar `HasPositioning` en `Principal`, `Secundario` y `Text`.
+- [ ] **Mejora Altura:** Convertir `height` en input flexible (Smart Control) en todos los contenedores.
+- [ ] **Max-Width Secundario:** Agregar opción `maxAncho` a `SecundarioComponent`.
+- [ ] **Renderizado:** Actualizar `style-composer.js` para procesar nuevas propiedades.
+
 ---
 
 ## Trabajo Pendiente

@@ -14,7 +14,7 @@ use Glory\Gbn\Traits\HasCustomCSS;
 
 class PrincipalComponent extends AbstractComponent
 {
-    use HasFlexbox, HasGrid, HasSpacing, HasBackground, HasCustomCSS;
+    use HasFlexbox, HasGrid, HasSpacing, HasBackground, HasCustomCSS, HasPositioning;
 
     protected string $id = 'principal';
     protected string $label = 'Contenedor Principal';
@@ -67,15 +67,12 @@ class PrincipalComponent extends AbstractComponent
                 ->tab('Contenido')
         );
 
-        // 1. Altura - Tab: Estilo
+        // 1. Altura (Smart Control) - Tab: Estilo
         $schema->addOption(
-            Option::select('height', 'Altura')
-                ->options([
-                    ['valor' => 'auto', 'etiqueta' => 'Automática'],
-                    ['valor' => 'min-content', 'etiqueta' => 'Mínima'],
-                    ['valor' => '100vh', 'etiqueta' => 'Altura completa'],
-                ])
+            Option::text('height', 'Altura')
+                ->default('auto')
                 ->tab('Estilo')
+                ->description('Ej: auto, 100vh, 500px')
         );
 
         // 4. Ancho Máximo - Tab: Estilo
@@ -101,6 +98,11 @@ class PrincipalComponent extends AbstractComponent
         // 6. Background Image (from Trait) - Tab: Estilo
         foreach ($this->getBackgroundOptions() as $option) {
             $option->tab('Estilo');
+            $schema->addOption($option);
+        }
+
+        // 7. Positioning (from Trait) - Tab: Avanzado
+        foreach ($this->getPositioningOptions() as $option) {
             $schema->addOption($option);
         }
 
