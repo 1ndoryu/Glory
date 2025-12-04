@@ -329,9 +329,14 @@ class GbnManager
                 'deps' => ['glory-gbn-ui-fields-index'],
             ],
             // Renderers - Módulos refactorizados
+            // Fase 11: Traits centralizados para eliminar código duplicado en renderers
+            'glory-gbn-ui-renderers-traits' => [
+                'file' => '/js/ui/renderers/renderer-traits.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
             'glory-gbn-ui-renderers-shared' => [
                 'file' => '/js/ui/renderers/shared.js',
-                'deps' => ['glory-gbn-ui-fields-utils'],
+                'deps' => ['glory-gbn-ui-fields-utils', 'glory-gbn-ui-renderers-traits'],
             ],
             'glory-gbn-ui-renderers-style-composer' => [
                 'file' => '/js/ui/renderers/style-composer.js',
@@ -355,15 +360,15 @@ class GbnManager
             ],
             'glory-gbn-ui-renderers-text' => [
                 'file' => '/js/ui/renderers/text.js',
-                'deps' => ['glory-gbn-ui-renderers-shared'],
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
             ],
             'glory-gbn-ui-renderers-button' => [
                 'file' => '/js/ui/renderers/button.js',
-                'deps' => ['glory-gbn-ui-renderers-shared'],
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
             ],
             'glory-gbn-ui-renderers-image' => [
                 'file' => '/js/ui/renderers/image.js',
-                'deps' => ['glory-gbn-ui-renderers-shared'],
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
             ],
             'glory-gbn-ui-renderers-page-settings' => [
                 'file' => '/js/ui/renderers/page-settings.js',

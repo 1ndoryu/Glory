@@ -1,58 +1,72 @@
 ;(function (global) {
     'use strict';
 
+    /**
+     * IMAGE RENDERER - Refactorizado Fase 11
+     * 
+     * Este renderer usa los traits centralizados y solo maneja
+     * propiedades específicas de imágenes (src, alt, objectFit).
+     * 
+     * @module Gbn.ui.renderers.image
+     */
+
     var Gbn = global.Gbn = global.Gbn || {};
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.renderers = Gbn.ui.renderers || {};
 
+    // Referencia a traits para funciones compartidas
+    var traits = Gbn.ui.renderers.traits;
+
+    /**
+     * Genera estilos CSS para una imagen.
+     * Usa traits.getCommonStyles() y agrega específicos de imagen.
+     */
     function getStyles(config, block) {
-        var styles = {};
+        // Obtener estilos comunes (width, height, borderRadius ya están en traits)
+        var styles = traits.getCommonStyles(config);
         
-        if (config.width) { styles['width'] = config.width; }
-        if (config.height) { styles['height'] = config.height; }
-        if (config.objectFit) { styles['object-fit'] = config.objectFit; }
-        if (config.borderRadius) { styles['border-radius'] = config.borderRadius; }
+        // Propiedades específicas de imagen
+        if (config.objectFit) { 
+            styles['object-fit'] = config.objectFit; 
+        }
         
         return styles;
     }
 
+    /**
+     * Maneja actualizaciones específicas de imagen.
+     * Delega estilos comunes a traits.
+     */
     function handleUpdate(block, path, value) {
-        // Handle src update
+        if (!block || !block.element) return false;
+        var el = block.element;
+        
+        // === PROPIEDADES ESPECÍFICAS DE IMAGEN (atributos HTML) ===
+        
+        // Actualizar src de la imagen
         if (path === 'src') {
-            block.element.src = value;
+            el.src = value;
             return true;
         }
         
-        // Handle alt update
+        // Actualizar alt text
         if (path === 'alt') {
-            block.element.alt = value;
+            el.alt = value;
             return true;
         }
         
-        // Handle style updates
-        if (path === 'width') {
-            block.element.style.width = value;
-            return true;
-        }
-        
-        if (path === 'height') {
-            block.element.style.height = value;
-            return true;
-        }
-        
+        // Object-fit específico de imagen
         if (path === 'objectFit') {
-            block.element.style.objectFit = value;
+            el.style.objectFit = value || '';
             return true;
         }
         
-        if (path === 'borderRadius') {
-            block.element.style.borderRadius = value;
-            return true;
-        }
-         
-         return true; // Handled
+        // === DELEGAR A TRAITS COMUNES ===
+        // Width, Height, BorderRadius, etc.
+        return traits.handleCommonUpdate(el, path, value);
     }
 
+    // Exportar renderer
     Gbn.ui.renderers.image = {
         getStyles: getStyles,
         handleUpdate: handleUpdate
