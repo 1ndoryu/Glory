@@ -345,13 +345,13 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 **Objetivo:** Refinar la experiencia de usuario y la interacción del panel con la página.
 
 - [x] **Acceso Rápido de Ancho (Controles Secundarios):**
-    -   **Ubicación:** En `<span class="gbn-controls-group gbn-controls-centered">` de los controles secundarios.
+    -   **Ubicación:** En `gbn-controls-group gbn-controls-secundario` de los controles secundarios.
     -   **Funcionalidad:** Mostrar el valor actual del ancho (ej: "1/1", "1/2"). Si no tiene valor, asumir "1/1" (sin forzar estilos).
     -   **Interacción:** Al hacer clic, desplegar opciones para seleccionar y aplicar el ancho rápidamente.
     -   **Requisito:** Debe ser totalmente responsive y actualizarse dinámicamente al cambiar de vista (Mobile/Tablet/Desktop).
     -   **Estado:** COMPLETADO. Implementado en `inspector.js` con dropdown y soporte responsive.
 - [x] **Acceso Rápido de Ancho (Controles Secundarios):**
-    -   **Ubicación:** En `<span class="gbn-controls-group gbn-controls-centered">` de los controles secundarios.
+    -   **Ubicación:** En `gbn-controls-group gbn-controls-secundario` de los controles secundarios.
     -   **Funcionalidad:** Mostrar el valor actual del ancho (ej: "1/1", "1/2"). Si no tiene valor, asumir "1/1" (sin forzar estilos).
     -   **Interacción:** Al hacer clic, desplegar opciones para seleccionar y aplicar el ancho rápidamente.
     -   **Requisito:** Debe ser totalmente responsive y actualizarse dinámicamente al cambiar de vista (Mobile/Tablet/Desktop).
@@ -372,3 +372,21 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
     -   **Nueva Feature:** Añadir soporte para **Estilos Personalizados (Custom CSS)** específicos de la página (ej: `.mi-clase { ... }`).
     -   **Validación:** Asegurar que las configuraciones se apliquen y guarden individualmente por página.
     -   **Estado:** COMPLETADO. Refactorizado `renderPageSettingsForm` en `render.js` para usar pestañas (Estilo, Avanzado) y campos responsive, incluyendo Custom CSS.
+
+- [x] **Reposicionamiento de Controles Secundarios:**
+    -   **Problema:** Conflicto visual con controles principales (ambos a la derecha).
+    -   **Solución:** Mover `gbn-controls-secundario` a la izquierda (`left: 8px`).
+    -   **Estado:** COMPLETADO. Actualizado `components.css`.
+    -   **Fix (Feedback):** Corregido el desbordamiento del dropdown de ancho (`gbn-width-dropdown`) alineándolo a la izquierda (`left: 0`) en lugar de centrarlo, para evitar que se salga de la pantalla al estar los controles en el borde izquierdo.
+    -   **Fix (Feedback 2):** Solucionado problema de controles "congelados" al cambiar el ancho. Se fuerza la limpieza de la clase `gbn-show-controls` en *todos* los elementos del DOM al seleccionar un valor, asegurando que no queden estados visuales residuales tras la regeneración del bloque.
+    -   **Fix (Feedback 3):** Implementado `suppressHover` (600ms) y ocultamiento forzado de `__gbnControls` al hacer clic en el ancho. Esto previene que el evento `mouseover` se dispare inmediatamente sobre el nuevo elemento renderizado bajo el cursor, evitando la reaparición instantánea (y molesta) de los controles.
+    -   **Fix (Feedback 4):** Corregido problema donde los controles no volvían a aparecer nunca tras ser ocultados. Se añadió lógica en el evento `mouseover` para restaurar explícitamente `display: flex` en `__gbnControls`, revirtiendo el `display: none` aplicado al hacer clic.
+    -   **Fix (Feedback 5):** Solución definitiva para controles "congelados".
+        1.  **CSS:** Añadido `pointer-events: none` a `.gbn-controls-group` (y `auto` en hover) para evitar que los controles invisibles capturen eventos y bloqueen la detección de salida del mouse.
+        2.  **JS:** Reemplazado `mouseout` por `mouseleave` para una detección más fiable de la salida del bloque.
+        3.  **Safety:** Añadido un "limpiador global" en `mousemove` (con throttle) que elimina la clase `gbn-show-controls` de cualquier bloque que ya no tenga el mouse encima, cubriendo casos extremos donde el evento de salida se pierde.
+    -   **Refactorización Mayor (Feedback 6):** Se ha reescrito completamente la lógica de interacción en `inspector.js`.
+        -   **HoverManager:** Se eliminaron los listeners individuales por bloque. Ahora un único gestor global (`mousemove` en `document`) usa `document.elementFromPoint(x, y)` para determinar qué bloque está bajo el cursor.
+        -   **GlobalControls (Singleton):** Se implementó un *único* conjunto de controles DOM que se mueve dinámicamente al bloque activo. Esto elimina la posibilidad de tener controles duplicados, "zombies" o congelados, ya que físicamente solo existe una instancia de controles en todo el editor.
+        -   **Beneficio:** Esto elimina de raíz los problemas de "burbujeo" y "congelamiento" en estructuras anidadas, ya que solo un bloque puede estar activo a la vez (el más profundo visualmente).
+        -   **Limpieza:** Se revirtieron los parches de `pointer-events` y `suppressHover` ya que el nuevo sistema es inherentemente robusto.

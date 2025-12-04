@@ -120,6 +120,8 @@
 .gbn-controls-secundario {
     background: rgba(245, 158, 11, 0.95);
     border-color: rgba(245, 158, 11, 0.2);
+    right: auto;
+    left: 8px;
 }
 
 .gbn-controls-secundario .gbn-config-btn,

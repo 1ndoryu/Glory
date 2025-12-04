@@ -241,8 +241,8 @@
 .gbn-width-dropdown {
     position: absolute;
     bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-6px);
+    left: 0;
+    transform: translateY(-6px);
     background: #fff;
     border-radius: 6px;
     padding: 4px;
@@ -295,7 +295,7 @@
     content: '';
     position: absolute;
     top: 100%;
-    left: 50%;
+    left: 17px;
     margin-left: -5px;
     border-width: 5px;
     border-style: solid;
