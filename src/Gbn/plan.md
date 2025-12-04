@@ -155,6 +155,20 @@
 
 ## Trabajo Pendiente
 
+### ✅ [BUG-SYNC] Falla en Lectura de Estilos Computados (RESUELTO Dic 2025)
+- **Problema:** El panel no recogía correctamente los valores de estilos definidos en clases CSS (`width`, `height`, `position`, `overflow`, `z-index`) para mostrarlos como estado inicial.
+- **Causa Raíz:** El mapeo `CONFIG_TO_CSS_MAP` en `utils.js` no incluía las propiedades `ancho`→`width`, `position`, `zIndex`, `overflow`. Esto causaba que `getComputedValueForPath()` devolviera `undefined`.
+- **Solución Implementada:**
+    1. **Ampliación de `CONFIG_TO_CSS_MAP`:** Agregadas las propiedades faltantes (`ancho`, `width`, `position`, `zIndex`, `overflow`, `overflowX`, `overflowY`, `minHeight`, `minWidth`).
+    2. **Mejora de `getValueSource`:** Agregada detección de valores por defecto del navegador (`static`, `auto`, `visible`, `0px`) para evitar mostrarlos como valores "computados".
+    3. **Refactorización de `getEffectiveValue`:** Implementada lógica de exclusión de browser defaults antes de comparar con theme defaults.
+    4. **[FIX] Ancho en porcentaje:** `fraction.js` ahora calcula el % basándose en el padre cuando `getComputedStyle` devuelve px. Detecta fracciones comunes (30%, 50%, etc.) y muestra el porcentaje en lugar de píxeles.
+    5. **[FIX] Altura definida en CSS:** `text.js` ahora trata `'auto'` (el default del tema) como "sin valor explícito", permitiendo leer el valor computado del DOM. Esto soluciona que `height: 400px` en CSS no se mostraba porque `getConfigValue` devolvía el default `'auto'` del tema.
+- **Archivos Modificados:** 
+    - `Glory/src/Gbn/assets/js/ui/panel-fields/utils.js`
+    - `Glory/src/Gbn/assets/js/ui/panel-fields/fraction.js`
+    - `Glory/src/Gbn/assets/js/ui/panel-fields/text.js`
+
 ### ✅ Fase 7: Soporte de Transparencia en Campos de Color
 
 **Problema Identificado:**

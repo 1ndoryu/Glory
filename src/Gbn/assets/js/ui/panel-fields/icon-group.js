@@ -38,10 +38,18 @@
                 }
             });
             // Si no se encontró coincidencia exacta, intentar mapeo especial
-            if (!found && field.id === 'layout') {
-                if (current === 'flex') current = 'flex';
-                else if (current === 'grid') current = 'grid';
-                else current = 'block';
+            if (!found) {
+                if (field.id === 'layout') {
+                    if (current === 'flex') current = 'flex';
+                    else if (current === 'grid') current = 'grid';
+                    else current = 'block';
+                } else if (field.id === 'position') {
+                    // Mapeo directo para position, ya que los valores CSS coinciden con los valores de opción
+                    // (static, relative, absolute, fixed, sticky)
+                    // Si no coincide con ninguno, default a static? No, dejarlo como está.
+                    // Pero aseguramos que esté en minúsculas
+                    current = String(current).toLowerCase();
+                }
             }
         }
         

@@ -37,22 +37,30 @@
         // Permite mostrar el valor real del CSS (clases, inline) cuando no hay config guardada
         var computedVal = null;
 
-        if (current === undefined || current === null) {
+        // [BUG-SYNC FIX] Para height, tratar 'auto' como "sin valor" para permitir lectura del DOM
+        // Esto es necesario porque el default es 'auto' pero el usuario puede tener height: 400px en CSS
+        var hasExplicitValue = current !== undefined && current !== null && current !== '';
+        if (field.id === 'height' && current === 'auto') {
+            hasExplicitValue = false; // 'auto' es el default, no cuenta como valor explícito
+        }
+
+        if (!hasExplicitValue) {
             // Intentar leer del DOM
             var effective = u.getEffectiveValue(block, field.id);
             if (effective.source === 'computed' && effective.value) {
                 computedVal = effective.value;
                 
-                // Para valores numéricos que son 0px, a veces es mejor ignorarlos si el default es diferente,
-                // pero por consistencia mostramos lo que el navegador dice.
-                // Excepción: si es '0px' y queremos placeholder vacío, podemos filtrar aquí.
+                // Para valores numéricos que son 0px
                 if ((field.id === 'borderWidth' || field.id === 'borderRadius') && parseFloat(computedVal) === 0) {
                     computedVal = null; 
                 }
+
+                // [BUG-SYNC FIX] Altura: Siempre mostrar el valor computado cuando existe
+                // No hay forma 100% segura en JS de saber si 'height: 400px' viene de CSS vs auto
             }
         }
         
-        if (current === undefined || current === null) {
+        if (!hasExplicitValue) {
             wrapper.classList.add('gbn-field-inherited');
             if (computedVal !== null) {
                 // Mostrar valor computado del CSS

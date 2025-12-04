@@ -135,16 +135,47 @@
         if (block.element) {
             var computedValue = getComputedValueForPath(block.element, path);
             if (computedValue !== undefined && computedValue !== null && computedValue !== '') {
-                // Verificar si es diferente a valores por defecto del navegador
+                // [BUG-SYNC FIX] Verificar si es diferente a valores por defecto del navegador
+                // Extendido para incluir position, z-index, overflow, width, height
                 var isDefaultValue = false;
+                
+                // Padding defaults
                 if (path.indexOf('padding') === 0 && (computedValue === '0px' || computedValue === '0')) {
                     isDefaultValue = true;
-                } else if ((path === 'fondo' || path === 'background' || path === 'backgroundColor') && 
+                }
+                // Margin defaults
+                else if (path.indexOf('margin') === 0 && (computedValue === '0px' || computedValue === '0')) {
+                    isDefaultValue = true;
+                }
+                // Background defaults
+                else if ((path === 'fondo' || path === 'background' || path === 'backgroundColor') && 
                           (computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent')) {
                     isDefaultValue = true;
-                } else if (path === 'backgroundImage' && computedValue === 'none') {
+                } 
+                else if (path === 'backgroundImage' && computedValue === 'none') {
                     isDefaultValue = true;
-                } else if (path === 'gap' && (computedValue === 'normal' || computedValue === '0px')) {
+                } 
+                else if (path === 'gap' && (computedValue === 'normal' || computedValue === '0px')) {
+                    isDefaultValue = true;
+                }
+                // [BUG-SYNC FIX] Position defaults
+                else if (path === 'position' && computedValue === 'static') {
+                    isDefaultValue = true;
+                }
+                // [BUG-SYNC FIX] z-index defaults (auto se reporta como 'auto' o como número en algunos casos)
+                else if (path === 'zIndex' && (computedValue === 'auto' || computedValue === '0')) {
+                    isDefaultValue = true;
+                }
+                // [BUG-SYNC FIX] Overflow defaults
+                else if ((path === 'overflow' || path === 'overflowX' || path === 'overflowY') && computedValue === 'visible') {
+                    isDefaultValue = true;
+                }
+                // [BUG-SYNC FIX] Width/Height: 'auto' es el default, pero si hay un valor en px, es relevante
+                // Nota: No marcamos width/height en px como default porque probablemente viene de una clase CSS
+                else if ((path === 'ancho' || path === 'width') && computedValue === 'auto') {
+                    isDefaultValue = true;
+                }
+                else if (path === 'height' && computedValue === 'auto') {
                     isDefaultValue = true;
                 }
                 
@@ -236,6 +267,8 @@
 
     /**
      * Mapeo de propiedades de config a propiedades CSS
+     * [BUG-SYNC FIX] Agregadas propiedades faltantes: ancho, position, overflow, zIndex
+     * que causaban que getComputedValueForPath no pudiera leer estilos de clases CSS
      */
     var CONFIG_TO_CSS_MAP = {
         'padding.superior': 'paddingTop',
@@ -275,7 +308,19 @@
         'borderWidth': 'borderWidth',
         'borderStyle': 'borderStyle',
         'borderColor': 'borderColor',
-        'borderRadius': 'borderRadius'
+        'borderRadius': 'borderRadius',
+        // [BUG-SYNC FIX] Dimensiones y Posicionamiento - Propiedades faltantes
+        'ancho': 'width',
+        'width': 'width',
+        'minHeight': 'minHeight',
+        'minWidth': 'minWidth',
+        // Posicionamiento
+        'position': 'position',
+        'zIndex': 'zIndex',
+        // Overflow
+        'overflow': 'overflow',
+        'overflowX': 'overflowX',
+        'overflowY': 'overflowY'
     };
 
     /**
@@ -385,21 +430,65 @@
                 // Obtener theme default para comparar
                 var themeDefault = getThemeDefault(block.role, path);
                 
-                // Lógica especial para backgroundImage
-                if (path === 'backgroundImage') {
-                    if (computedValue !== 'none' && computedValue !== themeDefault) {
-                        result.value = computedValue;
-                        result.source = 'computed';
-                    }
-                } else {
-                    var parsedComputed = parseSpacingValue(computedValue);
-                    var parsedTheme = parseSpacingValue(themeDefault);
-                    
-                    // Si el valor computado es diferente al default del tema, 
-                    // significa que hay estilos inline o de clase que debemos mostrar
-                    if (parsedComputed.valor !== parsedTheme.valor) {
-                        result.value = computedValue;
-                        result.source = 'computed';
+                // [BUG-SYNC FIX] Verificar si es un valor por defecto del navegador
+                // Estos valores no deben mostrarse como "computed" porque son defaults
+                var isBrowserDefault = false;
+                
+                // Position: 'static' es el default
+                if (path === 'position' && computedValue === 'static') {
+                    isBrowserDefault = true;
+                }
+                // z-index: 'auto' es el default
+                else if (path === 'zIndex' && (computedValue === 'auto' || computedValue === '0')) {
+                    isBrowserDefault = true;
+                }
+                // Overflow: 'visible' es el default
+                else if ((path === 'overflow' || path === 'overflowX' || path === 'overflowY') && computedValue === 'visible') {
+                    isBrowserDefault = true;
+                }
+                // Width/Height: 'auto' es el default (pero en px es un valor calculado real, lo mostramos)
+                else if ((path === 'ancho' || path === 'width') && computedValue === 'auto') {
+                    isBrowserDefault = true;
+                }
+                else if (path === 'height' && computedValue === 'auto') {
+                    isBrowserDefault = true;
+                }
+                // Padding/Margin: '0px' es el default
+                else if ((path.indexOf('padding') === 0 || path.indexOf('margin') === 0) && 
+                         (computedValue === '0px' || computedValue === '0')) {
+                    isBrowserDefault = true;
+                }
+                // Background: transparent/none son defaults
+                else if ((path === 'fondo' || path === 'backgroundColor') && 
+                         (computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent')) {
+                    isBrowserDefault = true;
+                }
+                else if (path === 'backgroundImage' && computedValue === 'none') {
+                    isBrowserDefault = true;
+                }
+                // Gap: 'normal' o '0px' son defaults
+                else if (path === 'gap' && (computedValue === 'normal' || computedValue === '0px')) {
+                    isBrowserDefault = true;
+                }
+                
+                // Si NO es un default del navegador, verificar si es diferente al tema
+                if (!isBrowserDefault) {
+                    // Lógica especial para backgroundImage
+                    if (path === 'backgroundImage') {
+                        if (computedValue !== 'none' && computedValue !== themeDefault) {
+                            result.value = computedValue;
+                            result.source = 'computed';
+                        }
+                    } else {
+                        var parsedComputed = parseSpacingValue(computedValue);
+                        var parsedTheme = parseSpacingValue(themeDefault);
+                        
+                        // Si el valor computado es diferente al default del tema, 
+                        // significa que hay estilos inline o de clase que debemos mostrar
+                        if (parsedComputed.valor !== parsedTheme.valor) {
+                            result.value = computedValue;
+                            result.source = 'computed';
+                        }
                     }
                 }
             }

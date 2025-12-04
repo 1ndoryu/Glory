@@ -60,15 +60,77 @@
         // Lógica responsive
         var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
         var source = u.getValueSource(block, field.id, breakpoint);
-        var current = u.getResponsiveConfigValue(block, field.id, breakpoint);
         
+        // Usar getEffectiveValue para leer config O estilo computado (clases/inline)
+        var effective = u.getEffectiveValue(block, field.id);
+        var current = effective.value;
+
         // Inicializar valor del input
-        if (current) {
-            input.value = current;
+        if (current !== undefined && current !== null && current !== '') {
+            var displayVal = String(current);
+            
+            // [BUG-SYNC FIX] Si es un valor computado en px, intentar calcular el % original
+            // Esto permite mostrar "30%" en lugar de "406.188px" cuando el CSS dice width: 30%
+            if (effective.source === 'computed' && displayVal.indexOf('px') !== -1) {
+                var pxValue = parseFloat(displayVal);
+                
+                if (block.element && block.element.parentElement && !isNaN(pxValue)) {
+                    var parentWidth = block.element.parentElement.offsetWidth;
+                    
+                    if (parentWidth > 0) {
+                        // Calcular el porcentaje
+                        var percentValue = (pxValue / parentWidth) * 100;
+                        
+                        // Lista de porcentajes/fracciones comunes para hacer matching
+                        var commonPercentages = [
+                            { percent: 100, display: '100%' },
+                            { percent: 83.3333, display: '83.33%' },
+                            { percent: 80, display: '80%' },
+                            { percent: 75, display: '75%' },
+                            { percent: 66.6666, display: '66.66%' },
+                            { percent: 60, display: '60%' },
+                            { percent: 50, display: '50%' },
+                            { percent: 40, display: '40%' },
+                            { percent: 33.3333, display: '33.33%' },
+                            { percent: 30, display: '30%' },
+                            { percent: 25, display: '25%' },
+                            { percent: 20, display: '20%' },
+                            { percent: 16.6666, display: '16.66%' },
+                            { percent: 10, display: '10%' }
+                        ];
+                        
+                        var tolerance = 0.5; // ±0.5% de tolerancia para matching
+                        var matched = false;
+                        
+                        for (var i = 0; i < commonPercentages.length; i++) {
+                            if (Math.abs(percentValue - commonPercentages[i].percent) <= tolerance) {
+                                displayVal = commonPercentages[i].display;
+                                matched = true;
+                                break;
+                            }
+                        }
+                        
+                        // Si no coincide con ninguno común, mostrar el % calculado con 2 decimales
+                        if (!matched) {
+                            // Redondear a 2 decimales para mostrar limpio
+                            var roundedPercent = Math.round(percentValue * 100) / 100;
+                            displayVal = roundedPercent + '%';
+                        }
+                    }
+                }
+            }
+            
+            input.value = displayVal;
+            
+            if (effective.source === 'computed') {
+                wrapper.classList.add('gbn-source-computed');
+                wrapper.title = 'Valor heredado de CSS/Clase (' + displayVal + ')';
+            }
         }
 
         // Clases visuales de herencia
-        wrapper.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+        wrapper.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block', 'gbn-source-computed');
+        
         if (source === 'override') {
              wrapper.classList.add('gbn-field-override');
         } else {
@@ -76,6 +138,9 @@
              if (source === 'theme') wrapper.classList.add('gbn-source-theme');
              else if (source === 'tablet') wrapper.classList.add('gbn-source-tablet');
              else if (source === 'block') wrapper.classList.add('gbn-source-block');
+             
+             // Si el source efectivo fue computed, añadir la clase también
+             if (effective.source === 'computed') wrapper.classList.add('gbn-source-computed');
         }
         
         // Función para actualizar estado activo de botones
