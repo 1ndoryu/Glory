@@ -139,8 +139,10 @@
                 var isDefaultValue = false;
                 if (path.indexOf('padding') === 0 && (computedValue === '0px' || computedValue === '0')) {
                     isDefaultValue = true;
-                } else if ((path === 'fondo' || path === 'background') && 
+                } else if ((path === 'fondo' || path === 'background' || path === 'backgroundColor') && 
                           (computedValue === 'rgba(0, 0, 0, 0)' || computedValue === 'transparent')) {
+                    isDefaultValue = true;
+                } else if (path === 'backgroundImage' && computedValue === 'none') {
                     isDefaultValue = true;
                 } else if (path === 'gap' && (computedValue === 'normal' || computedValue === '0px')) {
                     isDefaultValue = true;
@@ -247,6 +249,11 @@
         'fondo': 'backgroundColor',
         'background': 'backgroundColor',
         'backgroundColor': 'backgroundColor',
+        'backgroundImage': 'backgroundImage',
+        'backgroundSize': 'backgroundSize',
+        'backgroundPosition': 'backgroundPosition',
+        'backgroundRepeat': 'backgroundRepeat',
+        'backgroundAttachment': 'backgroundAttachment',
         'gap': 'gap',
         'layout': 'display',
         'flexDirection': 'flexDirection',
@@ -377,14 +384,23 @@
             if (computedValue !== undefined && computedValue !== null && computedValue !== '') {
                 // Obtener theme default para comparar
                 var themeDefault = getThemeDefault(block.role, path);
-                var parsedComputed = parseSpacingValue(computedValue);
-                var parsedTheme = parseSpacingValue(themeDefault);
                 
-                // Si el valor computado es diferente al default del tema, 
-                // significa que hay estilos inline o de clase que debemos mostrar
-                if (parsedComputed.valor !== parsedTheme.valor) {
-                    result.value = computedValue;
-                    result.source = 'computed';
+                // Lógica especial para backgroundImage
+                if (path === 'backgroundImage') {
+                    if (computedValue !== 'none' && computedValue !== themeDefault) {
+                        result.value = computedValue;
+                        result.source = 'computed';
+                    }
+                } else {
+                    var parsedComputed = parseSpacingValue(computedValue);
+                    var parsedTheme = parseSpacingValue(themeDefault);
+                    
+                    // Si el valor computado es diferente al default del tema, 
+                    // significa que hay estilos inline o de clase que debemos mostrar
+                    if (parsedComputed.valor !== parsedTheme.valor) {
+                        result.value = computedValue;
+                        result.source = 'computed';
+                    }
                 }
             }
         }

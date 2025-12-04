@@ -116,6 +116,7 @@ class GbnManager
         }
 
         if (current_user_can('edit_posts')) {
+            wp_enqueue_media(); // Habilitar galería de medios WP
             foreach ($builderCss as $handle => $file) {
                 $path = $baseDir . '/css/' . $file;
                 $ver  = self::resolveVersion($path);
@@ -295,6 +296,10 @@ class GbnManager
                 'file' => '/js/ui/panel-fields/rich-text.js',
                 'deps' => ['glory-gbn-ui-fields-utils'],
             ],
+            'glory-gbn-ui-fields-image' => [
+                'file' => '/js/ui/panel-fields/image.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
             'glory-gbn-ui-fields-index' => [
                 'file' => '/js/ui/panel-fields/index.js',
                 'deps' => [
@@ -310,6 +315,7 @@ class GbnManager
                     'glory-gbn-ui-fields-icon-group',
                     'glory-gbn-ui-fields-fraction',
                     'glory-gbn-ui-fields-rich-text',
+                    'glory-gbn-ui-fields-image',
                 ],
             ],
             // Wrapper de compatibilidad

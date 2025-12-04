@@ -126,6 +126,15 @@
     3. **`TextComponent.php`:** Agregadas opciones de `backgroundColor`, `borderWidth`, `borderStyle`, `borderColor` y `borderRadius`.
     4. **`utils.js`:** Expandido `CONFIG_TO_CSS_MAP` con typography, margin y border properties.
 
+#### ✅ Mejoras Panel: Border, Fuentes y Fondo (UX)
+-   **Problema:** Valores de borde vacíos en panel, fuentes detectadas como "Default", imagen de fondo no editable desde panel y opciones de fondo visibles innecesariamente.
+-   **Solución Integral:**
+    -   **Border Sync:** `text.js` ahora lee valores computados (`borderWidth`, `borderRadius`) del DOM si no hay config.
+    -   **Fuentes Inteligentes:** `typography.js` soporta fuentes genéricas (Monospace, Serif) y detecta fuentes personalizadas dinámicamente.
+    -   **Imagen de Fondo:** Implementado soporte para **Galería WordPress** (`wp.media`) en `image.js`, lectura de `backgroundImage` desde CSS y parsing de URLs.
+    -   **Condiciones y UX:** `HasBackground.php` ahora usa condiciones (`->condition()`) para ocultar opciones de tamaño/posición si no hay imagen. `Option.php` actualizado para soportar lógica condicional.
+    -   **Iconos:** Mejorada UX de `backgroundSize` con iconos visuales (Cover, Contain, etc.).
+
 ---
 
 ## Trabajo Pendiente

@@ -132,10 +132,19 @@ class Option
         return $this;
     }
 
-    public function condition(string $field, string $value): self
+    public function condition($fieldOrArray, $value = null): self
     {
-        $this->data['condicion'] = [$field, $value];
+        if (is_array($fieldOrArray)) {
+            $this->data['condicion'] = $fieldOrArray;
+        } else {
+            $this->data['condicion'] = [$fieldOrArray, $value];
+        }
         return $this;
+    }
+
+    public function condicion($fieldOrArray, $value = null): self
+    {
+        return $this->condition($fieldOrArray, $value);
     }
 
     public function tab(string $tabName): self

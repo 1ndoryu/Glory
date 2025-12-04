@@ -94,24 +94,68 @@
         
         var fontSelect = document.createElement('select');
         fontSelect.className = 'gbn-select';
-        var fonts = ['Default', 'System', 'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat'];
-        fonts.forEach(function(f) {
-            var opt = document.createElement('option');
-            opt.value = f;
-            opt.textContent = f;
-            fontSelect.appendChild(opt);
-        });
+        
+        // Lista base de fuentes + Genéricas CSS
+        var fonts = [
+            'Default', 
+            'System', 
+            'Inter', 
+            'Roboto', 
+            'Open Sans', 
+            'Lato', 
+            'Montserrat',
+            'Orbitron', // Agregada por contexto del usuario
+            'monospace',
+            'serif',
+            'sans-serif',
+            'cursive',
+            'fantasy'
+        ];
+
+        // Función para renderizar opciones
+        function renderFontOptions(selectedVal) {
+            fontSelect.innerHTML = '';
+            var found = false;
+            
+            fonts.forEach(function(f) {
+                var opt = document.createElement('option');
+                opt.value = f;
+                // Capitalizar nombres genéricos para mejor UX
+                if (['monospace', 'serif', 'sans-serif', 'cursive', 'fantasy'].indexOf(f) !== -1) {
+                    opt.textContent = f.charAt(0).toUpperCase() + f.slice(1) + ' (Genérica)';
+                } else {
+                    opt.textContent = f;
+                }
+                fontSelect.appendChild(opt);
+                
+                if (f.toLowerCase() === String(selectedVal).toLowerCase()) {
+                    found = true;
+                }
+            });
+            
+            // Si el valor seleccionado no está en la lista, agregar opción "Personalizada"
+            if (!found && selectedVal && selectedVal !== 'Default') {
+                var customOpt = document.createElement('option');
+                customOpt.value = selectedVal;
+                customOpt.textContent = 'Personalizada: ' + selectedVal;
+                fontSelect.appendChild(customOpt);
+            }
+        }
         
         var fontData = getResponsiveData('font');
+        var currentFontVal = 'Default';
+
         // Si hay valor en config, usarlo. Si no, leer del CSS computado.
         if (fontData.val) {
-            fontSelect.value = fontData.val;
+            currentFontVal = fontData.val;
         } else {
             var computedFont = getComputedTypographyValue('fontFamily');
             var parsedFont = parseFontFamily(computedFont);
-            var fontExists = fonts.some(function(f) { return f.toLowerCase() === parsedFont.toLowerCase(); });
-            if (fontExists) fontSelect.value = parsedFont;
+            currentFontVal = parsedFont;
         }
+        
+        renderFontOptions(currentFontVal);
+        fontSelect.value = currentFontVal;
         // applySourceClasses(fontRow, fontData.source); // Disabled
         
         fontSelect.addEventListener('change', function() {

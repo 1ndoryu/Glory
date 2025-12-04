@@ -33,9 +33,32 @@
         var current = u.getConfigValue(block, field.id);
         var themeDefault = u.getThemeDefault(block.role, field.id);
         
+        // Lógica especial para campos de borde (sincronización bidireccional)
+        var isBorderField = ['borderWidth', 'borderRadius', 'borderColor', 'borderStyle'].indexOf(field.id) !== -1;
+        var computedVal = null;
+
+        if (isBorderField && (current === undefined || current === null)) {
+            // Intentar leer del DOM
+            var effective = u.getEffectiveValue(block, field.id);
+            if (effective.source === 'computed' && effective.value) {
+                computedVal = effective.value;
+                // Para borderWidth y borderRadius, asegurar que tenga unidad o sea 0
+                if ((field.id === 'borderWidth' || field.id === 'borderRadius') && parseFloat(computedVal) === 0) {
+                    computedVal = null; // Ignorar 0px por defecto
+                }
+            }
+        }
+        
         if (current === undefined || current === null) {
             wrapper.classList.add('gbn-field-inherited');
-            if (themeDefault !== undefined && themeDefault !== null) {
+            if (computedVal !== null) {
+                // Mostrar valor computado del CSS
+                input.value = computedVal;
+                input.placeholder = computedVal; // Feedback visual
+                // Marcar visualmente que viene del CSS/Clase
+                wrapper.classList.add('gbn-source-computed'); 
+                wrapper.title = 'Valor heredado de CSS/Clase';
+            } else if (themeDefault !== undefined && themeDefault !== null) {
                 input.placeholder = themeDefault;
             } else {
                 input.placeholder = field.defecto || '';
