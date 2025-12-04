@@ -34,13 +34,24 @@
     }
 
     function parseFraction(fraction) {
-        if (!fraction || typeof fraction !== 'string') return null;
-        var parts = fraction.split('/');
-        if (parts.length !== 2) return null;
-        var num = parseFloat(parts[0]);
-        var den = parseFloat(parts[1]);
-        if (isNaN(num) || isNaN(den) || den === 0) return null;
-        return (num / den * 100).toFixed(4) + '%';
+        if (!fraction) return null;
+        var str = String(fraction);
+        
+        // Si es formato fracción (ej: 1/2)
+        if (str.indexOf('/') !== -1) {
+            var parts = str.split('/');
+            if (parts.length === 2) {
+                var num = parseFloat(parts[0]);
+                var den = parseFloat(parts[1]);
+                if (!isNaN(num) && !isNaN(den) && den !== 0) {
+                    return (num / den * 100).toFixed(4) + '%';
+                }
+            }
+        }
+        
+        // Si no es fracción, asumimos que es un valor CSS válido (px, %, auto, etc.)
+        // Retornamos el valor tal cual para que style-composer lo use.
+        return str;
     }
 
     function getResponsiveValue(block, path, bp) {

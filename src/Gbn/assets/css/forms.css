@@ -998,3 +998,26 @@
     from { opacity: 0; transform: translateY(2px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+/* Fraction Input (Smart Dimension Control) */
+.gbn-fraction-input-wrapper {
+    margin-bottom: 8px;
+}
+
+.gbn-fraction-manual-input {
+    width: 100%;
+    height: 32px;
+    padding: 6px 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 12px;
+    background: #ffffff;
+    color: var(--text, #111111);
+    transition: all 0.2s ease;
+}
+
+.gbn-fraction-manual-input:focus {
+    border-color: #1d8ff1;
+    box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.1);
+    outline: none;
+}

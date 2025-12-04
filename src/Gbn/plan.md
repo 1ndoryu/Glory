@@ -135,6 +135,14 @@
     -   **Condiciones y UX:** `HasBackground.php` ahora usa condiciones (`->condition()`) para ocultar opciones de tamaño/posición si no hay imagen. `Option.php` actualizado para soportar lógica condicional.
     -   **Iconos:** Mejorada UX de `backgroundSize` con iconos visuales (Cover, Contain, etc.).
 
+#### ✅ Smart Dimension Control (Ancho)
+-   **Problema:** El control de ancho estaba limitado a fracciones predefinidas (`1/2`, `1/3`), impidiendo el uso de valores arbitrarios (`100%`, `500px`) o clases CSS.
+-   **Solución:** Implementado `Smart Dimension Control` en `fraction.js`.
+    -   Agregado input manual para valores libres.
+    -   Sincronización bidireccional entre input y botones de presets.
+    -   Actualizado `shared.js` para procesar cualquier valor CSS válido.
+    -   Estilizado en `forms.css`.
+
 ---
 
 ## Trabajo Pendiente
