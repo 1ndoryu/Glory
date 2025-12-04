@@ -23,6 +23,15 @@
         var ROLE_MAP = roles.getMap();
         var FALLBACK_SELECTORS = roles.getFallback();
 
+        // --- GLOBAL OPTIONS PARSING ---
+        // Parse 'opciones' attribute for ALL roles
+        var opcionesAttr = el.getAttribute('opciones') || el.getAttribute('data-gbn-opciones') || '';
+        meta.optionsString = opcionesAttr;
+        var parsedOptions = configHelpers.parseOptions(opcionesAttr);
+        meta.options = utils.assign({}, parsedOptions);
+
+        // --- ROLE SPECIFIC LOGIC ---
+
         if (role === 'content') {
             var attrName = null;
             if (ROLE_MAP.content && ROLE_MAP.content.attr) {
@@ -32,12 +41,10 @@
             }
             var typeAttr = attrName ? el.getAttribute(attrName) : null;
             meta.postType = typeAttr && typeAttr !== 'content' ? typeAttr : 'post';
-            var opcionesAttr = el.getAttribute('opciones') || el.getAttribute('data-gbn-opciones') || '';
-            meta.optionsString = opcionesAttr;
-            var parsedOptions = configHelpers.parseOptions(opcionesAttr);
+            
             var estilosAttr = el.getAttribute('estilos');
             meta.inlineArgs = configHelpers.extractInlineArgs(estilosAttr);
-            meta.options = utils.assign({}, parsedOptions);
+            
             // Ensure postType is in options so it populates the config
             if (meta.postType) {
                 meta.options.postType = meta.postType;
@@ -46,25 +53,34 @@
         
         // Pre-process text content for text role
         if (role === 'text') {
-            var existingConfig = configHelpers.readJsonAttr(el, 'data-gbn-config');
-            // Prioritize existing content in DOM if config is missing or if we want to sync
-            var currentText = el.innerHTML; // Use innerHTML to preserve basic formatting if any
-            
-            if (!existingConfig) {
-                existingConfig = {};
+            // Infer 'texto' from innerHTML if not provided in options
+            if (!meta.options.texto) {
+                // Use innerHTML to preserve formatting (br, span, etc)
+                // We must be careful not to capture GBN controls if they exist, 
+                // but buildBlock is usually called on clean nodes.
+                var currentText = el.innerHTML.trim();
+                if (currentText) {
+                    meta.options.texto = currentText;
+                } else {
+                    meta.options.texto = 'Nuevo texto';
+                }
             }
-            
-            // If config has no text, or if we want to ensure what's on screen is what's in config
-            // (Usually what's on screen is the source of truth initially)
-            if (currentText && currentText.trim() !== '') {
-                 existingConfig.texto = currentText;
-            } else if (!existingConfig.texto) {
-                 // Fallback if both are empty?
-                 existingConfig.texto = 'Nuevo texto';
-                 el.innerHTML = 'Nuevo texto';
+
+            // Infer 'tag' from tagName if not provided in options
+            if (!meta.options.tag) {
+                meta.options.tag = el.tagName.toLowerCase();
             }
-            
-            el.setAttribute('data-gbn-config', JSON.stringify(existingConfig));
+        }
+
+        // Pre-process button content
+        if (role === 'button') {
+            // Infer 'texto' from innerHTML if not provided
+            if (!meta.options.texto) {
+                var currentBtnText = el.innerHTML.trim();
+                if (currentBtnText) {
+                    meta.options.texto = currentBtnText;
+                }
+            }
         }
 
         var block = state.register(role, el, meta);
