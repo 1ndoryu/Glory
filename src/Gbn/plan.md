@@ -367,6 +367,9 @@ Los botones como `.btnRacing` usan `transform: skewX(-10deg)` para crear efectos
 - [x] **Bug [REGRESIÓN]: Botón Guardar Inactivo:** El botón de guardar no se activa al realizar cambios en el panel. (RESUELTO)
 - [x] **Bug: Visibilidad Opciones de Borde:** Las opciones de borde no se muestran correctamente al activar el toggle. (RESUELTO)
 - [x] **Bug UX: Salto de Pestaña:** Al refrescar el panel (ej. al activar borde), el panel volvía a la primera pestaña. Se implementó persistencia de pestaña activa. (RESUELTO)
+- [x] **Bug UX: Persistencia de Scroll:** Al refrescar el panel, el scroll volvía arriba. Se implementó persistencia de `scrollTop`. (RESUELTO)
+- [x] **Mejora UI: Selector de Estados:** Reemplazados botones de texto por iconos SVG (Normal, Hover, Focus).
+- [x] **Limpieza UI:** Eliminada visualización de ID y Rol en el encabezado del panel.
 
 ---
 
