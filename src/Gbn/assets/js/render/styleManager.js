@@ -137,7 +137,7 @@
      * Genera una regla CSS con pseudo-clase
      * @param {Object} block - Bloque GBN
      * @param {string} stateName - Nombre del estado ('hover', 'focus', etc.)
-     * @param {Object} styles - Estilos a aplicar en ese estado
+     * @param {Object} styles - Estilos a aplicar en ese estado (propiedades en camelCase)
      */
     function applyStateCss(block, stateName, styles) {
         if (!block || !stateName) return;
@@ -151,8 +151,18 @@
             return;
         }
         
+        // [FIX Fase 10] Convertir propiedades de camelCase a kebab-case
+        // porque _states guarda 'backgroundColor' pero CSS necesita 'background-color'
+        var kebabStyles = {};
+        Object.keys(styles).forEach(function(key) {
+            var kebabKey = key.replace(/([A-Z])/g, function(g) {
+                return '-' + g[0].toLowerCase();
+            });
+            kebabStyles[kebabKey] = styles[key];
+        });
+        
         var selector = '[data-gbn-id="' + block.id + '"]';
-        var cssBody = utils.stringifyStyles(styles);
+        var cssBody = utils.stringifyStyles(kebabStyles);
         // Include simulation class for editor preview
         var simulationSelector = selector + '.gbn-simulated-' + stateName;
         styleEl.textContent = selector + ':' + stateName + ', ' + simulationSelector + ' { ' + cssBody + ' }';

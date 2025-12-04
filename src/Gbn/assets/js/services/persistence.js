@@ -75,7 +75,6 @@
                 order: orderById[b.id] || 0,
                 config: utils.assign({}, b.config || {}),
                 styles: styles,
-                styles: styles,
                 children: (tree.childrenMap[b.id] || []).map(function (x) { return x.id; }),
                 domPath: utils.computeDomPath(b.element), // Debugging path mismatch
             };

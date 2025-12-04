@@ -65,8 +65,9 @@
                     parseRule(rule, rules);
                 }
             } catch (e) {
-                // Error de CORS, ignorar esta stylesheet
-                console.warn('[GBN StateStyles] No se pudo acceder a stylesheet:', e.message);
+                // Error de CORS esperado para stylesheets cross-origin (Google Fonts, CDNs, etc.)
+                // Silenciamos el warning porque es un comportamiento esperado y no afecta la funcionalidad
+                // (simplemente no podemos leer pseudo-clases de esas hojas de estilo externas)
             }
         }
 

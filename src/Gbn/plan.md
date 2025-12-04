@@ -155,18 +155,16 @@
 
 ## Trabajo Pendiente
 
-### 🟡 [EN PROGRESO] Fase 10: Soporte para Estados Hover/Focus
+### ✅ [COMPLETADA] Fase 10: Soporte para Estados Hover/Focus
 
-**Problema Grave Identificado:**
-El sistema actualmente **NO diferencia** entre estilos base y estilos de pseudo-clases como `:hover`, `:focus`, `:active`. Esto significa que:
-- `.btnPrimary { background: white }` y `.btnPrimary:hover { background: #e5e5e5 }` se leen como el mismo valor
-- El panel no puede mostrar ni editar estilos hover
-- Los botones y elementos interactivos pierden sus efectos hover cuando se editan
+**Problema Resuelto:**
+El sistema ahora **diferencia correctamente** entre estilos base y estilos de pseudo-clases como `:hover`, `:focus`, `:active`.
 
-**Impacto:**
-- ❌ Imposible editar colores de hover desde el panel
-- ❌ Los estilos hover de clases CSS no se detectan y de hecho se sobreponen a las clases sin hover en el panel.
-- ❌ El usuario debe editar CSS manual para efectos hover
+**Funcionalidad:**
+- ✅ Editar colores y estilos de hover desde el panel
+- ✅ Los estilos hover/focus se aplican en tiempo real con clases de simulación
+- ✅ Los estados se persisten correctamente en `config._states`
+- ✅ CSS generado incluye reglas para pseudo-clases
 
 **Tareas de LÓGICA (COMPLETADAS Dic 2025):**
 - [x] **Arquitectura de Estados:** Implementado `config._states` para almacenar configuración por estado
@@ -177,29 +175,31 @@ El sistema actualmente **NO diferencia** entre estilos base y estilos de pseudo-
     - `getAllStatesFromCSS(element)` - Lee todos los estados de un elemento
     - Cache con TTL de 5 segundos para evitar re-parseo
 - [x] **Generación CSS:** Actualizado `style-generator.js` con método `generateBlockStates()`
-    - Genera reglas CSS separadas por pseudo-clase: `[data-gbn-id="...]:hover { ... }`
+    - Genera reglas CSS separadas por pseudo-clase: `[data-gbn-id="..."]:hover { ... }`
     - Integrado en el método principal `generateCss()`
 - [x] **Persistencia:** Los estados se guardan automáticamente en `config._states`
     - El sistema de persistencia existente los incluye sin modificaciones
 
-**Archivos Creados/Modificados:**
-- `Glory/src/Gbn/assets/js/services/state-styles.js` (Nuevo)
-- `Glory/src/Gbn/assets/js/services/style-generator.js` (Modificado)
-- `Glory/src/Gbn/assets/js/render/styleManager.js` (Modificado)
-- `Glory/src/Gbn/assets/js/ui/panel-fields/utils.js` (Modificado)
-- `Glory/src/Gbn/GbnManager.php` (Modificado)
-
-**Tareas de DISEÑO (EN PROGRESO - Dic 2025):**
+**Tareas de DISEÑO (COMPLETADAS Dic 2025):**
 - [x] **Toggle de Estado en Panel:** Selector visual para cambiar entre "Normal", "Hover", "Focus"
 - [x] **Indicador Visual:** Mostrar qué estado se está editando actualmente
-- [~] **Preview de Hover:** Simular hover en el editor para ver los cambios (clases `.gbn-simulated-*`)
-    - ⚠️ **BUG ACTIVO:** Los estilos no se aplican en tiempo real al editar propiedades en modo Hover/Focus
-    - ⚠️ **BUG ACTIVO:** El botón "Guardar" no persiste los cambios de estados
+- [x] **Preview de Hover:** Simular hover en el editor con clases `.gbn-simulated-*`
 
-**Bugs Identificados (Pendientes de Resolver):**
-1. **Estilos en tiempo real:** `updateConfigValue` guarda en `_states` pero los estilos CSS no se reflejan inmediatamente en el elemento.
-2. **Persistencia:** Los estados guardados en `config._states` no se envían correctamente al backend.
-3. **CORS Warning:** `state-styles.js` no puede leer hojas de estilo cross-origin (esperado, pero el warning es molesto).
+**Archivos Modificados:**
+- `Glory/src/Gbn/assets/js/services/state-styles.js` (Nuevo)
+- `Glory/src/Gbn/assets/js/services/style-generator.js` (Modificado - soporte camelCase→kebab-case)
+- `Glory/src/Gbn/assets/js/render/styleManager.js` (Modificado - conversión CSS en applyStateCss)
+- `Glory/src/Gbn/assets/js/ui/panel-render.js` (Modificado - flujo de estados, evento configChanged)
+- `Glory/src/Gbn/assets/js/ui/panel-fields/utils.js` (Modificado)
+- `Glory/src/Gbn/assets/js/services/persistence.js` (Fix línea duplicada)
+- `Glory/src/Gbn/GbnManager.php` (Modificado)
+
+**Bugs Resueltos (Dic 2025):**
+1. ✅ **Estilos en tiempo real:** Arreglado flujo en `panel-render.js` - construcción directa de estilos y clase de simulación
+2. ✅ **Conversión CSS:** `styleManager.js` convierte `backgroundColor` → `background-color`
+3. ✅ **Mapeo de Path:** Si no hay mapeo en `CONFIG_TO_CSS_MAP`, usa el último segmento del path
+4. ✅ **Botón Guardar:** Evento `gbn:configChanged` ahora se dispara correctamente
+5. ✅ **CORS Warning:** Silenciado en `state-styles.js`
 
 ---
 

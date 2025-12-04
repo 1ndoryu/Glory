@@ -26,14 +26,15 @@
 
         // --- FASE 10: ESCRITURA DE ESTADOS (Hover/Focus) ---
         if (currentEditingState !== 'normal') {
-            // Necesitamos mapear el path de config (ej: 'typography.size') a propiedad CSS (ej: 'fontSize')
-            // Asegurarnos de tener el mapa actualizado
+            // Mapear el path de config (ej: 'typography.size') a propiedad CSS (ej: 'fontSize')
             var map = Gbn.ui.fieldUtils ? Gbn.ui.fieldUtils.CONFIG_TO_CSS_MAP : {};
             var cssProp = map[path];
-
+            
+            // Si no hay mapeo explícito, usar el último segmento del path
+            // Esto permite que propiedades directas como 'color', 'transform' funcionen
             if (!cssProp) {
-                if (Gbn.log) Gbn.log.warn('No se puede guardar estado para propiedad sin mapeo CSS', { path: path });
-                return block;
+                var segments = path.split('.');
+                cssProp = segments[segments.length - 1];
             }
 
             if (Gbn.services.stateStyles && Gbn.services.stateStyles.setStateProperty) {
@@ -43,15 +44,43 @@
                 // Obtener el bloque actualizado del store
                 var updatedBlock = state.get(block.id);
                 
-                // Aplicar visualmente - usar applyStateCss directamente para el estado actual
-                if (styleManager && styleManager.applyStateCss && updatedBlock) {
-                    var stateStyles = updatedBlock.config._states ? updatedBlock.config._states[currentEditingState] : null;
-                    if (stateStyles) {
-                        styleManager.applyStateCss(updatedBlock, currentEditingState, stateStyles);
+                // Asegurar que el elemento tenga la clase de simulación
+                // para que los estilos CSS se muestren inmediatamente
+                var targetElement = (updatedBlock && updatedBlock.element) || block.element;
+                if (targetElement) {
+                    var simClass = 'gbn-simulated-' + currentEditingState;
+                    if (!targetElement.classList.contains(simClass)) {
+                        targetElement.classList.add(simClass);
                     }
                 }
                 
-                // Notificar cambio
+                // Construir los estilos del estado directamente para aplicar visualmente
+                var stateStyles = {};
+                stateStyles[cssProp] = value;
+                
+                // Si hay más propiedades guardadas en el estado, incluirlas
+                if (updatedBlock && updatedBlock.config && updatedBlock.config._states && 
+                    updatedBlock.config._states[currentEditingState]) {
+                    stateStyles = Object.assign({}, updatedBlock.config._states[currentEditingState]);
+                }
+                
+                // Aplicar visualmente
+                var targetBlock = updatedBlock || block;
+                if (styleManager && styleManager.applyStateCss && targetBlock.id) {
+                    styleManager.applyStateCss(targetBlock, currentEditingState, stateStyles);
+                }
+                
+                // Disparar evento de cambio de configuración para activar el botón de guardar
+                var event;
+                if (typeof global.CustomEvent === 'function') {
+                    event = new CustomEvent('gbn:configChanged', { detail: { id: block.id, state: currentEditingState } });
+                } else {
+                    event = document.createEvent('CustomEvent');
+                    event.initCustomEvent('gbn:configChanged', false, false, { id: block.id, state: currentEditingState });
+                }
+                global.dispatchEvent(event);
+                
+                // Notificar cambio visual
                 if (Gbn.ui.panel && Gbn.ui.panel.flashStatus) {
                     Gbn.ui.panel.flashStatus('Cambio en ' + currentEditingState + ' aplicado');
                 }

@@ -122,16 +122,44 @@
         },
         
         /**
+         * Convierte camelCase a kebab-case
+         * @param {string} str - String en camelCase
+         * @returns {string} String en kebab-case
+         */
+        toKebabCase: function(str) {
+            return str.replace(/([A-Z])/g, function(g) {
+                return '-' + g[0].toLowerCase();
+            });
+        },
+        
+        /**
          * Extrae estilos CSS de un objeto de configuración (similar a styleResolvers pero genérico)
+         * 
+         * NOTA (Fase 10): Esta función ahora soporta tanto la estructura anidada (padding.superior)
+         * como propiedades CSS planas en camelCase (backgroundColor) que vienen de _states.
          */
         extractStyles: function(config, role) {
             var styles = {};
+            var self = this;
             
-            // Reutilizamos la lógica de panel-render.js si es posible, 
-            // pero aquí necesitamos algo más simple y directo para propiedades comunes.
-            // Idealmente deberíamos refactorizar styleResolvers para que sea usable aquí.
-            // Por ahora, implementamos lo básico: padding, margin, width, height, typography, colors.
+            // === PROPIEDADES CSS PLANAS (camelCase) ===
+            // Los estados (_states.hover, _states.focus) guardan propiedades CSS directamente
+            // en camelCase. Las convertimos a kebab-case para el CSS final.
+            var cssDirectProps = [
+                'backgroundColor', 'color', 'borderColor', 'borderWidth', 'borderStyle', 
+                'borderRadius', 'transform', 'transition', 'opacity', 'boxShadow',
+                'textDecoration', 'cursor', 'fontWeight', 'fontSize', 'fontFamily',
+                'lineHeight', 'letterSpacing', 'textTransform', 'textShadow'
+            ];
             
+            cssDirectProps.forEach(function(prop) {
+                if (config[prop] !== undefined && config[prop] !== null && config[prop] !== '') {
+                    var kebabProp = self.toKebabCase(prop);
+                    styles[kebabProp] = config[prop];
+                }
+            });
+            
+            // === ESTRUCTURA ANIDADA (configuración de bloque normal) ===
             // Padding
             if (config.padding) {
                 if (typeof config.padding === 'object') {
@@ -161,32 +189,22 @@
             if (config.height) styles['height'] = config.height;
             if (config.maxAncho) styles['max-width'] = config.maxAncho;
             
-            // Colors
-            if (config.background) styles['background-color'] = config.background;
-            if (config.color) styles['color'] = config.color;
+            // Colors (fallback para estructura legacy)
+            if (config.background && !styles['background-color']) styles['background-color'] = config.background;
+            if (config.color && !styles['color']) styles['color'] = config.color;
             
-            // Typography (si config.typography existe como objeto o propiedades sueltas)
-            // En GBN parece que typography es un campo compuesto pero guarda en propiedades sueltas o anidadas?
-            // En typography.js: baseId + '.size', baseId + '.font', etc.
-            // Si el config viene plano o anidado depende de cómo se guarde.
-            // Asumimos estructura anidada si viene de _responsive.
-            
-            // Helper para procesar typography si está anidado
+            // Typography (si config.typography existe como objeto)
             function processTypo(typoConfig, prefix) {
                 if (!typoConfig) return;
-                if (typoConfig.size) styles[prefix + 'font-size'] = typoConfig.size;
-                if (typoConfig.lineHeight) styles[prefix + 'line-height'] = typoConfig.lineHeight;
-                if (typoConfig.letterSpacing) styles[prefix + 'letter-spacing'] = typoConfig.letterSpacing;
-                if (typoConfig.transform) styles[prefix + 'text-transform'] = typoConfig.transform;
-                if (typoConfig.font && typoConfig.font !== 'Default') styles[prefix + 'font-family'] = typoConfig.font;
+                if (typoConfig.size && !styles['font-size']) styles[prefix + 'font-size'] = typoConfig.size;
+                if (typoConfig.lineHeight && !styles['line-height']) styles[prefix + 'line-height'] = typoConfig.lineHeight;
+                if (typoConfig.letterSpacing && !styles['letter-spacing']) styles[prefix + 'letter-spacing'] = typoConfig.letterSpacing;
+                if (typoConfig.transform && !styles['text-transform']) styles[prefix + 'text-transform'] = typoConfig.transform;
+                if (typoConfig.font && typoConfig.font !== 'Default' && !styles['font-family']) styles[prefix + 'font-family'] = typoConfig.font;
+                if (typoConfig.weight && !styles['font-weight']) styles[prefix + 'font-weight'] = typoConfig.weight;
             }
             
-            // Si hay un objeto 'typography'
             if (config.typography) processTypo(config.typography, '');
-            
-            // Si hay propiedades sueltas (legacy o estructura plana)
-            if (config.fontSize) styles['font-size'] = config.fontSize;
-            // ...
             
             // Layout (Flex/Grid)
             if (config.display) styles['display'] = config.display;
