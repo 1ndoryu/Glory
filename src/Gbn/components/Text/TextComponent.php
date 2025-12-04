@@ -10,7 +10,7 @@ use Glory\Gbn\Traits\HasCustomCSS;
 
 class TextComponent extends AbstractComponent
 {
-    use HasSpacing, HasCustomCSS;
+    use HasSpacing, HasCustomCSS, HasPositioning;
 
     protected string $id = 'text';
     protected string $label = 'Texto';
@@ -132,7 +132,12 @@ class TextComponent extends AbstractComponent
                 ->description('Ej: 4px, 8px, 50%')
         );
 
-        // 9. Custom CSS - Tab: Avanzado
+        // 9. Positioning (from Trait) - Tab: Avanzado
+        foreach ($this->getPositioningOptions() as $option) {
+            $schema->addOption($option);
+        }
+
+        // 10. Custom CSS - Tab: Avanzado
         $schema->addOption($this->getCustomCSSOption());
 
         return $schema->toArray();
