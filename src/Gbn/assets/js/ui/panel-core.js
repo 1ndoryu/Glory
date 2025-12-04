@@ -176,8 +176,8 @@
                 panelRoot.setAttribute('aria-hidden', 'false'); 
                 document.body.classList.add('gbn-panel-open'); // Visual Docking 
                 
-                // Reset classes
-                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme', 'gbn-panel-page');
+                // Reset classes (Defensive cleanup)
+                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme', 'gbn-panel-page', 'gbn-panel-restore');
                 
                 if (block) {
                     if (block.role === 'principal') {
@@ -216,7 +216,7 @@
                 panelRoot.classList.add('is-open'); 
                 panelRoot.setAttribute('aria-hidden', 'false'); 
                 document.body.classList.add('gbn-panel-open'); // Visual Docking
-                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-page');
+                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-page', 'gbn-panel-restore');
                 panelRoot.classList.add('gbn-panel-theme');
             }
             if (panelTitle) { panelTitle.textContent = 'Configuración del Tema'; }
@@ -279,7 +279,7 @@
                 panelRoot.classList.add('is-open'); 
                 panelRoot.setAttribute('aria-hidden', 'false'); 
                 document.body.classList.add('gbn-panel-open'); // Visual Docking
-                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme');
+                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme', 'gbn-panel-restore');
                 panelRoot.classList.add('gbn-panel-page');
             }
             if (panelTitle) { panelTitle.textContent = 'Configuración de Página'; }
@@ -339,7 +339,13 @@
         openRestore: function () {
             // ... (Restore logic from original panel.js)
             ensurePanelMounted(); setActiveBlock(null); panelMode = 'restore';
-            if (panelRoot) { panelRoot.classList.add('is-open'); panelRoot.setAttribute('aria-hidden', 'false'); }
+            if (panelRoot) { 
+                panelRoot.classList.add('is-open'); 
+                panelRoot.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('gbn-panel-open'); // Visual Docking
+                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme', 'gbn-panel-page');
+                panelRoot.classList.add('gbn-panel-restore');
+            }
             if (panelTitle) { panelTitle.textContent = 'Restaurar valores'; }
             
             if (panelBody) {
@@ -489,9 +495,28 @@
         },
         
         close: function () {
-            if (panelRoot) { panelRoot.classList.remove('is-open'); panelRoot.setAttribute('aria-hidden', 'true'); }
+            // [FIX] Guardar el modo actual antes de resetearlo para hacer cleanup específico
+            var previousMode = panelMode;
+            
+            if (panelRoot) { 
+                panelRoot.classList.remove('is-open'); 
+                panelRoot.setAttribute('aria-hidden', 'true');
+                // [FIX] Limpiar todas las clases de modo para evitar residuos que afecten el layout
+                panelRoot.classList.remove('gbn-panel-primary', 'gbn-panel-secondary', 'gbn-panel-component', 'gbn-panel-theme', 'gbn-panel-page', 'gbn-panel-restore');
+            }
+            
+            // [FIX] Asegurar que la clase de docking siempre se remueva
             document.body.classList.remove('gbn-panel-open'); // Visual Docking
-            setActiveBlock(null); renderPlaceholder(); utils.debug('Panel cerrado');
+            
+            // [FIX] Resetear estado específico de Theme Settings/Page Settings
+            if (previousMode === 'theme' && Gbn.ui.theme && Gbn.ui.theme.render && Gbn.ui.theme.render.resetState) {
+                Gbn.ui.theme.render.resetState();
+            }
+            
+            setActiveBlock(null); 
+            renderPlaceholder(); 
+            panelMode = 'idle'; // [FIX] Reset mode
+            utils.debug('Panel cerrado');
         },
         
         // Public API for other modules
@@ -506,7 +531,8 @@
                      Gbn.ui.panelRender.renderBlockControls(block, panelBody);
                  }
              }
-        }
+        },
+        getMode: function() { return panelMode; }
     };
 
     // Expose API for panel-fields.js

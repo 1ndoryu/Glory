@@ -101,11 +101,34 @@
             }
         });
 
-        themeBtn.addEventListener('click', function() { if (Gbn.ui.panel) Gbn.ui.panel.openTheme(); });
-        pageBtn.addEventListener('click', function() { if (Gbn.ui.panel) Gbn.ui.panel.openPage(); });
+        themeBtn.addEventListener('click', function() { 
+            if (Gbn.ui.panel) {
+                if (Gbn.ui.panel.isOpen() && Gbn.ui.panel.getMode && Gbn.ui.panel.getMode() === 'theme') {
+                    Gbn.ui.panel.close();
+                } else {
+                    Gbn.ui.panel.openTheme();
+                }
+            } 
+        });
+        
+        pageBtn.addEventListener('click', function() { 
+            if (Gbn.ui.panel) {
+                if (Gbn.ui.panel.isOpen() && Gbn.ui.panel.getMode && Gbn.ui.panel.getMode() === 'page') {
+                    Gbn.ui.panel.close();
+                } else {
+                    Gbn.ui.panel.openPage();
+                }
+            } 
+        });
+        
         restoreBtn.addEventListener('click', function() { 
-             if (Gbn.ui.panel) Gbn.ui.panel.openRestore(); 
-             // Or direct call if implemented
+             if (Gbn.ui.panel) {
+                if (Gbn.ui.panel.isOpen() && Gbn.ui.panel.getMode && Gbn.ui.panel.getMode() === 'restore') {
+                    Gbn.ui.panel.close();
+                } else {
+                    Gbn.ui.panel.openRestore();
+                }
+             }
         });
         
         saveBtn.addEventListener('click', function() {

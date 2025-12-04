@@ -455,5 +455,31 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 - **Bug 32 & 27: Grid/Flex Conflict** -> Solucionado (V13).
 - **Bug 33: Flash de Contenido Flex** -> Solucionado (V8).
 
+### Bugs Pendientes y Tareas Nuevas (Dic 2025) 
 
+#### ✅ Bug Crítico: Docking Persistente (Theme Settings) - RESUELTO
+- **Problema:** Al cerrar el panel de configuración de tema, el ancho de la página no regresaba a su normalidad (se quedaba contraído).
+- **Causa Raíz:** El estado de Theme Settings (variables globales `componentState` y `currentView`) no se reseteaba al cerrar el panel, causando conflictos en la gestión del docking.
+- **Solución Implementada:**
+    1. Agregada función `resetThemeSettingsState()` en `render.js` que resetea el estado global.
+    2. Modificada función `close()` en `panel-core.js` para llamar a `resetState()` cuando el panel estaba en modo `theme`.
+    3. Verificación adicional para asegurar que la clase `gbn-panel-open` siempre se remueva del body.
+- **Archivos Modificados:**
+    - `Glory/src/Gbn/assets/js/ui/theme/render.js`
+    - `Glory/src/Gbn/assets/js/ui/panel-core.js`
+
+#### ✅ Bug: Colores de Paleta Global en Negro - RESUELTO
+- **Problema:** En Theme Settings > Colores > Paleta Global, todos los colores aparecían en negro.
+- **Causa Raíz:** La refactorización del campo `color` (soporte transparencia) no consideraba que los `mockBlock` de Theme Settings no tienen un `element` DOM asociado. El código intentaba leer `computedStyles` de un elemento inexistente, fallando y usando el fallback `#000000`.
+- **Solución Implementada:**
+    1. Agregada lectura directa de `block.config` usando `getDeepValue()` como prioridad para bloques sin elemento DOM.
+    2. La cadena de prioridad ahora es: `configValue > effective.value > computedColor > field.defecto > '#000000'`.
+- **Archivos Modificados:**
+    - `Glory/src/Gbn/assets/js/ui/panel-fields/color.js`
+
+#### 📝 Tarea: Documentación de Colores Globales (para opus, no geminis)
+- **Objetivo:** Documentar cómo agregar colores globales desde CSS directamente.
+
+#### ⚙️ Tarea: Opción Faltante en Defaults de Página
+- **Objetivo:** Agregar opción "Ancho Máximo" en la sección Defaults de Página. Revisar si esto requiere refactorizacion debido a todos los cambios.
 

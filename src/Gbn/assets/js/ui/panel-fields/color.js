@@ -147,18 +147,26 @@
             }
         }
         
-        // Leer valor computado
+        // Leer valor computado (solo si hay elemento DOM)
         var computedColor = null;
         if (block.element) {
             computedColor = u.getComputedValue(block.element, 'backgroundColor');
         }
         
-        // Obtener valor efectivo
+        // [FIX] Para Theme Settings y Page Settings (mockBlocks sin element),
+        // leer directamente de config usando getDeepValue ya que getEffectiveValue
+        // depende de block.element para computed styles
+        var configValue = null;
+        if (block.config && u.getDeepValue) {
+            configValue = u.getDeepValue(block.config, field.id);
+        }
+        
+        // Obtener valor efectivo (funciona bien para bloques normales con element)
         var effective = u.getEffectiveValue(block, field.id);
         var themeDefault = u.getThemeDefault(block.role, field.id);
         
-        // Parsear valor inicial
-        var initialValue = effective.value || computedColor || '#000000';
+        // Parsear valor inicial - prioridad: configValue > effective.value > computedColor > defecto del field > fallback
+        var initialValue = configValue || effective.value || computedColor || field.defecto || '#000000';
         var parsed = colorUtils.parseColor(initialValue);
         
         if (parsed) {

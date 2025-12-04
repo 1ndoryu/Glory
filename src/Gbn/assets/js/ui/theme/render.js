@@ -670,9 +670,21 @@
         }
     }
 
+    /**
+     * [FIX] Función para resetear el estado de Theme Settings
+     * Debe llamarse cuando se cierra el panel para evitar estados residuales
+     */
+    function resetThemeSettingsState() {
+        componentState.currentDetailRole = null;
+        componentState.renderComponentDetail = null;
+        currentView = 'menu';
+    }
+
     Gbn.ui.theme.render = {
         renderPageSettingsForm: renderPageSettingsForm,
-        renderThemeSettingsForm: renderThemeSettingsForm
+        renderThemeSettingsForm: renderThemeSettingsForm,
+        resetState: resetThemeSettingsState // [FIX] Exponer función de limpieza
     };
 
 })(window);
+
