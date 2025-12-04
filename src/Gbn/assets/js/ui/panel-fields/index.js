@@ -47,6 +47,8 @@
                 return Gbn.ui.fractionField && Gbn.ui.fractionField.build(block, field);
             case 'rich_text':
                 return Gbn.ui.richTextField && Gbn.ui.richTextField.build(block, field);
+            case 'image':
+                return Gbn.ui.imageField && Gbn.ui.imageField.build(block, field);
             case 'text':
             default:
                 return Gbn.ui.textField && Gbn.ui.textField.build(block, field);

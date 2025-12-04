@@ -8,12 +8,13 @@ use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Traits\HasFlexbox;
 use Glory\Gbn\Traits\HasGrid;
 use Glory\Gbn\Traits\HasSpacing;
+use Glory\Gbn\Traits\HasBackground;
 
 use Glory\Gbn\Traits\HasCustomCSS;
 
 class SecundarioComponent extends AbstractComponent
 {
-    use HasFlexbox, HasGrid, HasSpacing, HasCustomCSS;
+    use HasFlexbox, HasGrid, HasSpacing, HasBackground, HasCustomCSS;
 
     protected string $id = 'secundario';
     protected string $label = 'Contenedor Secundario';
@@ -111,6 +112,12 @@ class SecundarioComponent extends AbstractComponent
                 ->allowTransparency()
                 ->tab('Estilo')
         );
+
+        // 6. Background Image (from Trait) - Tab: Estilo
+        foreach ($this->getBackgroundOptions() as $option) {
+            $option->tab('Estilo');
+            $schema->addOption($option);
+        }
 
         // 7. Custom CSS - Tab: Avanzado
         $schema->addOption($this->getCustomCSSOption());

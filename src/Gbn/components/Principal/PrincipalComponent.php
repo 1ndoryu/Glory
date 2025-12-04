@@ -8,12 +8,13 @@ use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Traits\HasFlexbox;
 use Glory\Gbn\Traits\HasGrid;
 use Glory\Gbn\Traits\HasSpacing;
+use Glory\Gbn\Traits\HasBackground;
 
 use Glory\Gbn\Traits\HasCustomCSS;
 
 class PrincipalComponent extends AbstractComponent
 {
-    use HasFlexbox, HasGrid, HasSpacing, HasCustomCSS;
+    use HasFlexbox, HasGrid, HasSpacing, HasBackground, HasCustomCSS;
 
     protected string $id = 'principal';
     protected string $label = 'Contenedor Principal';
@@ -96,6 +97,12 @@ class PrincipalComponent extends AbstractComponent
                 ->allowTransparency()
                 ->tab('Estilo')
         );
+
+        // 6. Background Image (from Trait) - Tab: Estilo
+        foreach ($this->getBackgroundOptions() as $option) {
+            $option->tab('Estilo');
+            $schema->addOption($option);
+        }
 
         // 8. Custom CSS - Tab: Avanzado
         $schema->addOption($this->getCustomCSSOption());

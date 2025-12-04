@@ -1,13 +1,13 @@
 /* Theme Styles - Maps GBN variables to content elements */
 
-[data-gbn-root] {
+:where([data-gbn-root]) {
     background-color: var(--gbn-bg);
     color: var(--gbn-text-color);
     font-family: var(--gbn-text-font);
     font-size: var(--gbn-text-size);
 }
 
-[data-gbn-root] p {
+:where([data-gbn-root]) p {
     color: var(--gbn-text-color);
     font-family: var(--gbn-text-font);
     font-size: var(--gbn-text-size);
@@ -17,7 +17,7 @@
     margin-bottom: 1em;
 }
 
-[data-gbn-root] h1 {
+:where([data-gbn-root]) h1 {
     color: var(--gbn-h1-color);
     font-size: var(--gbn-h1-size);
     font-family: var(--gbn-text-font);
@@ -28,7 +28,7 @@
     margin-bottom: 0.5em;
 }
 
-[data-gbn-root] h2 {
+:where([data-gbn-root]) h2 {
     color: var(--gbn-h2-color, var(--gbn-h1-color));
     font-size: var(--gbn-h2-size, 2rem);
     font-family: var(--gbn-text-font);
@@ -39,7 +39,7 @@
     margin-bottom: 0.5em;
 }
 
-[data-gbn-root] h3 {
+:where([data-gbn-root]) h3 {
     color: var(--gbn-h3-color, var(--gbn-h1-color));
     font-size: var(--gbn-h3-size, 1.75rem);
     font-family: var(--gbn-text-font);
@@ -50,7 +50,7 @@
     margin-bottom: 0.5em;
 }
 
-[data-gbn-root] h4 {
+:where([data-gbn-root]) h4 {
     color: var(--gbn-h4-color, var(--gbn-h1-color));
     font-size: var(--gbn-h4-size, 1.5rem);
     font-family: var(--gbn-text-font);
@@ -61,7 +61,7 @@
     margin-bottom: 0.5em;
 }
 
-[data-gbn-root] h5 {
+:where([data-gbn-root]) h5 {
     color: var(--gbn-h5-color, var(--gbn-h1-color));
     font-size: var(--gbn-h5-size, 1.25rem);
     font-family: var(--gbn-text-font);
@@ -72,7 +72,7 @@
     margin-bottom: 0.5em;
 }
 
-[data-gbn-root] h6 {
+:where([data-gbn-root]) h6 {
     color: var(--gbn-h6-color, var(--gbn-h1-color));
     font-size: var(--gbn-h6-size, 1rem);
     font-family: var(--gbn-text-font);
@@ -108,6 +108,9 @@
     background: var(--gbn-principal-background, transparent);
     max-width: var(--gbn-principal-max-width, none);
     
+    /* Typography */
+    text-align: var(--gbn-principal-alineacion, inherit);
+    
     /* Ensure box-sizing */
     box-sizing: border-box;
     margin-left: auto;
@@ -133,6 +136,9 @@
     padding-left: var(--gbn-secundario-padding-left, 0px);
     
     background: var(--gbn-secundario-background, transparent);
+    
+    /* Typography */
+    text-align: var(--gbn-secundario-alineacion, inherit);
     
     box-sizing: border-box;
 }

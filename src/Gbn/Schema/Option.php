@@ -53,6 +53,11 @@ class Option
         return new self('rich_text', $id, $label);
     }
 
+    public static function image(string $id, string $label): self
+    {
+        return new self('image', $id, $label);
+    }
+
     public static function code(string $id, string $label): self
     {
         return new self('code', $id, $label);

@@ -237,6 +237,13 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
 -   **Problema**: El panel de configuración de componentes en Theme Settings era plano y diferente al panel de edición directa.
 -   **Solución**: Se implementó la lógica de pestañas (Contenido, Estilo, Avanzado) en `render.js` (Theme Settings) replicando la estructura y clases CSS de `panel-render.js`. Ahora ambos paneles tienen la misma organización visual y funcional.
 
+#### ✅ Implementación: Página de Prueba (Constructor)
+-   **Objetivo**: Validar la lógica del constructor con un diseño complejo (Toyota Supra Landing).
+-   **Cambios**:
+    -   `header.php`: Se añadió lógica condicional para ocultar el header y toggle por defecto en la página `contructor`.
+    -   `contructor.php`: Se adaptó el diseño HTML proporcionado (Tailwind, Lucide, Fuentes) dentro de la estructura `gloryDiv > gloryDivSecundario`.
+
+
 ---
 
 ## 6. Roadmap de Estabilidad y Prevención (Defensa contra Zombie Bugs)
@@ -316,6 +323,17 @@ Este roadmap está diseñado para asegurar que GBN sea modular, SOLID y fácil d
         -   Si está dentro de un Div Secundario -> Mostrar Componentes Atómicos (Texto, Botón, Imagen) Y Divs Secundarios anidados.
     -   **Iconografía:** Todos los componentes deben tener iconos SVG representativos y minimalistas.
     -   **Carga Dinámica:** La lista de componentes disponibles debe poblarse automáticamente leyendo `gloryGbnCfg.components` (filtrando por rol/tipo), sin hardcodear nada en JS.
+
+- [x] **Nuevos Componentes Atómicos:**
+    -   **Imagen:** Implementado `ImageComponent.php` con soporte para URL, Alt, Dimensiones y Object-Fit.
+    -   **Botón:** Implementado `ButtonComponent.php` con soporte para Texto, URL, Target, Variantes y Estilos.
+
+### 6.2.2 Imágenes de Fondo (Prioridad)
+**Objetivo:** Permitir añadir imágenes de fondo a contenedores (Principal y Secundario) para crear secciones Hero y tarjetas con fondo.
+- [x] **Trait `HasBackground`:** Crear trait reutilizable con opciones de Imagen, Posición, Tamaño, Repetición y Attachment.
+- [x] **Integración:** Añadir `HasBackground` a `PrincipalComponent` y `SecundarioComponent`.
+- [x] **Frontend:** Actualizar `style-composer.js` para procesar propiedades de fondo (`background-image`, `background-size`, etc.).
+- [x] **Demo:** Actualizar `contructor.php` para usar esta funcionalidad en la sección Hero.
 
 ### 6.2.1 Hotfix Críticos (UX y Persistencia)
 **Problema Crítico:** Los cambios no perduran al recargar y falta una forma intuitiva de agregar contenedores principales.

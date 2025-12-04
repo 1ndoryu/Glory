@@ -108,16 +108,30 @@
             var alineacion = getValue('alineacion');
             if (alineacion && alineacion !== 'inherit') { 
                 styles['text-align'] = alineacion; 
-            } else if (block.role) {
-                // Bug 31 Fix V6: Corregido nombre de variable a 'alineacion' (ID del campo)
-                // Se usa var(--gbn-role-alineacion) para coincidir con lo que genera applicator.js
-                styles['text-align'] = 'var(--gbn-' + block.role + '-alineacion)';
             }
 
             // 4. Background
             var fondo = getValue('fondo') || getValue('background');
             if (fondo) { 
                 styles.background = fondo; 
+            }
+            
+            // 4.1 Background Image & Properties
+            var bgImage = getValue('backgroundImage');
+            if (bgImage) {
+                styles['background-image'] = 'url("' + bgImage + '")';
+                
+                var bgSize = getValue('backgroundSize');
+                if (bgSize) styles['background-size'] = bgSize;
+                
+                var bgPos = getValue('backgroundPosition');
+                if (bgPos) styles['background-position'] = bgPos;
+                
+                var bgRepeat = getValue('backgroundRepeat');
+                if (bgRepeat) styles['background-repeat'] = bgRepeat;
+                
+                var bgAttach = getValue('backgroundAttachment');
+                if (bgAttach) styles['background-attachment'] = bgAttach;
             }
 
             // 5. Gap

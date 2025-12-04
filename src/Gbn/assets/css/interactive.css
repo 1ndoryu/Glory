@@ -10,7 +10,7 @@
 }
 
 .gbn-active [data-gbnPrincipal] {
-    min-height: 40px;
+
     position: relative;
     outline: 1px dashed rgba(29, 143, 241, 0.35); /* Azul */
     outline-offset: 2px;
@@ -18,7 +18,7 @@
 }
 
 .gbn-active [data-gbnSecundario] {
-    min-height: 40px;
+
     position: relative;
     outline: 1px dashed rgba(245, 158, 11, 0.35); /* Naranja */
     outline-offset: 2px;
