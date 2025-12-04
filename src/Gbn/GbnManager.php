@@ -231,6 +231,11 @@ class GbnManager
                 'file' => '/js/services/style-generator.js',
                 'deps' => ['glory-gbn-services'],
             ],
+            // Fase 10: Servicio de estados hover/focus
+            'glory-gbn-state-styles' => [
+                'file' => '/js/services/state-styles.js',
+                'deps' => ['glory-gbn-style-generator'],
+            ],
             'glory-gbn-diagnostics' => [
                 'file' => '/js/services/diagnostics.js',
                 'deps' => ['glory-gbn-services'],
@@ -352,6 +357,14 @@ class GbnManager
                 'file' => '/js/ui/renderers/text.js',
                 'deps' => ['glory-gbn-ui-renderers-shared'],
             ],
+            'glory-gbn-ui-renderers-button' => [
+                'file' => '/js/ui/renderers/button.js',
+                'deps' => ['glory-gbn-ui-renderers-shared'],
+            ],
+            'glory-gbn-ui-renderers-image' => [
+                'file' => '/js/ui/renderers/image.js',
+                'deps' => ['glory-gbn-ui-renderers-shared'],
+            ],
             'glory-gbn-ui-renderers-page-settings' => [
                 'file' => '/js/ui/renderers/page-settings.js',
                 'deps' => ['glory-gbn-ui-renderers-shared'],
@@ -368,6 +381,8 @@ class GbnManager
                     'glory-gbn-ui-renderers-principal',
                     'glory-gbn-ui-renderers-secundario',
                     'glory-gbn-ui-renderers-text',
+                    'glory-gbn-ui-renderers-button',
+                    'glory-gbn-ui-renderers-image',
                     'glory-gbn-ui-renderers-page-settings',
                     'glory-gbn-ui-renderers-theme-settings'
                 ],

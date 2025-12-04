@@ -289,18 +289,21 @@
         'backgroundAttachment': 'backgroundAttachment',
         'gap': 'gap',
         'layout': 'display',
+        'display': 'display',
         'flexDirection': 'flexDirection',
         'flexWrap': 'flexWrap',
         'flexJustify': 'justifyContent',
         'flexAlign': 'alignItems',
         'height': 'height',
         'alineacion': 'textAlign',
+        'textAlign': 'textAlign',
         'maxAncho': 'maxWidth',
         'color': 'color',
         'size': 'fontSize',
-        // Typography
+        // Typography - Todas las propiedades
         'typography.font': 'fontFamily',
         'typography.size': 'fontSize',
+        'typography.weight': 'fontWeight',
         'typography.lineHeight': 'lineHeight',
         'typography.letterSpacing': 'letterSpacing',
         'typography.transform': 'textTransform',
@@ -322,7 +325,11 @@
         // Overflow
         'overflow': 'overflow',
         'overflowX': 'overflowX',
-        'overflowY': 'overflowY'
+        'overflowY': 'overflowY',
+        // Button/Element specific
+        'cursor': 'cursor',
+        'transition': 'transition',
+        'transform': 'transform'
     };
 
     /**
@@ -410,7 +417,58 @@
     function getEffectiveValue(block, path) {
         var result = { value: undefined, source: 'none', placeholder: undefined };
         
-        // 1. Valor guardado en config del bloque (máxima prioridad)
+        // Determinar el estado actual de edición (Normal, Hover, Focus)
+        var currentState = 'normal';
+        if (Gbn.ui.panelRender && Gbn.ui.panelRender.getCurrentState) {
+            currentState = Gbn.ui.panelRender.getCurrentState();
+        }
+
+        // --- LÓGICA PARA ESTADOS (Hover, Focus, etc.) ---
+        if (currentState !== 'normal') {
+            // 1. Configuración guardada para el estado
+            var stateConfigVal = getStateConfig(block, currentState, path);
+            if (stateConfigVal !== undefined && stateConfigVal !== null && stateConfigVal !== '') {
+                result.value = stateConfigVal;
+                result.source = 'state-config';
+                return result;
+            }
+
+            // 2. Estilos computados del estado (desde CSS)
+            // Usamos el servicio stateStyles para leer pseudo-clases
+            if (Gbn.services.stateStyles && Gbn.services.stateStyles.getStateStyles) {
+                var cssProp = CONFIG_TO_CSS_MAP[path];
+                if (cssProp) {
+                    var stateStyles = Gbn.services.stateStyles.getStateStyles(block.element, currentState);
+                    var computedStateVal = stateStyles[cssProp];
+                    
+                    if (computedStateVal !== undefined && computedStateVal !== null && computedStateVal !== '') {
+                        result.value = computedStateVal;
+                        result.source = 'state-computed';
+                        return result;
+                    }
+                }
+            }
+
+            // 3. Fallback: Mostrar el valor "Normal" como placeholder/referencia
+            // Esto ayuda al usuario a saber qué está sobrescribiendo
+            // NOTA: No podemos llamar getEffectiveValue recursivamente porque
+            // getCurrentState() seguiría devolviendo el estado actual (hover/focus),
+            // causando recursión infinita. Leemos directamente la config base.
+            var baseConfig = getDeepValue(block.config, path);
+            if (baseConfig !== undefined) {
+                result.placeholder = baseConfig;
+            } else {
+                // Si no hay config base, intentar computed base (estado normal)
+                var baseComputed = getComputedValueForPath(block.element, path);
+                if (baseComputed !== undefined) {
+                    result.placeholder = baseComputed;
+                }
+            }
+            
+            return result;
+        }
+
+        // --- LÓGICA NORMAL (Desktop/Responsive) ---
         var savedValue;
         // Usar getResponsiveValue para aprovechar la lógica de theme settings
         if (Gbn.responsive && Gbn.responsive.getResponsiveValue) {
@@ -596,6 +654,55 @@
         return [];
     }
 
+    /**
+     * Estados CSS soportados para pseudo-clases
+     * Centralizado aquí para consistencia entre módulos
+     * (Fase 10: Soporte Hover/Focus)
+     */
+    var SUPPORTED_STATES = ['hover', 'focus', 'active', 'visited', 'focus-visible', 'focus-within'];
+
+    /**
+     * Obtiene la configuración de un estado específico del bloque
+     * @param {Object} block - Bloque GBN
+     * @param {string} state - Estado ('hover', 'focus', etc.)
+     * @param {string} path - Ruta de la propiedad (opcional)
+     * @returns {*} Configuración del estado o undefined
+     */
+    function getStateConfig(block, state, path) {
+        if (!block || !block.config || !block.config._states) return undefined;
+        if (SUPPORTED_STATES.indexOf(state) === -1) return undefined;
+        
+        var stateConfig = block.config._states[state];
+        if (!stateConfig) return undefined;
+        
+        if (path) {
+            // [FIX] Mapear el path de configuración (ej: 'typography.size') 
+            // a la propiedad CSS correspondiente (ej: 'fontSize')
+            // ya que _states almacena propiedades CSS planas.
+            var cssProp = CONFIG_TO_CSS_MAP[path];
+            
+            // Si hay mapeo, usar la propiedad CSS
+            if (cssProp) {
+                return stateConfig[cssProp];
+            }
+            
+            // Si no hay mapeo, intentar buscar por el path directo (fallback)
+            // aunque esto raramente funcionará para estructuras anidadas
+            return getDeepValue(stateConfig, path);
+        }
+        return stateConfig;
+    }
+
+    /**
+     * Verifica si un bloque tiene estilos de estados definidos
+     * @param {Object} block - Bloque GBN
+     * @returns {boolean}
+     */
+    function hasStateStyles(block) {
+        if (!block || !block.config || !block.config._states) return false;
+        return Object.keys(block.config._states).length > 0;
+    }
+
     // Exportar utilidades
     Gbn.ui.fieldUtils = {
         getDeepValue: getDeepValue,
@@ -611,8 +718,13 @@
         getResponsiveConfigValue: getResponsiveConfigValue,
         getValueSource: getValueSource,
         CONFIG_TO_CSS_MAP: CONFIG_TO_CSS_MAP,
-        ICONS: ICONS
+        ICONS: ICONS,
+        // Fase 10: Estados Hover/Focus
+        SUPPORTED_STATES: SUPPORTED_STATES,
+        getStateConfig: getStateConfig,
+        hasStateStyles: hasStateStyles
     };
+
 
 })(window);
 

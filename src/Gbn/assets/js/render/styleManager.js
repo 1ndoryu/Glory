@@ -19,6 +19,11 @@
         'letter-spacing', 'text-transform', 'font', 'border', 'border-radius'
     ];
 
+    /**
+     * Estados CSS soportados (Fase 10)
+     */
+    var SUPPORTED_STATES = ['hover', 'focus', 'active', 'visited', 'focus-visible', 'focus-within'];
+
     function ensureStyleElement(id) {
         var selector = 'style[' + STYLE_ATTR + '="' + id + '"]';
         var existing = document.querySelector(selector);
@@ -127,6 +132,61 @@
         styleEl.textContent = processedCss;
     }
 
+    /**
+     * Aplica estilos de un estado específico (hover, focus, etc.) - Fase 10
+     * Genera una regla CSS con pseudo-clase
+     * @param {Object} block - Bloque GBN
+     * @param {string} stateName - Nombre del estado ('hover', 'focus', etc.)
+     * @param {Object} styles - Estilos a aplicar en ese estado
+     */
+    function applyStateCss(block, stateName, styles) {
+        if (!block || !stateName) return;
+        if (SUPPORTED_STATES.indexOf(stateName) === -1) return;
+        
+        var styleId = block.id + '-state-' + stateName;
+        var styleEl = ensureStyleElement(styleId);
+        
+        if (!styles || Object.keys(styles).length === 0) {
+            styleEl.textContent = '';
+            return;
+        }
+        
+        var selector = '[data-gbn-id="' + block.id + '"]';
+        var cssBody = utils.stringifyStyles(styles);
+        // Include simulation class for editor preview
+        var simulationSelector = selector + '.gbn-simulated-' + stateName;
+        styleEl.textContent = selector + ':' + stateName + ', ' + simulationSelector + ' { ' + cssBody + ' }';
+    }
+
+    /**
+     * Aplica todos los estilos de estados de un bloque
+     * @param {Object} block - Bloque GBN con config._states
+     */
+    function applyAllStates(block) {
+        if (!block || !block.config || !block.config._states) return;
+        
+        SUPPORTED_STATES.forEach(function(stateName) {
+            var stateStyles = block.config._states[stateName];
+            applyStateCss(block, stateName, stateStyles || {});
+        });
+    }
+
+    /**
+     * Limpia todos los estilos de estados de un bloque
+     * @param {Object} block - Bloque GBN
+     */
+    function clearAllStates(block) {
+        if (!block) return;
+        
+        SUPPORTED_STATES.forEach(function(stateName) {
+            var styleId = block.id + '-state-' + stateName;
+            var existing = document.querySelector('style[' + STYLE_ATTR + '="' + styleId + '"]');
+            if (existing) {
+                existing.textContent = '';
+            }
+        });
+    }
+
     function update(blockId, styles) {
         var block = typeof blockId === 'string' ? state.get(blockId) : blockId;
         if (!block) {
@@ -145,11 +205,22 @@
 
         // Aplicar estilos directamente al elemento para máxima prioridad
         applyInlineStyles(block, styles);
+        
+        // Aplicar estilos de estados si existen (Fase 10)
+        if (block.config && block.config._states) {
+            applyAllStates(block);
+        }
     }
 
     Gbn.styleManager = {
         ensureBaseline: ensureBaseline,
         update: update,
+        // Fase 10: Estados Hover/Focus
+        applyStateCss: applyStateCss,
+        applyAllStates: applyAllStates,
+        clearAllStates: clearAllStates,
+        SUPPORTED_STATES: SUPPORTED_STATES
     };
 })(window);
+
 

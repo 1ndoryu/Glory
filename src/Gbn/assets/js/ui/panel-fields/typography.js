@@ -232,20 +232,68 @@
         gridRow.appendChild(createInput('letterSpacing', '0', iconSpacing, 'Letter Spacing', 'letterSpacing'));
         wrapper.appendChild(gridRow);
 
-        // 3. Text Transform (grupo de íconos)
-        var transformRow = document.createElement('div');
-        transformRow.style.width = '100%'; // Replaces gbn-typo-row
-        // Removed gbn-typo-row
+        // 3. Font Weight (grupo de íconos)
+        var weightRow = document.createElement('div');
+        weightRow.style.width = '100%';
         
-        // Removed Label as requested
+        var weightGroup = document.createElement('div');
+        weightGroup.className = 'gbn-icon-group-container';
+        weightGroup.style.width = '100%';
+        weightGroup.style.justifyContent = 'space-between';
+        
+        // Opciones de peso de fuente con iconos visuales
+        var weights = [
+            { val: '400', label: 'Normal / Light', icon: '<span style="font-weight:400">Aa</span>' },
+            { val: '500', label: 'Medium', icon: '<span style="font-weight:500">Aa</span>' },
+            { val: '600', label: 'Semibold', icon: '<span style="font-weight:600">Aa</span>' },
+            { val: '700', label: 'Bold', icon: '<span style="font-weight:700">Aa</span>' }
+        ];
+        
+        var weightData = getResponsiveData('weight');
+        var currentWeight = weightData.val;
+        // Si no hay valor guardado, leer del CSS computado
+        if (!currentWeight) {
+            var computedWeight = getComputedTypographyValue('fontWeight');
+            if (computedWeight && computedWeight !== 'normal' && computedWeight !== '400') {
+                currentWeight = computedWeight;
+            }
+        }
+        
+        weights.forEach(function(opt) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'gbn-icon-btn' + (currentWeight === opt.val ? ' active' : '');
+            btn.title = opt.label;
+            btn.innerHTML = opt.icon;
+            btn.style.fontSize = '11px';
+            
+            btn.addEventListener('click', function() {
+                var api = Gbn.ui && Gbn.ui.panelApi;
+                if (api && api.updateConfigValue && block) {
+                    api.updateConfigValue(block, baseId + '.weight', opt.val);
+                    Array.from(weightGroup.children).forEach(function(b) {
+                        b.classList.remove('active');
+                    });
+                    btn.classList.add('active');
+                }
+            });
+            weightGroup.appendChild(btn);
+        });
+        
+        weightRow.appendChild(weightGroup);
+        wrapper.appendChild(weightRow);
+
+        // 4. Text Transform (grupo de íconos)
+        var transformRow = document.createElement('div');
+        transformRow.style.width = '100%';
         
         var transformGroup = document.createElement('div');
         transformGroup.className = 'gbn-icon-group-container';
-        transformGroup.style.width = '100%'; // Ensure full width
-        transformGroup.style.justifyContent = 'space-between'; // Distribute evenly
+        transformGroup.style.width = '100%';
+        transformGroup.style.justifyContent = 'space-between';
         
         var transforms = [
-            { val: 'none', label: 'None', icon: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>' }, // Changed to X/Cancel icon for None
+            { val: 'none', label: 'None', icon: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>' },
             { val: 'uppercase', label: 'Uppercase', icon: 'AB' },
             { val: 'lowercase', label: 'Lowercase', icon: 'ab' },
             { val: 'capitalize', label: 'Capitalize', icon: 'Ab' }
@@ -278,7 +326,6 @@
                         b.classList.remove('active');
                     });
                     btn.classList.add('active');
-                    // applySourceClasses(transformRow, 'override');
                 }
             });
             transformGroup.appendChild(btn);

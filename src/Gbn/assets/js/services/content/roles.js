@@ -13,8 +13,9 @@
     var FALLBACK_SELECTORS = {
         principal: { attribute: 'gloryDiv', dataAttribute: 'data-gbnPrincipal' },
         secundario: { attribute: 'gloryDivSecundario', dataAttribute: 'data-gbnSecundario' },
-
-        text: { attribute: 'gloryTexto', dataAttribute: 'data-gbn-text' }
+        text: { attribute: 'gloryTexto', dataAttribute: 'data-gbn-text' },
+        button: { attribute: 'gloryButton', dataAttribute: 'data-gbn-button' },
+        image: { attribute: 'gloryImagen', dataAttribute: 'data-gbn-image' }
     };
 
     function ensureSelector(role, selector) {

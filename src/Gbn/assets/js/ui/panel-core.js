@@ -132,6 +132,8 @@
     function setActiveBlock(nextBlock) {
         if (activeBlock && activeBlock.element) {
             activeBlock.element.classList.remove('gbn-block-active');
+            // Clean up simulation classes (Fase 10)
+            activeBlock.element.classList.remove('gbn-simulated-hover', 'gbn-simulated-focus');
             if (activeBlock.element.__gbnBtn) {
                 activeBlock.element.__gbnBtn.classList.remove('is-active');
             }

@@ -155,6 +155,171 @@
 
 ## Trabajo Pendiente
 
+### 🟡 [EN PROGRESO] Fase 10: Soporte para Estados Hover/Focus
+
+**Problema Grave Identificado:**
+El sistema actualmente **NO diferencia** entre estilos base y estilos de pseudo-clases como `:hover`, `:focus`, `:active`. Esto significa que:
+- `.btnPrimary { background: white }` y `.btnPrimary:hover { background: #e5e5e5 }` se leen como el mismo valor
+- El panel no puede mostrar ni editar estilos hover
+- Los botones y elementos interactivos pierden sus efectos hover cuando se editan
+
+**Impacto:**
+- ❌ Imposible editar colores de hover desde el panel
+- ❌ Los estilos hover de clases CSS no se detectan y de hecho se sobreponen a las clases sin hover en el panel.
+- ❌ El usuario debe editar CSS manual para efectos hover
+
+**Tareas de LÓGICA (COMPLETADAS Dic 2025):**
+- [x] **Arquitectura de Estados:** Implementado `config._states` para almacenar configuración por estado
+    - Estructura: `{ _states: { hover: {...}, focus: {...}, active: {...} } }`
+- [x] **Lectura de Pseudo-clases:** Creado servicio `state-styles.js` que parsea hojas de estilo
+    - `parseStylesheets()` - Escanea todas las CSS del documento
+    - `getStateStyles(element, state)` - Obtiene estilos de un estado específico
+    - `getAllStatesFromCSS(element)` - Lee todos los estados de un elemento
+    - Cache con TTL de 5 segundos para evitar re-parseo
+- [x] **Generación CSS:** Actualizado `style-generator.js` con método `generateBlockStates()`
+    - Genera reglas CSS separadas por pseudo-clase: `[data-gbn-id="...]:hover { ... }`
+    - Integrado en el método principal `generateCss()`
+- [x] **Persistencia:** Los estados se guardan automáticamente en `config._states`
+    - El sistema de persistencia existente los incluye sin modificaciones
+
+**Archivos Creados/Modificados:**
+- `Glory/src/Gbn/assets/js/services/state-styles.js` (Nuevo)
+- `Glory/src/Gbn/assets/js/services/style-generator.js` (Modificado)
+- `Glory/src/Gbn/assets/js/render/styleManager.js` (Modificado)
+- `Glory/src/Gbn/assets/js/ui/panel-fields/utils.js` (Modificado)
+- `Glory/src/Gbn/GbnManager.php` (Modificado)
+
+**Tareas de DISEÑO (EN PROGRESO - Dic 2025):**
+- [x] **Toggle de Estado en Panel:** Selector visual para cambiar entre "Normal", "Hover", "Focus"
+- [x] **Indicador Visual:** Mostrar qué estado se está editando actualmente
+- [~] **Preview de Hover:** Simular hover en el editor para ver los cambios (clases `.gbn-simulated-*`)
+    - ⚠️ **BUG ACTIVO:** Los estilos no se aplican en tiempo real al editar propiedades en modo Hover/Focus
+    - ⚠️ **BUG ACTIVO:** El botón "Guardar" no persiste los cambios de estados
+
+**Bugs Identificados (Pendientes de Resolver):**
+1. **Estilos en tiempo real:** `updateConfigValue` guarda en `_states` pero los estilos CSS no se reflejan inmediatamente en el elemento.
+2. **Persistencia:** Los estados guardados en `config._states` no se envían correctamente al backend.
+3. **CORS Warning:** `state-styles.js` no puede leer hojas de estilo cross-origin (esperado, pero el warning es molesto).
+
+---
+
+
+### ⏳ Fase 11: Refactorización SOLID de Componentes
+
+**Objetivo:** Revisar y refactorizar los componentes existentes aplicando principios SOLID para reducir código repetitivo y facilitar la creación de nuevos componentes.
+
+**Análisis Necesario:**
+- Hay código repetitivo entre renderers (`button.js`, `text.js`, `principal.js` etc)
+- El proceso de crear un nuevo componente requiere modificar múltiples archivos
+- Los traits en PHP podrían tener equivalentes en JS para los renderers
+
+**Tareas de LÓGICA:**
+- [ ] **Auditoría de Código:** Identificar patrones repetitivos en renderers JS
+- [ ] **Trait System en JS:** Crear funciones compartidas para `handleUpdate` (spacing, typography, etc.)
+- [ ] **Auto-registro de Renderers:** Explorar si los renderers pueden auto-registrarse en lugar de modificar `GbnManager.php` manualmente
+- [ ] **Factory Pattern:** Crear una factory de componentes que reduzca boilerplate
+- [ ] **Centralizar Border:** Crear trait `HasBorder` reutilizable (PHP + JS)
+
+**Tareas de DISEÑO:**
+- [ ] **Documentar patrón:** Crear guía de "cómo crear un nuevo componente" paso a paso
+
+---
+
+### ⏳ Fase 12: Mejoras Visuales del Panel
+
+**Objetivo:** Mejorar la UX del panel con opciones más visuales e intuitivas.
+
+**Problemas Identificados:**
+1. "Abrir en" (target) debería usar iconos (pestaña actual vs nueva pestaña)
+2. "Ancho" es ambiguo - debería ser "Ancho del Botón" o similar
+3. Opciones de borde (Radio, Ancho, Estilo, Color) siempre visibles aunque no haya borde activo
+4. Opciones de borde podrían usar iconos en lugar de dropdowns/text
+
+**Tareas de DISEÑO:**
+- [ ] **Target con Iconos:** Cambiar select "Abrir en" a `iconGroup` con iconos de ventana
+- [ ] **Labels Específicos:** Renombrar campos ambiguos (width → "Ancho del Botón", etc.)
+- [ ] **Border Colapsable:** Crear grupo colapsable tipo "Tipografía" para opciones de borde:
+    - Toggle para activar/desactivar borde
+    - Solo mostrar opciones cuando está activo
+    - Iconos para estilo de borde (solid, dashed, dotted)
+- [ ] **Border Radius con Preview:** Selector visual de esquinas (como en Figma)
+- [ ] **Organización por Grupos:** Agrupar opciones relacionadas visualmente
+
+**Tareas de LÓGICA:**
+- [ ] **Campo `border` Compuesto:** Crear nuevo tipo de campo que agrupe width/style/color/radius
+- [ ] **Condición de Visibilidad:** Implementar lógica `condition` para ocultar opciones dependientes
+
+---
+
+### ⏳ Fase 9: Transform con Iconos para Botones
+
+**Objetivo:** Agregar opciones de transform preestablecidas con iconos visuales al componente Button.
+
+**Contexto:**
+Los botones como `.btnRacing` usan `transform: skewX(-10deg)` para crear efectos visuales dinámicos. Se necesita exponer estas transformaciones de manera visual en el panel GBN.
+
+**Tareas:**
+- [ ] **Crear grupo de iconos visuales** para transforms comunes:
+    - `none` - Sin transformación
+    - `skewX(-10deg)` - Inclinación izquierda
+    - `skewX(10deg)` - Inclinación derecha
+    - `scale(1.05)` - Agrandar
+    - `rotate(5deg)` - Rotación
+- [ ] **Implementar presets** en `ButtonComponent.php` usando `Option::iconGroup()`.
+- [ ] **Sincronización CSS:** Detectar transforms existentes aplicados por clases CSS.
+- [ ] **Preview en panel:** Mostrar el efecto visual del transform en el icono del preset.
+
+**Notas de Implementación:**
+- Debe ser un `iconGroup` con iconos SVG que representen visualmente cada transformación.
+- Si el botón ya tiene un transform por clase CSS (como `.btnRacing`), el panel debe detectarlo.
+- Un input de texto adicional permite valores personalizados (ya implementado como `transform` text input).
+
+---
+
+### ✅ Fase 9.1: Refactorización del Componente Botón (COMPLETADO Dic 2025)
+
+**Problema Identificado:**
+1. El componente usaba `opciones="variant: 'primary', url: '#...'` que iba en contra del diseño nativo.
+2. La URL debía leerse del atributo `href` nativo de HTML.
+3. El campo `typography` no tenía soporte para `font-weight`.
+
+**Solución Implementada:**
+- **Diseño Nativo:** `ButtonComponent.php` reescrito desde cero:
+    - El atributo `opciones=` ya **NO ES NECESARIO**.
+    - `texto` se infiere desde `innerHTML`.
+    - `url` se infiere desde el atributo `href`.
+    - `target` se infiere desde el atributo `target`.
+- **Font-Weight en Typography:** `typography.js` ahora incluye un grupo de iconos para seleccionar peso de fuente (400, 500, 600, 700/Bold).
+- **Nuevas Opciones Button:**
+    - Display (inline-block, block, inline-flex)
+    - Text align
+    - Background color
+    - Color
+    - Border completo (width, style, color, radius)
+    - Cursor
+    - Transition
+    - Transform (texto libre)
+    - Custom CSS
+- **Renderer Actualizado:** `button.js` reescrito para manejar todas las nuevas propiedades con sincronización bidireccional.
+- **Mapeo CSS Ampliado:** `utils.js` `CONFIG_TO_CSS_MAP` incluye `typography.weight`, `display`, `textAlign`, `cursor`, `transition`, `transform`.
+
+**Archivos Modificados:**
+- `Glory/src/Gbn/components/Button/ButtonComponent.php`
+- `Glory/src/Gbn/assets/js/ui/panel-fields/typography.js`
+- `Glory/src/Gbn/assets/js/ui/renderers/button.js`
+- `Glory/src/Gbn/assets/js/services/content/builder.js`
+- `Glory/src/Gbn/assets/js/ui/panel-fields/utils.js`
+- `App/Templates/pages/contructor.php`
+
+**Criterios de Aceptación:**
+- [x] Los botones funcionan sin el atributo `opciones=`.
+- [x] URL se lee desde el atributo `href` del elemento.
+- [x] Texto se lee desde el `innerHTML` del elemento.
+- [x] Campo font-weight disponible en el panel de tipografía.
+- [x] Sincronización bidireccional CSS↔Panel para todas las propiedades.
+
+---
+
 ### ✅ [BUG-SYNC] Falla en Lectura de Estilos Computados (RESUELTO Dic 2025)
 - **Problema:** El panel no recogía correctamente los valores de estilos definidos en clases CSS (`width`, `height`, `position`, `overflow`, `z-index`) para mostrarlos como estado inicial.
 - **Causa Raíz:** El mapeo `CONFIG_TO_CSS_MAP` en `utils.js` no incluía las propiedades `ancho`→`width`, `position`, `zIndex`, `overflow`. Esto causaba que `getComputedValueForPath()` devolviera `undefined`.
@@ -236,3 +401,4 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 - **Bug 31: Alineación de Contenido** -> Solucionado (V6.1).
 - **Bug 32 & 27: Grid/Flex Conflict** -> Solucionado (V13).
 - **Bug 33: Flash de Contenido Flex** -> Solucionado (V8).
+

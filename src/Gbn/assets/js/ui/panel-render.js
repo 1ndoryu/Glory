@@ -10,6 +10,12 @@
     var cloneConfig = shared.cloneConfig;
     var getThemeSettingsValue = shared.getThemeSettingsValue;
     var getConfigWithThemeFallback = shared.getConfigWithThemeFallback;
+    
+    // Fase 10: Variables de Estado
+    var currentEditingState = 'normal'; // 'normal', 'hover', 'focus'
+    var lastBlockId = null;
+    var fieldUtils = Gbn.ui.fieldUtils || {};
+    var CONFIG_TO_CSS_MAP = fieldUtils.CONFIG_TO_CSS_MAP || {};
 
 
     
@@ -17,6 +23,42 @@
 
     function updateConfigValue(block, path, value) {
         if (!block || !path) { return; }
+
+        // --- FASE 10: ESCRITURA DE ESTADOS (Hover/Focus) ---
+        if (currentEditingState !== 'normal') {
+            // Necesitamos mapear el path de config (ej: 'typography.size') a propiedad CSS (ej: 'fontSize')
+            // Asegurarnos de tener el mapa actualizado
+            var map = Gbn.ui.fieldUtils ? Gbn.ui.fieldUtils.CONFIG_TO_CSS_MAP : {};
+            var cssProp = map[path];
+
+            if (!cssProp) {
+                if (Gbn.log) Gbn.log.warn('No se puede guardar estado para propiedad sin mapeo CSS', { path: path });
+                return block;
+            }
+
+            if (Gbn.services.stateStyles && Gbn.services.stateStyles.setStateProperty) {
+                // Guardar en config._states (esto también actualiza el state store)
+                Gbn.services.stateStyles.setStateProperty(block, currentEditingState, cssProp, value);
+                
+                // Obtener el bloque actualizado del store
+                var updatedBlock = state.get(block.id);
+                
+                // Aplicar visualmente - usar applyStateCss directamente para el estado actual
+                if (styleManager && styleManager.applyStateCss && updatedBlock) {
+                    var stateStyles = updatedBlock.config._states ? updatedBlock.config._states[currentEditingState] : null;
+                    if (stateStyles) {
+                        styleManager.applyStateCss(updatedBlock, currentEditingState, stateStyles);
+                    }
+                }
+                
+                // Notificar cambio
+                if (Gbn.ui.panel && Gbn.ui.panel.flashStatus) {
+                    Gbn.ui.panel.flashStatus('Cambio en ' + currentEditingState + ' aplicado');
+                }
+                
+                return updatedBlock || block;
+            }
+        }
 
         // 1. Delegate to role-specific update handler FIRST
         // This is critical for Theme Settings which has its own responsive logic
@@ -139,6 +181,12 @@
         content: function () { return {}; },
         text: function(config, block) { 
             return Gbn.ui.renderers.text ? Gbn.ui.renderers.text.getStyles(config, block) : {};
+        },
+        button: function(config, block) {
+            return Gbn.ui.renderers.button ? Gbn.ui.renderers.button.getStyles(config, block) : {};
+        },
+        image: function(config, block) {
+            return Gbn.ui.renderers.image ? Gbn.ui.renderers.image.getStyles(config, block) : {};
         }
     };
 
@@ -171,10 +219,110 @@
         return summary;
     }
 
+    /**
+     * Renderiza el selector de estados (Normal, Hover, Focus)
+     */
+    function renderStateSelector(container, block) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'gbn-state-selector';
+        wrapper.style.marginBottom = '15px';
+        wrapper.style.padding = '10px';
+        wrapper.style.background = 'var(--gbn-bg-secondary, #f5f5f5)';
+        wrapper.style.borderRadius = '4px';
+        wrapper.style.display = 'flex';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.justifyContent = 'space-between';
+
+        var label = document.createElement('span');
+        label.textContent = 'Estado:';
+        label.style.fontWeight = '600';
+        label.style.fontSize = '12px';
+        wrapper.appendChild(label);
+
+        var btnGroup = document.createElement('div');
+        btnGroup.className = 'gbn-btn-group';
+        btnGroup.style.display = 'flex';
+        btnGroup.style.gap = '2px';
+
+        var states = [
+            { id: 'normal', label: 'Normal' },
+            { id: 'hover', label: 'Hover' },
+            { id: 'focus', label: 'Focus' }
+        ];
+
+        states.forEach(function(s) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = s.label;
+            btn.className = 'gbn-btn-xs ' + (currentEditingState === s.id ? 'gbn-btn-primary' : 'gbn-btn-secondary');
+            
+            // Estilos inline para asegurar apariencia
+            btn.style.padding = '4px 8px';
+            btn.style.fontSize = '11px';
+            btn.style.cursor = 'pointer';
+            
+            btn.onclick = function() {
+                if (currentEditingState === s.id) return;
+                
+                // Limpiar clases de simulación anteriores
+                if (block.element) {
+                    block.element.classList.remove('gbn-simulated-hover', 'gbn-simulated-focus');
+                }
+                
+                currentEditingState = s.id;
+                
+                // Aplicar nueva clase de simulación y estilos del estado
+                if (currentEditingState !== 'normal' && block.element) {
+                    block.element.classList.add('gbn-simulated-' + currentEditingState);
+                    
+                    // Aplicar estilos CSS existentes del estado (si los hay)
+                    if (block.config._states && block.config._states[currentEditingState]) {
+                        if (styleManager && styleManager.applyStateCss) {
+                            styleManager.applyStateCss(block, currentEditingState, block.config._states[currentEditingState]);
+                        }
+                    }
+                }
+                
+                // Re-renderizar controles para mostrar valores del nuevo estado
+                if (Gbn.ui.panel && Gbn.ui.panel.refreshControls) {
+                    Gbn.ui.panel.refreshControls(block);
+                }
+                
+                // Feedback visual
+                if (Gbn.ui.panel && Gbn.ui.panel.flashStatus) {
+                    Gbn.ui.panel.flashStatus('Editando estado: ' + s.label);
+                }
+            };
+            
+            btnGroup.appendChild(btn);
+        });
+
+        wrapper.appendChild(btnGroup);
+        container.appendChild(wrapper);
+    }
+
     function renderBlockControls(block, container) {
         if (!container) { return; }
+        
+        // Reset state if switching blocks
+        if (block.id !== lastBlockId) {
+            currentEditingState = 'normal';
+            lastBlockId = block.id;
+            // Ensure simulation classes are cleared (safety)
+            if (block.element) {
+                block.element.classList.remove('gbn-simulated-hover', 'gbn-simulated-focus');
+            }
+        }
+        
         container.innerHTML = ''; 
         container.appendChild(createSummary(block));
+        
+        // Renderizar selector de estados (Fase 10)
+        // Solo para bloques que soportan estilos (principal, secundario, text, button, image)
+        var supportedRoles = ['principal', 'secundario', 'text', 'button', 'image'];
+        if (block.role && supportedRoles.indexOf(block.role) !== -1) {
+            renderStateSelector(container, block);
+        }
         
         var schema = Array.isArray(block.schema) ? block.schema : [];
         if (!schema.length) {
@@ -383,7 +531,8 @@
         applyBlockStyles: applyBlockStyles,
         applyThemeStylesToAllBlocks: applyThemeStylesToAllBlocks,
         getThemeSettingsValue: getThemeSettingsValue,
-        getConfigWithThemeFallback: getConfigWithThemeFallback
+        getConfigWithThemeFallback: getConfigWithThemeFallback,
+        getCurrentState: function() { return currentEditingState; }
     };
 
 })(window);

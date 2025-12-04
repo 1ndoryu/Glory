@@ -5,12 +5,21 @@
     Gbn.services = Gbn.services || {};
 
     /**
-     * Generador de estilos CSS responsive
+     * Generador de estilos CSS responsive y estados (hover/focus)
+     * 
+     * ACTUALIZADO (Fase 10): Ahora incluye soporte para pseudo-clases CSS
+     * Los estados se almacenan en config._states y se generan como reglas separadas
      */
     var StyleGenerator = {
         
         /**
+         * Estados CSS soportados para generación
+         */
+        SUPPORTED_STATES: ['hover', 'focus', 'active', 'visited', 'focus-visible', 'focus-within'],
+        
+        /**
          * Genera el CSS completo para todos los bloques
+         * Incluye: responsive (tablet/mobile) + estados (hover/focus)
          * @param {Object} blocksMap Mapa de bloques por ID
          * @returns {string} CSS generado
          */
@@ -20,30 +29,49 @@
             var css = '';
             var tabletRules = [];
             var mobileRules = [];
+            var stateRules = []; // Nuevo: reglas de estados
             
             Object.keys(blocksMap).forEach(function(id) {
                 var block = blocksMap[id];
-                if (!block || !block.config || !block.config._responsive) return;
+                if (!block || !block.config) return;
                 
-                var responsive = block.config._responsive;
                 var selector = '[data-gbn-id="' + id + '"]';
                 
-                // Tablet
-                if (responsive.tablet) {
-                    var tabletStyles = StyleGenerator.extractStyles(responsive.tablet, block.role);
-                    if (Object.keys(tabletStyles).length > 0) {
-                        tabletRules.push(StyleGenerator.createRule(selector, tabletStyles));
+                // === RESPONSIVE (existente) ===
+                if (block.config._responsive) {
+                    var responsive = block.config._responsive;
+                    
+                    // Tablet
+                    if (responsive.tablet) {
+                        var tabletStyles = StyleGenerator.extractStyles(responsive.tablet, block.role);
+                        if (Object.keys(tabletStyles).length > 0) {
+                            tabletRules.push(StyleGenerator.createRule(selector, tabletStyles));
+                        }
+                    }
+                    
+                    // Mobile
+                    if (responsive.mobile) {
+                        var mobileStyles = StyleGenerator.extractStyles(responsive.mobile, block.role);
+                        if (Object.keys(mobileStyles).length > 0) {
+                            mobileRules.push(StyleGenerator.createRule(selector, mobileStyles));
+                        }
                     }
                 }
                 
-                // Mobile
-                if (responsive.mobile) {
-                    var mobileStyles = StyleGenerator.extractStyles(responsive.mobile, block.role);
-                    if (Object.keys(mobileStyles).length > 0) {
-                        mobileRules.push(StyleGenerator.createRule(selector, mobileStyles));
+                // === ESTADOS (Fase 10) ===
+                if (block.config._states) {
+                    var statesCss = StyleGenerator.generateBlockStates(id, block.config._states);
+                    if (statesCss) {
+                        stateRules.push(statesCss);
                     }
                 }
             });
+            
+            // Estados primero (menor especificidad base)
+            if (stateRules.length > 0) {
+                css += '/* Estados (hover/focus/active) */\n';
+                css += stateRules.join('\n') + '\n';
+            }
             
             if (tabletRules.length > 0) {
                 css += '@media (max-width: 1024px) {\n' + tabletRules.join('\n') + '\n}\n';
@@ -52,6 +80,31 @@
             if (mobileRules.length > 0) {
                 css += '@media (max-width: 768px) {\n' + mobileRules.join('\n') + '\n}\n';
             }
+            
+            return css;
+        },
+        
+        /**
+         * Genera CSS para los estados de un bloque específico
+         * @param {string} blockId - ID del bloque
+         * @param {Object} states - Objeto con estados {hover: {...}, focus: {...}}
+         * @returns {string} CSS generado
+         */
+        generateBlockStates: function(blockId, states) {
+            if (!blockId || !states || typeof states !== 'object') return '';
+            
+            var css = '';
+            var selector = '[data-gbn-id="' + blockId + '"]';
+            var self = this;
+            
+            self.SUPPORTED_STATES.forEach(function(state) {
+                if (!states[state] || Object.keys(states[state]).length === 0) return;
+                
+                var stateStyles = self.extractStyles(states[state]);
+                if (Object.keys(stateStyles).length > 0) {
+                    css += self.createRule(selector + ':' + state, stateStyles) + '\n';
+                }
+            });
             
             return css;
         },

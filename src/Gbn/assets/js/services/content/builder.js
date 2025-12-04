@@ -73,12 +73,30 @@
         }
 
         // Pre-process button content
+        // Diseño nativo: leer valores desde atributos HTML en lugar de 'opciones='
         if (role === 'button') {
             // Infer 'texto' from innerHTML if not provided
             if (!meta.options.texto) {
-                var currentBtnText = el.innerHTML.trim();
+                // Limpiar el texto: remover espacios extra y saltos de línea
+                var currentBtnText = el.innerHTML.trim().replace(/\s+/g, ' ');
                 if (currentBtnText) {
                     meta.options.texto = currentBtnText;
+                }
+            }
+
+            // Infer 'url' from href attribute (diseño nativo)
+            if (!meta.options.url) {
+                var hrefAttr = el.getAttribute('href');
+                if (hrefAttr) {
+                    meta.options.url = hrefAttr;
+                }
+            }
+
+            // Infer 'target' from target attribute
+            if (!meta.options.target) {
+                var targetAttr = el.getAttribute('target');
+                if (targetAttr) {
+                    meta.options.target = targetAttr;
                 }
             }
         }

@@ -31,6 +31,7 @@
                 styles['font-family'] = t.font + ', sans-serif'; 
             }
             if (t.size) { styles['font-size'] = t.size; }
+            if (t.weight) { styles['font-weight'] = t.weight; }
             if (t.lineHeight) { styles['line-height'] = t.lineHeight; }
             if (t.letterSpacing) { styles['letter-spacing'] = t.letterSpacing; }
             if (t.transform && t.transform !== 'none') { styles['text-transform'] = t.transform; }
@@ -155,6 +156,9 @@
                     break;
                 case 'size':
                     el.style.fontSize = normalizeSize(value) || '';
+                    break;
+                case 'weight':
+                    el.style.fontWeight = value || '';
                     break;
                 case 'lineHeight':
                     el.style.lineHeight = value || '';
