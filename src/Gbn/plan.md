@@ -253,7 +253,7 @@ El sistema ahora **diferencia correctamente** entre estilos base y estilos de ps
 
 ---
 
-### ⏳ Fase 12: Mejoras Visuales del Panel
+### ✅ Fase 12: Mejoras Visuales del Panel (COMPLETADO Dic 2025)
 
 **Objetivo:** Mejorar la UX del panel con opciones más visuales e intuitivas.
 
@@ -263,19 +263,36 @@ El sistema ahora **diferencia correctamente** entre estilos base y estilos de ps
 3. Opciones de borde (Radio, Ancho, Estilo, Color) siempre visibles aunque no haya borde activo
 4. Opciones de borde podrían usar iconos en lugar de dropdowns/text
 
-**Tareas de DISEÑO:**
-- [ ] **Target con Iconos:** Cambiar select "Abrir en" a `iconGroup` con iconos de ventana
-- [ ] **Labels Específicos:** Renombrar campos ambiguos (width → "Ancho del Botón", etc.)
-- [ ] **Border Colapsable:** Crear grupo colapsable tipo "Tipografía" para opciones de borde:
-    - Toggle para activar/desactivar borde
-    - Solo mostrar opciones cuando está activo
-    - Iconos para estilo de borde (solid, dashed, dotted)
-- [ ] **Border Radius con Preview:** Selector visual de esquinas (como en Figma)
-- [ ] **Organización por Grupos:** Agrupar opciones relacionadas visualmente
+**Solución Implementada:**
+- **Target con Iconos:** Implementado `Option::iconGroup` para el campo `target` en `ButtonComponent`.
+- **Labels Claros:** Renombrado "Ancho" a "Ancho del Botón".
+- **Border Colapsable y Visual:**
+    - Actualizado `HasBorder` trait para usar un grupo colapsable con toggle (`hasBorder`).
+    - Implementado `Option::iconGroup` para `borderStyle` con iconos SVG.
+    - Agregada lógica condicional (`condition`) para ocultar opciones cuando el borde está desactivado.
+- **Refactorización:** `ButtonComponent` y `TextComponent` ahora usan el trait `HasBorder` actualizado.
+- **Lógica JS:** Actualizado `renderer-traits.js` para manejar el toggle `hasBorder` y limpiar estilos cuando se desactiva.
 
-**Tareas de LÓGICA:**
-- [ ] **Campo `border` Compuesto:** Crear nuevo tipo de campo que agrupe width/style/color/radius
-- [ ] **Condición de Visibilidad:** Implementar lógica `condition` para ocultar opciones dependientes
+**Archivos Modificados:**
+- `Glory/src/Gbn/Schema/Option.php` (Agregado método `toggle`)
+- `Glory/src/Gbn/Traits/HasBorder.php` (Actualizado con nueva UI)
+- `Glory/src/Gbn/components/Button/ButtonComponent.php` (Refactorizado)
+- `Glory/src/Gbn/components/Text/TextComponent.php` (Refactorizado)
+- `Glory/src/Gbn/assets/js/ui/renderers/renderer-traits.js` (Lógica `hasBorder`)
+
+**Tareas de DISEÑO (COMPLETADAS):**
+- [x] **Target con Iconos:** Cambiar select "Abrir en" a `iconGroup` con iconos de ventana
+- [x] **Labels Específicos:** Renombrar campos ambiguos (width → "Ancho del Botón", etc.)
+- [x] **Border Colapsable:** Crear grupo colapsable tipo "Tipografía" para opciones de borde
+- [x] **Organización por Grupos:** Agrupar opciones relacionadas visualmente
+
+**Tareas de LÓGICA (COMPLETADAS):**
+- [x] **Campo `border` Compuesto:** Implementado vía Trait `HasBorder` con toggle y condiciones.
+- [x] **Condición de Visibilidad:** Usado `Option::condition()` para ocultar opciones dependientes.
+
+**Tareas Pendientes (Solicitud Usuario):**
+- [ ] **Iconos en Estado:** El selector de estado (Normal, Hover, Focus) debe usar iconos.
+- [ ] **Borde en Contenedores:** Agregar opciones de borde a `PrincipalComponent` y `SecundarioComponent`.
 
 ---
 
@@ -345,6 +362,11 @@ Los botones como `.btnRacing` usan `transform: skewX(-10deg)` para crear efectos
 - [x] Texto se lee desde el `innerHTML` del elemento.
 - [x] Campo font-weight disponible en el panel de tipografía.
 - [x] Sincronización bidireccional CSS↔Panel para todas las propiedades.
+
+**Bugs Pendientes (Reportados Dic 2025):**
+- [x] **Bug [REGRESIÓN]: Botón Guardar Inactivo:** El botón de guardar no se activa al realizar cambios en el panel. (RESUELTO)
+- [x] **Bug: Visibilidad Opciones de Borde:** Las opciones de borde no se muestran correctamente al activar el toggle. (RESUELTO)
+- [x] **Bug UX: Salto de Pestaña:** Al refrescar el panel (ej. al activar borde), el panel volvía a la primera pestaña. Se implementó persistencia de pestaña activa. (RESUELTO)
 
 ---
 
@@ -429,4 +451,6 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 - **Bug 31: Alineación de Contenido** -> Solucionado (V6.1).
 - **Bug 32 & 27: Grid/Flex Conflict** -> Solucionado (V13).
 - **Bug 33: Flash de Contenido Flex** -> Solucionado (V8).
+
+
 

@@ -8,10 +8,11 @@ use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Traits\HasSpacing;
 use Glory\Gbn\Traits\HasCustomCSS;
 use Glory\Gbn\Traits\HasPositioning;
+use Glory\Gbn\Traits\HasBorder;
 
 class TextComponent extends AbstractComponent
 {
-    use HasSpacing, HasCustomCSS, HasPositioning;
+    use HasSpacing, HasCustomCSS, HasPositioning, HasBorder;
 
     protected string $id = 'text';
     protected string $label = 'Texto';
@@ -109,38 +110,8 @@ class TextComponent extends AbstractComponent
                 ->tab('Estilo')
         );
 
-        // 8. Border - Tab: Estilo
-        $schema->addOption(
-            Option::text('borderWidth', 'Ancho de Borde')
-                ->default('')
-                ->tab('Estilo')
-                ->description('Ej: 1px, 2px')
-        );
-
-        $schema->addOption(
-            Option::select('borderStyle', 'Estilo de Borde')
-                ->options([
-                    ['valor' => '', 'etiqueta' => 'Ninguno'],
-                    ['valor' => 'solid', 'etiqueta' => 'Sólido'],
-                    ['valor' => 'dashed', 'etiqueta' => 'Discontinuo'],
-                    ['valor' => 'dotted', 'etiqueta' => 'Punteado'],
-                    ['valor' => 'double', 'etiqueta' => 'Doble'],
-                ])
-                ->tab('Estilo')
-        );
-
-        $schema->addOption(
-            Option::color('borderColor', 'Color de Borde')
-                ->allowTransparency()
-                ->tab('Estilo')
-        );
-
-        $schema->addOption(
-            Option::text('borderRadius', 'Radio de Borde')
-                ->default('')
-                ->tab('Estilo')
-                ->description('Ej: 4px, 8px, 50%')
-        );
+        // 8. Border (from Trait) - Tab: Estilo
+        $this->addBorderOptions($schema, 'Estilo');
 
         // 9. Positioning (from Trait) - Tab: Avanzado
         foreach ($this->getPositioningOptions() as $option) {

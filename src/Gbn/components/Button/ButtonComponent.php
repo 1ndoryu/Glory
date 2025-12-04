@@ -19,10 +19,11 @@ use Glory\Gbn\Schema\SchemaBuilder;
 use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Traits\HasSpacing;
 use Glory\Gbn\Traits\HasCustomCSS;
+use Glory\Gbn\Traits\HasBorder;
 
 class ButtonComponent extends AbstractComponent
 {
-    use HasSpacing, HasCustomCSS;
+    use HasSpacing, HasCustomCSS, HasBorder;
 
     protected string $id = 'button';
     protected string $label = 'Botón';
@@ -73,10 +74,10 @@ class ButtonComponent extends AbstractComponent
         // 3. Target (Abrir en...)
         // El valor inicial se infiere desde el atributo target en builder.js
         $schema->addOption(
-            Option::select('target', 'Abrir en')
+            Option::iconGroup('target', 'Abrir en')
                 ->options([
-                    '_self' => 'Misma pestaña',
-                    '_blank' => 'Nueva pestaña'
+                    ['valor' => '_self', 'etiqueta' => 'Misma pestaña', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>'],
+                    ['valor' => '_blank', 'etiqueta' => 'Nueva pestaña', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>']
                 ])
                 ->default('_self')
                 ->tab('Contenido')
@@ -88,7 +89,7 @@ class ButtonComponent extends AbstractComponent
 
         // 4. Ancho del Botón
         $schema->addOption(
-            Option::select('width', 'Ancho')
+            Option::select('width', 'Ancho del Botón')
                 ->options([
                     'auto' => 'Automático',
                     '100%' => 'Completo (100%)',
@@ -147,37 +148,8 @@ class ButtonComponent extends AbstractComponent
             $schema->addOption($option);
         }
         
-        // 11. Border Radius
-        $schema->addOption(
-            Option::text('borderRadius', 'Radio de Borde')
-                ->tab('Estilo')
-                ->description('Ej: 4px, 8px, 50px')
-        );
-
-        // 12. Border
-        $schema->addOption(
-            Option::text('borderWidth', 'Ancho de Borde')
-                ->default('')
-                ->tab('Estilo')
-                ->description('Ej: 1px, 2px')
-        );
-
-        $schema->addOption(
-            Option::select('borderStyle', 'Estilo de Borde')
-                ->options([
-                    ['valor' => '', 'etiqueta' => 'Ninguno'],
-                    ['valor' => 'solid', 'etiqueta' => 'Sólido'],
-                    ['valor' => 'dashed', 'etiqueta' => 'Discontinuo'],
-                    ['valor' => 'dotted', 'etiqueta' => 'Punteado'],
-                ])
-                ->tab('Estilo')
-        );
-
-        $schema->addOption(
-            Option::color('borderColor', 'Color de Borde')
-                ->allowTransparency()
-                ->tab('Estilo')
-        );
+        // 11. Border Group (from Trait)
+        $this->addBorderOptions($schema, 'Estilo');
 
         // =====================================================
         // TAB: AVANZADO

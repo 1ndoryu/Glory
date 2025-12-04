@@ -108,15 +108,19 @@ El frontend (JS) es una aplicación reactiva que manipula el DOM directamente, s
     - `sync.js`: Lógica de sincronización bidireccional UI <-> Estado.
     - Módulos de campos: `color.js`, `fraction.js`, `header.js`, `icon-group.js`, `rich-text.js`, `select.js`, `slider.js`, `spacing.js`, `text.js`, `toggle.js`, `typography.js`.
 - **`renderers/`**: **Renderizadores de Bloques**.
+    - `renderer-traits.js`: **(Fase 11)** Sistema de traits JS. Centraliza funciones reutilizables (`normalizeSize`, `applyTypography`, `applySpacing`, `applyBorder`, `handleCommonUpdate`). Equivalente JS de los traits PHP.
     - `style-composer.js`: **Pure Style Composer (DRY)**. Función pura `(config, schema) => css` que genera estilos centralizados. No tiene efectos secundarios.
     - `shared.js`: Utilidades compartidas (`extractSpacingStyles`, `parseFraction`, `getResponsiveValue`, `cloneConfig`).
     - `layout-flex.js`: Lógica de estilos para layout Flexbox.
     - `layout-grid.js`: Lógica de estilos para layout Grid.
     - `principal.js`: Renderer y estilos para bloques de rol `principal` (Usa `StyleComposer`).
     - `secundario.js`: Renderer y estilos para bloques de rol `secundario` (Usa `StyleComposer`).
-    - `text.js`: Renderer, estilos y lógica de actualización para bloques de texto.
+    - `text.js`: Renderer para bloques de texto. Usa traits para propiedades comunes.
+    - `button.js`: Renderer para botones. Usa traits para propiedades comunes.
+    - `image.js`: Renderer para imágenes. Usa traits para propiedades comunes.
     - `page-settings.js`: Manejador de actualizaciones para configuración de página.
     - `theme-settings.js`: Manejador de actualizaciones para configuración global del tema.
+
 
 #### Entry Points
 - **`gbn.js`**: Punto de entrada principal para el editor. Inicializa todos los subsistemas.

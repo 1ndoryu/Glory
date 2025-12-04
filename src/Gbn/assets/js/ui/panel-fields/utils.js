@@ -485,6 +485,23 @@
         
         // 2. Si no hay valor guardado, leer del computedStyle
         if (result.source === 'none' && block.element) {
+            
+            // [FIX] Inferencia de hasBorder desde estilos computados
+            // Permite que el toggle se active si el elemento ya tiene borde por CSS
+            if (path === 'hasBorder') {
+                var bWidth = getComputedValueForPath(block.element, 'borderWidth');
+                var bStyle = getComputedValueForPath(block.element, 'borderStyle');
+                
+                // Si tiene ancho > 0 y estilo != none, tiene borde
+                if (bWidth && bWidth !== '0px' && bWidth !== '0' && bStyle && bStyle !== 'none') {
+                    result.value = true;
+                    result.source = 'computed';
+                    return result;
+                }
+                // Si no, asumimos false (que es el default)
+                return result; 
+            }
+
             var computedValue = getComputedValueForPath(block.element, path);
             if (computedValue !== undefined && computedValue !== null && computedValue !== '') {
                 // Obtener theme default para comparar

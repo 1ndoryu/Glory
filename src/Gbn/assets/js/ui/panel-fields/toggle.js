@@ -20,7 +20,9 @@
         var container = document.createElement('div');
         container.className = 'gbn-icon-group-container';
         
-        var current = !!u.getConfigValue(block, field.id);
+        // [FIX] Usar getEffectiveValue para detectar estado computado (ej: hasBorder inferido)
+        var effective = u.getEffectiveValue(block, field.id);
+        var current = !!effective.value;
         
         var options = [
             { 

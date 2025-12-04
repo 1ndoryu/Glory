@@ -224,6 +224,13 @@
         var styles = {};
         if (!config) return styles;
         
+        // Si el borde está explícitamente desactivado
+        if (config.hasBorder === false) {
+            styles['border-style'] = 'none';
+            styles['border-width'] = '0';
+            return styles;
+        }
+        
         if (config.borderWidth) {
             styles['border-width'] = normalizeSize(config.borderWidth);
         }
@@ -250,6 +257,22 @@
      */
     function applyBorder(element, property, value) {
         switch (property) {
+            case 'hasBorder':
+                if (value === false) {
+                    element.style.borderStyle = 'none';
+                    element.style.borderWidth = '0';
+                    element.style.borderColor = '';
+                    element.style.borderRadius = '';
+                } else {
+                    // Al activar, asegurar un estilo visible por defecto si no tiene
+                    if (!element.style.borderStyle || element.style.borderStyle === 'none') {
+                        element.style.borderStyle = 'solid';
+                    }
+                    if (!element.style.borderWidth || element.style.borderWidth === '0px') {
+                         // No forzar ancho, dejar que el usuario lo ponga o que tome default
+                    }
+                }
+                return true;
             case 'borderWidth':
                 element.style.borderWidth = normalizeSize(value) || '';
                 return true;
@@ -394,8 +417,8 @@
             return applySpacing(element, 'margin', marginDir, value);
         }
         
-        // Border (borderWidth, borderStyle, borderColor, borderRadius)
-        if (path.indexOf('border') === 0) {
+        // Border (borderWidth, borderStyle, borderColor, borderRadius, hasBorder)
+        if (path.indexOf('border') === 0 || path === 'hasBorder') {
             return applyBorder(element, path, value);
         }
         

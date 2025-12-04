@@ -74,6 +74,11 @@ class Option
         return new self('fraction', $id, $label);
     }
 
+    public static function toggle(string $id, string $label): self
+    {
+        return new self('toggle', $id, $label);
+    }
+
     public function options(array $options): self
     {
         // Normalize options if simple array or preserve structure if already correct

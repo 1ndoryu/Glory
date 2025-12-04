@@ -28,43 +28,52 @@ trait HasBorder
      * @param string $tab Tab donde mostrar ('estilo' por defecto)
      * @return void
      */
-    protected function addBorderOptions(SchemaBuilder $builder, string $tab = 'estilo'): void
+    protected function addBorderOptions(SchemaBuilder $builder, string $tab = 'Estilo'): void
     {
+        // 1. Toggle
         $builder->addOption(
-            Option::text('borderWidth')
-                ->label('Ancho Borde')
-                ->placeholder('ej: 1px')
+            Option::toggle('hasBorder', 'Borde')
+                ->default(false)
                 ->tab($tab)
         );
 
+        // 2. Width
         $builder->addOption(
-            Option::select('borderStyle')
-                ->label('Estilo Borde')
+            Option::text('borderWidth', 'Ancho de Borde')
+                ->default('')
+                ->tab($tab)
+                ->condition('hasBorder', true)
+                ->description('Ej: 1px, 2px')
+        );
+
+        // 3. Style (Icon Group)
+        $builder->addOption(
+            Option::iconGroup('borderStyle', 'Estilo de Borde')
                 ->options([
-                    'none'   => 'Ninguno',
-                    'solid'  => 'Sólido',
-                    'dashed' => 'Línea',
-                    'dotted' => 'Puntos',
-                    'double' => 'Doble',
-                    'groove' => 'Surco',
-                    'ridge'  => 'Relieve',
-                    'inset'  => 'Hundido',
-                    'outset' => 'Elevado',
+                    ['valor' => 'solid', 'etiqueta' => 'Sólido', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="2" y1="12" x2="22" y2="12"/></svg>'],
+                    ['valor' => 'dashed', 'etiqueta' => 'Discontinuo', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 12h2"/><path d="M11 12h2"/><path d="M17 12h2"/></svg>'],
+                    ['valor' => 'dotted', 'etiqueta' => 'Punteado', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="4" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="20" cy="12" r="1"/></svg>'],
+                    ['valor' => 'double', 'etiqueta' => 'Doble', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/></svg>'],
                 ])
+                ->default('solid')
                 ->tab($tab)
+                ->condition('hasBorder', true)
         );
 
+        // 4. Color
         $builder->addOption(
-            Option::color('borderColor')
-                ->label('Color Borde')
+            Option::color('borderColor', 'Color de Borde')
+                ->allowTransparency()
                 ->tab($tab)
+                ->condition('hasBorder', true)
         );
 
+        // 5. Radius
         $builder->addOption(
-            Option::text('borderRadius')
-                ->label('Radio Esquinas')
-                ->placeholder('ej: 4px')
+            Option::text('borderRadius', 'Radio de Borde')
                 ->tab($tab)
+                ->condition('hasBorder', true)
+                ->description('Ej: 4px, 8px, 50px')
         );
     }
 

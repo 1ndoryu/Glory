@@ -14,6 +14,7 @@
     // Fase 10: Variables de Estado
     var currentEditingState = 'normal'; // 'normal', 'hover', 'focus'
     var lastBlockId = null;
+    var lastActiveTab = null; // [FIX] Persistir pestaña activa entre refrescos
     var fieldUtils = Gbn.ui.fieldUtils || {};
     var CONFIG_TO_CSS_MAP = fieldUtils.CONFIG_TO_CSS_MAP || {};
 
@@ -100,9 +101,70 @@
             var result = Gbn.ui.renderers[role].handleUpdate(block, path, value);
             if (result === true) {
                 if (Gbn.log) Gbn.log.info('Renderer handled update completely', { role: role });
-                return state.get(block.id); // Return latest state
+                
+                // Los renderers de themeSettings y pageSettings manejan su propia persistencia
+                // y disparan sus propios eventos, así que no necesitamos hacer nada más aquí.
+                var selfManagedRenderers = ['themeSettings', 'pageSettings'];
+                if (selfManagedRenderers.indexOf(role) !== -1) {
+                    // Estos renderers ya guardaron la config y dispararon el evento
+                    return state.get(block.id);
+                }
+                
+                // [FIX] El renderer aplicó los estilos al DOM, pero TAMBIÉN necesitamos
+                // guardar el valor en la config del state para que:
+                // 1. El valor persista al guardar
+                // 2. Los campos condicionados (como opciones de borde) puedan evaluar sus condiciones
+                var current = cloneConfig(block.config);
+                var segments = path.split('.');
+                var cursor = current;
+                for (var i = 0; i < segments.length - 1; i += 1) {
+                    var key = segments[i];
+                    var existing = cursor[key];
+                    if (!existing || typeof existing !== 'object' || Array.isArray(existing)) {
+                        existing = {};
+                    } else {
+                        existing = utils.assign({}, existing);
+                    }
+                    cursor[key] = existing;
+                    cursor = existing;
+                }
+                cursor[segments[segments.length - 1]] = value;
+                var updated = state.updateConfig(block.id, current);
+                
+                // [FIX] Bug Regresión: El botón guardar no se activaba cuando el renderer
+                // manejaba la actualización porque no se disparaba el evento configChanged.
+                var event;
+                if (typeof global.CustomEvent === 'function') {
+                    event = new CustomEvent('gbn:configChanged', { detail: { id: block.id, path: path } });
+                } else {
+                    event = document.createEvent('CustomEvent');
+                    event.initCustomEvent('gbn:configChanged', false, false, { id: block.id, path: path });
+                }
+                global.dispatchEvent(event);
+                
+                // Refrescar panel si es un campo que afecta la visibilidad de otros campos
+                // (como hasBorder que controla la visibilidad de borderWidth, borderStyle, etc.)
+                var conditionalTriggers = ['hasBorder', 'layout', 'display_mode', 'img_show', 'title_show', 'interaccion_modo'];
+                if (conditionalTriggers.indexOf(path) !== -1) {
+                    if (Gbn.ui.panel && Gbn.ui.panel.refreshControls) {
+                        Gbn.ui.panel.refreshControls(updated);
+                    }
+                }
+                
+                return updated; // Return updated block
             } else if (typeof result === 'object') {
                 if (Gbn.log) Gbn.log.info('Renderer returned updated config', { role: role });
+                
+                // [FIX] También disparar evento cuando se retorna un objeto
+                var event;
+                if (typeof global.CustomEvent === 'function') {
+                    event = new CustomEvent('gbn:configChanged', { detail: { id: block.id, path: path } });
+                } else {
+                    event = document.createEvent('CustomEvent');
+                    event.initCustomEvent('gbn:configChanged', false, false, { id: block.id, path: path });
+                }
+                global.dispatchEvent(event);
+                
                 return result;
             }
         } else {
@@ -337,6 +399,7 @@
         if (block.id !== lastBlockId) {
             currentEditingState = 'normal';
             lastBlockId = block.id;
+            lastActiveTab = null; // [FIX] Reset active tab for new block
             // Ensure simulation classes are cleared (safety)
             if (block.element) {
                 block.element.classList.remove('gbn-simulated-hover', 'gbn-simulated-focus');
@@ -420,7 +483,7 @@
                 'Avanzado': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>'
             };
 
-            var activeTab = tabNames[0];
+            var activeTab = lastActiveTab && tabNames.indexOf(lastActiveTab) !== -1 ? lastActiveTab : tabNames[0];
 
             tabNames.forEach(function(name) {
                 var btn = document.createElement('button');
@@ -439,6 +502,8 @@
                     btn.classList.add('active');
                     var pane = tabContent.querySelector('.gbn-tab-pane[data-tab="' + name + '"]');
                     if (pane) pane.classList.add('active');
+                    
+                    lastActiveTab = name; // [FIX] Save active tab state
                 };
                 tabNav.appendChild(btn);
 
