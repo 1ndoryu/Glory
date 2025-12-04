@@ -491,10 +491,22 @@
 
 .gbn-rich-text-toolbar {
     display: flex;
-    gap: 2px;
+    justify-content: space-between;
+    align-items: center;
     padding: 4px;
     background: #f9fafb;
     border-bottom: 1px solid #eee;
+}
+
+/* Contenedor de acciones de formato (B, I) */
+.gbn-rich-text-format-actions {
+    display: flex;
+    gap: 2px;
+}
+
+.gbn-rich-text-format-actions.disabled {
+    opacity: 0.4;
+    pointer-events: none;
 }
 
 .gbn-rich-text-btn {
@@ -512,13 +524,61 @@
     color: #111;
 }
 
-.gbn-rich-text-editor {
+/* Toggle Visual/Code */
+.gbn-rich-text-view-toggle {
+    display: flex;
+    gap: 2px;
+    background: #e5e7eb;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+.gbn-view-btn {
+    background: transparent;
+    border: none;
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: all 0.15s ease;
+}
+
+.gbn-view-btn:hover {
+    color: #374151;
+}
+
+.gbn-view-btn.active {
+    background: #fff;
+    color: #111;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Editor visual (contentEditable) */
+.gbn-rich-text-visual {
     padding: 10px;
     min-height: 80px;
     font-size: 14px;
     line-height: 1.5;
     outline: none;
     color: #374151;
+}
+
+/* Editor código (textarea) */
+.gbn-rich-text-code {
+    width: 100%;
+    padding: 10px;
+    min-height: 80px;
+    font-size: 12px;
+    font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+    line-height: 1.5;
+    border: none;
+    outline: none;
+    resize: vertical;
+    color: #1e293b;
+    background: #f8fafc;
+    box-sizing: border-box;
 }
 
 

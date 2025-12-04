@@ -304,6 +304,8 @@
         'typography.lineHeight': 'lineHeight',
         'typography.letterSpacing': 'letterSpacing',
         'typography.transform': 'textTransform',
+        // Text Effects
+        'textShadow': 'textShadow',
         // Border
         'borderWidth': 'borderWidth',
         'borderStyle': 'borderStyle',

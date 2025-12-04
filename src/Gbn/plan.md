@@ -194,6 +194,35 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 - [x] La sincronización bidireccional CSS↔Panel funciona con RGBA.
 - [x] Compatibilidad hacia atrás: colores HEX existentes siguen funcionando.
 
+### ✅ Fase 8: Mejora del Editor de Texto (TextComponent)
+
+**Problema Identificado:**
+1. El editor rich-text no mostraba el código HTML (`<br/>`, `<span class="...">`, etc.), solo la versión renderizada.
+2. No había control de `text-shadow`, impidiendo trabajar con clases CSS como `.textGlow { text-shadow: ... }`.
+
+**Solución Implementada:**
+- **Editor Dual (Visual/Code):** El campo `rich-text` ahora tiene dos vistas:
+    - **Visual:** Editor WYSIWYG con bold/italic (comportamiento original mejorado).
+    - **Code:** Textarea monoespacio para ver/editar HTML raw directamente.
+- **Toggle Minimalista:** Botones "Visual" y "</>" en la toolbar para cambiar de vista.
+- **Opción `textShadow`:** Nueva opción en el schema del TextComponent para controlar text-shadow.
+- **Sincronización Bidireccional:** El mapeo `CONFIG_TO_CSS_MAP` incluye ahora `textShadow` para leer valores de clases CSS.
+
+**Archivos Modificados:**
+- `src/Gbn/assets/js/ui/panel-fields/rich-text.js`
+- `src/Gbn/assets/css/components.css`
+- `src/Gbn/components/Text/TextComponent.php`
+- `src/Gbn/assets/js/ui/renderers/text.js`
+- `src/Gbn/assets/js/ui/panel-fields/utils.js`
+
+**Criterios de Aceptación:**
+- [x] Toggle Visual/Code visible en la toolbar del editor.
+- [x] En vista Code se puede ver y editar `<br/>`, `<span>`, etc.
+- [x] Los cambios en cualquier vista se sincronizan correctamente.
+- [x] Bold/Italic deshabilitados en vista Code.
+- [x] Nueva opción `textShadow` disponible en el panel Estilo del TextComponent.
+- [x] `text-shadow` se aplica en tiempo real al editar.
+
 ---
 
 ## 4. Bugs Críticos Resueltos (Histórico)

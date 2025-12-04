@@ -18,6 +18,9 @@
         // Color de texto
         if (config.color) { styles['color'] = config.color; }
         
+        // Text Shadow (para efectos como .textGlow)
+        if (config.textShadow) { styles['text-shadow'] = config.textShadow; }
+        
         // Tamaño legacy (mantener compatibilidad)
         if (config.size) { styles['font-size'] = config.size; }
         
@@ -124,6 +127,12 @@
         // === COLOR ===
         if (path === 'color') {
             el.style.color = value || '';
+            return true;
+        }
+
+        // === TEXT SHADOW ===
+        if (path === 'textShadow') {
+            el.style.textShadow = value || '';
             return true;
         }
 

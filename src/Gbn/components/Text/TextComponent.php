@@ -87,6 +87,15 @@ class TextComponent extends AbstractComponent
                 ->tab('Estilo')
         );
 
+        // 6. Text Shadow - Tab: Estilo
+        // Permite efectos como .textGlow { text-shadow: 0 0 20px rgba(...) }
+        $schema->addOption(
+            Option::text('textShadow', 'Sombra de Texto')
+                ->default('')
+                ->tab('Estilo')
+                ->description('Ej: 0 0 20px rgba(239, 68, 68, 0.5)')
+        );
+
         // 6. Spacing (from Trait) - Tab: Estilo
         foreach ($this->getSpacingOptions() as $option) {
             $option->tab('Estilo');
