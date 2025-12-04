@@ -8,15 +8,25 @@
     /**
      * Construye un campo de color con picker y paleta global
      */
+    /**
+     * Construye un campo de color con picker y paleta global
+     */
     function buildColorField(block, field) {
         var u = utils();
+        var colorUtils = Gbn.ui.colorUtils;
+        var allowTransparency = field.permiteTransparencia === true;
+
         var wrapper = document.createElement('div');
         wrapper.className = 'gbn-field gbn-field-color';
+        
+        var header = document.createElement('div');
+        header.className = 'gbn-field-header';
         
         var label = document.createElement('label');
         label.className = 'gbn-field-label';
         label.textContent = field.etiqueta || field.id;
-        wrapper.appendChild(label);
+        header.appendChild(label);
+        wrapper.appendChild(header);
         
         // Indicador de sincronización
         if (sync() && sync().addSyncIndicator) {
@@ -25,114 +35,165 @@
         
         var container = document.createElement('div');
         container.className = 'gbn-color-container';
+        if (allowTransparency) {
+            container.classList.add('has-transparency');
+        }
 
+        // Preview Wrapper (para transparencia)
+        var previewWrapper = document.createElement('div');
+        previewWrapper.className = 'gbn-color-preview-wrapper';
+        
+        // Input nativo de color (Solo HEX)
         var inputColor = document.createElement('input');
         inputColor.type = 'color';
         inputColor.className = 'gbn-color-picker';
+        
+        // Preview visual (Checkered background + RGBA color)
+        var visualPreview = document.createElement('div');
+        visualPreview.className = 'gbn-color-visual-preview';
+        
+        if (allowTransparency) {
+            previewWrapper.appendChild(visualPreview);
+            // El input color se hace invisible pero clickable sobre el preview
+            inputColor.classList.add('is-overlay');
+            previewWrapper.appendChild(inputColor);
+            container.appendChild(previewWrapper);
+        } else {
+            container.appendChild(inputColor);
+        }
+        
+        var inputsColumn = document.createElement('div');
+        inputsColumn.className = 'gbn-color-inputs-col';
         
         var inputText = document.createElement('input');
         inputText.type = 'text';
         inputText.className = 'gbn-color-text gbn-input';
         inputText.placeholder = 'ej: #ff5733';
         
-        function update(value) {
+        inputsColumn.appendChild(inputText);
+
+        // Slider de Opacidad
+        var opacityContainer = null;
+        var opacitySlider = null;
+        var opacityValue = null;
+
+        if (allowTransparency) {
+            opacityContainer = document.createElement('div');
+            opacityContainer.className = 'gbn-opacity-container';
+            
+            opacitySlider = document.createElement('input');
+            opacitySlider.type = 'range';
+            opacitySlider.min = '0';
+            opacitySlider.max = '100';
+            opacitySlider.step = '1';
+            opacitySlider.className = 'gbn-opacity-slider';
+            
+            opacityValue = document.createElement('span');
+            opacityValue.className = 'gbn-opacity-value';
+            opacityValue.textContent = '100%';
+
+            opacityContainer.appendChild(opacitySlider);
+            opacityContainer.appendChild(opacityValue);
+            inputsColumn.appendChild(opacityContainer);
+        }
+
+        container.appendChild(inputsColumn);
+        
+        // Estado interno
+        var currentHex = '#000000';
+        var currentAlpha = 1;
+
+        function updateUI(hex, alpha) {
+            // Actualizar input color (siempre hex)
+            if (hex) inputColor.value = hex;
+            
+            // Actualizar slider y texto de opacidad
+            if (allowTransparency) {
+                var alphaPercent = Math.round(alpha * 100);
+                opacitySlider.value = alphaPercent;
+                opacityValue.textContent = alphaPercent + '%';
+                
+                // Actualizar preview visual
+                visualPreview.style.backgroundColor = colorUtils.hexToRgba(hex, alpha);
+            }
+
+            // Actualizar input texto
+            if (allowTransparency) {
+                if (alpha < 1) {
+                    inputText.value = colorUtils.hexToRgba(hex, alpha);
+                } else {
+                    inputText.value = hex;
+                }
+            } else {
+                inputText.value = hex;
+            }
+        }
+
+        function updateModel() {
+            var valueToSave;
+            if (allowTransparency) {
+                if (currentAlpha < 1) {
+                    valueToSave = colorUtils.hexToRgba(currentHex, currentAlpha);
+                } else {
+                    valueToSave = currentHex;
+                }
+            } else {
+                valueToSave = currentHex;
+            }
+
             var api = Gbn.ui && Gbn.ui.panelApi;
             if (api && api.updateConfigValue && block) {
-                api.updateConfigValue(block, field.id, value === '' ? null : value);
+                api.updateConfigValue(block, field.id, valueToSave);
             }
         }
         
-        // Función para convertir rgb()/rgba() a hex
-        function rgbToHex(rgb) {
-            if (!rgb || rgb === 'transparent' || rgb === 'rgba(0, 0, 0, 0)') return null;
-            if (typeof rgb !== 'string') return null;
-            rgb = rgb.trim();
-            if (rgb.startsWith('#')) return rgb.toLowerCase();
-            // Regex más flexible para rgb/rgba con o sin espacios
-            var match = rgb.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
-            if (!match) return null;
-            var r = parseInt(match[1], 10);
-            var g = parseInt(match[2], 10);
-            var b = parseInt(match[3], 10);
-            // Validar rangos
-            if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) return null;
-            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toLowerCase();
-        }
-        
-        // Leer valor computado directamente para colores
+        // Leer valor computado
         var computedColor = null;
-        var computedColorHex = null;
         if (block.element) {
             computedColor = u.getComputedValue(block.element, 'backgroundColor');
-            if (computedColor && computedColor !== 'transparent' && computedColor !== 'rgba(0, 0, 0, 0)') {
-                computedColorHex = rgbToHex(computedColor);
-            }
         }
         
-        // Usar getEffectiveValue para obtener el valor correcto
+        // Obtener valor efectivo
         var effective = u.getEffectiveValue(block, field.id);
         var themeDefault = u.getThemeDefault(block.role, field.id);
-        var themeDefaultHex = themeDefault ? rgbToHex(themeDefault) || themeDefault : null;
         
-        // Si no hay valor en config, usar el valor computado si existe y es diferente al tema
-        if (effective.source === 'none' && computedColorHex) {
-            if (computedColorHex !== themeDefaultHex) {
-                effective.value = computedColorHex;
-                effective.source = 'computed';
-            }
+        // Parsear valor inicial
+        var initialValue = effective.value || computedColor || '#000000';
+        var parsed = colorUtils.parseColor(initialValue);
+        
+        if (parsed) {
+            currentHex = colorUtils.toHex(parsed);
+            currentAlpha = parsed.a;
         }
+
+        // Inicializar UI
+        updateUI(currentHex, currentAlpha);
         
-        // Convertir valores a hex si vienen en rgb
-        if (effective.value) {
-            var hexValue = rgbToHex(effective.value);
-            if (hexValue) effective.value = hexValue;
-        }
-        
-        // Guardar el valor original computado para usarlo como placeholder al borrar
-        var originalComputedHex = computedColorHex;
-        
-        // Determinar origen para indicador visual
-        var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
-        var source = u.getValueSource(block, field.id, breakpoint);
-        
-        // Limpiar clases anteriores
-        wrapper.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
-        
-        if (source === 'override') {
-            wrapper.classList.add('gbn-field-override');
-        } else {
-            wrapper.classList.add('gbn-field-inherited');
-            if (source === 'theme') wrapper.classList.add('gbn-source-theme');
-            else if (source === 'tablet') wrapper.classList.add('gbn-source-tablet');
-            else if (source === 'block') wrapper.classList.add('gbn-source-block');
-        }
-        
-        if (effective.source === 'none' || !effective.value) {
-            // Usar el color computado como placeholder si existe, sino el theme default
-            var placeholderColor = originalComputedHex || themeDefaultHex || field.defecto || '#000000';
-            inputColor.value = placeholderColor;
-            inputText.placeholder = placeholderColor;
-        } else {
-            inputColor.value = effective.value;
-            inputText.value = effective.value;
-            // Placeholder es el valor original (computado o tema)
-            inputText.placeholder = originalComputedHex || themeDefaultHex || field.defecto || '#000000';
-        }
-        
-        inputColor.dataset.role = block.role;
-        inputColor.dataset.prop = field.id;
-        
+        // Event Listeners
         inputColor.addEventListener('input', function() {
-            inputText.value = inputColor.value;
-            update(inputColor.value);
+            currentHex = inputColor.value;
+            updateUI(currentHex, currentAlpha);
+            updateModel();
         });
+
+        if (allowTransparency) {
+            opacitySlider.addEventListener('input', function() {
+                currentAlpha = parseInt(opacitySlider.value) / 100;
+                updateUI(currentHex, currentAlpha);
+                updateModel();
+            });
+        }
         
-        inputText.addEventListener('input', function() {
+        inputText.addEventListener('change', function() {
             var val = inputText.value.trim();
-            if (val && val.match(/^#(?:[0-9a-fA-F]{3}){1,2}$/)) {
-                inputColor.value = val;
+            var parsed = colorUtils.parseColor(val);
+            
+            if (parsed) {
+                currentHex = colorUtils.toHex(parsed);
+                currentAlpha = allowTransparency ? parsed.a : 1;
+                updateUI(currentHex, currentAlpha);
+                updateModel();
             }
-            update(val);
         });
         
         // Toggle de paleta
@@ -151,7 +212,7 @@
             toggleBtn.classList.toggle('active');
         };
 
-        // Colores por defecto
+        // Colores por defecto y del tema
         var defaultColors = [
             { val: '#007bff', name: 'Primary' },
             { val: '#6c757d', name: 'Secondary' },
@@ -165,7 +226,6 @@
             { val: '#000000', name: 'Black' }
         ];
         
-        // Colores del tema
         var themeSettings = (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.themeSettings) 
             ? gloryGbnCfg.themeSettings 
             : (Gbn.config && Gbn.config.themeSettings ? Gbn.config.themeSettings : null);
@@ -173,7 +233,6 @@
         
         if (themeColors) {
             var mapped = [];
-            
             Object.keys(themeColors).forEach(function(key) {
                 if (key !== 'custom' && themeColors[key]) {
                     mapped.push({ 
@@ -182,20 +241,14 @@
                     });
                 }
             });
-            
             if (themeColors.custom && Array.isArray(themeColors.custom)) {
                 themeColors.custom.forEach(function(c) {
-                    if (c.value && c.name) {
-                        mapped.push({ val: c.value, name: c.name });
-                    }
+                    if (c.value && c.name) mapped.push({ val: c.value, name: c.name });
                 });
             }
-            
             if (mapped.length) {
                 defaultColors = mapped.concat(defaultColors.filter(function(d) {
-                    return !mapped.some(function(m) {
-                        return m.val.toLowerCase() === d.val.toLowerCase();
-                    });
+                    return !mapped.some(function(m) { return m.val.toLowerCase() === d.val.toLowerCase(); });
                 }));
             }
         }
@@ -207,15 +260,16 @@
             swatch.style.backgroundColor = c.val;
             swatch.title = c.name + ' (' + c.val + ')';
             swatch.addEventListener('click', function() {
-                inputColor.value = c.val;
-                inputText.value = c.val;
-                update(c.val);
+                var parsed = colorUtils.parseColor(c.val);
+                if (parsed) {
+                    currentHex = colorUtils.toHex(parsed);
+                    currentAlpha = parsed.a; 
+                    updateUI(currentHex, currentAlpha);
+                    updateModel();
+                }
             });
             palette.appendChild(swatch);
         });
-        
-        container.appendChild(inputColor);
-        container.appendChild(inputText);
         
         if (!field.hidePalette) {
             container.appendChild(toggleBtn);

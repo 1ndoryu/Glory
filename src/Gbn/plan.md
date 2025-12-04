@@ -118,6 +118,43 @@
 -   **Problema:** Redundancia al declarar `texto` y `tag` en `opciones` cuando ya existen en el HTML.
 -   **Solución:** Actualizado `builder.js` para inferir automáticamente `texto` (de `innerHTML`) y `tag` (de `tagName`) si no se especifican explícitamente.
 
+#### ✅ Fix: Tipografía en Tiempo Real (TextComponent)
+-   **Problema:** Los cambios de tipografía (fuente, tamaño, line-height, etc.) no se aplicaban en tiempo real. La fuente mostraba "Default" y el tamaño aparecía vacío. Padding/Margin tampoco funcionaban.
+-   **Solución Multi-parte:**
+    1. **`text.js` (Renderer):** Refactorizado `handleUpdate` para manejar paths anidados (`typography.*`, `padding.*`, `margin.*`). Ahora aplica cambios directamente al DOM.
+    2. **`typography.js` (Panel Field):** Implementada sincronización bidireccional CSS→Panel. Lee valores computados del DOM (`getComputedStyle`) cuando no hay configuración explícita.
+    3. **`TextComponent.php`:** Agregadas opciones de `backgroundColor`, `borderWidth`, `borderStyle`, `borderColor` y `borderRadius`.
+    4. **`utils.js`:** Expandido `CONFIG_TO_CSS_MAP` con typography, margin y border properties.
+
+---
+
+## Trabajo Pendiente
+
+### ✅ Fase 7: Soporte de Transparencia en Campos de Color
+
+**Problema Identificado:**
+Los inputs de color actuales no soportan transparencia (alpha channel). El `<input type="color">` nativo del navegador solo soporta colores sólidos HEX de 6 dígitos (#RRGGBB), no RGBA ni HEX de 8 dígitos (#RRGGBBAA).
+
+**Solución Implementada:**
+- **Refactorización `color.js`:** Implementado soporte para RGBA y slider de opacidad.
+- **Nuevo Helper `color-utils.js`:** Funciones de conversión HEX<->RGBA y parsing de colores.
+- **UI Update:** Añadido preview visual (checkerboard) y slider de opacidad en `forms.css`.
+- **Sincronización:** El campo de color ahora lee y escribe valores RGBA correctamente.
+- **Compatibilidad:** Los campos sin `permiteTransparencia` siguen funcionando solo con HEX.
+
+**Archivos Modificados:**
+- `src/Gbn/assets/js/ui/panel-fields/color.js`
+- `src/Gbn/assets/js/ui/panel-fields/color-utils.js` (Nuevo)
+- `src/Gbn/assets/css/forms.css`
+
+**Criterios de Aceptación:**
+- [x] El slider de opacidad aparece solo cuando `permiteTransparencia: true`.
+- [x] Los colores se muestran con preview de transparencia visual.
+- [x] Los cambios de opacidad se aplican en tiempo real al elemento.
+- [x] Los valores RGBA persisten correctamente al guardar.
+- [x] La sincronización bidireccional CSS↔Panel funciona con RGBA.
+- [x] Compatibilidad hacia atrás: colores HEX existentes siguen funcionando.
+
 ---
 
 ## 4. Bugs Críticos Resueltos (Histórico)

@@ -48,10 +48,49 @@
             // }
         }
 
+        /**
+         * Helper: Lee valor computado del DOM
+         * Sincronización bidireccional: CSS -> Panel (REGLA DE ORO de reglas.md)
+         */
+        function getComputedTypographyValue(property) {
+            if (!block || !block.element) return null;
+            try {
+                var computed = window.getComputedStyle(block.element);
+                return computed[property] || null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        /**
+         * Parsea font-family del CSS para mostrar valor limpio
+         */
+        function parseFontFamily(cssValue) {
+            if (!cssValue) return 'Default';
+            var fonts = cssValue.split(',');
+            if (fonts.length > 0) {
+                var firstFont = fonts[0].trim().replace(/['"]/g, '');
+                if (firstFont === 'system-ui' || firstFont === '-apple-system' || firstFont === 'BlinkMacSystemFont') {
+                    return 'System';
+                }
+                return firstFont || 'Default';
+            }
+            return 'Default';
+        }
+
+        /**
+         * Parsea font-size del CSS (ej: "16px" -> "16")
+         */
+        function parseFontSize(cssValue) {
+            if (!cssValue) return '';
+            var match = /(\d+(?:\.\d+)?)(px|rem|em|%)?/i.exec(cssValue);
+            if (match) return match[1];
+            return cssValue;
+        }
+
         // 1. Font Family (ancho completo)
         var fontRow = document.createElement('div');
-        fontRow.style.width = '100%'; // Replaces gbn-typo-row
-        // Removed gbn-spacing-input and gbn-typo-row
+        fontRow.style.width = '100%';
         
         var fontSelect = document.createElement('select');
         fontSelect.className = 'gbn-select';
@@ -64,7 +103,15 @@
         });
         
         var fontData = getResponsiveData('font');
-        if (fontData.val) fontSelect.value = fontData.val;
+        // Si hay valor en config, usarlo. Si no, leer del CSS computado.
+        if (fontData.val) {
+            fontSelect.value = fontData.val;
+        } else {
+            var computedFont = getComputedTypographyValue('fontFamily');
+            var parsedFont = parseFontFamily(computedFont);
+            var fontExists = fonts.some(function(f) { return f.toLowerCase() === parsedFont.toLowerCase(); });
+            if (fontExists) fontSelect.value = parsedFont;
+        }
         // applySourceClasses(fontRow, fontData.source); // Disabled
         
         fontSelect.addEventListener('change', function() {
@@ -81,9 +128,9 @@
         var gridRow = document.createElement('div');
         gridRow.className = 'gbn-typo-grid';
         
-        function createInput(subId, placeholder, iconSvg, labelTitle) {
+        function createInput(subId, placeholder, iconSvg, labelTitle, cssProperty) {
             var col = document.createElement('div');
-            col.className = 'gbn-input-icon-wrapper'; // New wrapper class
+            col.className = 'gbn-input-icon-wrapper';
             
             var iconContainer = document.createElement('div');
             iconContainer.className = 'gbn-input-icon';
@@ -92,11 +139,26 @@
             
             var inp = document.createElement('input');
             inp.type = 'text';
-            inp.className = 'gbn-input gbn-input-with-icon'; // Added class for padding
+            inp.className = 'gbn-input gbn-input-with-icon';
             inp.placeholder = placeholder;
             
             var data = getResponsiveData(subId);
-            if (data.val) inp.value = data.val;
+            // Si hay valor en config, usarlo
+            if (data.val) {
+                inp.value = data.val;
+            } else if (cssProperty) {
+                // Si no hay valor guardado, leer del CSS computado como placeholder
+                var computedVal = getComputedTypographyValue(cssProperty);
+                if (computedVal) {
+                    if (subId === 'size') {
+                        inp.placeholder = parseFontSize(computedVal);
+                    } else if (subId === 'lineHeight') {
+                        inp.placeholder = computedVal;
+                    } else if (subId === 'letterSpacing') {
+                        inp.placeholder = computedVal === 'normal' ? '0' : computedVal;
+                    }
+                }
+            }
             
             inp.addEventListener('input', function() {
                 var api = Gbn.ui && Gbn.ui.panelApi;
@@ -120,9 +182,10 @@
         var iconLineHeight = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 6h18M3 12h18M3 18h18M12 6v12M9 9l3-3 3 3M9 15l3 3 3-3"/></svg>'; 
         var iconSpacing = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 12h16m-3-3l3 3-3 3M7 9l-3 3 3 3"/></svg>';
 
-        gridRow.appendChild(createInput('size', '16', iconSize, 'Size'));
-        gridRow.appendChild(createInput('lineHeight', '1.5', iconLineHeight, 'Line Height'));
-        gridRow.appendChild(createInput('letterSpacing', '0', iconSpacing, 'Letter Spacing'));
+        // Pasar la propiedad CSS para leer valores computados
+        gridRow.appendChild(createInput('size', '16', iconSize, 'Size', 'fontSize'));
+        gridRow.appendChild(createInput('lineHeight', '1.5', iconLineHeight, 'Line Height', 'lineHeight'));
+        gridRow.appendChild(createInput('letterSpacing', '0', iconSpacing, 'Letter Spacing', 'letterSpacing'));
         wrapper.appendChild(gridRow);
 
         // 3. Text Transform (grupo de íconos)
@@ -146,7 +209,13 @@
         
         var transformData = getResponsiveData('transform');
         var currentTransform = transformData.val;
-        // applySourceClasses(transformRow, transformData.source); // Disabled
+        // Si no hay valor guardado, leer del CSS computado
+        if (!currentTransform) {
+            var computedTransform = getComputedTypographyValue('textTransform');
+            if (computedTransform && computedTransform !== 'none') {
+                currentTransform = computedTransform;
+            }
+        }
         
         transforms.forEach(function(opt) {
             var btn = document.createElement('button');

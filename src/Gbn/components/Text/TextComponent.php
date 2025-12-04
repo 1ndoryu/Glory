@@ -82,6 +82,7 @@ class TextComponent extends AbstractComponent
         // 5. Color - Tab: Estilo
         $schema->addOption(
             Option::color('color', 'Color')
+                ->allowTransparency()
                 ->tab('Estilo')
         );
 
@@ -91,7 +92,47 @@ class TextComponent extends AbstractComponent
             $schema->addOption($option);
         }
 
-        // 7. Custom CSS - Tab: Avanzado
+        // 7. Background - Tab: Estilo
+        $schema->addOption(
+            Option::color('backgroundColor', 'Color de Fondo')
+                ->allowTransparency()
+                ->tab('Estilo')
+        );
+
+        // 8. Border - Tab: Estilo
+        $schema->addOption(
+            Option::text('borderWidth', 'Ancho de Borde')
+                ->default('')
+                ->tab('Estilo')
+                ->description('Ej: 1px, 2px')
+        );
+
+        $schema->addOption(
+            Option::select('borderStyle', 'Estilo de Borde')
+                ->options([
+                    ['valor' => '', 'etiqueta' => 'Ninguno'],
+                    ['valor' => 'solid', 'etiqueta' => 'Sólido'],
+                    ['valor' => 'dashed', 'etiqueta' => 'Discontinuo'],
+                    ['valor' => 'dotted', 'etiqueta' => 'Punteado'],
+                    ['valor' => 'double', 'etiqueta' => 'Doble'],
+                ])
+                ->tab('Estilo')
+        );
+
+        $schema->addOption(
+            Option::color('borderColor', 'Color de Borde')
+                ->allowTransparency()
+                ->tab('Estilo')
+        );
+
+        $schema->addOption(
+            Option::text('borderRadius', 'Radio de Borde')
+                ->default('')
+                ->tab('Estilo')
+                ->description('Ej: 4px, 8px, 50%')
+        );
+
+        // 9. Custom CSS - Tab: Avanzado
         $schema->addOption($this->getCustomCSSOption());
 
         return $schema->toArray();

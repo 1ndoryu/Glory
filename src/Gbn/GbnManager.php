@@ -271,9 +271,13 @@ class GbnManager
                 'file' => '/js/ui/panel-fields/text.js',
                 'deps' => ['glory-gbn-ui-fields-utils', 'glory-gbn-ui-fields-registry'],
             ],
+            'glory-gbn-ui-fields-color-utils' => [
+                'file' => '/js/ui/panel-fields/color-utils.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
             'glory-gbn-ui-fields-color' => [
                 'file' => '/js/ui/panel-fields/color.js',
-                'deps' => ['glory-gbn-ui-fields-sync', 'glory-gbn-ui-fields-registry'],
+                'deps' => ['glory-gbn-ui-fields-sync', 'glory-gbn-ui-fields-registry', 'glory-gbn-ui-fields-color-utils'],
             ],
             'glory-gbn-ui-fields-typography' => [
                 'file' => '/js/ui/panel-fields/typography.js',

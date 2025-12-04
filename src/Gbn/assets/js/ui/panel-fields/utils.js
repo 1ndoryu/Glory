@@ -240,8 +240,13 @@
         'padding.derecha': 'paddingRight',
         'padding.inferior': 'paddingBottom',
         'padding.izquierda': 'paddingLeft',
+        'margin.superior': 'marginTop',
+        'margin.derecha': 'marginRight',
+        'margin.inferior': 'marginBottom',
+        'margin.izquierda': 'marginLeft',
         'fondo': 'backgroundColor',
         'background': 'backgroundColor',
+        'backgroundColor': 'backgroundColor',
         'gap': 'gap',
         'layout': 'display',
         'flexDirection': 'flexDirection',
@@ -252,7 +257,18 @@
         'alineacion': 'textAlign',
         'maxAncho': 'maxWidth',
         'color': 'color',
-        'size': 'fontSize'
+        'size': 'fontSize',
+        // Typography
+        'typography.font': 'fontFamily',
+        'typography.size': 'fontSize',
+        'typography.lineHeight': 'lineHeight',
+        'typography.letterSpacing': 'letterSpacing',
+        'typography.transform': 'textTransform',
+        // Border
+        'borderWidth': 'borderWidth',
+        'borderStyle': 'borderStyle',
+        'borderColor': 'borderColor',
+        'borderRadius': 'borderRadius'
     };
 
     /**
