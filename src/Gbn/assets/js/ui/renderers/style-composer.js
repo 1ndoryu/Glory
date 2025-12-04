@@ -74,12 +74,22 @@
             }
 
             // 2. Dimensions (Height/Width)
+            // 2. Dimensions (Height/Width)
             var height = getValue('height');
             if (height && height !== 'auto') {
-                if (height === 'min-content') {
-                    styles['height'] = 'min-content';
+                // Smart Height: Accept keywords or raw values
+                if (height === 'min-content' || height === 'max-content' || height === 'fit-content') {
+                    styles['height'] = height;
                 } else if (height === '100vh') {
                     styles['height'] = '100vh';
+                } else {
+                    // Check if it's a number (assume px) or string with unit
+                    var val = String(height).trim();
+                    if (/^-?\d+(\.\d+)?$/.test(val)) {
+                        styles['height'] = val + 'px';
+                    } else {
+                        styles['height'] = val;
+                    }
                 }
             }
 
@@ -212,6 +222,22 @@
                 }
                 
                 Object.assign(styles, layoutStyles);
+            }
+
+            // 7. Positioning & Z-Index
+            var position = getValue('position');
+            if (position && position !== 'static') {
+                styles.position = position;
+            }
+
+            var zIndex = getValue('zIndex');
+            if (zIndex !== null && zIndex !== undefined && zIndex !== '') {
+                styles['z-index'] = zIndex;
+            }
+
+            var overflow = getValue('overflow');
+            if (overflow && overflow !== 'visible') {
+                styles.overflow = overflow;
             }
 
             // 7. Custom CSS

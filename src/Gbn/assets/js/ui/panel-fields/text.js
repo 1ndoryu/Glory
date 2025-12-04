@@ -33,18 +33,21 @@
         var current = u.getConfigValue(block, field.id);
         var themeDefault = u.getThemeDefault(block.role, field.id);
         
-        // Lógica especial para campos de borde (sincronización bidireccional)
-        var isBorderField = ['borderWidth', 'borderRadius', 'borderColor', 'borderStyle'].indexOf(field.id) !== -1;
+        // Lógica de lectura de estilos computados (Computed Styles)
+        // Permite mostrar el valor real del CSS (clases, inline) cuando no hay config guardada
         var computedVal = null;
 
-        if (isBorderField && (current === undefined || current === null)) {
+        if (current === undefined || current === null) {
             // Intentar leer del DOM
             var effective = u.getEffectiveValue(block, field.id);
             if (effective.source === 'computed' && effective.value) {
                 computedVal = effective.value;
-                // Para borderWidth y borderRadius, asegurar que tenga unidad o sea 0
+                
+                // Para valores numéricos que son 0px, a veces es mejor ignorarlos si el default es diferente,
+                // pero por consistencia mostramos lo que el navegador dice.
+                // Excepción: si es '0px' y queremos placeholder vacío, podemos filtrar aquí.
                 if ((field.id === 'borderWidth' || field.id === 'borderRadius') && parseFloat(computedVal) === 0) {
-                    computedVal = null; // Ignorar 0px por defecto
+                    computedVal = null; 
                 }
             }
         }

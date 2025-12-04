@@ -33,6 +33,17 @@ trait HasPositioning
             ->tab('Avanzado')
             ->description('Orden de apilamiento (ej: 10, 100, -1)');
 
+        // 3. Overflow - Tab: Avanzado
+        $options[] = Option::iconGroup('overflow', 'Desbordamiento (Overflow)')
+            ->options([
+                ['valor' => 'visible', 'etiqueta' => 'Visible', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M12 8v8M8 12h8"/></svg>'],
+                ['valor' => 'hidden', 'etiqueta' => 'Oculto', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 4l16 16M20 4L4 20"/></svg>'],
+                ['valor' => 'scroll', 'etiqueta' => 'Scroll', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M12 8v3"/><path d="M12 16v-3"/><path d="M9 13l3 3 3-3"/></svg>'],
+                ['valor' => 'auto', 'etiqueta' => 'Auto', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><circle cx="12" cy="12" r="3"/></svg>'],
+            ])
+            ->default('visible')
+            ->tab('Avanzado');
+
         return $options;
     }
 }

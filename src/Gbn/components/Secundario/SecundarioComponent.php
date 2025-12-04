@@ -11,6 +11,7 @@ use Glory\Gbn\Traits\HasSpacing;
 use Glory\Gbn\Traits\HasBackground;
 
 use Glory\Gbn\Traits\HasCustomCSS;
+use Glory\Gbn\Traits\HasPositioning;
 
 class SecundarioComponent extends AbstractComponent
 {

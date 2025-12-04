@@ -7,6 +7,7 @@ use Glory\Gbn\Schema\SchemaBuilder;
 use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Traits\HasSpacing;
 use Glory\Gbn\Traits\HasCustomCSS;
+use Glory\Gbn\Traits\HasPositioning;
 
 class TextComponent extends AbstractComponent
 {
