@@ -71,6 +71,12 @@ class DomProcessor
                         $node->setAttribute('class', trim($classes . ' secundario'));
                     }
                 }
+                if ($node->hasAttribute('gloryimage') || $node->hasAttribute('data-gbn-image')) {
+                    $classes = $node->getAttribute('class');
+                    if (strpos($classes, 'gbn-image') === false) {
+                        $node->setAttribute('class', trim($classes . ' gbn-image'));
+                    }
+                }
 
                 // Clean heavy internal attributes that shouldn't be in the DB
                 // These are reconstructed from post_meta or defaults

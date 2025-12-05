@@ -430,7 +430,7 @@
         // Propiedades simples de estilo directo
         var directStyleProps = ['color', 'display', 'width', 'height', 'textAlign', 
                                 'cursor', 'transition', 'transform', 'textShadow',
-                                'position', 'zIndex', 'overflow'];
+                                'position', 'zIndex', 'overflow', 'maxWidth', 'maxHeight', 'minWidth', 'minHeight'];
         
         if (directStyleProps.indexOf(path) !== -1) {
             // Convertir camelCase a propiedad de estilo (JS usa camelCase directamente)

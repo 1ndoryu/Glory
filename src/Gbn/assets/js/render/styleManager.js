@@ -161,8 +161,13 @@
             kebabStyles[kebabKey] = styles[key];
         });
         
-        var selector = '[data-gbn-id="' + block.id + '"]';
-        var cssBody = utils.stringifyStyles(kebabStyles);
+        var selector = 'body [data-gbn-id="' + block.id + '"]';
+        // Add !important to all props to beat inline styles in editor simulation
+        var cssBody = '';
+        Object.keys(kebabStyles).forEach(function(p) {
+            cssBody += p + ': ' + kebabStyles[p] + ' !important; ';
+        });
+        
         // Include simulation class for editor preview
         var simulationSelector = selector + '.gbn-simulated-' + stateName;
         styleEl.textContent = selector + ':' + stateName + ', ' + simulationSelector + ' { ' + cssBody + ' }';

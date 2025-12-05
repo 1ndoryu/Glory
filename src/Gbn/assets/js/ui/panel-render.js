@@ -317,7 +317,7 @@
     function renderStateSelector(container, block) {
         var wrapper = document.createElement('div');
         wrapper.className = 'gbn-state-selector';
-        wrapper.style.marginBottom = '15px';
+        // wrapper.style.marginBottom = '15px'; // [MOD] Removed margin as requested
         wrapper.style.width = '100%';
 
         var btnGroup = document.createElement('div');
@@ -449,13 +449,23 @@
         var savedScrollTop = container.scrollTop;
         
         container.innerHTML = ''; 
-        container.appendChild(createSummary(block));
+        container.innerHTML = ''; 
         
-        // Renderizar selector de estados (Fase 10)
+        // [MOD] Locate Header and Footer containers
+        var tabsContainer = document.querySelector('.gbn-header-tabs-area');
+        var footerStatesContainer = document.querySelector('.gbn-footer-states-area');
+        
+        // Clean external containers
+        if (tabsContainer) tabsContainer.innerHTML = '';
+        if (footerStatesContainer) footerStatesContainer.innerHTML = '';
+
+        // Renderizar selector de estados (Fase 10) en el FOOTER
         // Solo para bloques que soportan estilos (principal, secundario, text, button, image)
         var supportedRoles = ['principal', 'secundario', 'text', 'button', 'image'];
         if (block.role && supportedRoles.indexOf(block.role) !== -1) {
-            renderStateSelector(container, block);
+            if (footerStatesContainer) {
+                renderStateSelector(footerStatesContainer, block);
+            }
         }
         
         var schema = Array.isArray(block.schema) ? block.schema : [];
@@ -482,15 +492,19 @@
             tabs[tabName].push(field);
         });
 
-        // If no explicit tabs found, render as single form (backward compatibility)
-        // BUT if we want to enforce tabs for consistency, we can just use the default group.
-        // Let's use tabs if at least one field has a tab, or if we want to force structure.
-        // The requirement says "Organización por Tabs", so let's try to organize even if not explicitly set?
-        // No, better to respect the schema. If no tabs, render flat.
-        
+        // Common Form Styling
+        function applyFormStyles(form) {
+            form.style.display = 'flex';
+            form.style.flexDirection = 'column';
+            form.style.gap = '12px';
+            form.style.marginBottom = '100px'; // Prevent footer overlap
+        }
+
         if (!hasTabs) {
             var form = document.createElement('form'); 
             form.className = 'gbn-panel-form';
+            applyFormStyles(form);
+            
             var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
             
             schema.forEach(function (field) { 
@@ -502,6 +516,11 @@
             // Render Tabs
             var tabNav = document.createElement('div');
             tabNav.className = 'gbn-panel-tabs';
+            // Apply requested styles for tabs container
+            tabNav.style.display = 'flex';
+            tabNav.style.gap = '4px';
+            tabNav.style.padding = '10px';
+            tabNav.style.paddingTop = '0';
             
             var tabContent = document.createElement('div');
             tabContent.className = 'gbn-panel-tabs-content';
@@ -555,6 +574,8 @@
                 
                 var form = document.createElement('form'); 
                 form.className = 'gbn-panel-form';
+                applyFormStyles(form);
+
                 var builder = Gbn.ui && Gbn.ui.panelFields && Gbn.ui.panelFields.buildField;
                 
                 tabs[name].forEach(function (field) { 
@@ -566,7 +587,12 @@
                 tabContent.appendChild(pane);
             });
 
-            container.appendChild(tabNav);
+            // Append nav to header container if available, otherwise fallback
+            if (tabsContainer) {
+                tabsContainer.appendChild(tabNav);
+            } else {
+                container.appendChild(tabNav);
+            }
             container.appendChild(tabContent);
         }
         

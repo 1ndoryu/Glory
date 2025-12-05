@@ -153,7 +153,12 @@
 
 ---
 
-## Trabajo Pendiente
+### Trabajo Pendiente
+
+#### ⏳ Refactorización UI Dimensions Panel
+- **Problema:** El diseño de `dimensions.js` no encaja con el resto del panel (iconos, espaciado).
+- **Tarea:** Actualizar `dimensions.js` para usar iconos SVG, grid layout y inputs visuales consistentes con `spacing.js`.
+- **Estado:** Pendiente (Solicitado por usuario).
 
 ### ✅ [COMPLETADA] Fase 10: Soporte para Estados Hover/Focus
 
@@ -514,7 +519,7 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 
 #### ✅ Mejora: Componente Imagen (Borde y UI)
 - **Cambio:** Integrado trait `HasBorder` en `ImageComponent` para opciones completas de borde.
-- **Cambio:** Implementado nuevo campo UI `dimensions` (`dimensions.js`) para agrupar visualmente Width/Height en una rejilla compacta.
+- **Cambio:** Implementado nuevo campo UI `dimensions` (`dimensions.js`) con **iconos SVG** y layout **Grid 2x2** (estilo spacing) para una experiencia visual superior.
 - **Cambio:** `objectFit` actualizado a `Option::iconGroup` con iconos SVG representativos (Cover, Contain, Fill, etc.).
 - **Fix:** `object-fit` ahora funciona correctamente al forzar `height: 100%` en la etiqueta `<img>` y usar variables CSS.
 - **Fix:** Corregido error fatal por falta de `use HasBorder` en `ImageComponent.php`.
@@ -526,3 +531,22 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 #### ✅ Tarea: Verificación de Limpieza HTML
 - **Objetivo:** Verificar y eliminar atributos innecesarios en el HTML final (`draggable`, `data-gbn-ready`) para asegurar una salida limpia, sin romper la hidratación del editor.
 - **Estado:** Completado. Se eliminan `draggable` y `data-gbn-ready` en `DomProcessor`.
+
+#### ✅ Bug: Dirty HTML & Atributos Malformados
+- **Problema:** Atributos como `data-gbn-config` aparecían malformados en el DOM (`='{"texto":...`) ensuciando el HTML.
+- **Solución:** Eliminada la escritura redundante de `data-gbn-config` y `data-gbn-schema` al DOM en `dom.js` y `state.js`. El estado se gestiona en memoria.
+
+#### ✅ Bug: Persistencia de Hover (Especificidad)
+- **Problema:** Los estilos de hover creados en el panel no se aplicaban en el frontend porque las clases de la plantilla (ej: `.btnPrimary:hover`) tenían mayor prioridad.
+- **Solución:** Aumentada la especificidad del CSS generado por GBN en `style-generator.js` prefijando con `body` (`body [data-gbn-id="..."]`).
+
+#### ✅ Bug: Estilos de Layout Rotos (Frontend Deslogeado)
+- **Problema:** En el frontend (usuario no logueado), los estilos de layouts (flexbox centrado, columnas) se rompían porque los selectores CSS dependían de atributos internos (`gloryDivSecundario`, etc.) que son eliminados por seguridad/limpieza.
+- **Solución:** 
+    - Actualizados selectores en `theme-styles.css` y `gbn.css` para incluir las clases persistentes `.primario` y `.secundario` (inyectadas por `DomProcessor`).
+    - Actualizado `DomProcessor.php` para inyectar automáticamente la clase `.gbn-image` en componentes de imagen (que no tenían clase persistente).
+    - Actualizado CSS de imagen para soportar el selector `.gbn-image`.
+
+#### ✅ Refactor: Limpieza de Estilos Duplicados
+- **Problema:** Existía duplicidad de reglas CSS entre `gbn.css` y `theme-styles.css`. `theme-styles.css` era más completo pero competían en especificidad.
+- **Solución:** Eliminadas las reglas redundantes de componentes en `gbn.css`. Ahora `theme-styles.css` es la única fuente de verdad para estilos base de componentes, mejorando la mantenibilidad y evitando conflictos.

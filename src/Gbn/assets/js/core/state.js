@@ -48,7 +48,21 @@
 
         var id = ensureId(el);
         var initialConfig = parseJsonAttr(el, 'data-gbn-config', {}) || {};
-        var initialSchema = parseJsonAttr(el, 'data-gbn-schema', []);
+        
+        // Try to get schema from global registry (SINGLE SOURCE OF TRUTH)
+        // This is critical since we stopped writing data-gbn-schema to DOM
+        var initialSchema = [];
+        var cfg = global.gloryGbnCfg; // Explicitly access global config
+        
+        if (cfg && cfg.roleSchemas && cfg.roleSchemas[role] && cfg.roleSchemas[role].schema) {
+            initialSchema = cfg.roleSchemas[role].schema;
+        } else if (cfg && cfg.roleSchemas && cfg.roleSchemas[role] && Array.isArray(cfg.roleSchemas[role])) {
+             // Handle case where schema is directly the array (backward compact)
+             initialSchema = cfg.roleSchemas[role];
+        } else {
+            // Fallback for legacy or isolated testing
+            initialSchema = parseJsonAttr(el, 'data-gbn-schema', []);
+        }
         
         var block = {
             id: id,
@@ -91,7 +105,7 @@
             
             // Sync DOM attribute for persistence (legacy behavior, but good for backup)
             if (block && block.element) {
-                 block.element.setAttribute('data-gbn-config', JSON.stringify(block.config));
+                 // block.element.setAttribute('data-gbn-config', JSON.stringify(block.config));
             }
             return block;
         }

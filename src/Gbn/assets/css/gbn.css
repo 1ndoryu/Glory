@@ -18,38 +18,7 @@
     --gbn-secundario-padding-left: 0px;
 }
 
-/* Default Styles for GBN Containers */
-[gloryDiv], [data-gbnPrincipal] {
-    display: flex;
-    flex-direction: var(--gbn-principal-direction, row);
-    flex-wrap: var(--gbn-principal-wrap, wrap);
-    justify-content: var(--gbn-principal-justify, flex-start);
-    align-items: var(--gbn-principal-align, stretch);
-    gap: var(--gbn-principal-gap, 0px);
-    
-    /* Padding usando variables sin fallback inline - se lee desde :root */
-    padding-top: var(--gbn-principal-padding-top);
-    padding-right: var(--gbn-principal-padding-right);
-    padding-bottom: var(--gbn-principal-padding-bottom);
-    padding-left: var(--gbn-principal-padding-left);
-    
-    background-color: var(--gbn-principal-background, transparent);
-    box-sizing: border-box;
-    max-width: 100%;
-}
-
-[gloryDivSecundario], [data-gbnSecundario] {
-    width: var(--gbn-secundario-width, 100%);
-    
-    /* Padding usando variables sin fallback inline - se lee desde :root */
-    padding-top: var(--gbn-secundario-padding-top);
-    padding-right: var(--gbn-secundario-padding-right);
-    padding-bottom: var(--gbn-secundario-padding-bottom);
-    padding-left: var(--gbn-secundario-padding-left);
-    
-    background-color: var(--gbn-secundario-background, transparent);
-    box-sizing: border-box;
-}
+/* Default Styles for GBN Containers - DELETED (Moved to theme-styles.css) */
 
 /* Ensure content render is visible */
 [gloryContentRender], [data-gbnContent] {

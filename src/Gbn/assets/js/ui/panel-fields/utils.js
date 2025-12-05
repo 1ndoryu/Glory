@@ -317,6 +317,8 @@
         // [BUG-SYNC FIX] Dimensiones y Posicionamiento - Propiedades faltantes
         'ancho': 'width',
         'width': 'width',
+        'maxWidth': 'maxWidth',
+        'maxHeight': 'maxHeight',
         'minHeight': 'minHeight',
         'minWidth': 'minWidth',
         // Posicionamiento

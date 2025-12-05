@@ -54,14 +54,18 @@
             panelRoot.id = 'gbn-panel';
             panelRoot.setAttribute('aria-hidden', 'true');
             panelRoot.innerHTML = ''
-                + '<header class="gbn-header">'
-                + '  <span class="gbn-header-title">GBN Panel</span>'
-                + '  <button type="button" class="gbn-header-close" data-gbn-action="close-panel" aria-label="Close panel">×</button>'
+                + '<header class="gbn-header" style="display: flex; flex-direction: column; background: #fafafa; border-bottom: 1px solid #e0e0e0;">'
+                + '  <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 15px; padding-bottom: 10px;">'
+                + '    <span class="gbn-header-title" style="font-weight: 600; font-size: 13px;">GBN Panel</span>'
+                + '    <button type="button" class="gbn-header-close" data-gbn-action="close-panel" aria-label="Close panel" style="background:none; border:none; cursor:pointer; font-size:18px;">×</button>'
+                + '  </div>'
+                + '  <div class="gbn-header-tabs-area" style="width: 100%;"></div>'
                 + '</header>'
-                + '<div class="gbn-body"></div>'
-                + '<footer class="gbn-footer">'
-                + '  <span class="gbn-footer-status">Cambios en vivo</span>'
-                + '  <button type="button" class="gbn-footer-primary" disabled>Guardar (próximamente)</button>'
+                + '<div class="gbn-body" style="padding-bottom: 120px;"></div>' /* Space for footer */
+                + '<footer class="gbn-footer" style="position: absolute; bottom: 0; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 14px; border-top: 1px solid #f0f0f0; background: #fafafa;">'
+                + '  <div class="gbn-footer-states-area" style="width: 100%; margin-bottom: 8px;"></div>'
+                + '  <span class="gbn-footer-status" style="font-size:11px; margin-bottom: 5px; color: #666;">Cambios en vivo</span>'
+                + '  <button type="button" class="gbn-footer-primary" disabled style="width:100%;">Guardar (próximamente)</button>'
                 + '</footer>';
             document.body.appendChild(panelRoot);
         }

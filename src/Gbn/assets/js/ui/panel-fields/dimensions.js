@@ -7,124 +7,147 @@
 
     /**
      * Construye un campo compuesto de dimensiones (width, height, maxWidth, maxHeight)
-     * Utiliza una estructura visual similar a 'spacing', agrupando opciones relacionadas.
-     * 
-     * Espera que 'field' contenga:
-     * - options: Array de objetos { id: 'width', label: 'Ancho', units: [...] }
-     * o
-     * - fields: Array de IDs de campos a mostrar si se usa un modo automático (no implementado aún)
-     * 
-     * Para simplificar la primera versión, vamos a asumir que recibe un array de sub-campos definidos
-     * en el schema PHP bajo 'campos' o 'options'.
+     * Utiliza una estructura visual mejorada con iconos SVG, clonando el estilo de 'spacing'.
      */
     function buildDimensionsField(block, field) {
         var u = utils();
-        var wrapper = document.createElement('fieldset');
+        var wrapper = document.createElement('fieldset'); // Regresar a fieldset para usar estilos GBN nativos
         wrapper.className = 'gbn-field gbn-field-dimensions';
         
         var legend = document.createElement('legend');
         legend.textContent = field.etiqueta || 'Dimensiones';
         wrapper.appendChild(legend);
         
-        // Indicador de sincronización (para el grupo en general, o por campo individual)
-        // Por ahora, lo ponemos en el wrapper principal
+        // Indicador de sincronización
         if (sync() && sync().addSyncIndicator) {
-            sync().addSyncIndicator(wrapper, block, field.id); // field.id puede ser 'dimensions'
+            sync().addSyncIndicator(wrapper, block, field.id);
         }
         
         var grid = document.createElement('div');
-        grid.className = 'gbn-spacing-grid gbn-dimensions-grid'; // Reusamos gbn-spacing-grid para layout 2x2
+        grid.className = 'gbn-spacing-grid'; // Clase global de forms.css
+        // Asegurar grid layout explícito
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = '1fr 1fr';
+        grid.style.gap = '6px';
         
-        // Obtener sub-campos definidos. Si no hay, usar defaults.
-        var subFields = field.opciones || [
-            { id: 'width', label: 'Ancho', icon: '↔' },
-            { id: 'maxWidth', label: 'Max', icon: '⇥' },
-            { id: 'height', label: 'Alto', icon: '↕' },
-            { id: 'maxHeight', label: 'Max', icon: 'Bottom' } // Icono improvisado
+        // Definición de iconos SVG
+        var ICONS = {
+            width: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16m-3-3l3 3-3 3M7 9l-3 3 3 3"/></svg>',
+            height: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16m-3-3l3 3 3-3M9 7l3-3 3 3"/></svg>',
+            maxWidth: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20M2 7v10M22 7v10"/></svg>',
+            maxHeight: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M7 2h10M7 22h10"/></svg>'
+        };
+
+        // Estructura fija para asegurar UI consistente. Ignoramos labels raros de PHP.
+        // Mapeamos ID de propiedad -> Label/Icono esperado.
+        var structure = [
+            { id: 'width', label: 'Ancho', icon: ICONS.width },
+            { id: 'maxWidth', label: 'Max Ancho', icon: ICONS.maxWidth },
+            { id: 'height', label: 'Alto', icon: ICONS.height },
+            { id: 'maxHeight', label: 'Max Alto', icon: ICONS.maxHeight }
         ];
 
-        // Helper para crear un input individual
-        function createInput(subField) {
-            var subId = subField.id; // ej: 'width'
+        // Configuración de subcampos
+        // Si PHP manda "field.opciones", intentamos ver si hay override de labels, pero mantenemos nuestra estructura
+        var phpOptions = field.opciones || [];
+        
+        // Helper interno para crear input
+        function createInput(struct, index) {
+            var subId = struct.id;
+            var labelText = struct.label;
             
-            // Icono
-            var iconHtml = subField.icon || (subField.id === 'width' ? '↔' : '↕');
-            if (subField.id === 'maxWidth' || subField.id === 'maxHeight') iconHtml = 'Max';
+            // Si PHP mandó override de label para este ID, úsalo
+            if (Array.isArray(phpOptions)) {
+                var phpOption = phpOptions.find(function(o) { return o.id === subId || o === subId; });
+                if (phpOption && phpOption.label) labelText = phpOption.label;
+            }
 
             var item = document.createElement('label');
-            item.className = 'gbn-spacing-input'; // Reusamos estilos de spacing
+            item.className = 'gbn-spacing-input'; // Clase global forms.css
             item.setAttribute('data-field', subId);
+            item.title = labelText; // Tooltip
 
             var iconSpan = document.createElement('span');
-            iconSpan.className = 'gbn-spacing-icon';
-            iconSpan.title = subField.label;
-            iconSpan.innerHTML = iconHtml;
-            // Ajustar estilo si es texto largo como "Max"
-            if (iconHtml.length > 2) {
-                iconSpan.style.fontSize = '10px';
-                iconSpan.style.fontWeight = 'bold';
-                iconSpan.style.width = 'auto';
-                iconSpan.style.paddingRight = '4px';
-            }
+            iconSpan.className = 'gbn-spacing-icon'; // Clase global forms.css
+            iconSpan.innerHTML = struct.icon;
+            
             item.appendChild(iconSpan);
 
             // Input
             var input = document.createElement('input');
-            input.type = 'text'; // Text para permitir %, px, auto
+            input.type = 'text'; 
             input.className = 'gbn-dimension-input';
             
-            // Obtener valor efectivo (config > computed > theme default)
-            // Nota: Aquí subId es el path directo (ej: 'width') porque dimensions no suele anidar en 'dimensions.width'
-            // sI el schema definió ids planos en el componente
-            var path = subField.id; 
+            // Estilos inline minimalistas para asegurar override
+            input.style.width = '100%';
+            input.style.border = 'none';
+            input.style.background = 'transparent';
+            input.style.textAlign = 'center';
+            input.style.padding = '0';
             
-            // Determinar origen y valor inicial
-            // Usamos una lógica simplificada similar a spacing.js pero adaptada a inputs de texto libre
+            // DATA Binding
+            // Asumimos que dimensions guarda valores planos en config raíz (config.width, config.height)
+            // porque ImageComponent no anida en config.dimensions.
+            var path = subId; 
+            
+            var u = utils();
             var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
             var source = u.getValueSource(block, path, breakpoint);
             var effective = u.getEffectiveValue(block, path);
 
             var displayValue = '';
+            // Mostrar valor efectivo
             if (effective.value !== undefined && effective.value !== null) {
                 displayValue = effective.value;
-            } else if (effective.placeholder && effective.placeholder !== 'auto') {
-                // Mostrar placeholder del tema como value si es significativo? No, como placeholder
             }
             
             input.value = displayValue;
-            input.placeholder = effective.placeholder || 'auto';
             
-            // Data attrs
-            input.dataset.configPath = path;
-            input.dataset.role = block.role;
-            input.dataset.source = source;
-
-            // Clases de origen
-            // Limpiar clases
-            item.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+            // Placeholder: computado o auto
+            var placeholder = effective.placeholder || 'auto';
+            input.placeholder = placeholder;
+            
+            // Feedback Visual de Origen
+            item.classList.remove('gbn-field-inherited', 'gbn-field-override', 'gbn-source-theme', 'gbn-source-computed');
             
             if (source === 'override') {
                 item.classList.add('gbn-field-override');
             } else {
                 item.classList.add('gbn-field-inherited');
                 if (source === 'theme') item.classList.add('gbn-source-theme');
-                else if (source === 'tablet') item.classList.add('gbn-source-tablet');
-                else if (source === 'block') item.classList.add('gbn-source-block');
+                else if (source === 'computed') item.classList.add('gbn-source-computed');
             }
 
-            // Event Listener
-            input.addEventListener('change', function(e) {
-                var val = e.target.value.trim();
+            // --- EVENT HANDLING ---
+            function updateValue(val) {
                 var api = Gbn.ui && Gbn.ui.panelApi;
                 if (api && api.updateConfigValue && block) {
-                    api.updateConfigValue(block, path, val === '' ? null : val);
+                    var finalVal = val;
+                    // Auto-append px si es numérico
+                    if (val !== '' && !isNaN(val) && parseFloat(val) !== 0) {
+                        finalVal += 'px';
+                    }
+                    api.updateConfigValue(block, path, val === '' ? null : finalVal);
+                }
+            }
+
+            // Usar 'change' para commit final
+            input.addEventListener('change', function(e) {
+                updateValue(e.target.value.trim());
+            });
+
+            // Usar 'keydown' para Enter
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    updateValue(e.target.value.trim());
+                    input.blur();
                 }
             });
 
-            // Input visual feedback (override style on type)
+            // Feedback visual inmediato al escribir
             input.addEventListener('input', function() {
                 if (input.value !== '') {
-                    item.classList.remove('gbn-field-inherited', 'gbn-source-theme', 'gbn-source-tablet', 'gbn-source-block');
+                    item.classList.remove('gbn-field-inherited', 'gbn-source-theme');
                     item.classList.add('gbn-field-override');
                 }
             });
@@ -133,12 +156,16 @@
             return item;
         }
 
-        subFields.forEach(function(sub) {
-            grid.appendChild(createInput(sub));
+        // Generar los 4 inputs fijos
+        structure.forEach(function(s, i) {
+            grid.appendChild(createInput(s, i));
         });
 
         wrapper.appendChild(grid);
-        u.appendFieldDescription(wrapper, field);
+        
+        if (field.description) {
+            u.appendFieldDescription(wrapper, field);
+        }
         
         return wrapper;
     }

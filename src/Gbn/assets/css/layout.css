@@ -45,7 +45,7 @@ main {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 14px; /* Reduced padding */
+    /* padding: 10px 14px; */
     border-bottom: 1px solid var(--border-color, #e6e6e6);
     font-size: 13px; /* Smaller font */
     font-weight: 600;
@@ -118,17 +118,17 @@ main {
 
 /* Footer dentro del panel */
 #gbn-panel .gbn-footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    /* position: absolute; */
+    /* bottom: 0; */
+    /* left: 0; */
+    /* right: 0; */
     display: flex;
     align-items: center;
     justify-content: center; /* Centered status */
-    padding: 8px 14px;
-    border-top: 1px solid #f0f0f0;
-    background: #fafafa;
-    height: 36px;
+    /* padding: 8px 14px; */
+    /* border-top: 1px solid #f0f0f0; */
+    /* background: #fafafa; */
+    /* height: 36px; */
 }
 
 #gbn-panel .gbn-footer-primary {

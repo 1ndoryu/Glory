@@ -35,7 +35,8 @@
                 var block = blocksMap[id];
                 if (!block || !block.config) return;
                 
-                var selector = '[data-gbn-id="' + id + '"]';
+                // Increase specificity to override template styles (e.g. .btnPrimary:hover)
+                var selector = 'body [data-gbn-id="' + id + '"]';
                 
                 // === RESPONSIVE (existente) ===
                 if (block.config._responsive) {
@@ -94,7 +95,7 @@
             if (!blockId || !states || typeof states !== 'object') return '';
             
             var css = '';
-            var selector = '[data-gbn-id="' + blockId + '"]';
+            var selector = 'body [data-gbn-id="' + blockId + '"]';
             var self = this;
             
             self.SUPPORTED_STATES.forEach(function(state) {
@@ -115,7 +116,12 @@
         createRule: function(selector, styles) {
             var rule = '  ' + selector + ' { ';
             Object.keys(styles).forEach(function(prop) {
-                rule += prop + ': ' + styles[prop] + '; ';
+                var val = styles[prop];
+                // Ensure overrides (responsive/states) always beat inline base styles
+                if (String(val).indexOf('!important') === -1) {
+                    val += ' !important';
+                }
+                rule += prop + ': ' + val + '; ';
             });
             rule += '}';
             return rule;

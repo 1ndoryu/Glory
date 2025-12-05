@@ -45,10 +45,10 @@
         // Los elementos sin configuración heredarán visualmente del Panel de Tema vía variables CSS
         if (!existingConfig || Object.keys(existingConfig).length === 0) {
             // Inicializar con configuración vacía para permitir herencia del tema
-            el.setAttribute('data-gbn-config', JSON.stringify({}));
+            // el.setAttribute('data-gbn-config', JSON.stringify({}));
         } else {
             // Mantener configuración existente (persistida o del atributo data-gbn-config)
-            el.setAttribute('data-gbn-config', JSON.stringify(existingConfig));
+            // el.setAttribute('data-gbn-config', JSON.stringify(existingConfig));
         }
         var config = utils.getConfig();
         var existingSchema = configHelpers.readJsonAttr(el, 'data-gbn-schema');
@@ -57,7 +57,7 @@
         // Esto limpia la salida HTML para usuarios finales
         if (config.isEditor) {
             if (!Array.isArray(existingSchema) || existingSchema.length === 0) {
-                el.setAttribute('data-gbn-schema', JSON.stringify(defaults.schema || []));
+                // el.setAttribute('data-gbn-schema', JSON.stringify(defaults.schema || []));
             }
         }
     }

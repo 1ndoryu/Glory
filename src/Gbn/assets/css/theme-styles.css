@@ -98,7 +98,7 @@
    Consumes Theme Variables (Level 3) to apply defaults.
 */
 
-:where([gloryDiv]), [data-gbn-role="principal"] {
+:where([gloryDiv], .primario), [data-gbn-role="principal"] {
     /* Layout & Flex Defaults */
     display: var(--gbn-principal-display, flex);
     flex-direction: var(--gbn-principal-flex-direction, row);
@@ -126,7 +126,7 @@
     margin-right: auto;
 }
 
-:where([gloryDivSecundario]), [data-gbn-role="secundario"] {
+:where([gloryDivSecundario], .secundario), [data-gbn-role="secundario"] {
     /* Layout & Flex Defaults */
     display: var(--gbn-secundario-display, flex);
     flex-direction: var(--gbn-secundario-flex-direction, column);
@@ -153,14 +153,14 @@
 }
 
 /* Image Component */
-:where([gloryImage]) {
+:where([gloryImage], .gbn-image) {
     display: inline-block;
     position: relative;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-:where([gloryImage]) img {
+:where([gloryImage], .gbn-image) img {
     display: block;
     width: 100%;
     height: auto;
