@@ -181,6 +181,27 @@
         // Page Defaults
         if (settings.pages) {
             setOrRemove('--gbn-page-bg', settings.pages.background);
+            setOrRemoveValue('--gbn-page-max-width', settings.pages.maxAncho);
+            
+            if (settings.pages.padding) {
+                var p = settings.pages.padding;
+                if (typeof p === 'object') {
+                    setOrRemoveValue('--gbn-page-pt', p.superior);
+                    setOrRemoveValue('--gbn-page-pr', p.derecha);
+                    setOrRemoveValue('--gbn-page-pb', p.inferior);
+                    setOrRemoveValue('--gbn-page-pl', p.izquierda);
+                } else {
+                    setOrRemoveValue('--gbn-page-pt', p);
+                    setOrRemoveValue('--gbn-page-pr', p);
+                    setOrRemoveValue('--gbn-page-pb', p);
+                    setOrRemoveValue('--gbn-page-pl', p);
+                }
+            } else {
+                 root.style.removeProperty('--gbn-page-pt');
+                 root.style.removeProperty('--gbn-page-pr');
+                 root.style.removeProperty('--gbn-page-pb');
+                 root.style.removeProperty('--gbn-page-pl');
+            }
         }
         
         

@@ -63,6 +63,11 @@ class Option
         return new self('code', $id, $label);
     }
 
+    public static function dimensions(string $id, string $label): self
+    {
+        return new self('dimensions', $id, $label);
+    }
+
     public function default($value): self
     {
         $this->data['defecto'] = $value;

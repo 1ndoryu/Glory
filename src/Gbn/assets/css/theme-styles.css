@@ -1,10 +1,19 @@
 /* Theme Styles - Maps GBN variables to content elements */
 
 :where([data-gbn-root]) {
-    background-color: var(--gbn-bg);
+    background-color: var(--gbn-page-bg, var(--gbn-bg));
     color: var(--gbn-text-color);
     font-family: var(--gbn-text-font);
     font-size: var(--gbn-text-size);
+    
+    /* Page Defaults */
+    max-width: var(--gbn-page-max-width, 100%);
+    padding-top: var(--gbn-page-pt, 0px);
+    padding-right: var(--gbn-page-pr, 0px);
+    padding-bottom: var(--gbn-page-pb, 0px);
+    padding-left: var(--gbn-page-pl, 0px);
+    margin-left: auto;
+    margin-right: auto;
 }
 
 :where([data-gbn-root]) p {
@@ -141,4 +150,19 @@
     text-align: var(--gbn-secundario-alineacion, inherit);
     
     box-sizing: border-box;
+}
+
+/* Image Component */
+:where([gloryImage]) {
+    display: inline-block;
+    position: relative;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+:where([gloryImage]) img {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: var(--gbn-img-object-fit, cover);
 }

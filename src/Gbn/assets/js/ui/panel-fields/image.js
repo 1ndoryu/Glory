@@ -106,6 +106,10 @@
                 preview.style.display = 'block';
             } else {
                 input.placeholder = field.defecto || '';
+                if (field.defecto) {
+                    preview.src = field.defecto;
+                    preview.style.display = 'block';
+                }
             }
         } else {
             wrapper.classList.add('gbn-field-override');

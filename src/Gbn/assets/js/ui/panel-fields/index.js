@@ -49,6 +49,12 @@
                 return Gbn.ui.richTextField && Gbn.ui.richTextField.build(block, field);
             case 'image':
                 return Gbn.ui.imageField && Gbn.ui.imageField.build(block, field);
+            case 'dimensions':
+                if (Gbn.ui.panelFields.registry) {
+                    return Gbn.ui.panelFields.registry.get('dimensions')(block, field);
+                }
+                console.warn('Registry not found for dimensions field');
+                return null;
             case 'text':
             default:
                 return Gbn.ui.textField && Gbn.ui.textField.build(block, field);
@@ -56,18 +62,19 @@
     }
 
     // API pública compatible con la versión anterior
-    Gbn.ui.panelFields = {
-        buildField: buildField,
-        // Alias para compatibilidad
-        addSyncIndicator: function(wrapper, block, fieldId) {
-            if (Gbn.ui.fieldSync && Gbn.ui.fieldSync.addSyncIndicator) {
-                return Gbn.ui.fieldSync.addSyncIndicator(wrapper, block, fieldId);
-            }
-        },
-        updatePlaceholdersFromTheme: function(role, property, newValue) {
-            if (Gbn.ui.fieldSync && Gbn.ui.fieldSync.updatePlaceholdersFromTheme) {
-                return Gbn.ui.fieldSync.updatePlaceholdersFromTheme(role, property, newValue);
-            }
+    Gbn.ui.panelFields = Gbn.ui.panelFields || {};
+    Gbn.ui.panelFields.buildField = buildField;
+    
+    // Alias para compatibilidad
+    Gbn.ui.panelFields.addSyncIndicator = function(wrapper, block, fieldId) {
+        if (Gbn.ui.fieldSync && Gbn.ui.fieldSync.addSyncIndicator) {
+            return Gbn.ui.fieldSync.addSyncIndicator(wrapper, block, fieldId);
+        }
+    };
+    
+    Gbn.ui.panelFields.updatePlaceholdersFromTheme = function(role, property, newValue) {
+        if (Gbn.ui.fieldSync && Gbn.ui.fieldSync.updatePlaceholdersFromTheme) {
+            return Gbn.ui.fieldSync.updatePlaceholdersFromTheme(role, property, newValue);
         }
     };
 

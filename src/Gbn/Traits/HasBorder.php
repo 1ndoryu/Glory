@@ -72,7 +72,6 @@ trait HasBorder
         $builder->addOption(
             Option::text('borderRadius', 'Radio de Borde')
                 ->tab($tab)
-                ->condition('hasBorder', true)
                 ->description('Ej: 4px, 8px, 50px')
         );
     }

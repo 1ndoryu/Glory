@@ -36,7 +36,11 @@ class GbnManager
         // Registrar endpoints AJAX de GBN en init
         add_action('init', [GbnManager::class, 'registerAjax']);
         add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);
+        add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);
         // add_action('wp_footer', [self::class, 'injectEditButtons'], 5);
+
+        // Filter frontend content to remove internal GBN attributes
+        add_filter('the_content', [self::class, 'filterFrontendContent'], 20);
     }
 
     public static function registerAjax(): void
@@ -305,6 +309,10 @@ class GbnManager
                 'file' => '/js/ui/panel-fields/image.js',
                 'deps' => ['glory-gbn-ui-fields-utils'],
             ],
+            'glory-gbn-ui-fields-dimensions' => [
+                'file' => '/js/ui/panel-fields/dimensions.js',
+                'deps' => ['glory-gbn-ui-fields-utils'],
+            ],
             'glory-gbn-ui-fields-index' => [
                 'file' => '/js/ui/panel-fields/index.js',
                 'deps' => [
@@ -321,6 +329,7 @@ class GbnManager
                     'glory-gbn-ui-fields-fraction',
                     'glory-gbn-ui-fields-rich-text',
                     'glory-gbn-ui-fields-image',
+                    'glory-gbn-ui-fields-dimensions',
                 ],
             ],
             // Wrapper de compatibilidad
@@ -512,4 +521,30 @@ class GbnManager
     }
 
     // injectEditButtons removed as it is no longer needed
+
+    /**
+     * Filters the frontend content to remove internal GBN attributes
+     * that shouldn't be visible to non-admin users.
+     *
+     * @param string $content
+     * @return string
+     */
+    public static function filterFrontendContent($content)
+    {
+        // Don't filter for editors or builder frame
+        if (current_user_can('edit_posts') || isset($_GET['fb-edit']) || self::isBuilderActive()) {
+            return $content;
+        }
+
+        // List of attributes to strip
+        // glorydiv, glorydivsecundario, etc are markers
+        // data-gbn-* are internal data
+        // We preserve data-gbn-id as it might be used for frontend interactions (anchors, etc)
+        $patterns = [
+            '/ (glory[a-zA-Z0-9]+)(=".*?")?/',
+            '/ (data-gbn-schema|data-gbn-config|data-gbn-role|data-gbnprincipal|data-gbnsecundario)(=".*?")?/'
+        ];
+
+        return preg_replace($patterns, '', $content);
+    }
 }

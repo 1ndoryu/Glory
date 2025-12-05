@@ -393,7 +393,8 @@
                 schema = [
                     { tipo: 'header', etiqueta: 'Defaults de Página' },
                     { tipo: 'color', id: 'pages.background', etiqueta: 'Fondo Default', defecto: '#ffffff' },
-                    { tipo: 'spacing', id: 'pages.padding', etiqueta: 'Padding Default', defecto: 20 }
+                    { tipo: 'spacing', id: 'pages.padding', etiqueta: 'Padding Default', defecto: 20 },
+                    { tipo: 'text', id: 'pages.maxAncho', etiqueta: 'Ancho Máximo', defecto: '100%' }
                 ];
             } else if (sectionId === 'components') {
                 // Component List & Detail View Logic
@@ -613,12 +614,13 @@
                     renderFields();
                     
                     // Escuchar cambios de config para re-renderizar campos condicionales
-                    if (configChangeHandler) {
-                        window.removeEventListener('gbn:configChanged', configChangeHandler);
+                    // Escuchar cambios de config para re-renderizar campos condicionales
+                    if (activeConfigChangeHandler) {
+                        window.removeEventListener('gbn:configChanged', activeConfigChangeHandler);
                     }
                     
                     var conditionalFields = ['layout', 'display_mode'];
-                    configChangeHandler = function(e) {
+                    activeConfigChangeHandler = function(e) {
                         if (!componentState.currentDetailRole) return;
                         var detail = e.detail || {};
                         if (detail.id === 'theme-settings') {
@@ -631,7 +633,7 @@
                             }
                         }
                     };
-                    window.addEventListener('gbn:configChanged', configChangeHandler);
+                    window.addEventListener('gbn:configChanged', activeConfigChangeHandler);
                 };
                 
                 // Exponer renderComponentDetail en componentState para acceso desde listener
@@ -670,6 +672,9 @@
         }
     }
 
+    // Variable para rastrear el handler del evento y permitir su limpieza
+    var activeConfigChangeHandler = null;
+
     /**
      * [FIX] Función para resetear el estado de Theme Settings
      * Debe llamarse cuando se cierra el panel para evitar estados residuales
@@ -678,6 +683,12 @@
         componentState.currentDetailRole = null;
         componentState.renderComponentDetail = null;
         currentView = 'menu';
+        
+        // [FIX] Limpiar listener para evitar memory leaks y zombies
+        if (activeConfigChangeHandler) {
+            window.removeEventListener('gbn:configChanged', activeConfigChangeHandler);
+            activeConfigChangeHandler = null;
+        }
     }
 
     Gbn.ui.theme.render = {

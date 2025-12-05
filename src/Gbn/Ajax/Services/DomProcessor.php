@@ -71,6 +71,15 @@ class DomProcessor
                         $node->setAttribute('class', trim($classes . ' secundario'));
                     }
                 }
+
+                // Clean heavy internal attributes that shouldn't be in the DB
+                // These are reconstructed from post_meta or defaults
+                $node->removeAttribute('data-gbn-schema');
+                $node->removeAttribute('data-gbn-config');
+
+                // Cleanup editor-only attributes
+                $node->removeAttribute('draggable');
+                $node->removeAttribute('data-gbn-ready');
             }
         }
         

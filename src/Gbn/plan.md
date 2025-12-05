@@ -457,16 +457,19 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 
 ### Bugs Pendientes y Tareas Nuevas (Dic 2025) 
 
-#### ✅ Bug Crítico: Docking Persistente (Theme Settings) - RESUELTO
+#### ✅ Bug Crítico: Docking Persistente (Theme Settings) - RESUELTO (V4 - Async Guard & Memory Leak Fix)
 - **Problema:** Al cerrar el panel de configuración de tema, el ancho de la página no regresaba a su normalidad (se quedaba contraído).
-- **Causa Raíz:** El estado de Theme Settings (variables globales `componentState` y `currentView`) no se reseteaba al cerrar el panel, causando conflictos en la gestión del docking.
-- **Solución Implementada:**
-    1. Agregada función `resetThemeSettingsState()` en `render.js` que resetea el estado global.
-    2. Modificada función `close()` en `panel-core.js` para llamar a `resetState()` cuando el panel estaba en modo `theme`.
-    3. Verificación adicional para asegurar que la clase `gbn-panel-open` siempre se remueva del body.
+- **Causa Raíz:**
+    1. **Race Condition:** Si el usuario cerraba el panel antes de que terminara la carga asíncrona (`getThemeSettings`), el callback se ejecutaba después del cierre, reactivando lógica indebida.
+    2. **Memory Leak:** El listener `gbn:configChanged` nunca se removía, acumulando handlers zombies.
+    3. **Fragilidad:** Si `cleanupCurrentMode` fallaba, el cierre se abortaba antes de limpiar la clase del body.
+- **Solución V4 - Defensa en Profundidad:**
+    1. **Async Guard:** `renderThemePanel` y `renderPagePanel` ahora verifican `if (panelMode !== 'theme') return;` antes de procesar respuestas asíncronas.
+    2. **Memory Leak Fix:** Implementada variable `activeConfigChangeHandler` y limpieza explícita en `resetThemeSettingsState`.
+    3. **Robust Close:** `cleanupCurrentMode` envuelto en `try-catch` para garantizar que `document.body.classList.remove('gbn-panel-open')` SIEMPRE se ejecute.
 - **Archivos Modificados:**
-    - `Glory/src/Gbn/assets/js/ui/theme/render.js`
-    - `Glory/src/Gbn/assets/js/ui/panel-core.js`
+    - `Glory/src/Gbn/assets/js/ui/panel-core.js` (Async Guards + Try-Catch Close)
+    - `Glory/src/Gbn/assets/js/ui/theme/render.js` (Listener Cleanup)
 
 #### ✅ Bug: Colores de Paleta Global en Negro - RESUELTO
 - **Problema:** En Theme Settings > Colores > Paleta Global, todos los colores aparecían en negro.
@@ -477,9 +480,49 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 - **Archivos Modificados:**
     - `Glory/src/Gbn/assets/js/ui/panel-fields/color.js`
 
-#### 📝 Tarea: Documentación de Colores Globales (para opus, no geminis)
+#### ✅ Tarea: Documentación de Colores Globales 
 - **Objetivo:** Documentar cómo agregar colores globales desde CSS directamente.
+- **Estado:** Completado. Se agregó la sección 10 en `documentación-gbn.md` explicando el flujo unidireccional y el uso de variables CSS.
 
-#### ⚙️ Tarea: Opción Faltante en Defaults de Página
+#### ✅ Tarea: Opción Faltante en Defaults de Página
 - **Objetivo:** Agregar opción "Ancho Máximo" en la sección Defaults de Página. Revisar si esto requiere refactorizacion debido a todos los cambios.
+- **Solución:** 
+    - Agregado campo `maxAncho` en `render.js`.
+    - Actualizado `applicator.js` para manejar `maxAncho` y `padding` en defaults de página.
+    - Actualizado `theme-styles.css` para consumir las variables `--gbn-page-max-width` y padding.
 
+#### ✅ Bug: Placeholder de Imagen Roto y Gigante
+- **Problema:** El placeholder del componente imagen no funcionaba, usaba URL externa y ocupaba toda la pantalla.
+- **Solución:** 
+    - Actualizado `ImageComponent.php` para usar el SVG local `landscape-placeholder.svg`.
+    - Agregado `maxWidth` (default: 100%) y `maxHeight` al esquema y defaults de `ImageComponent`.
+    - Actualizado template de imagen para incluir `style="max-width: 100%; height: auto;"` por defecto.
+    - Actualizado `image.js` (panel field) para mostrar el preview del valor por defecto.
+    - Actualizado `image.js` (renderer) para manejar `maxWidth` y `maxHeight`.
+
+#### ✅ Bug: Visibilidad de Atributos Internos (Data Leak)
+- **Problema:** Usuarios no logueados podían ver atributos internos como `glorydiv`, `data-gbn-schema`, `data-gbn-config` en el HTML.
+- **Solución:** 
+    - **Persistencia:** `DomProcessor` ahora elimina explícitamente `data-gbn-schema` y `data-gbn-config` antes de guardar en la DB.
+    - **Frontend:** Implementado filtro `the_content` en `GbnManager` que elimina regex de atributos internos (`glory*`, `data-gbn*`) para usuarios sin permisos de edición.
+
+#### ✅ Bug: Estilos de Borde en Imagen
+- **Problema:** Al aplicar `border-radius` al componente de imagen, el recorte no se aplicaba visualmente porque el estilo estaba en el contenedor wrapper pero la imagen interna rectangular se desbordaba.
+- **Solución:**
+    - Actualizado `image.js` (renderer) para aplicar automáticamente `overflow: hidden` al wrapper cuando existe `border-radius`.
+    - Esto asegura que el `border-radius` del wrapper recorte correctamente la imagen interna.
+
+#### ✅ Mejora: Componente Imagen (Borde y UI)
+- **Cambio:** Integrado trait `HasBorder` en `ImageComponent` para opciones completas de borde.
+- **Cambio:** Implementado nuevo campo UI `dimensions` (`dimensions.js`) para agrupar visualmente Width/Height en una rejilla compacta.
+- **Cambio:** `objectFit` actualizado a `Option::iconGroup` con iconos SVG representativos (Cover, Contain, Fill, etc.).
+- **Fix:** `object-fit` ahora funciona correctamente al forzar `height: 100%` en la etiqueta `<img>` y usar variables CSS.
+- **Fix:** Corregido error fatal por falta de `use HasBorder` en `ImageComponent.php`.
+- **UX Borde:** `borderRadius` ahora es visible independientemente del toggle de borde.
+- **Ajuste:** Tamaño por defecto de imagen reducido a 200x200px (wrapper e imagen).
+- **Fix:** Evitada sobreescritura de objeto `Gbn.ui.panelFields` en `index.js` para preservar `registry`.
+- **Fix:** Encolado script `dimensions.js` en `GbnManager.php` para asegurar su carga y registro.
+
+#### ✅ Tarea: Verificación de Limpieza HTML
+- **Objetivo:** Verificar y eliminar atributos innecesarios en el HTML final (`draggable`, `data-gbn-ready`) para asegurar una salida limpia, sin romper la hidratación del editor.
+- **Estado:** Completado. Se eliminan `draggable` y `data-gbn-ready` en `DomProcessor`.
