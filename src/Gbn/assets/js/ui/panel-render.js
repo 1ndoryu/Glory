@@ -31,6 +31,25 @@
             var map = Gbn.ui.fieldUtils ? Gbn.ui.fieldUtils.CONFIG_TO_CSS_MAP : {};
             var cssProp = map[path];
             
+            // [BUG FIX] Manejo explícito para spacing (padding.*, margin.*)
+            // Estos paths usan nombres en español que deben traducirse a CSS camelCase
+            if (!cssProp && (path.indexOf('padding.') === 0 || path.indexOf('margin.') === 0)) {
+                var parts = path.split('.');
+                var spType = parts[0]; // 'padding' o 'margin'
+                var dir = parts[1]; // 'superior', 'derecha', 'inferior', 'izquierda'
+                
+                var dirMap = {
+                    'superior': 'Top',
+                    'derecha': 'Right',
+                    'inferior': 'Bottom',
+                    'izquierda': 'Left'
+                };
+                
+                if (dirMap[dir]) {
+                    cssProp = spType + dirMap[dir]; // 'paddingTop', 'marginRight', etc.
+                }
+            }
+            
             // Si no hay mapeo explícito, usar el último segmento del path
             // Esto permite que propiedades directas como 'color', 'transform' funcionen
             if (!cssProp) {
@@ -114,7 +133,9 @@
                 // guardar el valor en la config del state para que:
                 // 1. El valor persista al guardar
                 // 2. Los campos condicionados (como opciones de borde) puedan evaluar sus condiciones
-                var current = cloneConfig(block.config);
+                // [BUG FIX] Usar bloque fresco del store para evitar pérdida de datos
+                var freshBlock = state.get(block.id) || block;
+                var current = cloneConfig(freshBlock.config);
                 var segments = path.split('.');
                 var cursor = current;
                 for (var i = 0; i < segments.length - 1; i += 1) {
@@ -176,7 +197,9 @@
         var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
         
         if (breakpoint !== 'desktop' && Gbn.responsive && Gbn.responsive.setResponsiveValue) {
-            var current = cloneConfig(block.config);
+            // [BUG FIX] Mismo fix que abajo: usar bloque fresco del store
+            var freshBlock = state.get(block.id) || block;
+            var current = cloneConfig(freshBlock.config);
             
             // Usar helper para escribir en la estructura correcta dentro de current
             // Pasamos un objeto mock {config: current} porque setResponsiveValue espera block.config
@@ -216,7 +239,13 @@
         }
 
         // 3. Generic Desktop Logic
-        var current = cloneConfig(block.config);
+        // [BUG FIX] El bloque pasado a los campos del panel es una referencia capturada
+        // en el momento de renderizado del panel. Esta referencia NO se actualiza cuando
+        // el usuario hace cambios. Por lo tanto, debemos obtener el bloque fresco del store.
+        // Sin este fix, al editar padding-top y luego padding-bottom, el segundo update
+        // clonaba la config vieja (sin padding-top) causando pérdida de datos.
+        var freshBlock = state.get(block.id) || block;
+        var current = cloneConfig(freshBlock.config);
         var segments = path.split('.');
         var cursor = current;
 

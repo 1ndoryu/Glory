@@ -375,6 +375,38 @@ Gbn.styleManager.clearAllStates(block);
 2. **Cache**: Resultados cacheados 5 segundos
 3. **Rendimiento**: Parsing inicial toma algunos ms en páginas grandes
 
+### Persistencia de Estados (CRÍTICO)
+
+> [!CAUTION]
+> **Bug frecuente:** Una propiedad funciona en tiempo real en hover/focus pero NO persiste después de guardar.
+
+**Causa:** La propiedad CSS no está en la lista `cssDirectProps` de `style-generator.js`.
+
+**Cómo funciona la persistencia:**
+1. Al editar en hover/focus, `panel-render.js` guarda el valor en `config._states.hover.{cssProp}`
+2. Al guardar, `style-generator.js` genera CSS usando `extractStyles()`
+3. `extractStyles()` solo procesa propiedades listadas en `cssDirectProps`
+4. Si la propiedad no está en la lista → No se genera CSS → No persiste
+
+**Solución:** Agregar la propiedad CSS (camelCase) a `cssDirectProps`:
+
+```javascript
+// style-generator.js - Lista de propiedades que persisten en estados
+var cssDirectProps = [
+    'backgroundColor', 'color', 'borderColor', 'borderWidth', 'borderStyle', 
+    'borderRadius', 'transform', 'transition', 'opacity', 'boxShadow',
+    'textDecoration', 'cursor', 'fontWeight', 'fontSize', 'fontFamily',
+    'lineHeight', 'letterSpacing', 'textTransform', 'textShadow',
+    'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'marginTop', 'marginRight', 'marginBottom', 'marginLeft'
+];
+```
+
+**Checklist para nuevas propiedades en estados:**
+- [ ] Agregar a `cssDirectProps` en `style-generator.js`
+- [ ] Verificar mapeo en `panel-render.js` (líneas 36-51)
+- [ ] Probar ciclo completo: editar → guardar → recargar → verificar
+
 ---
 
 ## 10. Colores Globales

@@ -52,6 +52,8 @@
 | 🛡️ 10 | Crash JSON Circular                     | Excluir DOM de serialización                              | `persistence.js`                        |
 | 🛡️ 11 | Grid Columns sin unidades               | Lista `UNITLESS_PROPERTIES`                               | `applicator.js`                         |
 | 🛡️ 15 | MockBlocks sin elemento DOM             | Verificar `block.element` antes de `getComputedStyle`     | `color.js`                              |
+| 🛡️ 16 | Stale Block Reference (Pérdida datos)   | `state.get(block.id)` antes de `cloneConfig()`            | `panel-render.js`                       |
+| 🛡️ 17 | Estados sin propiedades CSS             | Agregar props a `cssDirectProps` en `style-generator.js`  | `style-generator.js`                    |
 
 **Checklist Obligatorio (Pre-Código):**
 - [ ] No defaults duros en JS
@@ -69,6 +71,8 @@
 - [ ] `overflow:hidden` con border-radius
 - [ ] Estado solo en memoria
 - [ ] Verificar `block.element`
+- [ ] Usar `state.get()` antes de clonar config
+- [ ] Nuevas props CSS en estados → agregar a `cssDirectProps`
 
 ---
 
@@ -134,6 +138,9 @@
 - ✅ **CSS Specificity Normalizada**: `:where()` en `init.css`
 
 #### Bugs Resueltos (Últimos)
+- ✅ **Hover/Focus Spacing - Persistencia**: Al editar padding/margin en estados hover/focus, los valores funcionaban en tiempo real pero NO persistían después de guardar. El problema era que `extractStyles()` en `style-generator.js` no incluía las propiedades de spacing camelCase (`paddingTop`, `marginLeft`, etc.) en la lista `cssDirectProps`. Solución: agregar propiedades `paddingTop/Right/Bottom/Left` y `marginTop/Right/Bottom/Left` a `cssDirectProps`.
+- ✅ **Hover/Focus Spacing - Padding/Margin no funcionaban en estados**: Los paths como `padding.superior` no se mapeaban correctamente a propiedades CSS (`paddingTop`) al editar estados hover/focus. El código usaba el último segmento del path (`superior`) en lugar de la propiedad CSS correcta. Solución: manejo explícito para paths de spacing que traduce direcciones en español a CSS camelCase.
+- ✅ **Stale Block Reference - Pérdida de valores de spacing/margin**: Al editar padding-top y luego padding-bottom, el segundo valor sobrescribía el primero porque la referencia del bloque pasada a los campos del panel era una captura del momento de renderizado. Solución: usar `state.get(block.id)` antes de `cloneConfig()` para obtener el bloque fresco del store.
 - ✅ **Atributos glory* - Estilos rotos en frontend**: Los atributos `glory*` se limpiaban para usuarios no editores, rompiendo selectores CSS. Solución: preservar `glory*` en el HTML final (solo limpiar `data-gbn-schema/config`). Fix adicional en `dom.js` para verificación case-insensitive de atributos existentes.
 - ✅ **PostRenderProcessor - Duplicación de posts en frontend**: El procesador no detectaba contenido ya procesado, causando multiplicación de posts en cada recarga. Se añadió detección de PostItems con `data-post-id` y extracción del template original (primer PostItem) limpiando atributos de datos previos.
 - ✅ PostField - Hidratación en panel (lectura de `gloryPostField`)
@@ -150,6 +157,12 @@
 ---
 
 ## 4. Roadmap de Trabajo Futuro
+
+### 🐛 Bugs Pendientes
+
+(Sin bugs pendientes actualmente)
+
+---
 
 ### ⏳ Pendientes Confirmados
 

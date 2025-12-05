@@ -266,6 +266,7 @@ Antes de escribir código nuevo:
 - [ ] `overflow:hidden` automático con `border-radius`
 - [ ] Estado solo en memoria (`state.js`), no en atributos DOM
 - [ ] Verificar `block.element` existe antes de `getComputedStyle`
+- [ ] Nuevas props CSS editables en estados → agregar a `cssDirectProps`
 
 ---
 
@@ -278,6 +279,28 @@ Antes de escribir código nuevo:
 3. Si usa unidades especiales (%, vh), implementar conversión en el campo
 4. Si tiene default en PHP, verificar que no bloquee lectura del DOM
 5. Si es unitless, agregar a `UNITLESS_PROPERTIES`
+6. **Si es editable en estados hover/focus**, agregar a `cssDirectProps` en `style-generator.js`
+
+### Añadir Propiedad Editable en Estados (Hover/Focus)
+
+> [!CAUTION]
+> Sin este paso, la propiedad funcionará en tiempo real pero **NO persistirá** después de guardar.
+
+1. Agregar la propiedad CSS (camelCase) a `cssDirectProps` en `style-generator.js`
+2. Verificar que `panel-render.js` mapea correctamente el path a la propiedad CSS
+3. Probar: editar propiedad en hover → guardar → recargar → verificar que persiste
+
+**Lista actual de `cssDirectProps` (style-generator.js):**
+```javascript
+var cssDirectProps = [
+    'backgroundColor', 'color', 'borderColor', 'borderWidth', 'borderStyle', 
+    'borderRadius', 'transform', 'transition', 'opacity', 'boxShadow',
+    'textDecoration', 'cursor', 'fontWeight', 'fontSize', 'fontFamily',
+    'lineHeight', 'letterSpacing', 'textTransform', 'textShadow',
+    'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'marginTop', 'marginRight', 'marginBottom', 'marginLeft'
+];
+```
 
 ### Crear Nuevo Componente
 

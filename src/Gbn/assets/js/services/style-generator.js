@@ -151,11 +151,19 @@
             // === PROPIEDADES CSS PLANAS (camelCase) ===
             // Los estados (_states.hover, _states.focus) guardan propiedades CSS directamente
             // en camelCase. Las convertimos a kebab-case para el CSS final.
+            // 
+            // [BUG FIX] Agregadas propiedades de spacing (padding*, margin*) que se guardan
+            // en camelCase cuando el usuario edita spacing en estados hover/focus.
+            // Sin estas propiedades, el CSS generado no incluía padding-top, margin-left, etc.
+            // causando que los estilos no persistieran después de guardar.
             var cssDirectProps = [
                 'backgroundColor', 'color', 'borderColor', 'borderWidth', 'borderStyle', 
                 'borderRadius', 'transform', 'transition', 'opacity', 'boxShadow',
                 'textDecoration', 'cursor', 'fontWeight', 'fontSize', 'fontFamily',
-                'lineHeight', 'letterSpacing', 'textTransform', 'textShadow'
+                'lineHeight', 'letterSpacing', 'textTransform', 'textShadow',
+                // Spacing (padding/margin) - necesarios para estados hover/focus
+                'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+                'marginTop', 'marginRight', 'marginBottom', 'marginLeft'
             ];
             
             cssDirectProps.forEach(function(prop) {
