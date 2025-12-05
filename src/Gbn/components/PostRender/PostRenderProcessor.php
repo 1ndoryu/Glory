@@ -34,15 +34,22 @@ class PostRenderProcessor
     private string $template;
 
     /**
+     * Atributos del editor GBN a preservar en el contenedor.
+     */
+    private array $editorAttrs;
+
+    /**
      * Constructor.
      * 
      * @param array $config Configuración del PostRender
      * @param string $template HTML del PostItem template
+     * @param array $editorAttrs Atributos del editor GBN a preservar
      */
-    public function __construct(array $config, string $template)
+    public function __construct(array $config, string $template, array $editorAttrs = [])
     {
         $this->config = $config;
         $this->template = $template;
+        $this->editorAttrs = $editorAttrs;
         $this->instanceClass = 'gbn-pr-' . substr(md5(uniqid('', true)), 0, 8);
     }
 
@@ -79,6 +86,12 @@ class PostRenderProcessor
         // 5. Construir contenedor
         $containerStyles = $this->getContainerStyles();
         $containerAttrs = $this->getContainerAttributes();
+        
+        // Agregar atributos del editor si existen
+        $editorAttrsStr = '';
+        foreach ($this->editorAttrs as $attr => $value) {
+            $editorAttrsStr .= sprintf(' %s="%s"', esc_attr($attr), esc_attr($value));
+        }
 
         $html = '';
         
@@ -90,11 +103,12 @@ class PostRenderProcessor
         // Filtro de categorías
         $html .= $categoryFilter;
 
-        // Contenedor
+        // Contenedor con atributos del editor preservados
         $html .= sprintf(
-            '<div class="%s" %s style="%s">%s</div>',
+            '<div class="%s" %s%s style="%s">%s</div>',
             esc_attr($this->instanceClass . ' gbn-post-render'),
             $containerAttrs,
+            $editorAttrsStr,
             esc_attr($containerStyles),
             $items
         );
@@ -128,6 +142,7 @@ class PostRenderProcessor
 
     /**
      * Procesa todos los campos [gloryPostField] en el template.
+     * Usa DOMDocument para manejar HTML anidado correctamente.
      * 
      * @param string $html HTML del template
      * @param WP_Post $post Post actual
@@ -135,48 +150,106 @@ class PostRenderProcessor
      */
     private function processPostFields(string $html, WP_Post $post): string
     {
-        // Usar regex para encontrar elementos con gloryPostField
-        $pattern = '/<([a-z0-9]+)([^>]*)\s+gloryPostField="([^"]+)"([^>]*)>([^<]*)<\/\1>/i';
+        // Envolver en un contenedor para que DOMDocument no agregue html/body
+        $wrappedHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="gbn-temp-wrapper">' . $html . '</div></body></html>';
         
-        return preg_replace_callback($pattern, function ($matches) use ($post) {
-            $tag = $matches[1];
-            $attrsBefore = $matches[2];
-            $fieldType = $matches[3];
-            $attrsAfter = $matches[4];
-            $originalContent = $matches[5];
+        $doc = new DOMDocument();
+        $doc->encoding = 'UTF-8';
+        // Suprimir warnings por HTML5 tags y preservar encoding
+        libxml_use_internal_errors(true);
+        $doc->loadHTML($wrappedHtml, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
 
-            // Parsear opciones del campo si existen
-            $config = $this->parseFieldConfig($attrsBefore . $attrsAfter);
+        $xpath = new DOMXPath($doc);
+        
+        // Buscar todos los elementos con atributo gloryPostField o glorypostfield (DOMDocument convierte a minúsculas)
+        $nodes = $xpath->query('//*[@glorypostfield or @gloryPostField]');
+        
+        foreach ($nodes as $node) {
+            // Obtener el tipo de campo (probar ambos casos)
+            $fieldType = $node->hasAttribute('glorypostfield') 
+                ? $node->getAttribute('glorypostfield')
+                : $node->getAttribute('gloryPostField');
+            
+            // Parsear opciones si existen
+            $config = [];
+            if ($node->hasAttribute('opciones')) {
+                $config = $this->parseFieldConfig('opciones="' . $node->getAttribute('opciones') . '"');
+            }
             $config['fieldType'] = $fieldType;
-
-            // Renderizar contenido
+            
+            // Caso especial: imagen destacada
+            if ($fieldType === 'featuredImage') {
+                if (has_post_thumbnail($post)) {
+                    $size = $config['imageSize'] ?? 'medium';
+                    $imgUrl = get_the_post_thumbnail_url($post, $size);
+                    
+                    // Buscar la etiqueta img dentro y actualizar su src
+                    $imgNodes = $node->getElementsByTagName('img');
+                    if ($imgNodes->length > 0) {
+                        $imgNodes->item(0)->setAttribute('src', $imgUrl);
+                        $imgNodes->item(0)->setAttribute('alt', esc_attr(get_the_title($post)));
+                    } else {
+                        // Si no hay img, crear una
+                        $img = $doc->createElement('img');
+                        $img->setAttribute('src', $imgUrl);
+                        $img->setAttribute('alt', esc_attr(get_the_title($post)));
+                        $img->setAttribute('style', 'width: 100%; height: 100%; object-fit: cover;');
+                        $img->setAttribute('loading', 'lazy');
+                        // Limpiar contenido existente y agregar imagen
+                        while ($node->firstChild) {
+                            $node->removeChild($node->firstChild);
+                        }
+                        $node->appendChild($img);
+                    }
+                }
+                continue;
+            }
+            
+            // Caso especial: título con enlace
+            if ($fieldType === 'title') {
+                $title = get_the_title($post);
+                $permalink = get_permalink($post);
+                
+                // Buscar si hay un <a> dentro
+                $linkNodes = $node->getElementsByTagName('a');
+                if ($linkNodes->length > 0) {
+                    $linkNodes->item(0)->setAttribute('href', $permalink);
+                    // Reemplazar el texto del enlace
+                    $linkNodes->item(0)->textContent = $title;
+                } else {
+                    // Si no hay enlace, solo poner el título
+                    $node->textContent = $title;
+                }
+                continue;
+            }
+            
+            // Caso especial: enlace directo
+            if ($fieldType === 'link') {
+                $node->setAttribute('href', get_permalink($post));
+                continue;
+            }
+            
+            // Renderizar otros campos
             $content = PostFieldComponent::renderField($post, $config);
             
-            // Si no hay contenido, usar el texto original (placeholder)
-            if (empty($content)) {
-                $content = $originalContent;
+            if (!empty($content)) {
+                // Para campos simples, reemplazar el contenido
+                $node->textContent = $content;
             }
-
-            // Caso especial: imágenes
-            if ($fieldType === 'featuredImage' && has_post_thumbnail($post)) {
-                return $this->renderFeaturedImageContainer($post, $attrsBefore, $attrsAfter, $config);
+        }
+        
+        // Extraer el HTML del wrapper
+        $wrapper = $doc->getElementById('gbn-temp-wrapper');
+        if ($wrapper) {
+            $result = '';
+            foreach ($wrapper->childNodes as $child) {
+                $result .= $doc->saveHTML($child);
             }
-
-            // Caso especial: enlaces
-            if ($fieldType === 'link' || $tag === 'a') {
-                $attrsBefore .= ' href="' . esc_url(get_permalink($post)) . '"';
-            }
-
-            return sprintf(
-                '<%s%s gloryPostField="%s"%s>%s</%s>',
-                $tag,
-                $attrsBefore,
-                esc_attr($fieldType),
-                $attrsAfter,
-                $content,
-                $tag
-            );
-        }, $html);
+            return $result;
+        }
+        
+        return $html;
     }
 
     /**
@@ -299,17 +372,17 @@ class PostRenderProcessor
             $css[] = "{$class} { display: flex; flex-direction: {$direction}; flex-wrap: {$wrap}; align-items: {$align}; justify-content: {$justify}; gap: {$gap}; }";
         }
 
-        // Estilos de item (PostItem)
-        $css[] = "{$class} [gloryPostItem] { transition: box-shadow 0.3s ease, transform 0.3s ease; }";
+        // Estilos de item (PostItem) - usar minúsculas porque DOMDocument convierte atributos
+        $css[] = "{$class} [glorypostitem] { transition: box-shadow 0.3s ease, transform 0.3s ease; }";
         
         // Efecto hover del item
         $hoverEffect = $this->config['hoverEffect'] ?? 'none';
         if ($hoverEffect === 'lift') {
-            $css[] = "{$class} [gloryPostItem]:hover { box-shadow: 0 8px 16px rgba(0,0,0,0.1); transform: translateY(-4px); }";
+            $css[] = "{$class} [glorypostitem]:hover { box-shadow: 0 8px 16px rgba(0,0,0,0.1); transform: translateY(-4px); }";
         } elseif ($hoverEffect === 'scale') {
-            $css[] = "{$class} [gloryPostItem]:hover { transform: scale(1.02); }";
+            $css[] = "{$class} [glorypostitem]:hover { transform: scale(1.02); }";
         } elseif ($hoverEffect === 'glow') {
-            $css[] = "{$class} [gloryPostItem]:hover { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }";
+            $css[] = "{$class} [glorypostitem]:hover { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }";
         }
 
         return implode("\n", $css);
@@ -482,5 +555,123 @@ class PostRenderProcessor
     public function getInstanceClass(): string
     {
         return $this->instanceClass;
+    }
+
+    /**
+     * Procesa el contenido del frontend buscando componentes PostRender.
+     * Usa DOMDocument para manejar HTML anidado correctamente.
+     * 
+     * @param string $content Contenido de la página/post
+     * @return string Contenido procesado
+     */
+    public static function processContent(string $content): string
+    {
+        // Detección case-insensitive porque DOMDocument convierte a minúsculas
+        if (stripos($content, 'gloryPostRender') === false) {
+            return $content;
+        }
+
+        // Usar DOMDocument para parsing robusto de HTML anidado
+        $doc = new DOMDocument();
+        $doc->encoding = 'UTF-8';
+        libxml_use_internal_errors(true);
+        
+        // Preservar encoding UTF-8 usando meta charset (sin mb_convert_encoding deprecado)
+        $htmlWithMeta = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="gbn-root-wrapper">' . $content . '</div></body></html>';
+        $doc->loadHTML($htmlWithMeta, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+
+        $xpath = new DOMXPath($doc);
+        
+        // Buscar elementos con atributo glorypostrender (minúsculas - DOMDocument convierte)
+        // También buscar por gloryPostRender por si acaso
+        $postRenderNodes = $xpath->query('//*[@glorypostrender or @gloryPostRender]');
+        
+        if ($postRenderNodes->length === 0) {
+            return $content;
+        }
+        
+        foreach ($postRenderNodes as $node) {
+            // Parsear configuración desde el atributo opciones
+            $config = [];
+            if ($node->hasAttribute('opciones')) {
+                $opcionesStr = $node->getAttribute('opciones');
+                // Parsear formato key: 'value', key: value
+                preg_match_all("/(\w+):\s*'([^']*)'|(\w+):\s*([^,\s]+)/", $opcionesStr, $opts);
+                foreach ($opts[0] as $i => $match) {
+                    $key = !empty($opts[1][$i]) ? $opts[1][$i] : $opts[3][$i];
+                    $value = !empty($opts[2][$i]) ? $opts[2][$i] : $opts[4][$i];
+                    
+                    // Convertir booleanos y números
+                    if ($value === 'true') $value = true;
+                    if ($value === 'false') $value = false;
+                    if (is_numeric($value)) $value = $value + 0;
+                    
+                    $config[$key] = $value;
+                }
+            }
+
+            // Capturar atributos del editor GBN para preservarlos
+            $editorAttrs = [];
+            $attrsToPreserve = [
+                'class', 'data-gbn-id', 'data-gbn-role', 'data-gbn-post-render', 
+                'data-gbn-ready', 'data-gbn-schema', 'draggable', 'glorypostrender'
+            ];
+            
+            foreach ($attrsToPreserve as $attrName) {
+                if ($node->hasAttribute($attrName)) {
+                    $value = $node->getAttribute($attrName);
+                    // Para class, agregar gbn-node si no existe
+                    if ($attrName === 'class' && strpos($value, 'gbn-node') === false) {
+                        $value = 'gbn-node gbn-block ' . $value;
+                    }
+                    $editorAttrs[$attrName] = $value;
+                }
+            }
+
+            // Obtener el HTML interno (el template)
+            $innerHtml = '';
+            foreach ($node->childNodes as $child) {
+                $innerHtml .= $doc->saveHTML($child);
+            }
+            
+            // Crear el procesador y obtener el HTML renderizado (pasar atributos del editor)
+            $processor = new self($config, $innerHtml, $editorAttrs);
+            $renderedHtml = $processor->render();
+            
+            // Crear un fragmento con el nuevo HTML
+            $tempDoc = new DOMDocument();
+            $tempDoc->encoding = 'UTF-8';
+            libxml_use_internal_errors(true);
+            $tempDoc->loadHTML('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="temp-wrap">' . $renderedHtml . '</div></body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+            libxml_clear_errors();
+            
+            // Importar los nodos renderizados al documento principal
+            $tempWrapper = $tempDoc->getElementById('temp-wrap');
+            if ($tempWrapper) {
+                // Crear un fragmento para insertar múltiples nodos
+                $fragment = $doc->createDocumentFragment();
+                
+                foreach ($tempWrapper->childNodes as $child) {
+                    $importedNode = $doc->importNode($child, true);
+                    $fragment->appendChild($importedNode);
+                }
+                
+                // Reemplazar el nodo original con el fragmento
+                $node->parentNode->replaceChild($fragment, $node);
+            }
+        }
+        
+        // Extraer el contenido procesado del wrapper
+        $wrapper = $doc->getElementById('gbn-root-wrapper');
+        if ($wrapper) {
+            $result = '';
+            foreach ($wrapper->childNodes as $child) {
+                $result .= $doc->saveHTML($child);
+            }
+            return $result;
+        }
+        
+        return $content;
     }
 }

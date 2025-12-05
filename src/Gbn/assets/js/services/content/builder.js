@@ -72,6 +72,21 @@
             }
         }
 
+        // Pre-process PostField content
+        // Leer el tipo de campo desde el atributo gloryPostField
+        // Esto es CRÍTICO para la hidratación correcta del panel
+        if (role === 'postField') {
+            // El valor del atributo gloryPostField contiene el tipo de campo (ej: 'date', 'title', 'excerpt')
+            var fieldTypeAttr = el.getAttribute('gloryPostField');
+            if (fieldTypeAttr && !meta.options.fieldType) {
+                meta.options.fieldType = fieldTypeAttr;
+            }
+            
+            // También leer otros atributos que podrían estar presentes
+            // Por ejemplo: format para fechas, wordLimit para excerpts, etc.
+            // Estos pueden venir como atributos separados o en 'opciones'
+        }
+
         // Pre-process button content
         // Diseño nativo: leer valores desde atributos HTML en lugar de 'opciones='
         if (role === 'button') {

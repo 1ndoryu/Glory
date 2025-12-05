@@ -15,8 +15,13 @@
         secundario: { attribute: 'gloryDivSecundario', dataAttribute: 'data-gbnSecundario' },
         text: { attribute: 'gloryTexto', dataAttribute: 'data-gbn-text' },
         button: { attribute: 'gloryButton', dataAttribute: 'data-gbn-button' },
-        image: { attribute: 'gloryImagen', dataAttribute: 'data-gbn-image' }
+        image: { attribute: 'gloryImagen', dataAttribute: 'data-gbn-image' },
+        // Fase 13: Componentes PostRender
+        postRender: { attribute: 'gloryPostRender', dataAttribute: 'data-gbn-post-render' },
+        postItem: { attribute: 'gloryPostItem', dataAttribute: 'data-gbn-post-item' },
+        postField: { attribute: 'gloryPostField', dataAttribute: 'data-gbn-post-field' }
     };
+
 
     function ensureSelector(role, selector) {
         var existing = ROLE_MAP[role] || {};

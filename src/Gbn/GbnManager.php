@@ -40,6 +40,8 @@ class GbnManager
         // add_action('wp_footer', [self::class, 'injectEditButtons'], 5);
 
         // Filter frontend content to remove internal GBN attributes
+        // Must run AFTER PostRender processing (priority 20 vs 15)
+        add_filter('the_content', [\Glory\Gbn\Components\PostRender\PostRenderProcessor::class, 'processContent'], 15);
         add_filter('the_content', [self::class, 'filterFrontendContent'], 20);
         
         // Fase 13.5: Invalidar cache de PostRender cuando cambian posts
@@ -468,13 +470,18 @@ class GbnManager
                 'file' => '/js/ui/debug/overlay.js',
                 'deps' => ['glory-gbn-ui-panel'],
             ],
+            // New UI Enhancements (Context Menu)
+            'glory-gbn-ui-context-menu' => [
+                'file' => '/js/ui/context-menu.js',
+                'deps' => ['glory-gbn-ui-panel'],
+            ],
             'glory-gbn-store-subscriber' => [
                 'file' => '/js/ui/store-subscriber.js',
                 'deps' => ['glory-gbn-store', 'glory-gbn-ui-panel-render'],
             ],
             'glory-gbn' => [
                 'file' => '/js/gbn.js',
-                'deps' => ['glory-gbn-ui-inspector', 'glory-gbn-debug-overlay', 'glory-gbn-store-subscriber', 'glory-gbn-logger'],
+                'deps' => ['glory-gbn-ui-inspector', 'glory-gbn-debug-overlay', 'glory-gbn-store-subscriber', 'glory-gbn-logger', 'glory-gbn-ui-context-menu'],
             ],
         ];
 

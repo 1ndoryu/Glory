@@ -142,6 +142,19 @@
     -   Sincronización bidireccional entre input y botones de presets.
     -   Actualizado `shared.js` para procesar cualquier valor CSS válido.
     -   Estilizado en `forms.css`.
+    
+#### ✅ UI: Mejorar Selección de Elementos Anidados
+- **Problema:** Dificultad para seleccionar o configurar elementos anidados estrechos o superpuestos (ej: PostItem dentro de PostRender).
+- **Solución Implementada:**
+    - **Menú Contextual Avanzado:** Implementado `context-menu.js` con detección de pila completa.
+        - Usa `document.elementsFromPoint()` para detectar **TODOS** los bloques bajo el cursor.
+        - Click derecho muestra un menú con todos los bloques agrupados por nivel de profundidad.
+        - Cada bloque tiene su indicador de color único para diferenciar niveles.
+        - Accesos directos a pestañas del panel: "Contenido", "Estilo", "Layout", "Query", etc.
+        - Acciones rápidas: Eliminar.
+- **Archivos:**
+    - `Glory/src/Gbn/assets/js/ui/context-menu.js`
+- **Integración:** Registrado en `GbnManager.php` como dependencia de `glory-gbn`.
 
 ### Fase 6.5: Posicionamiento y Dimensiones Avanzadas
 **Objetivo:** Completar el control de layout y posicionamiento.
@@ -462,6 +475,26 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 
 ### Bugs Pendientes y Tareas Nuevas (Dic 2025) 
 
+#### ✅ Bug: PostRender no Renderizaba en Frontend
+- **Problema:** El componente `PostRender` no se procesaba en el frontend ni en plantillas manuales, mostrando solo el placeholder.
+- **Solución:**
+    - Agregado método estático `PostRenderProcessor::processContent()` para escanear y renderizar componentes.
+    - Registrado filtro `the_content` en `GbnManager.php` para ejecución automática.
+    - Actualizado `contructor.php` para usar `ob_start()` y procesar el contenido manualmente. 
+
+#### ✅ Bug Crítico: HTML Malformado en PostRender - RESUELTO (Dic 2025)
+- **Problema:** El HTML generado por PostRender estaba completamente roto:
+    1. Los `</div>` y `</article>` no se cerraban correctamente
+    2. Los campos semánticos (title, excerpt, featuredImage) no se llenaban con datos reales
+    3. Solo el último artículo tenía estructura completa
+- **Causa Raíz:**
+    1. **`processContent` regex `(.*?)</div>`:** Capturaba hasta el PRIMER `</div>` encontrado, no el que correspondía al contenedor `gloryPostRender`. Esto rompía la estructura anidada.
+    2. **`processPostFields` regex `([^<]*)`:** No podía capturar contenido con tags anidados (ej: `<a>` dentro de `<h3 gloryPostField="title">`).
+- **Solución:**
+    - Reescrito `processContent()` usando `DOMDocument` + `DOMXPath` para parsear HTML anidado correctamente.
+    - Reescrito `processPostFields()` usando `DOMDocument` para manejar elementos con hijos (imágenes, enlaces).
+    - Los nodos con `gloryPostField` ahora se actualizan in-place preservando la estructura del DOM. 
+
 #### ✅ Bug Crítico: Docking Persistente (Theme Settings) - RESUELTO (V4 - Async Guard & Memory Leak Fix)
 - **Problema:** Al cerrar el panel de configuración de tema, el ancho de la página no regresaba a su normalidad (se quedaba contraído).
 - **Causa Raíz:**
@@ -550,6 +583,11 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 #### ✅ Refactor: Limpieza de Estilos Duplicados
 - **Problema:** Existía duplicidad de reglas CSS entre `gbn.css` y `theme-styles.css`. `theme-styles.css` era más completo pero competían en especificidad.
 - **Solución:** Eliminadas las reglas redundantes de componentes en `gbn.css`. Ahora `theme-styles.css` es la única fuente de verdad para estilos base de componentes, mejorando la mantenibilidad y evitando conflictos.
+
+#### ✅ Refactorización CSS Base (init.css)
+- **Problema:** El archivo de estilos base `init.css` contenía reglas con alta especificidad y uso indiscriminado de `!important`, lo que dificultaba la sobreescritura natural en componentes y temas.
+- **Solución:** Se aplicó una transformación masiva para envolver todos los selectores en `:where()` (reduciendo su especificidad a 0-0-0) y se eliminaron todas las ocurrencias de `!important`.
+
 
 ---
 
@@ -805,6 +843,10 @@ El item hereda las opciones de layout estándar de GBN (como SecundarioComponent
 - `Glory/src/Gbn/components/PostRender/PostRenderProcessor.php` (Agregados data-pattern, data-categories)
 - `Glory/src/Gbn/assets/js/ui/renderers/post-render.js` (Agregado manejo de pattern y hover)
 - `Glory/src/Gbn/GbnManager.php` (Agregado registro del script frontend y hooks de cache)
+
+#### ✅ UI: Iconos en Panel PostRender (Dic 2025)
+- **Problema:** Las pestañas del panel PostRender (Interacción, Layout, Query) no tenían iconos.
+- **Solución:** Agregados iconos SVG específicos en `panel-render.js`.
 
 ### Criterios de Aceptación
 
@@ -1413,3 +1455,29 @@ function getComputedColor(block, path) {
 - [ ] **Verificar block.element** (Defensa 15)
 
 ---
+
+### Mejoras Futuras de UI/UX (Post-Dic 2025)
+
+#### 🚀 UI: Mejorar Selección de Elementos Anidados
+- **Problema:** `gbn-panel-tabs` es difícil de usar cuando hay elementos muy pegados o anidados (ej: PostItem estrecho).
+- **Solución Propuesta 1:** Mostrar `gbn-panel-tabs` también en click derecho (Menú Contextual Avanzado).
+- **Solución Propuesta 2:** Mecanismo "Smart Gear":
+    - Todos los componentes tienen un botón de configuración visible (tuerca).
+    - Sistema de detección de colisiones que reubica botones solapados (stacking o side-by-side).
+    - Tooltips inteligentes indicando el componente padre/hijo.
+
+### Bugs Pendientes
+
+#### ✅ Bug: PostField - Fallo de Hidratación en Panel (RESUELTO Dic 2025)
+- **Problema:** Al hacer clic en un `gloryPostField` existente (ej: `<span gloryPostField="date">`), el panel de configuración del editor **no refleja el tipo de campo actual**. El dropdown de "Tipo de Campo" se resetea al valor por defecto (ej: "Título") en lugar de mostrar "Fecha".
+- **Impacto:** Si el usuario guarda el bloque sin darse cuenta, se sobrescribe el tipo de campo original con el default incorrecto.
+- **Causa Raíz:** El archivo `builder.js` no tenía lógica específica para leer el valor del atributo `gloryPostField` (que contiene el tipo de campo) y pasarlo a `meta.options.fieldType`. Tipo `button` y `text` sí tenían esta lógica, pero `postField` no.
+- **Solución:**
+    1. **`builder.js`:** Agregada lógica para leer el tipo de campo desde el atributo `gloryPostField` cuando `role === 'postField'`.
+    2. **`roles.js`:** Agregados `postRender`, `postItem` y `postField` a `FALLBACK_SELECTORS` para asegurar detección correcta del rol.
+    3. **`panel-render.js`:** Agregado `fieldType` a `conditionalTriggers` para refrescar el panel cuando cambia el tipo (mostrando/ocultando opciones dependientes).
+- **Archivos Modificados:**
+    - `Glory/src/Gbn/assets/js/services/content/builder.js`
+    - `Glory/src/Gbn/assets/js/services/content/roles.js`
+    - `Glory/src/Gbn/assets/js/ui/panel-render.js`
+
