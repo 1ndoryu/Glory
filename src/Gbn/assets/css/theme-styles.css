@@ -239,7 +239,9 @@
     pointer-events: none;
 }
 
-/* PostField Elements */
+/* PostField Elements 
+   Los atributos glory* ahora se preservan en el frontend
+   permitiendo que estos selectores funcionen correctamente */
 :where([gloryPostField="featuredImage"]) {
     aspect-ratio: var(--gbn-post-img-ratio, 16/9);
     overflow: hidden;

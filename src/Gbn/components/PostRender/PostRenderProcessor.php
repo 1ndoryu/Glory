@@ -79,7 +79,7 @@ class PostRenderProcessor
         wp_reset_postdata();
 
         // 4. Generar filtro de categorías si está habilitado
-        $categoryFilter = $this->config['categoryFilter'] 
+        $categoryFilter = ($this->config['categoryFilter'] ?? false) 
             ? $this->renderCategoryFilter($query->posts) 
             : '';
 
@@ -592,6 +592,23 @@ class PostRenderProcessor
         }
         
         foreach ($postRenderNodes as $node) {
+            // ========================================================================
+            // DETECCIÓN DE CONTENIDO YA PROCESADO
+            // Si el nodo tiene 'gbn-post-render' como clase o 'data-post-type' como
+            // atributo, significa que ya pasó por el procesador anteriormente.
+            // Saltar para evitar duplicación de posts.
+            // ========================================================================
+            $classAttr = $node->hasAttribute('class') ? $node->getAttribute('class') : '';
+            $isAlreadyProcessed = (
+                strpos($classAttr, 'gbn-post-render') !== false ||
+                $node->hasAttribute('data-post-type')
+            );
+            
+            if ($isAlreadyProcessed) {
+                // Ya fue procesado, no volver a procesar
+                continue;
+            }
+            
             // Parsear configuración desde el atributo opciones
             $config = [];
             if ($node->hasAttribute('opciones')) {
@@ -629,10 +646,39 @@ class PostRenderProcessor
                 }
             }
 
-            // Obtener el HTML interno (el template)
+            // Detectar si el contenido ya fue procesado previamente
+            // Si tiene múltiples PostItems con data-post-id, ya está renderizado
+            // En ese caso, extraer solo el PRIMER PostItem como template
             $innerHtml = '';
+            $postItemCount = 0;
+            $firstPostItem = null;
+            
             foreach ($node->childNodes as $child) {
+                // Contar PostItems con data-post-id (indicador de contenido ya procesado)
+                if ($child instanceof \DOMElement) {
+                    // Buscar glorypostitem directamente o en descendientes
+                    if ($child->hasAttribute('glorypostitem') || $child->hasAttribute('gloryPostItem')) {
+                        $postItemCount++;
+                        if ($postItemCount === 1) {
+                            $firstPostItem = $doc->saveHTML($child);
+                        }
+                        // Si encontramos más de 1 PostItem con data-post-id, usar solo el primero
+                        if ($postItemCount > 1 && $child->hasAttribute('data-post-id')) {
+                            // Contenido ya procesado: ignorar items adicionales
+                            continue;
+                        }
+                    }
+                }
                 $innerHtml .= $doc->saveHTML($child);
+            }
+            
+            // Si detectamos múltiples PostItems procesados, usar solo el template (primer item)
+            // Limpiar atributos de datos del post anterior del template
+            if ($postItemCount > 1 && $firstPostItem) {
+                // Usar el primer PostItem pero limpiar data-post-id y data-categories
+                // que podrían venir del primer post renderizado anteriormente
+                $innerHtml = preg_replace('/\s*data-post-id="[^"]*"/', '', $firstPostItem);
+                $innerHtml = preg_replace('/\s*data-categories="[^"]*"/', '', $innerHtml);
             }
             
             // Crear el procesador y obtener el HTML renderizado (pasar atributos del editor)

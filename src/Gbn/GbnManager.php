@@ -563,6 +563,10 @@ class GbnManager
     /**
      * Filters the frontend content to remove internal GBN attributes
      * that shouldn't be visible to non-admin users.
+     * 
+     * NOTA: Los atributos glory* (gloryDiv, gloryPostField, etc.) se PRESERVAN
+     * porque son necesarios para los selectores CSS en theme-styles.css.
+     * Solo se limpian atributos internos de configuración.
      *
      * @param string $content
      * @return string
@@ -574,13 +578,18 @@ class GbnManager
             return $content;
         }
 
-        // List of attributes to strip
-        // glorydiv, glorydivsecundario, etc are markers
-        // data-gbn-* are internal data
-        // We preserve data-gbn-id as it might be used for frontend interactions (anchors, etc)
+        // Solo limpiar atributos INTERNOS de configuración
+        // Los atributos glory* se PRESERVAN para que funcionen los selectores CSS
+        // Atributos a limpiar:
+        // - data-gbn-schema: Contiene schema JSON del componente (innecesario en frontend)
+        // - data-gbn-config: Contiene configuración JSON (innecesario en frontend)
+        // Atributos que se PRESERVAN:
+        // - glory*: Necesarios para selectores CSS (:where([gloryPostField="title"]))
+        // - data-gbn-id: Útil para anchors y debugging
+        // - data-gbn-role: Útil para selectores CSS alternativos
+        // - data-gbn-post-*: Útiles para JS del frontend (filtros, paginación)
         $patterns = [
-            '/ (glory[a-zA-Z0-9]+)(=".*?")?/',
-            '/ (data-gbn-schema|data-gbn-config|data-gbn-role|data-gbnprincipal|data-gbnsecundario)(=".*?")?/'
+            '/ (data-gbn-schema|data-gbn-config)(=\"[^\"]*\")?/i'
         ];
 
         return preg_replace($patterns, '', $content);

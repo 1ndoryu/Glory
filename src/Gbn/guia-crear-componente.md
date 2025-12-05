@@ -1,30 +1,26 @@
-# Guía: Cómo Crear un Nuevo Componente GBN
+# Guía: Crear un Nuevo Componente GBN
 
 > [!IMPORTANT]
-> Esta guía documenta el proceso paso a paso para crear un nuevo componente en el sistema GBN.
-> Fase 11: Refactorización SOLID - Los nuevos componentes deben usar los traits para reducir código.
-
-## Resumen del Proceso
-
-Crear un nuevo componente requiere modificar/crear los siguientes archivos:
-
-| Archivo                             | Descripción                              | Obligatorio |
-| ----------------------------------- | ---------------------------------------- | ----------- |
-| `components/MyComp/MyComponent.php` | Clase del componente (Schema)            | ✅           |
-| `assets/js/ui/renderers/my-comp.js` | Renderer JS (estilos en tiempo real)     | ✅           |
-| `GbnManager.php`                    | Registro del script                      | ✅           |
-| `services/content/roles.js`         | Fallback selector (solo si es necesario) | ⚠️           |
+> Proceso paso a paso para crear componentes usando la arquitectura SOLID de GBN.
 
 ---
 
-## Paso 1: Crear la Clase PHP del Componente
+## Resumen Ejecutivo
 
-### Ubicación
-```
-Glory/src/Gbn/components/MiComponente/MiComponenteComponent.php
-```
+| Paso | Archivo                             | Obligatorio                  |
+| :--- | :---------------------------------- | :--------------------------- |
+| 1    | `components/MyComp/MyComponent.php` | ✅ Clase con Schema           |
+| 2    | `assets/js/ui/renderers/my-comp.js` | ✅ Renderer JS                |
+| 3    | `GbnManager.php`                    | ✅ Registro del script        |
+| 4    | `panel-render.js`                   | ✅ Resolver de estilos        |
+| 5    | `services/content/roles.js`         | ⚠️ Solo si necesitas fallback |
+
+---
+
+## Paso 1: Clase PHP del Componente
 
 ### Template Base
+
 ```php
 <?php
 
@@ -45,7 +41,6 @@ use Glory\Gbn\Traits\HasBorder;
  */
 class MiComponenteComponent extends AbstractComponent
 {
-    // Usar traits para opciones reutilizables
     use HasSpacing;
     use HasTypography;
     use HasBorder;
@@ -103,27 +98,23 @@ class MiComponenteComponent extends AbstractComponent
 
 ### Traits Disponibles
 
-| Trait            | Opciones que agrega                                       |
-| ---------------- | --------------------------------------------------------- |
-| `HasSpacing`     | padding (superior/derecha/inferior/izquierda), margin     |
-| `HasTypography`  | font, size, weight, lineHeight, letterSpacing, transform  |
-| `HasBorder`      | borderWidth, borderStyle, borderColor, borderRadius       |
-| `HasBackground`  | backgroundImage, backgroundSize, backgroundPosition, etc. |
-| `HasFlexbox`     | layout, direction, wrap, justify, align, gap              |
-| `HasGrid`        | gridColumns, gridGap                                      |
-| `HasPositioning` | position, zIndex, overflow                                |
-| `HasCustomCSS`   | custom_css                                                |
+| Trait            | Método para agregar                     | Opciones que agrega                                 |
+| :--------------- | :-------------------------------------- | :-------------------------------------------------- |
+| `HasSpacing`     | `addSpacingOptions($builder, $tab)`     | padding, margin                                     |
+| `HasTypography`  | `addTypographyOptions($builder, $tab)`  | font, size, weight, lineHeight                      |
+| `HasBorder`      | `addBorderOptions($builder, $tab)`      | borderWidth, borderStyle, borderColor, borderRadius |
+| `HasBackground`  | `addBackgroundOptions($builder, $tab)`  | backgroundImage, backgroundColor, size, position    |
+| `HasFlexbox`     | `addFlexboxOptions($builder, $tab)`     | layout, direction, wrap, justify, align, gap        |
+| `HasGrid`        | `addGridOptions($builder, $tab)`        | gridColumns, gridGap                                |
+| `HasPositioning` | `addPositioningOptions($builder, $tab)` | position, zIndex, overflow                          |
+| `HasCustomCSS`   | `addCustomCssOption($builder, $tab)`    | custom_css                                          |
 
 ---
 
-## Paso 2: Crear el Renderer JS
+## Paso 2: Renderer JS
 
-### Ubicación
-```
-Glory/src/Gbn/assets/js/ui/renderers/mi-componente.js
-```
+### Template con Traits (Recomendado)
 
-### Template Base (Usando Traits)
 ```javascript
 ;(function (global) {
     'use strict';
@@ -132,17 +123,16 @@ Glory/src/Gbn/assets/js/ui/renderers/mi-componente.js
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.renderers = Gbn.ui.renderers || {};
 
-    // Usar traits centralizados (Fase 11)
     var traits = Gbn.ui.renderers.traits;
 
     /**
      * Genera estilos CSS para el componente.
      */
     function getStyles(config, block) {
-        // Obtener estilos comunes (typography, spacing, border, background)
+        // Estilos comunes (typography, spacing, border, background)
         var styles = traits.getCommonStyles(config);
         
-        // Agregar propiedades específicas de tu componente
+        // Propiedades específicas
         if (config.miPropiedad) {
             styles['mi-propiedad-css'] = config.miPropiedad;
         }
@@ -157,7 +147,7 @@ Glory/src/Gbn/assets/js/ui/renderers/mi-componente.js
         if (!block || !block.element) return false;
         var el = block.element;
         
-        // Propiedades específicas del componente (contenido, atributos)
+        // Propiedades específicas (contenido, atributos)
         if (path === 'titulo') {
             el.textContent = value || '';
             return true;
@@ -168,7 +158,7 @@ Glory/src/Gbn/assets/js/ui/renderers/mi-componente.js
             return true;
         }
         
-        // Delegar todo lo demás a traits (typography, spacing, border, etc.)
+        // Delegar a traits (typography, spacing, border, etc.)
         return traits.handleCommonUpdate(el, path, value);
     }
 
@@ -181,18 +171,17 @@ Glory/src/Gbn/assets/js/ui/renderers/mi-componente.js
 })(typeof window !== 'undefined' ? window : this);
 ```
 
-### Alternativa: Usar Factory para Componentes Simples
+### Factory para Componentes Simples
+
 ```javascript
-// Si tu componente no necesita lógica especial, usa createRenderer:
+// Si no necesitas lógica especial:
 Gbn.ui.renderers.miComponente = Gbn.ui.renderers.traits.createRenderer({
     getExtraStyles: function(config) {
-        // Solo devuelve estilos adicionales específicos
         return {
             'mi-propiedad': config.miValor
         };
     },
     handleSpecialUpdate: function(block, path, value) {
-        // Solo maneja paths específicos
         if (path === 'titulo') {
             block.element.textContent = value;
             return true;
@@ -204,9 +193,10 @@ Gbn.ui.renderers.miComponente = Gbn.ui.renderers.traits.createRenderer({
 
 ---
 
-## Paso 3: Registrar el Script en GbnManager.php
+## Paso 3: Registro en GbnManager.php
 
-### Agregar al array `$builderScripts`:
+### Agregar al array `$builderScripts`
+
 ```php
 'glory-gbn-ui-renderers-mi-componente' => [
     'file' => '/js/ui/renderers/mi-componente.js',
@@ -214,7 +204,8 @@ Gbn.ui.renderers.miComponente = Gbn.ui.renderers.traits.createRenderer({
 ],
 ```
 
-### Agregar como dependencia de `panel-render`:
+### Agregar como dependencia de `panel-render`
+
 ```php
 'glory-gbn-ui-panel-render' => [
     'deps' => [
@@ -226,9 +217,9 @@ Gbn.ui.renderers.miComponente = Gbn.ui.renderers.traits.createRenderer({
 
 ---
 
-## Paso 4: Agregar Resolver de Estilos (panel-render.js)
+## Paso 4: Resolver en panel-render.js
 
-En `Glory/src/Gbn/assets/js/ui/panel-render.js`, agregar al objeto `styleResolvers`:
+Agregar al objeto `styleResolvers`:
 
 ```javascript
 var styleResolvers = {
@@ -243,13 +234,13 @@ var styleResolvers = {
 
 ---
 
-## Paso 5: (Opcional) Agregar Fallback Selector
+## Paso 5: (Opcional) Fallback Selector
 
-Si tu componente usa un atributo HTML específico que no sigue el patrón estándar, agrégalo a `roles.js`:
+Si tu componente usa un atributo HTML no estándar:
 
 ```javascript
+// En roles.js
 var FALLBACK_SELECTORS = {
-    // ...
     miComponente: { 
         attribute: 'gloryMiComponente', 
         dataAttribute: 'data-gbn-mi-componente' 
@@ -260,8 +251,6 @@ var FALLBACK_SELECTORS = {
 ---
 
 ## Uso en HTML
-
-Una vez creado, puedes usar tu componente así:
 
 ```html
 <!-- Uso básico -->
@@ -282,40 +271,79 @@ Una vez creado, puedes usar tu componente así:
 
 ## Checklist de Verificación
 
-- [ ] Clase PHP creada con `getRole()`, `getLabel()`, `getSelector()`, `buildSchema()`
-- [ ] Traits usados para opciones comunes (HasSpacing, HasBorder, etc.)
-- [ ] Renderer JS creado con `getStyles()` y `handleUpdate()`
+- [ ] Clase PHP con `getRole()`, `getLabel()`, `getSelector()`, `buildSchema()`
+- [ ] Traits usados para opciones comunes
+- [ ] Renderer JS con `getStyles()` y `handleUpdate()`
 - [ ] Renderer usa `traits.getCommonStyles()` y `traits.handleCommonUpdate()`
-- [ ] Script registrado en `GbnManager.php` con dependencias correctas
+- [ ] Script registrado en `GbnManager.php` con dependencias
 - [ ] Agregado como dependencia de `panel-render`
 - [ ] Resolver agregado en `panel-render.js`
-- [ ] Probado: el panel muestra los campos correctamente
-- [ ] Probado: los cambios se aplican en tiempo real
-- [ ] Probado: los cambios persisten al guardar
+- [ ] **PRUEBAS:**
+  - [ ] Panel muestra campos correctamente
+  - [ ] Cambios se aplican en tiempo real
+  - [ ] Cambios persisten al guardar
+  - [ ] Funciona en frontend sin GBN
 
 ---
 
-## Errores Comunes
+## Errores Comunes y Soluciones
 
-### ❌ El panel no muestra campos
-**Causa:** El componente no está registrado correctamente.
-**Solución:** Verificar que `ComponentLoader::load()` escanea tu directorio.
-
-### ❌ Los estilos no se aplican en tiempo real
-**Causa:** El renderer no está registrado o `handleUpdate` no maneja el path.
-**Solución:** 
-1. Verificar dependencias en `GbnManager.php`
-2. Verificar que el path está en `traits.handleCommonUpdate` o manejado manualmente
-
-### ❌ Error "Gbn.ui.renderers.traits is undefined"
-**Causa:** El script del renderer carga antes que `renderer-traits.js`.
-**Solución:** Agregar `'glory-gbn-ui-renderers-traits'` a las dependencias.
-
-### ❌ Los valores no persisten
-**Causa:** El mapper `CONFIG_TO_CSS_MAP` no tiene la propiedad.
-**Solución:** Agregar el mapeo en `utils.js` si es una propiedad nueva.
+| Error                   | Causa                              | Solución                                 |
+| :---------------------- | :--------------------------------- | :--------------------------------------- |
+| Panel no muestra campos | Componente no registrado           | Verificar `ComponentLoader::load()`      |
+| Estilos no se aplican   | Renderer no registrado             | Verificar deps en `GbnManager.php`       |
+| `traits is undefined`   | Script carga antes que traits      | Agregar `renderer-traits` a dependencias |
+| Valores no persisten    | Falta mapeo en `CONFIG_TO_CSS_MAP` | Agregar mapeo en `utils.js`              |
 
 ---
 
-*Documento creado como parte de la Fase 11: Refactorización SOLID*
-*Última actualización: Diciembre 2025*
+## Patrones Avanzados
+
+### Componente con Contenido Dinámico
+
+```php
+// En buildSchema()
+$builder->addOption(
+    Option::select('tipo')
+        ->label('Tipo de Contenido')
+        ->choices([
+            'texto' => 'Texto Plano',
+            'html' => 'HTML Rico',
+            'imagen' => 'Imagen'
+        ])
+        ->tab('contenido')
+);
+
+$builder->addOption(
+    Option::rich_text('contenido')
+        ->label('Contenido')
+        ->condition('tipo', '===', 'html')  // Solo visible si tipo = html
+        ->tab('contenido')
+);
+```
+
+### Componente con Estados Hover/Focus
+
+```javascript
+// En handleUpdate()
+if (path.startsWith('_states.hover.')) {
+    var prop = path.split('.').pop();
+    Gbn.services.stateStyles.setStateProperty(block, 'hover', prop, value);
+    return true;
+}
+```
+
+### Componente con Custom CSS
+
+```php
+// Usar trait
+use Glory\Gbn\Traits\HasCustomCSS;
+
+// En buildSchema()
+$this->addCustomCssOption($builder, 'avanzado');
+```
+
+---
+
+**Versión:** 2.0 (Optimizada)  
+**Relacionado:** `reglas.md`, `documentación-gbn.md`, `plan.md`

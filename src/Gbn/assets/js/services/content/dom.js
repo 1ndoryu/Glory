@@ -17,9 +17,24 @@
         if (!meta) {
             return;
         }
-        if (meta.attr && !el.hasAttribute(meta.attr)) {
-            el.setAttribute(meta.attr, role);
+        
+        // ======================================================================
+        // FIX: Verificar atributos glory* de forma case-insensitive
+        // HTML normaliza atributos a minúsculas, pero nuestras definiciones usan
+        // camelCase (ej: 'gloryPostField'). Debemos verificar ambos casos.
+        // Además, PRESERVAR el valor original si ya existe (ej: 'featuredImage')
+        // ======================================================================
+        if (meta.attr) {
+            var attrLower = meta.attr.toLowerCase();
+            var hasAttr = el.hasAttribute(meta.attr) || el.hasAttribute(attrLower);
+            
+            if (!hasAttr) {
+                // Solo establecer el atributo si no existe en ninguna forma
+                el.setAttribute(meta.attr, role);
+            }
+            // Si ya existe, NO sobrescribir - preservar el valor original
         }
+        
         if (meta.dataAttr && !el.hasAttribute(meta.dataAttr)) {
             el.setAttribute(meta.dataAttr, '1');
         }
