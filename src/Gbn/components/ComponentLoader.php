@@ -21,16 +21,24 @@ class ComponentLoader
 
         foreach ($dirs as $dir) {
             $dirname = basename($dir);
-            // Convención: Nombre de clase coincide con nombre de directorio + 'Component'
-            // Ej: Principal/PrincipalComponent.php
-            $filename = $dir . '/' . $dirname . 'Component.php';
+            
+            // Escanear TODOS los archivos *Component.php en este directorio
+            // Esto permite tener múltiples componentes por directorio (ej: PostRender/PostItemComponent.php)
+            $componentFiles = glob($dir . '/*Component.php');
+            
+            if ($componentFiles === false) {
+                continue;
+            }
 
-            if (file_exists($filename)) {
+            foreach ($componentFiles as $filename) {
                 require_once $filename;
 
+                // Extraer nombre del archivo sin extensión
+                $componentName = basename($filename, '.php');
+
                 // Construir nombre de clase completamente calificado
-                // Convención Namespace: Glory\Gbn\Components\{Dirname}\{Dirname}Component
-                $className = "Glory\\Gbn\\Components\\{$dirname}\\{$dirname}Component";
+                // Convención Namespace: Glory\Gbn\Components\{Dirname}\{ComponentName}
+                $className = "Glory\\Gbn\\Components\\{$dirname}\\{$componentName}";
 
                 if (class_exists($className)) {
                     $instance = new $className();

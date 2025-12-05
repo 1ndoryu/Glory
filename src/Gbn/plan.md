@@ -550,3 +550,848 @@ Los inputs de color actuales no soportan transparencia (alpha channel). El `<inp
 #### ✅ Refactor: Limpieza de Estilos Duplicados
 - **Problema:** Existía duplicidad de reglas CSS entre `gbn.css` y `theme-styles.css`. `theme-styles.css` era más completo pero competían en especificidad.
 - **Solución:** Eliminadas las reglas redundantes de componentes en `gbn.css`. Ahora `theme-styles.css` es la única fuente de verdad para estilos base de componentes, mejorando la mantenibilidad y evitando conflictos.
+
+---
+
+## Fase 13: PostRender - Componente de Contenido Dinámico
+
+> [!NOTE]
+> Este componente permite renderizar listados de posts/CPTs directamente desde GBN con plantillas visuales editables.
+
+### Objetivo
+
+Crear un sistema de componentes que permita:
+1. **Consultar contenido de WordPress** (posts, páginas, CPTs) con opciones configurables
+2. **Diseñar visualmente** la plantilla de cada item en el editor
+3. **Campos semánticos** que se llenan automáticamente con datos del post
+
+### Análisis: Funcionalidades Rescatadas de ContentRender
+
+El componente existente `Glory\Components\ContentRender` tiene lógicas valiosas que debemos reutilizar:
+
+#### ✅ Rescatar para PostRender
+
+| Funcionalidad             | Descripción                                                     | Prioridad                     |
+| :------------------------ | :-------------------------------------------------------------- | :---------------------------- |
+| **WP_Query Robusto**      | Manejo de post_type, paginación, orden, meta_key, sticky posts  | Alta                          |
+| **Filtro por Categorías** | Sistema de filtrado frontend sin recarga (JS inline)            | Media                         |
+| **Cache Inteligente**     | Transients con invalidación automática por post_type            | Media                         |
+| **Layout Patterns**       | Patrones alternados (imagen izq/der), split 50/50               | Alta                          |
+| **CSS por Instancia**     | Estilos scoped con clase única (glory-cr-XXXX)                  | Alta                          |
+| **Modos de Interacción**  | Normal, Carousel (scroll horizontal), Toggle (acordeón)         | Media                         |
+| **Opciones de Imagen**    | Aspect ratio, object-fit, dimensiones responsive                | Alta                          |
+| **Control de Título**     | Show/hide, position, hover reveal, responsive                   | Alta                          |
+| **Contexto Compartido**   | API `getCurrentOption()` / `setCurrentOption()` para plantillas | Media                         |
+| **Sistema de Plantillas** | TemplateRegistry + TemplateManager                              | Baja (GBN usa enfoque visual) |
+
+#### ❌ NO Rescatar (Obsoleto o innecesario)
+
+| Funcionalidad                 | Razón                                              |
+| :---------------------------- | :------------------------------------------------- |
+| `gbnDefaults()`               | Desfazado, el nuevo componente usará SchemaBuilder |
+| Integración Fusion/Avada      | GBN es independiente                               |
+| Callbacks PHP para plantillas | GBN usa plantillas HTML visuales                   |
+
+### Arquitectura Propuesta
+
+#### Componentes PHP
+
+| Archivo                                         | Responsabilidad                                                |
+| :---------------------------------------------- | :------------------------------------------------------------- |
+| `components/PostRender/PostRenderComponent.php` | Componente contenedor con opciones de query y layout           |
+| `components/PostRender/PostItemComponent.php`   | Define la estructura del template (hijo de PostRender)         |
+| `components/PostRender/PostFieldComponent.php`  | Campos semánticos (título, imagen, excerpt, etc.)              |
+| `Services/PostRenderService.php`                | Lógica de WP_Query reutilizable (extraída de ContentRender)    |
+| `Support/PostRenderCss.php`                     | Generador CSS por instancia (simplificado de ContentRenderCss) |
+
+#### Componentes JS
+
+| Archivo                    | Responsabilidad                                   |
+| :------------------------- | :------------------------------------------------ |
+| `renderers/post-render.js` | Renderer del contenedor, preview con datos reales |
+| `renderers/post-item.js`   | Renderer del template item                        |
+| `renderers/post-field.js`  | Renderer de campos semánticos                     |
+
+### Sintaxis HTML Propuesta
+
+```html
+<!-- Contenedor: Define la query y layout del grid/lista -->
+<div gloryPostRender 
+     opciones="
+        postType: 'libro',
+        postsPerPage: 10,
+        orderBy: 'date',
+        order: 'desc',
+        status: 'publish',
+        displayMode: 'grid',
+        gridColumns: 3,
+        gap: '20px',
+        categoryFilter: true
+     ">
+    
+    <!-- Template: Se replica por cada post encontrado -->
+    <article gloryPostItem class="card">
+        
+        <!-- Campos semánticos: Se llenan con datos del post actual -->
+        <img gloryPostField="featuredImage" class="card__image">
+        <h3 gloryPostField="title" class="card__title"></h3>
+        <p gloryPostField="excerpt" class="card__excerpt"></p>
+        <span gloryPostField="date" format="d M, Y"></span>
+        <a gloryPostField="link" class="card__link">Leer más</a>
+        
+        <!-- Campos de taxonomías -->
+        <div gloryPostField="categories" class="card__cats"></div>
+        
+        <!-- Meta field personalizado -->
+        <span gloryPostField="meta:precio"></span>
+        
+        <!-- ACF field -->
+        <div gloryPostField="acf:galeria"></div>
+        
+    </article>
+    
+</div>
+```
+
+### Campos Semánticos Disponibles
+
+| Valor de `gloryPostField` | Fuente de Datos            | Notas                                     |
+| :------------------------ | :------------------------- | :---------------------------------------- |
+| `title`                   | `get_the_title()`          | Soporta tag configurable (h1-h6, p, span) |
+| `featuredImage`           | `get_the_post_thumbnail()` | Soporta tamaño, aspect-ratio, lazy        |
+| `excerpt`                 | `get_the_excerpt()`        | Límite de palabras configurable           |
+| `content`                 | `the_content()`            | Contenido completo procesado              |
+| `date`                    | `get_the_date()`           | Formato configurable                      |
+| `author`                  | `get_the_author()`         | Nombre del autor                          |
+| `authorAvatar`            | `get_avatar()`             | Avatar del autor                          |
+| `link`                    | `get_permalink()`          | URL del post (para `<a href>`)            |
+| `categories`              | `get_the_category()`       | Lista de categorías                       |
+| `tags`                    | `get_the_tags()`           | Lista de etiquetas                        |
+| `taxonomy:nombre`         | `get_the_terms()`          | Taxonomía personalizada                   |
+| `meta:campo`              | `get_post_meta()`          | Meta field por nombre                     |
+| `acf:campo`               | `get_field()`              | Campo ACF por nombre                      |
+| `commentCount`            | `get_comments_number()`    | Cantidad de comentarios                   |
+
+### Opciones del Contenedor (PostRenderComponent)
+
+#### Tab: Query
+| Campo            | Tipo      | Descripción                                            |
+| :--------------- | :-------- | :----------------------------------------------------- |
+| `postType`       | select    | Tipo de contenido (post, page, CPTs registrados)       |
+| `postsPerPage`   | slider    | Cantidad de posts (1-50)                               |
+| `orderBy`        | select    | Ordenar por: date, title, rand, menu_order, meta_value |
+| `order`          | iconGroup | ASC / DESC                                             |
+| `status`         | select    | publish, draft, any                                    |
+| `categoryFilter` | toggle    | Mostrar filtro por categorías                          |
+| `offset`         | number    | Saltar N posts                                         |
+| `postIn`         | text      | IDs específicos (comma separated)                      |
+| `postNotIn`      | text      | Excluir IDs                                            |
+| `taxonomyQuery`  | group     | Filtrar por taxonomía/término                          |
+
+#### Tab: Layout
+| Campo            | Tipo      | Descripción                       |
+| :--------------- | :-------- | :-------------------------------- |
+| `displayMode`    | iconGroup | block, flex, grid                 |
+| `gridColumns`    | slider    | Columnas (1-12) - responsive      |
+| `gap`            | dimension | Espaciado entre items             |
+| `flexDirection`  | iconGroup | row, column                       |
+| `alignItems`     | iconGroup | stretch, start, center, end       |
+| `justifyContent` | iconGroup | start, center, end, space-between |
+| `layoutPattern`  | select    | none, alternado_lr, masonry       |
+
+#### Tab: Estilo
+| Campo                     | Tipo | Descripción                      |
+| :------------------------ | :--- | :------------------------------- |
+| Hereda de `HasSpacing`    | -    | padding, margin                  |
+| Hereda de `HasBackground` | -    | backgroundColor, backgroundImage |
+| Hereda de `HasBorder`     | -    | border completo                  |
+
+#### Tab: Interacción
+| Campo             | Tipo   | Descripción              |
+| :---------------- | :----- | :----------------------- |
+| `interactionMode` | select | normal, carousel, toggle |
+| `pagination`      | toggle | Activar paginación AJAX  |
+| `loadMore`        | toggle | Botón "cargar más"       |
+
+### Opciones del Item (PostItemComponent)
+
+El item hereda las opciones de layout estándar de GBN (como SecundarioComponent):
+- `HasSpacing` (padding, margin)
+- `HasBackground` (fondo, imagen)
+- `HasBorder` (bordes)
+- `HasFlexbox` (layout interno del item)
+
+### Flujo de Renderizado
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FLUJO DE RENDERIZADO                         │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  1. PHP: PostRenderComponent recibe opciones                    │
+│     ↓                                                           │
+│  2. PHP: PostRenderService ejecuta WP_Query                     │
+│     ↓                                                           │
+│  3. PHP: Por cada post encontrado:                              │
+│     a. Clona el template (gloryPostItem)                        │
+│     b. Procesa los campos (gloryPostField)                      │
+│     c. Reemplaza contenido semántico con datos reales           │
+│     ↓                                                           │
+│  4. PHP: Genera CSS scoped por instancia                        │
+│     ↓                                                           │
+│  5. HTML: Renderiza contenedor + items + filtros                │
+│                                                                 │
+│  ═══════════════════════════════════════════════════════════   │
+│                                                                 │
+│  EN EL EDITOR (GBN):                                            │
+│                                                                 │
+│  1. JS: Detecta [gloryPostRender] en el DOM                     │
+│     ↓                                                           │
+│  2. JS: Solicita preview vía AJAX con la query config           │
+│     ↓                                                           │
+│  3. JS: Renderiza posts reales (limitado a 3-5 para preview)    │
+│     ↓                                                           │
+│  4. JS: Permite editar estilos del template                     │
+│     ↓                                                           │
+│  5. JS: Los cambios de estilo se aplican a todos los items      │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Tareas de Implementación
+
+#### Fase 13.1: Core PHP (✅ COMPLETADO)
+- [x] **PostRenderService.php** - Extraer lógica de WP_Query de ContentRender
+- [x] **PostRenderComponent.php** - Componente contenedor con SchemaBuilder
+- [x] **PostItemComponent.php** - Componente template hijo
+- [x] **PostFieldComponent.php** - Campos semánticos con SchemaBuilder
+
+#### Fase 13.2: Renderizado PHP  
+- [ ] **Procesador de renderizado** - `PostRenderProcessor.php` (Implementado parcialmente, falta integrar clonación real si se require algo distinto a lo ya hecho)
+- [ ] **Clonación de template** - Sistema para replicar gloryPostItem por post (Parte de PostRenderProcessor)
+- [x] **PostRenderProcessor.php** - Implementado. Maneja lógica de renderizado, clonación, reemplazo de campos y CSS scoped. Sustituye a `PostRenderCss.php`.
+
+#### Fase 13.3: Frontend JS (✅ COMPLETADO)
+- [x] **post-render.js** - Renderer del contenedor
+- [x] **post-item.js** - Renderer del item
+- [x] **post-field.js** - Renderer de campos semánticos
+- [x] **Registro en GbnManager.php** - Scripts y dependencias
+
+#### Fase 13.4: Panel GBN
+- [ ] **Agregar a styleResolvers** en panel-render.js (PENDIENTE)
+- [ ] **Preview AJAX** - Endpoint para obtener posts en editor
+- [ ] **Sincronización** - Cambios en layout aplican a todos los items
+
+#### Fase 13.5: Funcionalidades Avanzadas
+- [ ] **Filtro por categorías** - Adaptar de ContentRender
+- [ ] **Paginación AJAX** - Reutilizar PaginationRenderer
+- [ ] **Cache por instancia** - Sistema de transients
+- [ ] **Layout Pattern alternado_lr** - Adaptar CSS de ContentRenderCss
+
+### Criterios de Aceptación
+
+- [ ] Crear un PostRender en el editor muestra preview con posts reales
+- [ ] Los campos semánticos se llenan correctamente con datos del post
+- [ ] Los estilos del template se aplican a todos los items
+- [ ] El componente funciona sin GBN activo (HTML limpio + CSS inline)
+- [ ] El filtro por categorías funciona en frontend
+- [ ] Los cambios de query (postType, order, etc.) actualizan el preview
+- [ ] Soporte responsive en el layout (columnas, gap)
+
+### Dependencias
+
+- Requiere: `ComponentLoader`, `SchemaBuilder`, `HasSpacing`, `HasFlexbox`, `HasBackground`, `HasBorder`
+- Opcional: `ContentRender` (para reusar plantillas registradas vía TemplateRegistry)
+
+### Notas de Diseño
+
+1. **El template es el primer hijo** - `gloryPostItem` debe ser hijo directo de `gloryPostRender`
+2. **Los campos son declarativos** - `gloryPostField="title"` indica QUÉ mostrar, no CÓMO
+3. **Los estilos van en clases** - Los PostField no tienen opciones de estilo propias, se estilizan con CSS/clases
+4. **Preview limitado** - En el editor, mostrar máximo 3-5 posts para rendimiento
+5. **Cache inteligente** - No cachear en editor, sí cachear en frontend
+
+### Cumplimiento SOLID y Reglas GBN
+
+> [!IMPORTANT]
+> Esta sección documenta cómo el plan cumple (o debe cumplir) con las reglas de `reglas.md` y los principios SOLID.
+
+#### Roles y Selectores (Regla 4.5: Protocolo de Componentes)
+
+| Componente            | Role         | Selector            | Validación                         |
+| :-------------------- | :----------- | :------------------ | :--------------------------------- |
+| `PostRenderComponent` | `postRender` | `[gloryPostRender]` | Schema, ComponentLoader            |
+| `PostItemComponent`   | `postItem`   | `[gloryPostItem]`   | Validar que sea hijo de postRender |
+| `PostFieldComponent`  | `postField`  | `[gloryPostField]`  | Validar valor del atributo         |
+
+#### Flujo de Datos Unidireccional (Regla 4.2)
+
+```
+┌───────────────────────────────────────────────────────────────────┐
+│                    FLUJO DE CAMBIO DE QUERY                       │
+├───────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  1. Usuario cambia `postType` en el Panel                         │
+│     ↓                                                             │
+│  2. Panel dispara: Gbn.actions.updateBlock(id, {postType: 'libro'})│
+│     ↓                                                             │
+│  3. Store actualiza config del bloque PostRender                  │
+│     ↓                                                             │
+│  4. Subscriber detecta cambio → Llama renderer.handleUpdate()     │
+│     ↓                                                             │
+│  5. Renderer solicita preview vía AJAX con nueva config           │
+│     ↓                                                             │
+│  6. Backend ejecuta WP_Query y devuelve HTML                      │
+│     ↓                                                             │
+│  7. Renderer reemplaza contenido del contenedor                   │
+│                                                                   │
+│  ⚠️ PROHIBIDO: Modificar DOM directamente desde el Panel          │
+│                                                                   │
+└───────────────────────────────────────────────────────────────────┘
+```
+
+#### Single Source of Truth: Template vs Items Clonados
+
+**Aclaración Arquitectónica:**
+- **Template (`gloryPostItem`)** → Es un bloque registrado en el Store con config editable
+- **Items Clonados** → Son **visuales** generados por PHP/JS, NO son bloques individuales
+- **Estilos del Template** → Se aplican vía **clase CSS** (`.postItem-XXXX`), NO inline por item
+- **Editar un item** → Realmente edita el template, cambio se propaga a todos
+
+```javascript
+// ✅ CORRECTO: Un solo bloque template en el Store
+registry: {
+    'post-render-123': { role: 'postRender', config: {...} },
+    'post-item-456': { role: 'postItem', config: {...} }  // Template único
+    // Los clones NO se registran
+}
+```
+
+#### Estilos y Variables CSS (Regla 4.4)
+
+**MANDATORIO:** Los defaults NO deben emitir estilos inline duros.
+
+```css
+/* theme-styles.css - Defaults del sistema */
+[gloryPostRender] {
+    display: var(--gbn-post-render-display, grid);
+    gap: var(--gbn-post-render-gap, 20px);
+    grid-template-columns: var(--gbn-post-render-columns, repeat(3, 1fr));
+}
+```
+
+```javascript
+// style-composer.js - Solo emitir si hay config explícita
+function getStyles(config) {
+    return {
+        display: config.displayMode || undefined,  // ✅ undefined = no emite
+        gap: config.gap || undefined,
+        // ❌ NUNCA: display: config.displayMode || 'grid'
+    };
+}
+```
+
+#### Strategy Pattern para PostField (LSP - Liskov)
+
+Para evitar un "God Object", los campos semánticos usan Strategy:
+
+```php
+// PostField/FieldStrategyInterface.php
+interface FieldStrategyInterface {
+    public function canHandle(string $fieldType): bool;
+    public function render(WP_Post $post, array $options): string;
+}
+
+// PostField/Strategies/TitleStrategy.php
+class TitleStrategy implements FieldStrategyInterface {
+    public function canHandle(string $fieldType): bool {
+        return $fieldType === 'title';
+    }
+    
+    public function render(WP_Post $post, array $options): string {
+        return esc_html(get_the_title($post));
+    }
+}
+
+// PostField/Strategies/MetaStrategy.php
+class MetaStrategy implements FieldStrategyInterface {
+    public function canHandle(string $fieldType): bool {
+        return str_starts_with($fieldType, 'meta:');
+    }
+    
+    public function render(WP_Post $post, array $options): string {
+        $key = substr($fieldType, 5);
+        return esc_html(get_post_meta($post->ID, $key, true));
+    }
+}
+
+// PostFieldComponent.php usa StrategyResolver
+class PostFieldComponent extends AbstractComponent {
+    public function render(WP_Post $post, string $fieldType): string {
+        $strategy = StrategyResolver::resolve($fieldType);
+        return $strategy->render($post, $this->getConfig());
+    }
+}
+```
+
+#### Responsive (Regla 4.3)
+
+**Estructura de valores responsive:**
+
+```javascript
+// Config debe soportar breakpoints explícitos
+config: {
+    gridColumns: {
+        desktop: 4,
+        tablet: 2,
+        mobile: 1
+    },
+    gap: {
+        desktop: '30px',
+        tablet: '20px',
+        mobile: '15px'
+    }
+}
+```
+
+**Al guardar desde el panel:**
+```javascript
+// ✅ CORRECTO: Especificar breakpoint
+Gbn.actions.updateBlock(id, { gridColumns: 3 }, 'tablet');
+
+// ❌ INCORRECTO: Sin contexto de breakpoint
+Gbn.actions.updateBlock(id, { gridColumns: 3 });
+```
+
+#### Sincronización Bidireccional (Regla 5)
+
+**Corrección:** Los atributos como `format` deben estar en `opciones`, NO como atributos HTML separados.
+
+```html
+<!-- ❌ INCORRECTO: format como atributo separado -->
+<span gloryPostField="date" format="d M, Y"></span>
+
+<!-- ✅ CORRECTO: Todo en opciones del componente -->
+<span gloryPostField="date" 
+      opciones="format: 'd M, Y'"></span>
+```
+
+O mejor aún, el formato se configura desde el panel del PostFieldComponent y se guarda en la config del bloque.
+
+### Checklist de Cumplimiento (Pre-Implementación)
+
+- [ ] **Regla 1 (HTML Limpio):** Sin shortcodes, atributos semánticos
+- [ ] **Regla 2 (Independencia):** Funciona sin GBN activo
+- [ ] **Regla 4.1 (Single Source):** Template único en Store, clones son visuales
+- [ ] **Regla 4.2 (Unidireccional):** Cambios vía Gbn.actions, NO DOM directo
+- [ ] **Regla 4.3 (Responsive):** Config con breakpoints explícitos
+- [ ] **Regla 4.4 (Defaults):** Usar `undefined` o `var(--gbn-*)`, no valores duros
+- [ ] **Regla 4.5 (Protocolo):** Roles únicos, selectores válidos, Schema registrado
+- [ ] **Regla 5 (Bidireccional):** Opciones en `opciones=`, no atributos HTML sueltos
+- [ ] **SRP:** Service (query), Component (schema), Css (estilos), Renderer (UI)
+- [ ] **OCP:** Campos extensibles vía Strategy pattern
+- [ ] **LSP:** FieldStrategyInterface para cada tipo de campo
+- [ ] **DRY:** Reutilizar lógica de ContentRender, no duplicar
+
+---
+
+### Defensa contra Bugs Conocidos (Anti-Patrones)
+
+> [!CAUTION]
+> Esta sección documenta bugs históricos de GBN que **NO DEBEN REPLICARSE** en PostRender. Cada defensa incluye el bug original, la causa raíz y la protección específica.
+
+#### 🛡️ 1. Layout Delay / Flash de Contenido (Bugs 27, 28, 33)
+
+**Bug Original:** Los elementos aparecían sin estilos por un instante y luego "saltaban" al aplicarse flexbox/grid.
+
+**Causa Raíz:** Defaults hardcodeados como `display: flex` en JS que competían con CSS.
+
+**Defensa para PostRender:**
+```javascript
+// ❌ PROHIBIDO en post-render.js
+getStyles(config) {
+    return { display: config.displayMode || 'grid' }; // NO! Emite 'grid' siempre
+}
+
+// ✅ CORRECTO
+getStyles(config) {
+    return { display: config.displayMode || undefined }; // Solo emite si hay valor
+}
+```
+
+```css
+/* Defaults en theme-styles.css, NO en JS */
+[gloryPostRender] {
+    display: var(--gbn-post-render-display, grid);
+}
+```
+
+---
+
+#### 🛡️ 2. Atributos Internos Visibles en Frontend (Bug Data Leak)
+
+**Bug Original:** Usuarios no logueados veían `data-gbn-schema`, `data-gbn-config` en el HTML.
+
+**Causa Raíz:** No se limpiaban atributos internos al guardar/renderizar.
+
+**Defensa para PostRender:**
+```php
+// En PostRenderComponent.php - OBLIGATORIO
+public function render(): string {
+    $html = $this->renderItems();
+    
+    // LIMPIAR antes de retornar (para frontend)
+    if (!$this->isEditor()) {
+        $html = DomProcessor::cleanInternalAttributes($html);
+    }
+    
+    return $html;
+}
+```
+
+**Atributos a limpiar:** `gloryPostRender`, `gloryPostItem`, `gloryPostField`, `data-gbn-*`, `opciones`
+
+---
+
+#### 🛡️ 3. Estilos Rotos en Frontend Deslogeado (Bug Layout Rotos)
+
+**Bug Original:** En frontend sin login, los estilos de layout se rompían porque dependían de atributos eliminados.
+
+**Causa Raíz:** Selectores CSS usaban `[gloryDiv]` que se elimina en frontend.
+
+**Defensa para PostRender:**
+```css
+/* ❌ PROHIBIDO - Selector que se elimina */
+[gloryPostRender] { display: grid; }
+
+/* ✅ CORRECTO - Usar clase persistente inyectada por DomProcessor */
+.gbn-post-render { display: grid; }
+[gloryPostRender], .gbn-post-render { display: grid; }
+```
+
+```php
+// DomProcessor debe inyectar clase persistente
+$element->classList->add('gbn-post-render');
+$itemElement->classList->add('gbn-post-item');
+```
+
+---
+
+#### 🛡️ 4. Race Condition en Async (Bug Docking Persistente)
+
+**Bug Original:** Al cerrar el panel antes de que termine una llamada AJAX, el callback se ejecutaba en contexto incorrecto.
+
+**Causa Raíz:** Sin guards para verificar estado antes de procesar respuestas async.
+
+**Defensa para PostRender:**
+```javascript
+// En post-render.js - handleUpdate para query changes
+async function refreshPreview(blockId, config) {
+    var currentPanelMode = Gbn.ui.panel.getMode();
+    
+    var response = await fetchPostsPreview(config);
+    
+    // 🛡️ ASYNC GUARD: Verificar que seguimos en contexto válido
+    if (Gbn.ui.panel.getMode() !== currentPanelMode) {
+        console.log('PostRender: Abortando refresh, contexto cambió');
+        return; // El panel se cerró o cambió durante la espera
+    }
+    
+    if (!document.getElementById(blockId)) {
+        return; // El bloque fue eliminado durante la espera
+    }
+    
+    applyPreview(blockId, response);
+}
+```
+
+---
+
+#### 🛡️ 5. Memory Leak en Event Listeners (Bug Theme Settings)
+
+**Bug Original:** Listeners de `gbn:configChanged` nunca se removían, acumulando handlers zombies.
+
+**Causa Raíz:** `addEventListener` sin cleanup correspondiente.
+
+**Defensa para PostRender:**
+```javascript
+// post-render.js - Patrón de cleanup
+var activeListeners = new Map();
+
+function registerQueryChangeListener(blockId, handler) {
+    // Limpiar listener anterior si existe
+    if (activeListeners.has(blockId)) {
+        var old = activeListeners.get(blockId);
+        document.removeEventListener('gbn:configChanged', old);
+    }
+    
+    // Registrar nuevo
+    document.addEventListener('gbn:configChanged', handler);
+    activeListeners.set(blockId, handler);
+}
+
+function cleanup(blockId) {
+    if (activeListeners.has(blockId)) {
+        document.removeEventListener('gbn:configChanged', activeListeners.get(blockId));
+        activeListeners.delete(blockId);
+    }
+}
+```
+
+---
+
+#### 🛡️ 6. Persistencia de Layout Options Incompleta (Bug 10)
+
+**Bug Original:** Opciones de flexbox (direction, wrap, justify, align) no persistían.
+
+**Causa Raíz:** Hidratación no incluía todas las propiedades de layout.
+
+**Defensa para PostRender:**
+```javascript
+// Hidratación COMPLETA de PostRender
+function hydratePostRender(element) {
+    var config = parseOptions(element);
+    
+    // Lista explícita de TODAS las propiedades de layout a hidratar
+    var layoutProps = [
+        'displayMode', 'gridColumns', 'gap',
+        'flexDirection', 'flexWrap', 'justifyContent', 'alignItems',
+        'layoutPattern', 'interactionMode'
+    ];
+    
+    layoutProps.forEach(function(prop) {
+        if (config[prop] !== undefined) {
+            block.config[prop] = config[prop];
+        }
+    });
+}
+```
+
+---
+
+#### 🛡️ 7. Especificidad de CSS Generado (Bug Hover Persistencia)
+
+**Bug Original:** Estilos de hover del panel no se aplicaban porque clases de plantilla tenían mayor especificidad.
+
+**Causa Raíz:** Selector `[data-gbn-id="..."]` tenía menor especificidad que `.btnPrimary:hover`.
+
+**Defensa para PostRender:**
+```javascript
+// En style-generator.js para PostRender
+function generatePostRenderCss(blockId, config) {
+    // 🛡️ Prefijo body para mayor especificidad
+    var selector = 'body [data-gbn-id="' + blockId + '"]';
+    
+    // Para items clonados, usar clase del template
+    var itemSelector = 'body .' + config.templateClass;
+    
+    return css;
+}
+```
+
+---
+
+#### 🛡️ 8. Valores Computados vs Defaults del Tema (Bug BUG-SYNC)
+
+**Bug Original:** El panel no mostraba valores de CSS (width, height) porque `getConfigValue` retornaba el default del tema.
+
+**Causa Raíz:** Default del schema bloqueaba la lectura de `getComputedStyle`.
+
+**Defensa para PostRender:**
+```javascript
+// En campos de PostRender (ej: gridColumns)
+function getEffectiveValue(block, path) {
+    var configValue = getConfigValue(block, path);
+    var schemaDefault = getSchemaDefault(block.schema, path);
+    
+    // 🛡️ Si el valor es igual al default del schema, 
+    // intentar leer del DOM computado
+    if (configValue === schemaDefault && block.element) {
+        var computedValue = getComputedValueForPath(block.element, path);
+        if (computedValue && !isBrowserDefault(computedValue)) {
+            return computedValue;
+        }
+    }
+    
+    return configValue;
+}
+```
+
+---
+
+#### 🛡️ 9. Responsive sin Contexto de Breakpoint (Bug 29)
+
+**Bug Original:** Valores responsive no persistían correctamente.
+
+**Causa Raíz:** `updateBlock` no especificaba breakpoint destino.
+
+**Defensa para PostRender:**
+```javascript
+// ❌ PROHIBIDO
+function onGridColumnsChange(value) {
+    Gbn.actions.updateBlock(blockId, { gridColumns: value });
+}
+
+// ✅ CORRECTO - Especificar breakpoint
+function onGridColumnsChange(value) {
+    var currentBreakpoint = Gbn.services.responsive.getCurrentBreakpoint();
+    Gbn.actions.updateBlock(blockId, { gridColumns: value }, currentBreakpoint);
+}
+```
+
+---
+
+#### 🛡️ 10. Crash por JSON Circular (Bug 30)
+
+**Bug Original:** Inspector crasheaba al serializar objetos con referencias DOM.
+
+**Causa Raíz:** `JSON.stringify` en objetos con `element` que contiene referencia circular.
+
+**Defensa para PostRender:**
+```javascript
+// Al guardar config de PostRender
+function serializeConfig(config) {
+    // 🛡️ Clonar sin referencias DOM
+    var safeConfig = {};
+    Object.keys(config).forEach(function(key) {
+        if (key !== 'element' && key !== '_dom' && key !== 'templateElement') {
+            safeConfig[key] = config[key];
+        }
+    });
+    
+    return JSON.stringify(safeConfig);
+}
+```
+
+---
+
+#### 🛡️ 11. Grid Columns sin Unidades (Bug 32)
+
+**Bug Original:** `gridColumns: 3` generaba CSS inválido `grid-template-columns: 3px`.
+
+**Causa Raíz:** `applicator.js` añadía unidades a todos los valores numéricos.
+
+**Defensa para PostRender:**
+```javascript
+// Lista de propiedades que NO llevan unidades
+var UNITLESS_PROPERTIES = ['gridColumns', 'order', 'zIndex', 'opacity', 'flexGrow', 'flexShrink'];
+
+function applyStyle(element, prop, value) {
+    if (UNITLESS_PROPERTIES.includes(prop)) {
+        element.style[prop] = value; // Sin unidades
+    } else if (typeof value === 'number') {
+        element.style[prop] = value + 'px';
+    } else {
+        element.style[prop] = value;
+    }
+}
+```
+
+---
+
+#### 🛡️ 12. Placeholder/Imagen Rota (Bug Imagen)
+
+**Bug Original:** Placeholder usaba URL externa y ocupaba toda la pantalla.
+
+**Causa Raíz:** URL hardcodeada y sin max-width por defecto.
+
+**Defensa para PostRender:**
+```php
+// Para gloryPostField="featuredImage"
+class FeaturedImageStrategy implements FieldStrategyInterface {
+    public function render(WP_Post $post, array $options): string {
+        if (!has_post_thumbnail($post)) {
+            // 🛡️ Placeholder LOCAL con dimensiones controladas
+            return '<img src="' . GBN_ASSETS_URL . '/images/landscape-placeholder.svg" 
+                        style="max-width: 100%; height: auto;" 
+                        alt="Sin imagen">';
+        }
+        
+        return get_the_post_thumbnail($post, $options['size'] ?? 'medium', [
+            'style' => 'max-width: 100%; height: auto;'
+        ]);
+    }
+}
+```
+
+---
+
+#### 🛡️ 13. Border-Radius sin Overflow (Bug Imagen Borde)
+
+**Bug Original:** `border-radius` en wrapper no recortaba la imagen interna.
+
+**Causa Raíz:** Faltaba `overflow: hidden` en el contenedor.
+
+**Defensa para PostRender:**
+```javascript
+// En post-item.js handleUpdate
+if (path === 'borderRadius' && value) {
+    // 🛡️ Forzar overflow:hidden cuando hay border-radius
+    element.style.overflow = 'hidden';
+}
+```
+
+---
+
+#### 🛡️ 14. Atributos HTML Malformados (Bug Dirty HTML)
+
+**Bug Original:** `data-gbn-config='{"texto":...'` aparecía malformado en el DOM.
+
+**Causa Raíz:** Escritura redundante de atributos al DOM en múltiples lugares.
+
+**Defensa para PostRender:**
+```javascript
+// 🛡️ PROHIBIDO escribir config/schema al DOM
+// El estado vive SOLO en memoria (state.js)
+
+// ❌ PROHIBIDO
+element.setAttribute('data-gbn-config', JSON.stringify(config));
+
+// ✅ CORRECTO - Solo en memoria
+Gbn.state.updateBlock(blockId, config);
+```
+
+---
+
+#### 🛡️ 15. MockBlocks sin Elemento DOM (Bug Colores Negro)
+
+**Bug Original:** En Theme Settings, colores aparecían en negro.
+
+**Causa Raíz:** Código asumía que `block.element` siempre existe.
+
+**Defensa para PostRender:**
+```javascript
+// En campos que leen computed styles
+function getComputedColor(block, path) {
+    // 🛡️ Verificar existencia de elemento ANTES de leer
+    if (!block.element) {
+        // Fallback a config directa para mockBlocks
+        return getDeepValue(block.config, path) || field.defecto || '#000000';
+    }
+    
+    var computed = getComputedStyle(block.element);
+    return computed[path] || field.defecto;
+}
+```
+
+---
+
+### Checklist de Defensa (Pre-Código)
+
+- [ ] **No defaults duros en JS** (Defensa 1)
+- [ ] **Limpiar atributos internos** (Defensa 2)
+- [ ] **Clases persistentes para CSS** (Defensa 3)
+- [ ] **Async guards en AJAX** (Defensa 4)
+- [ ] **Cleanup de listeners** (Defensa 5)
+- [ ] **Hidratación explícita completa** (Defensa 6)
+- [ ] **Especificidad con `body` prefix** (Defensa 7)
+- [ ] **Detectar defaults vs computed** (Defensa 8)
+- [ ] **Breakpoint en updateBlock** (Defensa 9)
+- [ ] **Excluir DOM de JSON** (Defensa 10)
+- [ ] **UNITLESS_PROPERTIES** (Defensa 11)
+- [ ] **Placeholders locales** (Defensa 12)
+- [ ] **overflow:hidden con border-radius** (Defensa 13)
+- [ ] **Estado solo en memoria** (Defensa 14)
+- [ ] **Verificar block.element** (Defensa 15)
+
+---

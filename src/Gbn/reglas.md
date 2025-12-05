@@ -31,14 +31,14 @@ El backend (PHP) actúa como el cerebro del sistema, gestionando la carga de rec
     - **Localización**: Inyecta el objeto global `gloryGbnCfg` en JS con datos vitales: `nonce`, `pageId`, `isEditor`, `themeSettings`, y `roleSchemas` (generados desde `ContainerRegistry`).
 - **`GbnAjaxHandler.php`**: Proxy que delega el registro de endpoints AJAX a `Registrar`.
 - **`Logger.php`**: Sistema de logs dedicado (`gbn.log`) para depuración interna.
-- **`GbnFeatures.php`**: Control de activación de características experimentales.
+- **`GloryFeatures` (en `Glory\Core`)**: Control de activación de GBN. Verifica si el constructor está habilitado para el usuario/página actual.
 
 #### Sistema de Componentes (`src/Gbn/Components/`, `Schema/` y `Traits/`)
 - **`ComponentLoader.php`**: **Nuevo Núcleo**. Escanea y registra automáticamente las clases de componentes que implementan `ComponentInterface`.
 - **`AbstractComponent.php`**: Clase base que provee funcionalidad común.
 - **`Traits/`**: Módulos reutilizables (`HasFlexbox`, `HasSpacing`) que inyectan lógica y esquema a los componentes.
 - **`SchemaBuilder.php`**: API fluida para definir los campos del panel de control de forma legible y orientada a objetos.
-- **`ContainerRegistry.php`**: (Legacy/Transición) Mantiene compatibilidad mientras se migra totalmente al sistema de clases.
+- **`ContainerRegistry.php`**: Registro central de componentes. `ComponentLoader` escanea y registra las clases aquí. Es la fuente de verdad para `roleSchemas`.
 
 #### Sistema AJAX (`src/Gbn/Ajax/`)
 - **`Registrar.php`**: Centraliza todos los `add_action('wp_ajax_...')`. Mapea cada acción a su Handler correspondiente.
@@ -65,7 +65,6 @@ El frontend (JS) es una aplicación reactiva que manipula el DOM directamente, s
 
 #### Core (`assets/js/core/`)
 - **`utils.js`**: Utilidades generales (helpers, debounce, deepClone) y acceso global a configuración.
-- **`utils.js`**: Utilidades generales (helpers, debounce, deepClone) y acceso global a configuración.
 - **`state.js`**: **Store Central (Redux-lite)**. Mantiene el registro (`registry`) de bloques activos y el índice (`elementsIndex`) para acceso O(1). Gestiona la "verdad única" en memoria mediante `dispatch`, `actions` y `subscribers`.
 - **`store-subscriber.js`**: Conecta el Store con el DOM. Escucha cambios de estado y dispara actualizaciones visuales.
 
@@ -73,7 +72,6 @@ El frontend (JS) es una aplicación reactiva que manipula el DOM directamente, s
 - **`content.js`**: Facade principal. Expone la API pública `Gbn.content`.
 - **`css-sync.js`**: Sincronización de estilos. Genera CSS dinámico en tiempo real.
 - **`persistence.js`**: Recolecta el estado del DOM (`collectBlocksPayload`) y lo envía al backend.
-- **`responsive.js`**: Gestiona breakpoints, herencia de valores y simulación de viewport.
 - **`responsive.js`**: Gestiona breakpoints, herencia de valores y simulación de viewport.
 - **`style-generator.js`**: Genera cadenas de CSS estático para guardar en la base de datos.
 - **`logger.js`**: **Remote Logger**. Servicio de diagnóstico que envía logs al servidor (Desactivado por defecto `ENABLED=false`).
@@ -94,9 +92,8 @@ El frontend (JS) es una aplicación reactiva que manipula el DOM directamente, s
 - **`drag-drop.js`**: Sistema de arrastrar y soltar bloques.
 - **`library.js`**: Gestión de la biblioteca de componentes reutilizables.
 - **`dock.js`**: Barra de herramientas flotante o acoplada.
-- **`dock.js`**: Barra de herramientas flotante o acoplada.
 - **`inspector.js`**: Inspector visual de elementos (hover, selección).
-- **`overlay.js`**: **Debug Overlay**. Panel flotante (`Ctrl+Alt+D`) para inspección profunda de estado y estilos computados.
+- **`debug/overlay.js`**: **Debug Overlay**. Panel flotante (`Ctrl+Alt+D`) para inspección profunda de estado y estilos computados.
 - **`theme/`**:
     - **`applicator.js`**: Aplica configuraciones globales al DOM (Variables CSS).
     - **`render.js`**: Renderiza el panel de configuración del tema.

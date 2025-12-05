@@ -387,6 +387,19 @@ class GbnManager
                 'file' => '/js/ui/renderers/theme-settings.js',
                 'deps' => ['glory-gbn-ui-renderers-shared'],
             ],
+            // Fase 13: PostRender - Componente de Contenido Dinámico
+            'glory-gbn-ui-renderers-post-render' => [
+                'file' => '/js/ui/renderers/post-render.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-post-item' => [
+                'file' => '/js/ui/renderers/post-item.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-post-field' => [
+                'file' => '/js/ui/renderers/post-field.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
 
             'glory-gbn-ui-panel-render' => [
                 'file' => '/js/ui/panel-render.js',
@@ -398,7 +411,11 @@ class GbnManager
                     'glory-gbn-ui-renderers-button',
                     'glory-gbn-ui-renderers-image',
                     'glory-gbn-ui-renderers-page-settings',
-                    'glory-gbn-ui-renderers-theme-settings'
+                    'glory-gbn-ui-renderers-theme-settings',
+                    // Fase 13: PostRender renderers
+                    'glory-gbn-ui-renderers-post-render',
+                    'glory-gbn-ui-renderers-post-item',
+                    'glory-gbn-ui-renderers-post-field',
                 ],
             ],
             'glory-gbn-theme-applicator' => [
