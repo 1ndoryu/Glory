@@ -230,7 +230,7 @@ class PostRenderProcessor
     }
 
     /**
-     * Agrega atributos al item (data-post-id, clases, etc).
+     * Agrega atributos al item (data-post-id, data-categories, clases, etc).
      * 
      * @param string $html HTML del item
      * @param WP_Post $post Post actual
@@ -238,12 +238,32 @@ class PostRenderProcessor
      */
     private function addItemAttributes(string $html, WP_Post $post): string
     {
-        // Agregar data-post-id al primer elemento con gloryPostItem
+        // Obtener categorías del post
+        $postType = $this->config['postType'] ?? 'post';
+        $taxonomy = $postType === 'post' ? 'category' : ($postType . '_category');
+        
+        // Buscar taxonomía válida
+        if (!taxonomy_exists($taxonomy)) {
+            $taxonomies = get_object_taxonomies($postType);
+            $taxonomy = !empty($taxonomies) ? $taxonomies[0] : 'category';
+        }
+        
+        $terms = get_the_terms($post->ID, $taxonomy);
+        $catSlugs = '';
+        if ($terms && !is_wp_error($terms)) {
+            $catSlugs = implode(',', array_map(fn($t) => $t->slug, $terms));
+        }
+
+        // Agregar data-post-id y data-categories al primer elemento con gloryPostItem
         $pattern = '/(<[^>]+)\s*(gloryPostItem)([^>]*>)/i';
         
-        return preg_replace_callback($pattern, function ($matches) use ($post) {
-            $dataAttr = sprintf(' data-post-id="%d"', $post->ID);
-            return $matches[1] . $dataAttr . ' ' . $matches[2] . $matches[3];
+        return preg_replace_callback($pattern, function ($matches) use ($post, $catSlugs) {
+            $dataAttrs = sprintf(
+                ' data-post-id="%d" data-categories="%s"',
+                $post->ID,
+                esc_attr($catSlugs)
+            );
+            return $matches[1] . $dataAttrs . ' ' . $matches[2] . $matches[3];
         }, $html, 1);
     }
 
@@ -342,6 +362,18 @@ class PostRenderProcessor
             'data-post-type="' . esc_attr($this->config['postType'] ?? 'post') . '"',
             'data-posts-per-page="' . esc_attr($this->config['postsPerPage'] ?? 6) . '"',
         ];
+
+        // Agregar layout pattern si existe
+        $layoutPattern = $this->config['layoutPattern'] ?? 'none';
+        if ($layoutPattern !== 'none') {
+            $attrs[] = 'data-pattern="' . esc_attr($layoutPattern) . '"';
+        }
+
+        // Agregar hover effect si existe
+        $hoverEffect = $this->config['hoverEffect'] ?? 'none';
+        if ($hoverEffect !== 'none') {
+            $attrs[] = 'data-hover-effect="' . esc_attr($hoverEffect) . '"';
+        }
 
         return implode(' ', $attrs);
     }

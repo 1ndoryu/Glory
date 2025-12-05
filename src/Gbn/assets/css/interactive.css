@@ -303,3 +303,124 @@
     pointer-events: none; /* Let clicks pass through if needed */
     margin-top: 0px; /* Reset */
 }
+
+/* ============================================
+   FASE 13: PostRender Components Styles
+   ============================================ */
+
+/* PostRender container loading state */
+[gloryPostRender].gbn-loading {
+    position: relative;
+    min-height: 100px;
+}
+
+[gloryPostRender].gbn-loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 10;
+    border-radius: 8px;
+}
+
+[gloryPostRender].gbn-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 32px;
+    height: 32px;
+    margin: -16px 0 0 -16px;
+    border-radius: 999px;
+    border: 3px solid rgba(29, 143, 241, 0.3);
+    border-top-color: rgba(29, 143, 241, 0.95);
+    animation: gbn-spin 0.8s linear infinite;
+    z-index: 11;
+}
+
+/* PostRender editor outline */
+.gbn-active [gloryPostRender] {
+    position: relative;
+    outline: 2px dashed rgba(16, 185, 129, 0.35); /* Verde */
+    outline-offset: 4px;
+    transition: outline-color 0.2s ease;
+}
+
+.gbn-active [gloryPostRender]:hover {
+    outline-color: rgba(16, 185, 129, 0.9);
+}
+
+/* PostItem editor outline */
+.gbn-active [gloryPostItem] {
+    position: relative;
+    outline: 1px dashed rgba(139, 92, 246, 0.35); /* Púrpura */
+    outline-offset: 2px;
+    transition: outline-color 0.2s ease;
+}
+
+.gbn-active [gloryPostItem]:hover {
+    outline-color: rgba(139, 92, 246, 0.9);
+}
+
+/* PostItem template marker in editor */
+.gbn-active [data-gbn-is-template="true"] {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.gbn-active [data-gbn-is-template="true"]::before {
+    content: 'TEMPLATE';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(139, 92, 246, 0.9);
+    color: white;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    border-radius: 4px;
+    z-index: 5;
+}
+
+/* PostField editor indicator */
+.gbn-active [gloryPostField] {
+    position: relative;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px dashed rgba(251, 191, 36, 0.4);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.gbn-active [gloryPostField]:hover {
+    background: rgba(251, 191, 36, 0.2);
+    border-color: rgba(251, 191, 36, 0.8);
+}
+
+/* PostField type badge */
+.gbn-active [gloryPostField]::before {
+    content: attr(gloryPostField);
+    position: absolute;
+    top: -10px;
+    left: 4px;
+    background: rgba(251, 191, 36, 0.9);
+    color: #1f2937;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: 3px;
+    z-index: 5;
+    white-space: nowrap;
+}
+
+/* PostRender clones (preview items) */
+[data-gbn-pr-clone] {
+    pointer-events: auto;
+}
+
+/* Preview message styles */
+.gbn-pr-preview-message {
+    grid-column: 1 / -1; /* Occupy full width in grid */
+}

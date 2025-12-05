@@ -278,6 +278,16 @@
         },
         image: function(config, block) {
             return Gbn.ui.renderers.image ? Gbn.ui.renderers.image.getStyles(config, block) : {};
+        },
+        // Fase 13: PostRender - Contenido Dinámico
+        postRender: function(config, block) {
+            return Gbn.ui.renderers.postRender ? Gbn.ui.renderers.postRender.getStyles(config, block) : {};
+        },
+        postItem: function(config, block) {
+            return Gbn.ui.renderers.postItem ? Gbn.ui.renderers.postItem.getStyles(config, block) : {};
+        },
+        postField: function(config, block) {
+            return Gbn.ui.renderers.postField ? Gbn.ui.renderers.postField.getStyles(config, block) : {};
         }
     };
 
@@ -461,7 +471,8 @@
 
         // Renderizar selector de estados (Fase 10) en el FOOTER
         // Solo para bloques que soportan estilos (principal, secundario, text, button, image)
-        var supportedRoles = ['principal', 'secundario', 'text', 'button', 'image'];
+        // Fase 13: Agregados postRender, postItem, postField a la lista de roles con soporte de estados
+        var supportedRoles = ['principal', 'secundario', 'text', 'button', 'image', 'postRender', 'postItem', 'postField'];
         if (block.role && supportedRoles.indexOf(block.role) !== -1) {
             if (footerStatesContainer) {
                 renderStateSelector(footerStatesContainer, block);

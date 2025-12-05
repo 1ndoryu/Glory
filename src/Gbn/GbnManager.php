@@ -41,6 +41,15 @@ class GbnManager
 
         // Filter frontend content to remove internal GBN attributes
         add_filter('the_content', [self::class, 'filterFrontendContent'], 20);
+        
+        // Fase 13.5: Invalidar cache de PostRender cuando cambian posts
+        add_action('save_post', [\Glory\Gbn\Services\PostRenderService::class, 'clearCacheOnPostChange'], 10, 1);
+        add_action('delete_post', [\Glory\Gbn\Services\PostRenderService::class, 'clearCacheOnPostChange'], 10, 1);
+        add_action('transition_post_status', function($new, $old, $post) {
+            if ($new !== $old) {
+                \Glory\Gbn\Services\PostRenderService::clearCacheOnPostChange($post->ID);
+            }
+        }, 10, 3);
     }
 
     public static function registerAjax(): void
@@ -218,6 +227,11 @@ class GbnManager
             'glory-gbn-front' => [
                 'file' => '/js/gbn-front.js',
                 'deps' => ['glory-gbn-services'],
+            ],
+            // Fase 13.5: PostRender Frontend (filtros, paginación)
+            'glory-gbn-post-render-frontend' => [
+                'file' => '/js/frontend/post-render-frontend.js',
+                'deps' => [],
             ],
         ];
 

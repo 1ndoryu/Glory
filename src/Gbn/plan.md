@@ -766,10 +766,10 @@ El item hereda las opciones de layout estándar de GBN (como SecundarioComponent
 - [x] **PostItemComponent.php** - Componente template hijo
 - [x] **PostFieldComponent.php** - Campos semánticos con SchemaBuilder
 
-#### Fase 13.2: Renderizado PHP  
-- [ ] **Procesador de renderizado** - `PostRenderProcessor.php` (Implementado parcialmente, falta integrar clonación real si se require algo distinto a lo ya hecho)
-- [ ] **Clonación de template** - Sistema para replicar gloryPostItem por post (Parte de PostRenderProcessor)
-- [x] **PostRenderProcessor.php** - Implementado. Maneja lógica de renderizado, clonación, reemplazo de campos y CSS scoped. Sustituye a `PostRenderCss.php`.
+#### Fase 13.2: Renderizado PHP (✅ COMPLETADO)
+- [x] **PostRenderProcessor.php** - Implementado. Maneja lógica de renderizado, clonación, reemplazo de campos y CSS scoped.
+- [x] **Clonación de template** - Sistema para replicar gloryPostItem por post (Parte de PostRenderProcessor)
+- [x] **PostFieldComponent::renderField()** - Método estático para renderizar campos semánticos desde PostRenderProcessor
 
 #### Fase 13.3: Frontend JS (✅ COMPLETADO)
 - [x] **post-render.js** - Renderer del contenedor
@@ -777,26 +777,44 @@ El item hereda las opciones de layout estándar de GBN (como SecundarioComponent
 - [x] **post-field.js** - Renderer de campos semánticos
 - [x] **Registro en GbnManager.php** - Scripts y dependencias
 
-#### Fase 13.4: Panel GBN
-- [ ] **Agregar a styleResolvers** en panel-render.js (PENDIENTE)
-- [ ] **Preview AJAX** - Endpoint para obtener posts en editor
-- [ ] **Sincronización** - Cambios en layout aplican a todos los items
+#### Fase 13.4: Panel GBN (✅ COMPLETADO Dic 2025)
+- [x] **Agregar a styleResolvers** en panel-render.js - Agregados resolvers para postRender, postItem, postField
+- [x] **Preview AJAX** - Endpoint `gbn_post_render_preview` implementado en `PostRenderHandler.php`
+- [x] **Sincronización** - Cambios en layout aplican a todos los items vía clonación del template
 
-#### Fase 13.5: Funcionalidades Avanzadas
-- [ ] **Filtro por categorías** - Adaptar de ContentRender
-- [ ] **Paginación AJAX** - Reutilizar PaginationRenderer
-- [ ] **Cache por instancia** - Sistema de transients
-- [ ] **Layout Pattern alternado_lr** - Adaptar CSS de ContentRenderCss
+**Archivos Creados/Modificados:**
+- `Glory/src/Gbn/Ajax/Handlers/PostRenderHandler.php` (Nuevo - endpoints AJAX)
+- `Glory/src/Gbn/Ajax/Registrar.php` (Registro de endpoints)
+- `Glory/src/Gbn/assets/js/ui/panel-render.js` (styleResolvers + supportedRoles)
+- `Glory/src/Gbn/assets/js/ui/renderers/post-render.js` (Implementación AJAX real)
+
+#### Fase 13.5: Funcionalidades Avanzadas (✅ COMPLETADO Dic 2025)
+- [x] **Filtro por categorías** - Implementado en `post-render-frontend.js` con animaciones suaves
+- [x] **Paginación AJAX** - Endpoint `gbn_post_render_paginate` con soporte para usuarios anónimos
+- [x] **Cache por instancia** - Sistema de transients en `PostRenderService` con invalidación automática
+- [x] **Layout Pattern alternado_lr** - CSS implementado en `theme-styles.css` con responsive
+- [x] **Hover Effects** - Opciones lift, scale, glow vía clases CSS
+
+**Archivos Creados/Modificados:**
+- `Glory/src/Gbn/assets/js/frontend/post-render-frontend.js` (Nuevo - filtros y paginación frontend)
+- `Glory/src/Gbn/Ajax/Handlers/PostRenderHandler.php` (Agregado método paginate())
+- `Glory/src/Gbn/Ajax/Registrar.php` (Agregados endpoints nopriv para paginación)
+- `Glory/src/Gbn/Services/PostRenderService.php` (Agregado sistema de cache con transients)
+- `Glory/src/Gbn/assets/css/theme-styles.css` (Agregados estilos PostRender completos)
+- `Glory/src/Gbn/components/PostRender/PostRenderComponent.php` (Agregados layoutPattern, hoverEffect)
+- `Glory/src/Gbn/components/PostRender/PostRenderProcessor.php` (Agregados data-pattern, data-categories)
+- `Glory/src/Gbn/assets/js/ui/renderers/post-render.js` (Agregado manejo de pattern y hover)
+- `Glory/src/Gbn/GbnManager.php` (Agregado registro del script frontend y hooks de cache)
 
 ### Criterios de Aceptación
 
-- [ ] Crear un PostRender en el editor muestra preview con posts reales
-- [ ] Los campos semánticos se llenan correctamente con datos del post
-- [ ] Los estilos del template se aplican a todos los items
-- [ ] El componente funciona sin GBN activo (HTML limpio + CSS inline)
-- [ ] El filtro por categorías funciona en frontend
-- [ ] Los cambios de query (postType, order, etc.) actualizan el preview
-- [ ] Soporte responsive en el layout (columnas, gap)
+- [x] Crear un PostRender en el editor muestra preview con posts reales
+- [x] Los campos semánticos se llenan correctamente con datos del post
+- [x] Los estilos del template se aplican a todos los items (via CSS scoped)
+- [x] El componente funciona sin GBN activo (HTML limpio + CSS inline)
+- [x] El filtro por categorías funciona en frontend (sin recarga)
+- [x] Los cambios de query (postType, order, etc.) actualizan el preview
+- [x] Soporte responsive en el layout (columnas, gap) - media queries implementadas
 
 ### Dependencias
 

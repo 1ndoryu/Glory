@@ -26,6 +26,15 @@ class Registrar
         add_action('wp_ajax_gbn_diagnostics_dump', [Handlers\DiagnosticsHandler::class, 'dump']);
         add_action('wp_ajax_gbn_diagnostics_validate', [Handlers\DiagnosticsHandler::class, 'validate']);
         add_action('wp_ajax_gbn_diagnostics_logs', [Handlers\DiagnosticsHandler::class, 'getLogs']);
+        
+        // Fase 13: PostRender - Contenido Dinámico
+        add_action('wp_ajax_gbn_post_render_preview', [Handlers\PostRenderHandler::class, 'getPreview']);
+        add_action('wp_ajax_gbn_get_post_types', [Handlers\PostRenderHandler::class, 'getPostTypes']);
+        add_action('wp_ajax_gbn_get_taxonomies', [Handlers\PostRenderHandler::class, 'getTaxonomies']);
+        
+        // Paginación AJAX (disponible para todos los usuarios - frontend)
+        add_action('wp_ajax_gbn_post_render_paginate', [Handlers\PostRenderHandler::class, 'paginate']);
+        add_action('wp_ajax_nopriv_gbn_post_render_paginate', [Handlers\PostRenderHandler::class, 'paginate']);
     }
 }
 

@@ -17,15 +17,68 @@ use WP_Post;
 class PostRenderService
 {
     /**
+     * Duración de cache por defecto (5 minutos).
+     */
+    private const CACHE_EXPIRATION = 5 * MINUTE_IN_SECONDS;
+
+    /**
      * Ejecuta una consulta WP_Query basándose en la configuración del componente.
      * 
      * @param array $config Configuración del PostRender
+     * @param bool $useCache Si se debe usar cache (false para preview/editor)
      * @return WP_Query La consulta ejecutada
      */
-    public static function query(array $config): WP_Query
+    public static function query(array $config, bool $useCache = true): WP_Query
     {
         $args = self::buildQueryArgs($config);
-        return new WP_Query($args);
+        
+        // No usar cache en modo preview o si se desactiva explícitamente
+        if (!$useCache || isset($config['noCache']) || is_admin() || self::isEditorMode()) {
+            return new WP_Query($args);
+        }
+
+        // Generar key de cache única basada en los argumentos
+        $cacheKey = self::generateCacheKey($args);
+        $cached = get_transient($cacheKey);
+
+        if ($cached !== false && $cached instanceof WP_Query) {
+            return $cached;
+        }
+
+        // Ejecutar query y cachear
+        $query = new WP_Query($args);
+        
+        // Solo cachear si hay resultados
+        if ($query->have_posts()) {
+            set_transient($cacheKey, $query, self::CACHE_EXPIRATION);
+        }
+
+        return $query;
+    }
+
+    /**
+     * Genera una key de cache única basada en los argumentos de query.
+     * 
+     * @param array $args Argumentos de WP_Query
+     * @return string Key de cache
+     */
+    private static function generateCacheKey(array $args): string
+    {
+        $postType = $args['post_type'] ?? 'post';
+        $hash = md5(serialize($args));
+        return 'gbn_pr_' . $postType . '_' . $hash;
+    }
+
+    /**
+     * Detecta si estamos en modo editor GBN.
+     * 
+     * @return bool
+     */
+    private static function isEditorMode(): bool
+    {
+        // Si el usuario puede editar, probablemente está en el editor
+        return current_user_can('edit_posts') && 
+               (wp_doing_ajax() || isset($_GET['preview']) || isset($_GET['gbn-edit']));
     }
 
     /**

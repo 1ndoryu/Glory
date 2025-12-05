@@ -55,6 +55,8 @@ class PostRenderComponent extends AbstractComponent
             'flexWrap' => 'wrap',
             'alignItems' => 'stretch',
             'justifyContent' => 'flex-start',
+            'layoutPattern' => 'none',
+            'hoverEffect' => 'none',
             
             // Interacción
             'categoryFilter' => false,
@@ -205,6 +207,31 @@ class PostRenderComponent extends AbstractComponent
                 ->default('20px')
                 ->tab('Layout')
                 ->condition(['displayMode', 'in', ['grid', 'flex']])
+        );
+
+        $schema->addOption(
+            Option::select('layoutPattern', 'Patrón de Layout')
+                ->options([
+                    ['valor' => 'none', 'etiqueta' => 'Ninguno (Normal)'],
+                    ['valor' => 'alternado_lr', 'etiqueta' => 'Alternado Izq/Der'],
+                    ['valor' => 'masonry', 'etiqueta' => 'Masonry (próximamente)'],
+                ])
+                ->default('none')
+                ->tab('Layout')
+                ->description('Patrón visual de disposición de items')
+        );
+
+        $schema->addOption(
+            Option::select('hoverEffect', 'Efecto Hover')
+                ->options([
+                    ['valor' => 'none', 'etiqueta' => 'Ninguno'],
+                    ['valor' => 'lift', 'etiqueta' => 'Elevación'],
+                    ['valor' => 'scale', 'etiqueta' => 'Escala'],
+                    ['valor' => 'glow', 'etiqueta' => 'Resplandor'],
+                ])
+                ->default('none')
+                ->tab('Layout')
+                ->description('Efecto visual al pasar el mouse')
         );
 
         // Flex Options
