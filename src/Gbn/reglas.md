@@ -378,19 +378,23 @@ public function getAllowedChildren(): array
 
 ### Componentes Contenedores Actuales
 
-| Componente               | `getAllowedChildren()`                                       |
-| :----------------------- | :----------------------------------------------------------- |
-| `PrincipalComponent`     | `['secundario']`                                             |
-| `SecundarioComponent`    | `['secundario', 'text', 'image', 'button', 'form', 'postRender']` |
-| `FormComponent`          | `['input', 'textarea', 'select', 'submit', 'secundario']`    |
-| `PostRenderComponent`    | `['postItem']`                                               |
-| `PostItemComponent`      | `['postField', 'text', 'image', 'secundario', 'button']`     |
+| Componente            | `getAllowedChildren()`                                            |
+| :-------------------- | :---------------------------------------------------------------- |
+| `PrincipalComponent`  | `['secundario']`                                                  |
+| `SecundarioComponent` | `['secundario', 'text', 'image', 'button', 'form', 'postRender']` |
+| `FormComponent`       | `['input', 'textarea', 'select', 'submit', 'secundario']`         |
+| `PostRenderComponent` | `['postItem']`                                                    |
+| `PostItemComponent`   | `['postField', 'text', 'image', 'secundario', 'button']`          |
+| `HeaderComponent`     | `['logo', 'menu', 'secundario', 'button']`                        |
+| `FooterComponent`     | `['secundario', 'text', 'logo', 'menu', 'button', 'image']`       |
+| `MenuComponent`       | `['menuItem']`                                                    |
+| `MenuItemComponent`   | `['menuItem']` (para submenús anidados)                           |
 
 ### Impacto en el Sistema
 
 1. **inspector.js**: La función `getAllowedChildrenForRole(role)` consulta `gloryGbnCfg.containers[role].allowedChildren`
 2. **library.js**: Filtra componentes según `allowedRoles` pasado al abrir
-3. **context-menu.js**: (Pendiente) Mostrará botón "+" con hijos permitidos
+3. **context-menu.js**: Muestra botón "+" con hijos permitidos
 
 ### Checklist al Crear Componentes Contenedores
 
@@ -401,6 +405,6 @@ public function getAllowedChildren(): array
 
 ---
 
-**Versión:** 2.2 (Añadida regla de componentes contenedores - Diciembre 2025)  
+**Versión:** 2.3 (Añadidos Header y Footer - Diciembre 2025)  
 **Relacionado:** `plan.md`, `documentación-gbn.md`, `guia-crear-componente.md`
 

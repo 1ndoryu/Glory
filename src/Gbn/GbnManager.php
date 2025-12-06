@@ -33,11 +33,17 @@ class GbnManager
             \Glory\Gbn\Diagnostics\ControlPanelManager::register();
         }
 
+        // Fase 15: Registrar páginas de admin para Header/Footer
+        if (class_exists(\Glory\Gbn\Pages\HeaderEditorPage::class)) {
+            \Glory\Gbn\Pages\HeaderEditorPage::register();
+        }
+        if (class_exists(\Glory\Gbn\Pages\FooterEditorPage::class)) {
+            \Glory\Gbn\Pages\FooterEditorPage::register();
+        }
+
         // Registrar endpoints AJAX de GBN en init
         add_action('init', [GbnManager::class, 'registerAjax']);
         add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);
-        add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);
-        // add_action('wp_footer', [self::class, 'injectEditButtons'], 5);
 
         // Filter frontend content to remove internal GBN attributes
         // Must run AFTER PostRender processing (priority 20 vs 15)
@@ -59,6 +65,11 @@ class GbnManager
         // Usa el registrador centralizado de GBN para ajax
         if (class_exists(\Glory\Gbn\GbnAjaxHandler::class)) {
             \Glory\Gbn\GbnAjaxHandler::register();
+        }
+
+        // Fase 15: Registrar handlers AJAX para templates Header/Footer
+        if (class_exists(\Glory\Gbn\Handlers\TemplateAjaxHandler::class)) {
+            \Glory\Gbn\Handlers\TemplateAjaxHandler::register();
         }
     }
 
@@ -443,6 +454,27 @@ class GbnManager
                 'file' => '/js/ui/renderers/submit.js',
                 'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
             ],
+            // Fase 15: Layout Components (Header, Footer, Menu, Logo)
+            'glory-gbn-ui-renderers-header' => [
+                'file' => '/js/ui/renderers/header.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-logo' => [
+                'file' => '/js/ui/renderers/logo.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-menu' => [
+                'file' => '/js/ui/renderers/menu.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-footer' => [
+                'file' => '/js/ui/renderers/footer.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-menu-item' => [
+                'file' => '/js/ui/renderers/menu-item.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
 
             'glory-gbn-ui-panel-render' => [
                 'file' => '/js/ui/panel-render.js',
@@ -465,6 +497,12 @@ class GbnManager
                     'glory-gbn-ui-renderers-textarea',
                     'glory-gbn-ui-renderers-select',
                     'glory-gbn-ui-renderers-submit',
+                    // Fase 15: Layout renderers
+                    'glory-gbn-ui-renderers-header',
+                    'glory-gbn-ui-renderers-logo',
+                    'glory-gbn-ui-renderers-menu',
+                    'glory-gbn-ui-renderers-footer',
+                    'glory-gbn-ui-renderers-menu-item',
                 ],
             ],
             'glory-gbn-theme-applicator' => [

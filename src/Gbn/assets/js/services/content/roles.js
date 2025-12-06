@@ -25,7 +25,13 @@
         input: { attribute: 'gloryInput', dataAttribute: 'data-gbn-input' },
         textarea: { attribute: 'gloryTextarea', dataAttribute: 'data-gbn-textarea' },
         select: { attribute: 'glorySelect', dataAttribute: 'data-gbn-select' },
-        submit: { attribute: 'glorySubmit', dataAttribute: 'data-gbn-submit' }
+        submit: { attribute: 'glorySubmit', dataAttribute: 'data-gbn-submit' },
+        // Fase 15: Componentes de Layout (Header, Footer, Menu, Logo)
+        header: { attribute: 'gloryHeader', dataAttribute: 'data-gbn-header' },
+        logo: { attribute: 'gloryLogo', dataAttribute: 'data-gbn-logo' },
+        menu: { attribute: 'gloryMenu', dataAttribute: 'data-gbn-menu' },
+        footer: { attribute: 'gloryFooter', dataAttribute: 'data-gbn-footer' },
+        menuItem: { attribute: 'gloryMenuItem', dataAttribute: 'data-gbn-menu-item' }
     };
 
 

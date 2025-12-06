@@ -34,6 +34,11 @@
 | TextareaComponent   | `textarea`   | `[gloryTextarea]`      | Spacing, Border, Typography                     | ✅      |
 | SelectComponent     | `select`     | `[glorySelect]`        | Spacing, Border                                 | ✅      |
 | SubmitComponent     | `submit`     | `[glorySubmit]`        | Spacing, Border, Typography                     | ✅      |
+| HeaderComponent     | `header`     | `[gloryHeader]`        | Spacing, Background, Positioning                | ✅      |
+| LogoComponent       | `logo`       | `[gloryLogo]`          | Spacing, Typography                             | ✅      |
+| MenuComponent       | `menu`       | `[gloryMenu]`          | Spacing, Typography                             | ✅      |
+| FooterComponent     | `footer`     | `[gloryFooter]`        | Spacing, Background, Grid                       | ✅      |
+| MenuItemComponent   | `menuItem`   | `[gloryMenuItem]`      | Spacing, Typography                             | ✅      |
 
 ---
 
@@ -647,36 +652,107 @@ Al guardar cambios en PostRender, el contenido se volvía estático. Los posts n
 
 ---
 
-#### 🟠 Plantillas de Layout: Header y Footer
+#### ✅ RESUELTO: Plantillas de Layout: Header y Footer
 **Prioridad:** Alta  
-**Estado:** Requiere diseño arquitectónico
+**Estado:** ✅ Implementado (Diciembre 2025) - Fase 15
 
-**Objetivo:** Header y Footer editables como "páginas especiales" siguiendo lógica similar a PostRender.
+**Objetivo:** Header y Footer editables como componentes GBN independientes y fáciles de editar en código.
 
-**Características deseadas:**
-- Modificables desde panel Y desde código (como PostRender)
-- Página especial dedicada para editar Header
-- Página especial dedicada para editar Footer
-- Acceso directo desde Theme Settings
+**Características implementadas:**
+- ✅ Templates de header y footer independientes de Glory (100% GBN)
+- ✅ Componente `HeaderComponent` - Contenedor principal con posición fija, efecto scroll, glassmorphism
+- ✅ Componente `LogoComponent` - Subcomponente del header con modos: imagen, texto, SVG
+- ✅ Componente `MenuComponent` - Menú dinámico con soporte WordPress y manual
+- ✅ Componente `FooterComponent` - Contenedor con layout de columnas configurable
+- ✅ Estructura y clases CSS compatibles con Glory (`.siteMenuW`, `.siteMenuNav`, etc.)
+- ✅ Renderers JS con `getStyles()` y `handleUpdate()` siguiendo patrón SOLID
+- ✅ `getAllowedChildren()` implementado para relaciones padre-hijo
 
-**Arquitectura propuesta:**
+**Arquitectura implementada:**
 ```
-/wp-admin/admin.php?page=gbn-edit-header  → Editar Header
-/wp-admin/admin.php?page=gbn-edit-footer  → Editar Footer
+components/
+├── Header/HeaderComponent.php    → [gloryHeader] - Contenedor principal
+├── Logo/LogoComponent.php        → [gloryLogo] - Subcomponente del header
+├── Menu/MenuComponent.php        → [gloryMenu] - Menú de navegación
+└── Footer/FooterComponent.php    → [gloryFooter] - Footer del sitio
+
+assets/js/ui/renderers/
+├── header.js   → Renderer con scroll behavior, glassmorphism
+├── logo.js     → Renderer con modos imagen/texto/SVG
+├── menu.js     → Renderer con menú dinámico y manual
+└── footer.js   → Renderer con layout de columnas
 ```
 
-**Flujo:**
-1. Usuario accede a página especial de Header
-2. GBN carga el HTML del header como contenido editable
-3. Cambios se guardan en `wp_options` (gbn_header_template)
-4. Frontend renderiza header desde template guardado
+**Relaciones padre-hijo:**
+- `Header` → `['logo', 'menu', 'secundario', 'button']`
+- `Menu` → `['menuItem']` (futuro)
+- `Footer` → `['secundario', 'text', 'logo', 'menu', 'button', 'image']`
+- `Logo` → `[]` (atómico)
 
-**Referencia:** Evaluar lógica útil de `Glory/src/Components/Header/`
+**Uso en HTML:**
+```html
+<header gloryHeader class="siteMenuW">
+    <div class="siteMenuContainer">
+        <div gloryLogo class="siteMenuLogo">
+            <a href="/" rel="home">Logo</a>
+        </div>
+        <nav gloryMenu class="siteMenuNav">
+            <ul class="menu menu-level-1">
+                <li><a href="#">Inicio</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
 
-**Archivos nuevos estimados:**
-- `pages/HeaderEditorPage.php`
-- `pages/FooterEditorPage.php`
-- `services/TemplateService.php` → Guardar/cargar templates
+<footer gloryFooter class="gbn-footer">
+    <div class="gbn-footer-container">
+        <!-- Contenido del footer -->
+    </div>
+</footer>
+```
+
+**Archivos creados:**
+- `components/Header/HeaderComponent.php`
+- `components/Logo/LogoComponent.php`
+- `components/Menu/MenuComponent.php`
+- `components/Menu/MenuItemComponent.php`
+- `components/Footer/FooterComponent.php`
+- `assets/js/ui/renderers/header.js`
+- `assets/js/ui/renderers/logo.js`
+- `assets/js/ui/renderers/menu.js`
+- `assets/js/ui/renderers/menu-item.js`
+- `assets/js/ui/renderers/footer.js`
+- `Pages/HeaderEditorPage.php` → Página admin: Apariencia > Header GBN
+- `Pages/FooterEditorPage.php` → Página admin: Apariencia > Footer GBN
+- `Services/TemplateService.php` → Persistencia en wp_options
+- `Handlers/TemplateAjaxHandler.php` → AJAX para guardar/eliminar templates
+
+**Archivos modificados:**
+- `GbnManager.php` → Registro de scripts, páginas de admin, y handlers AJAX
+- `panel-render.js` → 5 nuevos resolvers de estilos (header, logo, menu, footer, menuItem)
+- `roles.js` → 5 nuevos FALLBACK_SELECTORS
+- `header.php` → Integración condicional de GBN header cuando está activado
+- `footer.php` → Integración condicional de GBN footer cuando está activado
+- `components.css` → Estilos CSS para componentes de layout
+
+**Flujo de integración:**
+```
+1. Usuario accede a Apariencia > Header GBN
+2. Editor GBN carga con template por defecto o guardado
+3. Usuario edita visualmente el header
+4. Botón "Guardar" envía AJAX a gbn_save_header_template
+5. TemplateService guarda en wp_options (gbn_header_template)
+6. Frontend: header.php verifica si GBN está activo y hay template
+7. Si existe template GBN → TemplateService::renderHeader()
+8. Si no existe → HeaderRenderer tradicional de Glory
+```
+
+**Claves de wp_options:**
+- `gbn_header_template` → HTML del header
+- `gbn_header_config` → Configuración de componentes
+- `gbn_footer_template` → HTML del footer
+- `gbn_footer_config` → Configuración de componentes
+
 
 ---
 
