@@ -397,9 +397,33 @@ class ScriptManifest
                 'file' => '/js/ui/renderers/theme-settings.js',
                 'deps' => ['glory-gbn-ui-renderers-shared'],
             ],
+            // PostRender módulos (refactorizado Dic 2025)
+            'glory-gbn-ui-renderers-post-render-styles' => [
+                'file' => '/js/ui/renderers/post-render/styles.js',
+                'deps' => ['glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-post-render-fields' => [
+                'file' => '/js/ui/renderers/post-render/fields.js',
+                'deps' => ['glory-gbn-state'],
+            ],
+            'glory-gbn-ui-renderers-post-render-clones' => [
+                'file' => '/js/ui/renderers/post-render/clones.js',
+                'deps' => ['glory-gbn-ui-renderers-post-render-fields'],
+            ],
+            'glory-gbn-ui-renderers-post-render-preview' => [
+                'file' => '/js/ui/renderers/post-render/preview.js',
+                'deps' => ['glory-gbn-ui-renderers-post-render-clones', 'glory-gbn-ui-renderers-post-render-fields'],
+            ],
             'glory-gbn-ui-renderers-post-render' => [
                 'file' => '/js/ui/renderers/post-render.js',
-                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+                'deps' => [
+                    'glory-gbn-ui-renderers-shared',
+                    'glory-gbn-ui-renderers-traits',
+                    'glory-gbn-ui-renderers-post-render-styles',
+                    'glory-gbn-ui-renderers-post-render-clones',
+                    'glory-gbn-ui-renderers-post-render-fields',
+                    'glory-gbn-ui-renderers-post-render-preview',
+                ],
             ],
             'glory-gbn-ui-renderers-post-item' => [
                 'file' => '/js/ui/renderers/post-item.js',
@@ -621,9 +645,34 @@ class ScriptManifest
                 'file' => '/js/ui/dock.js',
                 'deps' => ['glory-gbn-ui-panel'],
             ],
+            // Inspector módulos (refactorizado Dic 2025)
+            'glory-gbn-ui-inspector-state' => [
+                'file' => '/js/ui/inspector/state.js',
+                'deps' => ['glory-gbn-state'],
+            ],
+            'glory-gbn-ui-inspector-controls' => [
+                'file' => '/js/ui/inspector/controls.js',
+                'deps' => ['glory-gbn-ui-inspector-state', 'glory-gbn-state'],
+            ],
+            'glory-gbn-ui-inspector-global-controls' => [
+                'file' => '/js/ui/inspector/global-controls.js',
+                'deps' => ['glory-gbn-ui-inspector-controls', 'glory-gbn-state'],
+            ],
+            'glory-gbn-ui-inspector-hover-manager' => [
+                'file' => '/js/ui/inspector/hover-manager.js',
+                'deps' => ['glory-gbn-ui-inspector-state', 'glory-gbn-ui-inspector-global-controls', 'glory-gbn-state'],
+            ],
             'glory-gbn-ui-inspector' => [
                 'file' => '/js/ui/inspector.js',
-                'deps' => ['glory-gbn-ui-dragdrop', 'glory-gbn-ui-library', 'glory-gbn-ui-dock'],
+                'deps' => [
+                    'glory-gbn-ui-dragdrop',
+                    'glory-gbn-ui-library',
+                    'glory-gbn-ui-dock',
+                    'glory-gbn-ui-inspector-state',
+                    'glory-gbn-ui-inspector-controls',
+                    'glory-gbn-ui-inspector-global-controls',
+                    'glory-gbn-ui-inspector-hover-manager',
+                ],
             ],
             'glory-gbn-debug-overlay' => [
                 'file' => '/js/ui/debug/overlay.js',

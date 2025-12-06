@@ -558,13 +558,13 @@ El filtro no hace nada al activarse.
 ---
 
 ### REFACTOR-003: Archivos Grandes (Fase 16)
-**Prioridad:** Media | **Estado:** Planificado
+**Prioridad:** Media | **Estado:** En progreso
 
 Refactorizar archivos que superan las 600 líneas:
 
-- [ ] `post-render.js` (801 líneas) → Dividir en módulos
+- [x] `post-render.js` (802→210 líneas) → Dividido en 5 módulos (Dic 2025)
+- [x] `inspector.js` (676→170 líneas) → Dividido en 5 módulos (Dic 2025)
 - [ ] `PostRenderProcessor.php` (762 líneas) → Dividir en clases
-- [ ] `inspector.js` (675 líneas) → Dividir en módulos
 - [ ] `panel-core.js` (627 líneas) → Dividir en módulos
 
 ---
