@@ -77,7 +77,7 @@
         container.innerHTML = '';
         
         // Ubicar contenedores externos (header para tabs, footer para estados)
-        var tabsContainer = document.querySelector('.gbn-header-tabs-area');
+        var tabsContainer = document.querySelector('.gbn-panel-header-tabs-area');
         var footerStatesContainer = document.querySelector('.gbn-footer-states-area');
         
         // Limpiar contenedores externos

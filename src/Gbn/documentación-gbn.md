@@ -593,4 +593,98 @@ $builderScripts = ScriptManifest::getBuilderScripts();
 ---
 
 **Versión:** 2.2 (Refactorización utils.js y GbnManager - Diciembre 2025)  
-**Relacionado:** `reglas.md`, `plan.md`, `guia-crear-componente.md`, `plan_refactoring_icons_layout.md`
+**Relacionado:** `reglas.md`, `plan.md`, `guia-crear-componente.md`
+
+---
+
+## 16. Sistema de Iconos (IconRegistry)
+
+Para evitar duplicación y mantener consistencia visual, GBN utiliza un registro centralizado de iconos SVG.
+
+### Uso en PHP (Backend/Definition)
+
+Define iconos en tus componentes usando `IconRegistry`:
+
+```php
+use Glory\Gbn\Icons\IconRegistry;
+
+// Obtener un icono específico
+$icon = IconRegistry::get('layout.grid');
+
+// Usar en opciones (iconGroup)
+Option::iconGroup('layout', 'Layout')
+    ->options(IconRegistry::getGroup([
+        'layout.block',
+        'layout.flex',
+        'layout.grid'
+    ]));
+```
+
+### Uso en JavaScript (Frontend/Panel)
+
+```javascript
+import { Icons } from '../ui/icons/index.js'; // O window.GbnIcons
+
+// Obtener un icono
+const myIcon = Icons.get('layout.grid');
+
+// Obtener icono con atributos personalizados
+const redIcon = Icons.get('action.delete', { class: 'text-red-500' });
+```
+
+### Categorías de Iconos Dispoibles
+
+- `layout.*` (grid, flex, block)
+- `direction.*` (row, column)
+- `align.*` (start, center, end, stretch)
+- `justify.*` (start, center, end, between, around)
+- `background.*` (cover, contain, fixed)
+- `position.*` (absolute, relative, top-left...)
+- `border.*` (solid, dashed, dotted)
+- `action.*` (edit, delete, save, close)
+- `state.*` (hover, focus, active)
+- `tab.*` (config, style, advanced)
+- `typography.*` (bold, italic, uppercase)
+- `format.*` (h1, h2, h3, p)
+
+---
+
+## 17. Convenciones de Esquema (Schema Standards)
+
+Para mantener la consistencia entre componentes, sigue estas convenciones al definir opciones con `SchemaBuilder`.
+
+### Tipos de Campos Comunes
+
+| Concepto          | Tipo Recomendado | Helper             | Notas                         |
+| :---------------- | :--------------- | :----------------- | :---------------------------- |
+| **Gap/Espaciado** | Slider           | `Option::gap()`    | Unidades `px`, min 0, max 120 |
+| **Colores**       | Color Picker     | `Option::color()`  | Soporta alpha, paleta global  |
+| **Dimensiones**   | Text Select      | `HasDimensions`    | Auto, %, px, vh, custom       |
+| **Layout**        | Icon Group       | `HasLayoutOptions` | Block, Flex, Grid             |
+
+### Condiciones Canónicas
+
+Usa el formato de 3 elementos explícito: `[campo, operador, valor]`.
+
+```php
+// ✅ CORRECTO
+->condition(['layout', '==', 'flex'])
+->condition(['layout', 'in', ['flex', 'grid']])
+
+// ❌ EVITAR (Formatos legacy o implícitos)
+->condition('layout', 'flex') 
+->condition(['layout', '===', 'flex']) // Usar '==' para consistencia JS
+```
+
+### Estructura de Opciones
+
+Usa siempre `valor` y `etiqueta` en español.
+
+```php
+// ✅ CORRECTO
+['valor' => 'start', 'etiqueta' => 'Inicio']
+
+// ❌ INCORRECTO
+['value' => 'start', 'label' => 'Start'] // Inglés/Legacy
+['start' => 'Inicio'] // Key-Value pair (solo permitido en arrays simples legacy)
+```

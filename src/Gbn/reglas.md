@@ -424,5 +424,5 @@ public function getAllowedChildren(): array
 ---
 
 **Versión:** 2.4 (Refactorización utils.js y GbnManager - Diciembre 2025)  
-**Relacionado:** `plan.md`, `documentación-gbn.md`, `guia-crear-componente.md`, `plan_refactoring_icons_layout.md`
+**Relacionado:** `plan.md`, `documentación-gbn.md`, `guia-crear-componente.md`
 

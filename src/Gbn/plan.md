@@ -96,14 +96,15 @@
 
 ### ✅ Fases Completadas
 
-| Fase     | Funcionalidad                  | Componentes / Archivos Clave                                                                                                                       |
-| :------- | :----------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **15**   | Header/Footer Editables        | `HeaderComponent`, `LogoComponent`, `MenuComponent`, `FooterComponent`, `MenuItemComponent` + renderers JS + `TemplateService.php` + páginas admin |
-| **14.5** | Notificación Email Formularios | `FormSubmitHandler.php`, `form-submit.js` (honeypot, rate-limit, AJAX)                                                                             |
-| **14**   | Componentes de Formulario      | `FormComponent`, `InputComponent`, `TextareaComponent`, `SelectComponent`, `SubmitComponent` + renderers JS                                        |
-| **13**   | PostRender Dinámico            | `PostRenderComponent`, `PostItemComponent`, `PostFieldComponent`, `PostRenderProcessor`, `PostRenderService`                                       |
-| **11**   | Refactorización SOLID          | `renderer-traits.js` (~350 líneas compartidas), reducción 50-60% en text/button.js                                                                 |
-| **10**   | Estados Hover/Focus            | `config._states`, `state-styles.js`, `style-generator.js`, simulación visual                                                                       |
+| Fase      | Funcionalidad                  | Componentes / Archivos Clave                                                                                                                       |
+| :-------- | :----------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **15**    | Header/Footer Editables        | `HeaderComponent`, `LogoComponent`, `MenuComponent`, `FooterComponent`, `MenuItemComponent` + renderers JS + `TemplateService.php` + páginas admin |
+| **14.5**  | Notificación Email Formularios | `FormSubmitHandler.php`, `form-submit.js` (honeypot, rate-limit, AJAX)                                                                             |
+| **14**    | Componentes de Formulario      | `FormComponent`, `InputComponent`, `TextareaComponent`, `SelectComponent`, `SubmitComponent` + renderers JS                                        |
+| **13**    | PostRender Dinámico            | `PostRenderComponent`, `PostItemComponent`, `PostFieldComponent`, `PostRenderProcessor`, `PostRenderService`                                       |
+| **12**    | Modernización MenuComponent    | Refactor completo: SchemaBuilder, `HasTypography`, iconGroups, nombres canónicos (`layout`), `MenuWalker` compatible.                              |
+| **10-11** | Estandarización Schema         | `Option::gap()`, `Option::condition()` canónico `[field, op, val]`, normalización de tipos y operadores.                                           |
+| **7-9**   | Refactor Icons & Layout        | `IconRegistry` (PHP/JS), `HasLayoutOptions`, `HasDimensions`, eliminación de SVGs inline duplicados.                                               |
 
 ### ✅ Mejoras UI/UX Implementadas
 - Smart Dimension Control (input + presets)
@@ -116,6 +117,8 @@
 - Font-weight en Typography
 - CSS Specificity con `:where()` en `init.css`
 - Variables CSS en `interactive.css`
+- **Sistema de Iconos Centralizado**: +50 SVGs únicos gestionados por `IconRegistry` y `Icons` JS.
+- **Layout Unificado**: Opciones de Grid/Flex/Block consistentes en todos los componentes.
 
 ### ✅ Integraciones Completadas
 
@@ -125,6 +128,7 @@
 | **Menú Contextual +**   | Botón "+" inteligente según relaciones padre-hijo  | `context-menu.js`, `utils.js`                                                              |
 | **PostRender WYSIWYG**  | Preview con clones, MutationObserver inteligente   | `post-render.js`, `interactive.css`                                                        |
 | **PostRender Dinámico** | `isEditorMode()` para preservar template en editor | `PostRenderProcessor.php`, `persistence.js`                                                |
+| **IconRegistry**        | Single Source of Truth para iconos SVG             | `IconRegistry.php`, `ui/icons/index.js`                                                    |
 
 ### ✅ Bugs Críticos Resueltos (Diciembre)
 
@@ -136,6 +140,8 @@
 | Stale block reference           | `state.get(block.id)` antes de `cloneConfig()`            | `panel-render.js`                   |
 | Atributos glory* borrados       | Preservar `glory*`, limpiar solo `data-gbn-*` internos    | `GbnManager.php`, `dom.js`          |
 | PostRender duplicación          | Detectar `data-post-id` existente                         | `PostRenderProcessor.php`           |
+| Iconos inconsistentes           | Centralización en `IconRegistry` (PHP/JS)                 | `Traits/*.php`, `panel-fields/*.js` |
+| Opciones Layout duplicadas      | Trait `HasLayoutOptions` unificado                        | `HasLayoutOptions.php`              |
 
 **Otros bugs menores resueltos:** PostField hidratación, categoryFilter undefined, Docking persistente, colores paleta, placeholder imagen, Data Leak, border overflow, dirty HTML, hover especificidad, layout frontend deslogeado.
 
@@ -163,11 +169,11 @@ El filtro no hace nada al activarse. **Archivos:** `post-render-frontend.js`, `P
 
 ### 🔍 Investigación Arquitectónica
 
-#### Iconos SVG Repetidos
-**Problema:** Iconos definidos en cada componente individualmente. **Propuesta:** Crear `IconRegistry` centralizado en `assets/js/ui/icons/`.
+#### Iconos SVG Repetidos (RESUELTO ✅)
+**Problema:** Iconos definidos en cada componente individualmente. **Solución:** Implementado `IconRegistry.php` y sistema de iconos JS.
 
-#### Layout Options No Centralizadas
-**Problema:** PostRender "Modo de Visualización" vs DivPrincipal "Layout" no comparten fuente. **Acción:** Auditar `buildSchema()` de ambos componentes.
+#### Layout Options No Centralizadas (RESUELTO ✅)
+**Problema:** PostRender "Modo de Visualización" vs DivPrincipal "Layout" no comparten fuente. **Solución:** Implementado trait `HasLayoutOptions`.
 
 ---
 
@@ -192,6 +198,52 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente. Similar a 
 ---
 
 ### ⏳ Pendientes Confirmados (Backlog)
+
+#### 🔄 Refactorización de Archivos Grandes (Fase 16)
+**Prioridad:** Media | **Estado:** Planificado
+
+Siguiendo el principio de **archivos pequeños y enfocados** (SRP), refactorizar archivos que superan las 600 líneas:
+
+**Archivos objetivo:**
+- [ ] `post-render.js` (801 líneas) → Dividir en módulos:
+  - `post-render/state.js` → Estado y sincronización de clones
+  - `post-render/query.js` → Lógica de consultas WP y filtros
+  - `post-render/clones.js` → Gestión de clones (crear, actualizar, eliminar)
+  - `post-render/ajax-handler.js` → Manejo de respuestas AJAX y categorías
+  - `post-render.js` → Orquestador principal
+
+- [ ] `PostRenderProcessor.php` (762 líneas) → Dividir en clases:
+  - `PostQuery/QueryBuilder.php` → Construcción de WP_Query
+  - `PostQuery/FilterHandler.php` → Filtros por categoría, tags, autor
+  - `PostRender/TemplateRenderer.php` → Renderizado de plantillas
+  - `PostRender/FieldMapper.php` → Mapeo de campos (PostField)
+  - `PostRenderProcessor.php` → Orquestador principal
+
+- [ ] `inspector.js` (675 líneas) → Dividir en módulos:
+  - `inspector/state.js` → Estado del inspector (isActive, currentSection)
+  - `inspector/ui-builder.js` → Construcción de UI (tabs, secciones)
+  - `inspector/tree-view.js` → Vista de árbol de bloques
+  - `inspector/relationships.js` → Lógica de padre-hijo (allowedChildren)
+  - `inspector/actions.js` → Acciones (delete, duplicate, move)
+  - `inspector.js` → Orquestador principal
+
+- [ ] `panel-core.js` (627 líneas) → Dividir en módulos:
+  - `panel-core/initialization.js` → Inicialización y setup
+  - `panel-core/registry.js` → Registro de tipos de campos
+  - `panel-core/field-renderer.js` → Renderizado de campos
+  - `panel-core/listeners.js` → Event listeners y bindings
+  - `panel-core.js` → Orquestador principal
+
+**Beneficios esperados:**
+- Reducción de complejidad ciclomática
+- Mejor testabilidad de módulos individuales
+- Adherencia a SRP (Single Responsibility Principle)
+- Facilita el mantenimiento y depuración
+- Consistencia con refactorizaciones previas (theme/render.js, panel-render.js, utils.js)
+
+**Dependencias:** Ninguna (mejora de calidad de código)
+
+---
 
 #### Fase 9: Transform con Iconos para Botones
 **Objetivo:** Exponer transformaciones CSS con presets visuales.

@@ -54,12 +54,12 @@
             panelRoot.id = 'gbn-panel';
             panelRoot.setAttribute('aria-hidden', 'true');
             panelRoot.innerHTML = ''
-                + '<header class="gbn-header" style="display: flex; flex-direction: column; background: #fafafa; border-bottom: 1px solid #e0e0e0;">'
+                + '<header class="gbn-panel-header" style="display: flex; flex-direction: column; background: #fafafa; border-bottom: 1px solid #e0e0e0;">'
                 + '  <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 15px; padding-bottom: 10px;">'
-                + '    <span class="gbn-header-title" style="font-weight: 600; font-size: 13px;">GBN Panel</span>'
-                + '    <button type="button" class="gbn-header-close" data-gbn-action="close-panel" aria-label="Close panel" style="background:none; border:none; cursor:pointer; font-size:18px;">×</button>'
+                + '    <span class="gbn-panel-header-title" style="font-weight: 600; font-size: 13px;">GBN Panel</span>'
+                + '    <button type="button" class="gbn-panel-header-close" data-gbn-action="close-panel" aria-label="Close panel" style="background:none; border:none; cursor:pointer; font-size:18px;">×</button>'
                 + '  </div>'
-                + '  <div class="gbn-header-tabs-area" style="width: 100%;"></div>'
+                + '  <div class="gbn-panel-header-tabs-area" style="width: 100%;"></div>'
                 + '</header>'
                 + '<div class="gbn-body" style="padding-bottom: 120px;"></div>' /* Space for footer */
                 + '<footer class="gbn-footer" style="position: absolute; bottom: 0; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 14px; border-top: 1px solid #f0f0f0; background: #fafafa;">'
@@ -70,7 +70,7 @@
             document.body.appendChild(panelRoot);
         }
         panelBody = panelRoot.querySelector('.gbn-body');
-        panelTitle = panelRoot.querySelector('.gbn-header-title');
+        panelTitle = panelRoot.querySelector('.gbn-panel-header-title');
         panelFooter = panelRoot.querySelector('.gbn-footer-primary');
         panelNotice = panelRoot.querySelector('.gbn-footer-status');
         
