@@ -647,28 +647,36 @@ Al guardar cambios en PostRender, el contenido se volvía estático. Los posts n
 
 ---
 
-#### ✅ RESUELTO: Plantillas de Layout: Header y Footer
+#### 🟠 Plantillas de Layout: Header y Footer
 **Prioridad:** Alta  
-**Estado:** ✅ Implementado (Diciembre 2025)
+**Estado:** Requiere diseño arquitectónico
 
 **Objetivo:** Header y Footer editables como "páginas especiales" siguiendo lógica similar a PostRender.
 
-**Características implementadas:**
-- ✅ Modificables desde panel dedicado
-- ✅ Página especial para editar Header (`gbn-edit-header`)
-- ✅ Página especial para editar Footer (`gbn-edit-footer`)
-- ✅ Integración con Theme (`header.php` y `footer.php` condicionales)
-- ✅ Default Header basado en el diseño original de Glory
+**Características deseadas:**
+- Modificables desde panel Y desde código (como PostRender)
+- Página especial dedicada para editar Header
+- Página especial dedicada para editar Footer
+- Acceso directo desde Theme Settings
 
-**Arquitectura:**
-- `pages/HeaderEditorPage.php` - Controlador de página de edición
-- `pages/FooterEditorPage.php` - Controlador de página de edición
-- `Services/TemplateService.php` - Servicio de persistencia (wp_options)
-- `ConfigHandler.php` - Soporte para contextos `header` y `footer`
-- Frontend: `header.php` reemplaza el header nativo si GBN está activo
+**Arquitectura propuesta:**
+```
+/wp-admin/admin.php?page=gbn-edit-header  → Editar Header
+/wp-admin/admin.php?page=gbn-edit-footer  → Editar Footer
+```
 
-**Uso:**
-Acceder desde el menú de administración: Apariencia -> Header GBN / Footer GBN.
+**Flujo:**
+1. Usuario accede a página especial de Header
+2. GBN carga el HTML del header como contenido editable
+3. Cambios se guardan en `wp_options` (gbn_header_template)
+4. Frontend renderiza header desde template guardado
+
+**Referencia:** Evaluar lógica útil de `Glory/src/Components/Header/`
+
+**Archivos nuevos estimados:**
+- `pages/HeaderEditorPage.php`
+- `pages/FooterEditorPage.php`
+- `services/TemplateService.php` → Guardar/cargar templates
 
 ---
 

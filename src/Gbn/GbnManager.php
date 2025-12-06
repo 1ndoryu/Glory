@@ -33,14 +33,6 @@ class GbnManager
             \Glory\Gbn\Diagnostics\ControlPanelManager::register();
         }
 
-        // Registrar Páginas de Editor de Layout (Header/Footer)
-        if (class_exists(\Glory\Gbn\Pages\HeaderEditorPage::class)) {
-            \Glory\Gbn\Pages\HeaderEditorPage::register();
-        }
-        if (class_exists(\Glory\Gbn\Pages\FooterEditorPage::class)) {
-            \Glory\Gbn\Pages\FooterEditorPage::register();
-        }
-
         // Registrar endpoints AJAX de GBN en init
         add_action('init', [GbnManager::class, 'registerAjax']);
         add_action('wp_enqueue_scripts', [self::class, 'enqueueAssets']);

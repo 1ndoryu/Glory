@@ -200,7 +200,6 @@
         var payload = {
             nonce: cfg.nonce,
             pageId: cfg.pageId,
-            context: cfg.context || 'post',
             blocks: JSON.stringify(collectBlocksPayload()),
             responsiveCss: responsiveCss,
             htmlContent: rootHtml // Nuevo campo
