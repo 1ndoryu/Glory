@@ -558,7 +558,7 @@ El filtro no hace nada al activarse.
 ---
 
 ### REFACTOR-003: Archivos Grandes (Fase 16)
-**Prioridad:** Media | **Estado:** En progreso
+**Prioridad:** Media | **Estado:** ✅ COMPLETADO
 
 Refactorizar archivos que superan las 600 líneas:
 
@@ -574,7 +574,11 @@ Refactorizar archivos que superan las 600 líneas:
   - `panel-core/renderers/theme.js` - Render de tema
   - `panel-core/renderers/page.js` - Render de página
   - `panel-core/renderers/restore.js` - Render de restauración
-- [ ] `PostRenderProcessor.php` (768 líneas) → Dividir en clases
+- [x] `PostRenderProcessor.php` (768→280 líneas) → Dividido en 4 módulos (Dic 2025):
+  - `PostFieldProcessor.php` - Procesamiento de campos semánticos [gloryPostField]
+  - `PostItemRenderer.php` - Renderizado de items individuales
+  - `PostRenderStyles.php` - Generación de CSS scoped y estilos
+  - `PostRenderUI.php` - Componentes UI (filtros, paginación, mensajes)
 
 ---
 
@@ -619,6 +623,6 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 ---
 
 **Última actualización:** 6 Diciembre 2025  
-**Versión del plan:** 3.6 (REFACTOR-003: panel-core.js refactorizado en 8 módulos)  
+**Versión del plan:** 3.7 (REFACTOR-003 COMPLETADO: PostRenderProcessor.php dividido en 4 módulos)  
 **Mantenedor:** Ver `reglas.md` para protocolo de cambios
 
