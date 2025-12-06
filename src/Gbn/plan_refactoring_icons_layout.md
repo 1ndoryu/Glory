@@ -269,6 +269,43 @@ Existen múltiples formas de definir tipografía, creando confusión y código d
 
 ---
 
+### Problema 7: Elementos sin Iconos Definidos (Tabs y Componentes)
+
+#### 🔴 Tabs sin Iconos (Dependencia de Hardcoding JS)
+
+Actualmente, los iconos de las pestañas (Tabs) están **hardcodeados en `panel-render.js`** en un objeto mapa:
+
+```javascript
+var icons = {
+    'Contenido': '<svg...>',
+    'Estilo': '<svg...>',
+    'Avanzado': '<svg...>',
+    // ...
+};
+```
+
+**Consecuencias:**
+1. **MenuComponent** usa tabs en minúsculas (`configuracion`, `estilo`, `movil`), por lo que **no muestran icono**.
+2. **Nuevos tabs** no tienen forma de definir su icono desde PHP.
+3. **Inconsistencia Visual**: Algunos paneles tienen iconos en tabs y otros no.
+
+#### 🔴 Componentes de Formulario sin Iconos Visuales
+
+Componentes como `FormComponent` y sus hijos (`Select`, `Input`) definen opciones críticas sin apoyo visual:
+- **Métodos HTTP (GET/POST)**: Solo texto, sin distinción visual.
+- **Toggle Options**: Muchos `select` funcionan como toggles pero no tienen iconos (ej: alineaciones, transformaciones de texto en Menu).
+
+**Ejemplo en MenuComponent:**
+```php
+'options' => [
+    '300' => 'Light',  // Sin icono
+    '400' => 'Normal', // Sin icono
+]
+```
+Esto reduce la usabilidad y la apariencia "premium" del constructor.
+
+---
+
 ## ✅ Solución Propuesta
 
 ### Fase 1: Crear Registro Centralizado de Iconos (PHP)
@@ -696,10 +733,10 @@ trait HasDimensions
 
 ### Fase 1: Crear IconRegistry PHP ⏱️ 2-3 horas
 ```
-[ ] 1.1 Crear directorio Glory/src/Gbn/Icons/
-[ ] 1.2 Implementar IconRegistry.php
-[ ] 1.3 Implementar LayoutIcons.php con todos los iconos de layout
-[ ] 1.4 Implementar otros archivos de iconos (Background, Positioning, etc.)
+[x] 1.1 Crear directorio Glory/src/Gbn/Icons/
+[x] 1.2 Implementar IconRegistry.php
+[x] 1.3 Implementar LayoutIcons.php con todos los iconos de layout
+[x] 1.4 Implementar otros archivos de iconos (Background, Positioning, etc.)
 [ ] 1.5 Escribir tests unitarios
 ```
 
@@ -721,8 +758,8 @@ trait HasDimensions
 
 ### Fase 4: Migración de PostRender y Componentes ⏱️ 4-5 horas
 ```
-[ ] 4.1 Refactorizar PostRenderComponent para usar HasLayoutOptions
-[ ] 4.2 Crear alias de campos si es necesario (displayMode -> layout)
+[x] 4.1 Refactorizar PostRenderComponent para usar HasLayoutOptions
+[x] 4.2 Crear alias de campos si es necesario (displayMode -> layout)
 [ ] 4.3 Actualizar `ButtonComponent` para usar `HasTypography` y `HasDimensions`
 [ ] 4.4 Refactorizar `HasTypography` para que sea flexible (soportar subconjuntos de opciones)
 [ ] 4.5 Probar todos los casos de uso
@@ -738,7 +775,10 @@ trait HasDimensions
 
 ### Fase 6: Migrar Archivos JS ⏱️ 3-4 horas
 ```
-[ ] 6.1 Actualizar panel-render.js
+[x] 6.1 Actualizar panel-render.js:
+      - Importar IconRegistry
+      - Reemplazar mapa `icons` hardcodeado por llamadas a `IconRegistry.get('tab.*')`
+      - Implementar fallback para tabs desconocidos
 [ ] 6.2 Actualizar theme/render.js
 [ ] 6.3 Actualizar panel-fields/*.js
 [ ] 6.4 Eliminar iconos inline obsoletos
@@ -754,12 +794,12 @@ trait HasDimensions
 
 ### Fase 8: Estandarizar MenuComponent ⏱️ 2-3 horas
 ```
-[ ] 8.1 Migrar getSchema() de array literal a SchemaBuilder
-[ ] 8.2 Cambiar formato de opciones de 'value/label' a 'valor/etiqueta'
-[ ] 8.3 Normalizar tabs de minúsculas a Capitalizadas (configuracion → Configuración)
-[ ] 8.4 Agregar traits apropiados (HasTypography si existe)
-[ ] 8.5 Cambiar operador de condición '===' a '==' para consistencia
-[ ] 8.6 Validar que el panel JS renderice correctamente
+[x] 8.1 Migrar getSchema() de array literal a SchemaBuilder
+[x] 8.2 Cambiar formato de opciones de 'value/label' a 'valor/etiqueta'
+[x] 8.3 Normalizar tabs de minúsculas a Capitalizadas (configuracion → Configuración) para activar iconos automáticos
+[x] 8.4 Agregar traits apropiados (HasTypography si existe o manual standard)
+[x] 8.5 Cambiar operador de condición '===' a '==' para consistencia
+[x] 8.6 Validar que el panel JS renderice correctamente
 ```
 
 ### Fase 9: Unificar Nombres de Campos ⏱️ 3-4 horas
@@ -798,6 +838,17 @@ trait HasDimensions
 ```
 [ ] 12.1 Convertir array de opciones a `SchemaBuilder`
 [ ] 12.2 Implementar `HasTypography` en lugar de campos manuales
+```
+
+### Fase 13: Enriquecimiento Visual (Form y Menú) ⏱️ 2-3 horas
+```
+[x] 13.1 FormComponent:
+      - Agregar iconos a opciones de 'method' (GET/POST) en IconRegistry
+      - Agregar iconos a opciones de 'ajaxSubmit' y 'honeypot' si se convierten a iconGroup
+[x] 13.2 MenuComponent:
+      - Agregar iconos a opciones de 'fontWeight' y 'textTransform' en IconRegistry
+      - Convertir selects simples a iconGroups donde aporte valor
+[ ] 13.3 Actualizar SchemaBuilder para permitir definir `tabIcon` desde PHP (opcional)
 ```
 
 ---

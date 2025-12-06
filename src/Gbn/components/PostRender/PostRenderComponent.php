@@ -17,11 +17,12 @@ use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Traits\HasSpacing;
 use Glory\Gbn\Traits\HasBackground;
 use Glory\Gbn\Traits\HasBorder;
+use Glory\Gbn\Traits\HasLayoutOptions;
 use Glory\Gbn\Services\PostRenderService;
 
 class PostRenderComponent extends AbstractComponent
 {
-    use HasSpacing, HasBackground, HasBorder;
+    use HasSpacing, HasBackground, HasBorder, HasLayoutOptions;
 
     protected string $id = 'postRender';
     protected string $label = 'Post Render';
@@ -169,45 +170,17 @@ class PostRenderComponent extends AbstractComponent
         // Tab: LAYOUT
         // ═══════════════════════════════════════════════
 
-        $schema->addOption(
-            Option::iconGroup('displayMode', 'Modo de Visualización')
-                ->options([
-                    [
-                        'valor' => 'grid', 
-                        'etiqueta' => 'Grid', 
-                        'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>'
-                    ],
-                    [
-                        'valor' => 'flex', 
-                        'etiqueta' => 'Flex', 
-                        'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="4" width="6" height="16" rx="1"/><rect x="11" y="4" width="4" height="16" rx="1"/><rect x="17" y="4" width="4" height="16" rx="1"/></svg>'
-                    ],
-                    [
-                        'valor' => 'block', 
-                        'etiqueta' => 'Bloque', 
-                        'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>'
-                    ],
-                ])
-                ->default('grid')
-                ->tab('Layout')
-        );
-
-        $schema->addOption(
-            Option::slider('gridColumns', 'Columnas')
-                ->min(1)
-                ->max(6)
-                ->step(1)
-                ->default(3)
-                ->tab('Layout')
-                ->condition(['displayMode', '==', 'grid'])
-        );
-
-        $schema->addOption(
-            Option::text('gap', 'Espaciado (Gap)')
-                ->default('20px')
-                ->tab('Layout')
-                ->condition(['displayMode', 'in', ['grid', 'flex']])
-        );
+        // Usar el trait HasLayoutOptions para estandarizar
+        $layoutOptions = $this->getLayoutOptions('full', 'displayMode');
+        
+        foreach ($layoutOptions as $option) {
+            $option->tab('Layout');
+            
+            // PostRender add-ons: agregar condiciones extra si es necesario
+            // Por ahora el trait maneja las condiciones base (displayMode == flex/grid)
+            
+            $schema->addOption($option);
+        }
 
         $schema->addOption(
             Option::select('layoutPattern', 'Patrón de Layout')
@@ -232,71 +205,6 @@ class PostRenderComponent extends AbstractComponent
                 ->default('none')
                 ->tab('Layout')
                 ->description('Efecto visual al pasar el mouse')
-        );
-
-        // Flex Options
-        $schema->addOption(
-            Option::iconGroup('flexDirection', 'Dirección')
-                ->options([
-                    [
-                        'valor' => 'row', 
-                        'etiqueta' => 'Horizontal', 
-                        'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>'
-                    ],
-                    [
-                        'valor' => 'column', 
-                        'etiqueta' => 'Vertical', 
-                        'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 5v14"/><path d="M5 12l7 7 7-7"/></svg>'
-                    ],
-                ])
-                ->default('row')
-                ->tab('Layout')
-                ->condition(['displayMode', '==', 'flex'])
-        );
-
-        $schema->addOption(
-            Option::iconGroup('flexWrap', 'Envolver')
-                ->options([
-                    [
-                        'valor' => 'nowrap', 
-                        'etiqueta' => 'No Envolver', 
-                        'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 12h16"/></svg>'
-                    ],
-                    [
-                        'valor' => 'wrap', 
-                        'etiqueta' => 'Envolver', 
-                        'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 8h16"/><path d="M4 16h16"/></svg>'
-                    ],
-                ])
-                ->default('wrap')
-                ->tab('Layout')
-                ->condition(['displayMode', '==', 'flex'])
-        );
-
-        $schema->addOption(
-            Option::iconGroup('alignItems', 'Alinear Items')
-                ->options([
-                    ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 4h16"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'],
-                    ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 12h16"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'],
-                    ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 20h16"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'],
-                    ['valor' => 'stretch', 'etiqueta' => 'Estirar', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 4h16"/><path d="M4 20h16"/><rect x="8" y="6" width="8" height="12" rx="1"/></svg>'],
-                ])
-                ->default('stretch')
-                ->tab('Layout')
-                ->condition(['displayMode', '==', 'flex'])
-        );
-
-        $schema->addOption(
-            Option::iconGroup('justifyContent', 'Justificar')
-                ->options([
-                    ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="6" width="6" height="12" rx="1"/><rect x="12" y="6" width="4" height="12" rx="1"/></svg>'],
-                    ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="5" y="6" width="5" height="12" rx="1"/><rect x="12" y="6" width="5" height="12" rx="1"/></svg>'],
-                    ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="8" y="6" width="4" height="12" rx="1"/><rect x="14" y="6" width="6" height="12" rx="1"/></svg>'],
-                    ['valor' => 'space-between', 'etiqueta' => 'Espacio Entre', 'icon' => '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="6" width="5" height="12" rx="1"/><rect x="15" y="6" width="5" height="12" rx="1"/></svg>'],
-                ])
-                ->default('flex-start')
-                ->tab('Layout')
-                ->condition(['displayMode', '==', 'flex'])
         );
 
         // ═══════════════════════════════════════════════

@@ -3,6 +3,9 @@
 namespace Glory\Gbn\Components\Menu;
 
 use Glory\Gbn\Components\AbstractComponent;
+use Glory\Gbn\Schema\SchemaBuilder;
+use Glory\Gbn\Schema\Option;
+use Glory\Gbn\Icons\IconRegistry;
 
 /**
  * Componente Menu para GBN.
@@ -56,168 +59,161 @@ class MenuComponent extends AbstractComponent
 
     public function getSchema(): array
     {
-        return [
-            // Tab: Configuración
-            [
-                'id' => 'menuSource',
-                'type' => 'iconGroup',
-                'label' => 'Fuente del Menú',
-                'default' => 'wordpress',
-                'tab' => 'configuracion',
-                'options' => [
+        $schema = SchemaBuilder::create();
+
+        // ═══════════════════════════════════════════════
+        // Tab: CONFIGURACIÓN
+        // ═══════════════════════════════════════════════
+
+        $schema->addOption(
+            Option::iconGroup('menuSource', 'Fuente del Menú')
+                ->options([
                     [
-                        'value' => 'wordpress',
-                        'icon' => '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>',
-                        'label' => 'WordPress'
+                        'valor' => 'wordpress',
+                        'etiqueta' => 'WordPress',
+                        'icon' => '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>'
                     ],
                     [
-                        'value' => 'manual',
-                        'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
-                        'label' => 'Manual'
+                        'valor' => 'manual',
+                        'etiqueta' => 'Manual',
+                        'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>'
                     ]
-                ]
-            ],
-            [
-                'id' => 'menuLocation',
-                'type' => 'select',
-                'label' => 'Ubicación del Menú',
-                'default' => 'main_navigation',
-                'tab' => 'configuracion',
-                'condition' => ['menuSource', '===', 'wordpress'],
-                'options' => self::getMenuLocations(),
-                'description' => 'Selecciona una ubicación de menú registrada'
-            ],
-            [
-                'id' => 'menuId',
-                'type' => 'text',
-                'label' => 'ID HTML del Menú',
-                'default' => 'mainMenu',
-                'tab' => 'configuracion'
-            ],
-            [
-                'id' => 'menuDepth',
-                'type' => 'slider',
-                'label' => 'Profundidad del Menú',
-                'default' => 3,
-                'min' => 1,
-                'max' => 5,
-                'tab' => 'configuracion',
-                'condition' => ['menuSource', '===', 'wordpress'],
-                'description' => 'Niveles de submenú a mostrar'
-            ],
-            [
-                'id' => 'manualItems',
-                'type' => 'richText',
-                'label' => 'Items del Menú (Manual)',
-                'default' => '',
-                'tab' => 'configuracion',
-                'condition' => ['menuSource', '===', 'manual'],
-                'description' => 'Formato: Título|URL por línea. Ej: Inicio|/'
-            ],
-            // Tab: Estilo
-            [
-                'id' => 'layout',
-                'type' => 'iconGroup',
-                'label' => 'Orientación',
-                'default' => 'horizontal',
-                'tab' => 'estilo',
-                'options' => [
+                ])
+                ->default('wordpress')
+                ->tab('Configuración')
+        );
+
+        $schema->addOption(
+            Option::select('menuLocation', 'Ubicación del Menú')
+                ->options(self::getMenuLocations())
+                ->default('main_navigation')
+                ->tab('Configuración')
+                ->condition(['menuSource', '==', 'wordpress'])
+                ->description('Selecciona una ubicación de menú registrada')
+        );
+
+        $schema->addOption(
+            Option::text('menuId', 'ID HTML del Menú')
+                ->default('mainMenu')
+                ->tab('Configuración')
+        );
+
+        $schema->addOption(
+            Option::slider('menuDepth', 'Profundidad del Menú')
+                ->min(1)
+                ->max(5)
+                ->default(3)
+                ->tab('Configuración')
+                ->condition(['menuSource', '==', 'wordpress'])
+                ->description('Niveles de submenú a mostrar')
+        );
+
+        $schema->addOption(
+            Option::richText('manualItems', 'Items del Menú (Manual)')
+                ->default('')
+                ->tab('Configuración')
+                ->condition(['menuSource', '==', 'manual'])
+                ->description('Formato: Título|URL por línea. Ej: Inicio|/')
+        );
+
+        // ═══════════════════════════════════════════════
+        // Tab: ESTILO
+        // ═══════════════════════════════════════════════
+
+        $schema->addOption(
+            Option::iconGroup('layout', 'Orientación')
+                ->options([
                     [
-                        'value' => 'horizontal',
-                        'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
-                        'label' => 'Horizontal'
+                        'valor' => 'horizontal',
+                        'etiqueta' => 'Horizontal',
+                        'icon' => IconRegistry::get('direction.row')
                     ],
                     [
-                        'value' => 'vertical',
-                        'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>',
-                        'label' => 'Vertical'
+                        'valor' => 'vertical',
+                        'etiqueta' => 'Vertical',
+                        'icon' => IconRegistry::get('direction.column')
                     ]
-                ]
-            ],
-            [
-                'id' => 'gap',
-                'type' => 'text',
-                'label' => 'Espacio entre Items',
-                'default' => '2rem',
-                'tab' => 'estilo'
-            ],
-            [
-                'id' => 'linkColor',
-                'type' => 'color',
-                'label' => 'Color de Enlaces',
-                'default' => '',
-                'tab' => 'estilo'
-            ],
-            [
-                'id' => 'linkColorHover',
-                'type' => 'color',
-                'label' => 'Color Hover',
-                'default' => '',
-                'tab' => 'estilo'
-            ],
-            [
-                'id' => 'fontSize',
-                'type' => 'text',
-                'label' => 'Tamaño de Fuente',
-                'default' => '1rem',
-                'tab' => 'estilo'
-            ],
-            [
-                'id' => 'fontWeight',
-                'type' => 'select',
-                'label' => 'Peso de Fuente',
-                'default' => '400',
-                'tab' => 'estilo',
-                'options' => [
-                    '300' => 'Light',
-                    '400' => 'Normal',
-                    '500' => 'Medium',
-                    '600' => 'Semi Bold',
-                    '700' => 'Bold'
-                ]
-            ],
-            [
-                'id' => 'textTransform',
-                'type' => 'select',
-                'label' => 'Transformación de Texto',
-                'default' => 'none',
-                'tab' => 'estilo',
-                'options' => [
-                    'none' => 'Normal',
-                    'uppercase' => 'Mayúsculas',
-                    'lowercase' => 'Minúsculas',
-                    'capitalize' => 'Capitalizado'
-                ]
-            ],
-            // Tab: Móvil
-            [
-                'id' => 'mobileBreakpoint',
-                'type' => 'text',
-                'label' => 'Breakpoint Móvil',
-                'default' => '768px',
-                'tab' => 'movil',
-                'description' => 'Ancho de pantalla donde el menú se convierte en hamburguesa'
-            ],
-            [
-                'id' => 'mobileBackgroundColor',
-                'type' => 'color',
-                'label' => 'Fondo (Móvil)',
-                'default' => 'rgba(248, 248, 248, 0.95)',
-                'tab' => 'movil'
-            ],
-            [
-                'id' => 'mobileAnimation',
-                'type' => 'select',
-                'label' => 'Animación de Apertura',
-                'default' => 'slideDown',
-                'tab' => 'movil',
-                'options' => [
-                    'slideDown' => 'Deslizar hacia abajo',
-                    'slideLeft' => 'Deslizar desde derecha',
-                    'fadeIn' => 'Desvanecer'
-                ]
-            ]
-        ];
+                ])
+                ->default('horizontal')
+                ->tab('Estilo')
+        );
+
+        $schema->addOption(
+            Option::text('gap', 'Espacio entre Items')
+                ->default('2rem')
+                ->tab('Estilo')
+        );
+
+        $schema->addOption(
+            Option::color('linkColor', 'Color de Enlaces')
+                ->tab('Estilo')
+        );
+
+        $schema->addOption(
+            Option::color('linkColorHover', 'Color Hover')
+                ->tab('Estilo')
+        );
+
+        $schema->addOption(
+            Option::text('fontSize', 'Tamaño de Fuente')
+                ->default('1rem')
+                ->tab('Estilo')
+        );
+
+        $schema->addOption(
+            Option::select('fontWeight', 'Peso de Fuente')
+                ->options([
+                    ['valor' => '300', 'etiqueta' => 'Light'],
+                    ['valor' => '400', 'etiqueta' => 'Normal'],
+                    ['valor' => '500', 'etiqueta' => 'Medium'],
+                    ['valor' => '600', 'etiqueta' => 'Semi Bold'],
+                    ['valor' => '700', 'etiqueta' => 'Bold'],
+                ])
+                ->default('400')
+                ->tab('Estilo')
+        );
+
+        $schema->addOption(
+            Option::iconGroup('textTransform', 'Transformación')
+                ->options([
+                    ['valor' => 'none', 'etiqueta' => 'Normal', 'icon' => IconRegistry::get('text.standard')],
+                    ['valor' => 'uppercase', 'etiqueta' => 'Mayúsculas', 'icon' => IconRegistry::get('text.uppercase')],
+                    ['valor' => 'lowercase', 'etiqueta' => 'Minúsculas', 'icon' => IconRegistry::get('text.lowercase')],
+                    ['valor' => 'capitalize', 'etiqueta' => 'Capitalizado', 'icon' => IconRegistry::get('text.capitalize')],
+                ])
+                ->default('none')
+                ->tab('Estilo')
+        );
+
+        // ═══════════════════════════════════════════════
+        // Tab: MÓVIL
+        // ═══════════════════════════════════════════════
+
+        $schema->addOption(
+            Option::text('mobileBreakpoint', 'Breakpoint Móvil')
+                ->default('768px')
+                ->tab('Móvil')
+                ->description('Ancho donde aparece el menú hamburguesa')
+        );
+
+        $schema->addOption(
+            Option::color('mobileBackgroundColor', 'Fondo (Móvil)')
+                ->default('rgba(248, 248, 248, 0.95)')
+                ->tab('Móvil')
+        );
+
+        $schema->addOption(
+            Option::select('mobileAnimation', 'Animación de Apertura')
+                ->options([
+                    ['valor' => 'slideDown', 'etiqueta' => 'Deslizar hacia abajo'],
+                    ['valor' => 'slideLeft', 'etiqueta' => 'Deslizar desde derecha'],
+                    ['valor' => 'fadeIn', 'etiqueta' => 'Desvanecer'],
+                ])
+                ->default('slideDown')
+                ->tab('Móvil')
+        );
+
+        return $schema->toArray();
     }
 
     public function getDefaults(): array

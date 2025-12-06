@@ -8,6 +8,7 @@ use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Traits\HasSpacing;
 use Glory\Gbn\Traits\HasBackground;
 use Glory\Gbn\Traits\HasBorder;
+use Glory\Gbn\Icons\IconRegistry;
 
 /**
  * FormComponent - Contenedor de Formulario para GBN
@@ -68,11 +69,12 @@ class FormComponent extends AbstractComponent
         );
 
         $schema->addOption(
-            Option::select('method', 'Método HTTP')
+            Option::iconGroup('method', 'Método HTTP')
                 ->options([
-                    ['valor' => 'POST', 'etiqueta' => 'POST'],
-                    ['valor' => 'GET', 'etiqueta' => 'GET'],
+                    ['valor' => 'POST', 'etiqueta' => 'POST', 'icon' => IconRegistry::get('http.post')],
+                    ['valor' => 'GET', 'etiqueta' => 'GET', 'icon' => IconRegistry::get('http.get')],
                 ])
+                ->default('POST')
                 ->tab('Configuración')
         );
 
