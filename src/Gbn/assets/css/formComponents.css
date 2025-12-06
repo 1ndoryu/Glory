@@ -1,0 +1,191 @@
+
+/* ========================================
+   Fase 14: Form Components (Formularios)
+   
+   NOTA: Usamos :where() para mantener especificidad 0,
+   permitiendo que clases personalizadas los sobreescriban.
+   ======================================== */
+
+/* Contenedor del formulario */
+:where([gloryForm]) {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Campos de formulario - Estructura común */
+:where(.gbn-input-field),
+:where(.gbn-textarea-field),
+:where(.gbn-select-field),
+:where([gloryInput]),
+:where([gloryTextarea]),
+:where([glorySelect]) {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Labels */
+:where(.gbn-label) {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gbn-text-color, #333);
+    margin-bottom: 4px;
+}
+
+/* Estilos base de inputs */
+:where(.gbn-input),
+:where(.gbn-textarea),
+:where(.gbn-select),
+:where([gloryInput] input),
+:where([gloryTextarea] textarea),
+:where([glorySelect] select) {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--gbn-text-color, #333);
+    background-color: var(--gbn-bg, #fff);
+    border: 1px solid var(--gbn-border-color, #e0e0e0);
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+}
+
+/* Focus state */
+:where(.gbn-input:focus),
+:where(.gbn-textarea:focus),
+:where(.gbn-select:focus),
+:where([gloryInput] input:focus),
+:where([gloryTextarea] textarea:focus),
+:where([glorySelect] select:focus) {
+    border-color: var(--gbn-primary, #1d8ff1);
+    box-shadow: 0 0 0 3px rgba(29, 143, 241, 0.1);
+}
+
+/* Hover state */
+:where(.gbn-input:hover:not(:focus)),
+:where(.gbn-textarea:hover:not(:focus)),
+:where(.gbn-select:hover:not(:focus)),
+:where([gloryInput] input:hover:not(:focus)),
+:where([gloryTextarea] textarea:hover:not(:focus)),
+:where([glorySelect] select:hover:not(:focus)) {
+    border-color: var(--gbn-border-hover, #c0c0c0);
+}
+
+/* Placeholder */
+:where(.gbn-input::placeholder),
+:where(.gbn-textarea::placeholder),
+:where([gloryInput] input::placeholder),
+:where([gloryTextarea] textarea::placeholder) {
+    color: #999;
+    opacity: 0.7;
+}
+
+/* Textarea específico */
+:where(.gbn-textarea),
+:where([gloryTextarea] textarea) {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Select específico */
+:where(.gbn-select),
+:where([glorySelect] select) {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 40px;
+    cursor: pointer;
+}
+
+/* Botón Submit */
+:where(.gbn-submit),
+:where([glorySubmit]) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    color: #fff;
+    background-color: var(--gbn-primary, #1d8ff1);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+:where(.gbn-submit:hover),
+:where([glorySubmit]:hover) {
+    background-color: var(--gbn-primary-hover, #0b76d1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(29, 143, 241, 0.2);
+}
+
+:where(.gbn-submit:active),
+:where([glorySubmit]:active) {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+:where(.gbn-submit:focus),
+:where([glorySubmit]:focus) {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(29, 143, 241, 0.3);
+}
+
+/* Estado disabled */
+:where(.gbn-submit:disabled),
+:where([glorySubmit]:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Estado cargando (loading) */
+:where(.gbn-submit.is-loading),
+:where([glorySubmit].is-loading) {
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+/* Honeypot (invisible para usuarios) */
+:where(.gbn-honeypot) {
+    position: absolute;
+    left: -9999px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Campo requerido - indicador */
+:where(.gbn-label[data-required="true"]::after),
+:where([gloryInput][data-required] .gbn-label::after),
+:where([gloryTextarea][data-required] .gbn-label::after),
+:where([glorySelect][data-required] .gbn-label::after) {
+    content: " *";
+    color: #dc2626;
+}
+
+/* Validación - estado inválido */
+:where(.gbn-input:invalid:not(:placeholder-shown)),
+:where(.gbn-textarea:invalid:not(:placeholder-shown)),
+:where(.gbn-select:invalid),
+:where([gloryInput] input:invalid:not(:placeholder-shown)),
+:where([gloryTextarea] textarea:invalid:not(:placeholder-shown)),
+:where([glorySelect] select:invalid) {
+    border-color: #dc2626;
+}
+
+/* Validación - mensaje de error */
+:where(.gbn-field-error) {
+    font-size: 12px;
+    color: #dc2626;
+    margin-top: 4px;
+}

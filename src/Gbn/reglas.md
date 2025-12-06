@@ -267,6 +267,9 @@ Antes de escribir código nuevo:
 - [ ] Estado solo en memoria (`state.js`), no en atributos DOM
 - [ ] Verificar `block.element` existe antes de `getComputedStyle`
 - [ ] Nuevas props CSS editables en estados → agregar a `cssDirectProps`
+- [ ] **NUNCA `pointer-events: none` en elementos editables** (ver Bug 🛡️18)
+- [ ] **Re-escanear elementos cargados por AJAX** para registrarlos en store
+- [ ] **`overflow: visible`** en contenedores con badges posicionados fuera
 
 ---
 
@@ -312,7 +315,42 @@ var cssDirectProps = [
 3. Resolver en `panel-render.js` (`styleResolvers`)
 4. Dependencias correctas (incluir `renderer-traits` si usa traits JS)
 
+### Elementos Cargados por AJAX (Preview Dinámico)
+
+> [!CAUTION]
+> Los elementos creados/modificados por AJAX después del escaneo inicial de GBN **NO están registrados en el store** y no serán interactivos (no responden a clicks, no aparecen en inspector).
+
+**Reglas obligatorias:**
+
+1. **Re-escanear después de AJAX:**
+   ```javascript
+   // Después de cargar/modificar elementos via AJAX
+   if (Gbn.content && Gbn.content.scan) {
+       var newBlocks = Gbn.content.scan(containerElement);
+       console.log('Re-escaneados ' + newBlocks.length + ' elementos');
+   }
+   ```
+
+2. **NUNCA `pointer-events: none` en elementos editables:**
+   - Los clones/previews SÍ deben tener `pointer-events: none`
+   - El template/elemento original NUNCA debe tener `pointer-events: none`
+   - Cuidado con reglas CSS que usen atributos como `[data-gbn-is-template]`
+
+3. **MutationObserver inteligente:**
+   - Filtrar mutaciones de hover/selección del editor (`gbn-selected`, `gbn-hovered`)
+   - Ignorar cambios de estilo inline (son temporales)
+   - Solo sincronizar en cambios estructurales reales (`childList`)
+
+4. **`overflow: visible` para badges:**
+   - Si el componente tiene badges posicionados con `top` negativo
+   - Agregar `overflow: visible` al contenedor padre
+
+**Ejemplo de implementación correcta (PostRender):**
+- Template editable: sin `pointer-events: none`, registrado en store
+- Clones visuales: `pointer-events: none`, sin `data-gbn-id`, no en store
+- Después de preview AJAX: re-escanear template con `Gbn.content.scan(template)`
+
 ---
 
-**Versión:** 2.0 (Optimizada)  
+**Versión:** 2.1 (Actualizada Diciembre 2025)  
 **Relacionado:** `plan.md`, `documentación-gbn.md`, `guia-crear-componente.md`

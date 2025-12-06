@@ -19,7 +19,13 @@
         // Fase 13: Componentes PostRender
         postRender: { attribute: 'gloryPostRender', dataAttribute: 'data-gbn-post-render' },
         postItem: { attribute: 'gloryPostItem', dataAttribute: 'data-gbn-post-item' },
-        postField: { attribute: 'gloryPostField', dataAttribute: 'data-gbn-post-field' }
+        postField: { attribute: 'gloryPostField', dataAttribute: 'data-gbn-post-field' },
+        // Fase 14: Componentes de Formulario
+        form: { attribute: 'gloryForm', dataAttribute: 'data-gbn-form' },
+        input: { attribute: 'gloryInput', dataAttribute: 'data-gbn-input' },
+        textarea: { attribute: 'gloryTextarea', dataAttribute: 'data-gbn-textarea' },
+        select: { attribute: 'glorySelect', dataAttribute: 'data-gbn-select' },
+        submit: { attribute: 'glorySubmit', dataAttribute: 'data-gbn-submit' }
     };
 
 

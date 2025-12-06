@@ -318,6 +318,22 @@
         },
         postField: function(config, block) {
             return Gbn.ui.renderers.postField ? Gbn.ui.renderers.postField.getStyles(config, block) : {};
+        },
+        // Fase 14: Form Components
+        form: function(config, block) {
+            return Gbn.ui.renderers.form ? Gbn.ui.renderers.form.getStyles(config, block) : {};
+        },
+        input: function(config, block) {
+            return Gbn.ui.renderers.input ? Gbn.ui.renderers.input.getStyles(config, block) : {};
+        },
+        textarea: function(config, block) {
+            return Gbn.ui.renderers.textarea ? Gbn.ui.renderers.textarea.getStyles(config, block) : {};
+        },
+        select: function(config, block) {
+            return Gbn.ui.renderers.select ? Gbn.ui.renderers.select.getStyles(config, block) : {};
+        },
+        submit: function(config, block) {
+            return Gbn.ui.renderers.submit ? Gbn.ui.renderers.submit.getStyles(config, block) : {};
         }
     };
 
@@ -500,9 +516,9 @@
         if (footerStatesContainer) footerStatesContainer.innerHTML = '';
 
         // Renderizar selector de estados (Fase 10) en el FOOTER
-        // Solo para bloques que soportan estilos (principal, secundario, text, button, image)
         // Fase 13: Agregados postRender, postItem, postField a la lista de roles con soporte de estados
-        var supportedRoles = ['principal', 'secundario', 'text', 'button', 'image', 'postRender', 'postItem', 'postField'];
+        // Fase 14: Agregados form, input, textarea, select, submit
+        var supportedRoles = ['principal', 'secundario', 'text', 'button', 'image', 'postRender', 'postItem', 'postField', 'form', 'input', 'textarea', 'select', 'submit'];
         if (block.role && supportedRoles.indexOf(block.role) !== -1) {
             if (footerStatesContainer) {
                 renderStateSelector(footerStatesContainer, block);

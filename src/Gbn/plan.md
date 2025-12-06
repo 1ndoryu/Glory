@@ -29,6 +29,11 @@
 | PostRenderComponent | `postRender` | `[gloryPostRender]`    | Flexbox, Grid, Spacing, Background              | ✅      |
 | PostItemComponent   | `postItem`   | `[gloryPostItem]`      | Flexbox, Spacing, Background, Border            | ✅      |
 | PostFieldComponent  | `postField`  | `[gloryPostField]`     | N/A (Semantic)                                  | ✅      |
+| FormComponent       | `form`       | `[gloryForm]`          | Spacing, Background, Border                     | ✅      |
+| InputComponent      | `input`      | `[gloryInput]`         | Spacing, Border, Typography                     | ✅      |
+| TextareaComponent   | `textarea`   | `[gloryTextarea]`      | Spacing, Border, Typography                     | ✅      |
+| SelectComponent     | `select`     | `[glorySelect]`        | Spacing, Border                                 | ✅      |
+| SubmitComponent     | `submit`     | `[glorySubmit]`        | Spacing, Border, Typography                     | ✅      |
 
 ---
 
@@ -39,21 +44,24 @@
 
 ### Defensa Arquitectónica Implementada
 
-| ID   | Bug Histórico                           | Defensa Aplicada                                          | Archivo Clave                           |
-| :--- | :-------------------------------------- | :-------------------------------------------------------- | :-------------------------------------- |
-| 🛡️ 1  | Layout Delay/Flash                      | Defaults en CSS vars, no JS hardcoded                     | `style-composer.js`, `theme-styles.css` |
-| 🛡️ 2  | Data Leak (Atributos internos visibles) | Solo limpiar `data-gbn-schema/config`, preservar `glory*` | `GbnManager.php`                        |
-| 🛡️ 3  | Estilos rotos en frontend               | Atributos `glory*` preservados para selectores CSS        | `theme-styles.css`, `GbnManager.php`    |
-| 🛡️ 4  | Race Condition (Async)                  | Async Guards en callbacks AJAX                            | `panel-core.js`, `post-render.js`       |
-| 🛡️ 5  | Memory Leak (Listeners)                 | Cleanup explícito + Map de handlers activos               | `theme/render.js`                       |
-| 🛡️ 6  | Persistencia Responsive                 | Breakpoint explícito en `updateBlock()`                   | `panel-render.js`                       |
-| 🛡️ 7  | Especificidad CSS                       | Prefijo `body` en CSS generado                            | `style-generator.js`                    |
-| 🛡️ 8  | Defaults vs Computed                    | Detección de browser defaults                             | `utils.js`, `fraction.js`               |
-| 🛡️ 10 | Crash JSON Circular                     | Excluir DOM de serialización                              | `persistence.js`                        |
-| 🛡️ 11 | Grid Columns sin unidades               | Lista `UNITLESS_PROPERTIES`                               | `applicator.js`                         |
-| 🛡️ 15 | MockBlocks sin elemento DOM             | Verificar `block.element` antes de `getComputedStyle`     | `color.js`                              |
-| 🛡️ 16 | Stale Block Reference (Pérdida datos)   | `state.get(block.id)` antes de `cloneConfig()`            | `panel-render.js`                       |
-| 🛡️ 17 | Estados sin propiedades CSS             | Agregar props a `cssDirectProps` en `style-generator.js`  | `style-generator.js`                    |
+| ID   | Bug Histórico                           | Defensa Aplicada                                                 | Archivo Clave                           |
+| :--- | :-------------------------------------- | :--------------------------------------------------------------- | :-------------------------------------- |
+| 🛡️ 1  | Layout Delay/Flash                      | Defaults en CSS vars, no JS hardcoded                            | `style-composer.js`, `theme-styles.css` |
+| 🛡️ 2  | Data Leak (Atributos internos visibles) | Solo limpiar `data-gbn-schema/config`, preservar `glory*`        | `GbnManager.php`                        |
+| 🛡️ 3  | Estilos rotos en frontend               | Atributos `glory*` preservados para selectores CSS               | `theme-styles.css`, `GbnManager.php`    |
+| 🛡️ 4  | Race Condition (Async)                  | Async Guards en callbacks AJAX                                   | `panel-core.js`, `post-render.js`       |
+| 🛡️ 5  | Memory Leak (Listeners)                 | Cleanup explícito + Map de handlers activos                      | `theme/render.js`                       |
+| 🛡️ 6  | Persistencia Responsive                 | Breakpoint explícito en `updateBlock()`                          | `panel-render.js`                       |
+| 🛡️ 7  | Especificidad CSS                       | Prefijo `body` en CSS generado                                   | `style-generator.js`                    |
+| 🛡️ 8  | Defaults vs Computed                    | Detección de browser defaults                                    | `utils.js`, `fraction.js`               |
+| 🛡️ 10 | Crash JSON Circular                     | Excluir DOM de serialización                                     | `persistence.js`                        |
+| 🛡️ 11 | Grid Columns sin unidades               | Lista `UNITLESS_PROPERTIES`                                      | `applicator.js`                         |
+| 🛡️ 15 | MockBlocks sin elemento DOM             | Verificar `block.element` antes de `getComputedStyle`            | `color.js`                              |
+| 🛡️ 16 | Stale Block Reference (Pérdida datos)   | `state.get(block.id)` antes de `cloneConfig()`                   | `panel-render.js`                       |
+| 🛡️ 17 | Estados sin propiedades CSS             | Agregar props a `cssDirectProps` en `style-generator.js`         | `style-generator.js`                    |
+| 🛡️ 18 | Elementos editables bloqueados por CSS  | NUNCA `pointer-events: none` en elementos editables              | `interactive.css`                       |
+| 🛡️ 19 | Elementos AJAX no interactivos          | Re-escanear elementos cargados por AJAX con `Gbn.content.scan()` | `post-render.js`                        |
+| 🛡️ 20 | Badges cortados por overflow            | `overflow: visible` en contenedores con badges absolutos         | `interactive.css`                       |
 
 **Checklist Obligatorio (Pre-Código):**
 - [ ] No defaults duros en JS
@@ -73,12 +81,46 @@
 - [ ] Verificar `block.element`
 - [ ] Usar `state.get()` antes de clonar config
 - [ ] Nuevas props CSS en estados → agregar a `cssDirectProps`
+- [ ] **NUNCA `pointer-events: none` en elementos editables**
+- [ ] **Re-escanear elementos cargados por AJAX**
+- [ ] **`overflow: visible` en contenedores con badges**
 
 ---
 
 ## 3. Cambios Recientes (Últimos 30 Días)
 
 ### ✅ Diciembre 2025 - Highlights
+
+#### Fase 14: Componentes de Formulario
+**Funcionalidad:** Sistema de formularios editable visualmente con validación HTML5 y AJAX.
+
+**Componentes:**
+- ✅ `FormComponent` → Contenedor `<form>` con AJAX submit y honeypot anti-spam
+- ✅ `InputComponent` → Tipos: text, email, tel, number, password, url
+- ✅ `TextareaComponent` → Área de texto con filas configurables
+- ✅ `SelectComponent` → Dropdown con opciones en formato simple
+- ✅ `SubmitComponent` → Botón con estado loading
+
+**Archivos Clave:**
+- `Components/Form/FormComponent.php`, `InputComponent.php`, `TextareaComponent.php`, `SelectComponent.php`, `SubmitComponent.php`
+- `assets/js/ui/renderers/form.js`, `input.js`, `textarea.js`, `select.js`, `submit.js`
+- `assets/css/components.css` (estilos de formularios)
+
+#### Fase 14.5: Notificación por Correo para Formularios
+**Funcionalidad:** Sistema automático de envío de correos al administrador cuando se envía un formulario GBN.
+
+**Características:**
+- ✅ Envío automático de correo HTML al admin con datos del formulario
+- ✅ Validación honeypot anti-spam
+- ✅ Rate limiting básico por IP (5 segundos entre envíos)
+- ✅ Asunto de email configurable con placeholders (`{{formId}}`, `{{siteName}}`)
+- ✅ Estados de carga en botón submit (texto "Enviando...")
+- ✅ Mensajes de éxito/error estilizados en el formulario
+- ✅ Auto-inicialización y observador DOM para formularios dinámicos
+
+**Archivos Clave:**
+- `Ajax/Handlers/FormSubmitHandler.php` → Procesa envío y envía email
+- `assets/js/frontend/form-submit.js` → Manejo AJAX desde frontend
 
 #### Fase 13: PostRender - Componente de Contenido Dinámico
 **Funcionalidad:** Renderiza listados de posts/CPTs con plantillas visuales editables.
@@ -137,6 +179,9 @@
 - ✅ **Font-weight en Typography**
 - ✅ **CSS Specificity Normalizada**: `:where()` en `init.css`
 
+#### Mantenimiento y Refactorización
+- ✅ **interactive.css Variables**: Refactorización completa de `interactive.css` para usar Custom Properties (Variables CSS) en colores, espaciado, z-indices y transiciones. Facilita el mantenimiento y consistencia visual.
+
 #### Bugs Resueltos (Últimos)
 - ✅ **PostRender Preview WYSIWYG - Parpadeo e interacción en clones**: Los clones del preview parpadeaban al pasar el mouse y permitían interacción incorrecta. Solución: 1) `pointer-events: none` en clones, 2) MutationObserver inteligente que filtra mutaciones de hover/selección del editor, 3) Debounce aumentado a 300ms con flag anti-recursivo. Ahora el template es editable y los clones son visuales estables.
 - ✅ **PostRender Estático - Contenido no dinámico**: Al guardar PostRender, el contenido quedaba estático porque `PostRenderProcessor.php` procesaba el contenido ANTES de que el editor cargara. Solución multi-capa: 1) `isEditorMode()` en PHP detecta editores y NO procesa (retorna template original), 2) `persistence.js` limpia clones de preview JS, 3) `post-render.js` genera preview temporal con clones marcados. Ahora el editor ve el template original y los cambios estructurales persisten.
@@ -161,6 +206,39 @@
 ## 4. Roadmap de Trabajo Futuro
 
 ### 🐛 Bugs Pendientes
+
+#### Inconsistencia de Estilos en FormComponent (Editor vs Frontend)
+**Prioridad:** Media-Baja  
+**Estado:** Pendiente de solución
+
+**Síntoma:** El formulario se ve diferente en el editor GBN (1 columna) vs frontend sin GBN (2 columnas con grid layout).
+
+**Causa raíz:** 
+- El archivo `forms.css` contiene estilos que solo se cargan en el editor GBN
+- En el editor, el formulario usa `style="gap: 16px"` (solo gap, sin display ni grid-template-columns)
+- En el frontend sin GBN, se genera correctamente: `style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;"`
+- El componente depende de estilos CSS del editor que no están disponibles en frontend
+
+**Evidencia:**
+```html
+<!-- CON GBN (Editor) -->
+<form gloryform style="gap: 16px" ...>
+
+<!-- SIN GBN (Frontend) -->
+<form gloryform style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" ...>
+```
+
+**Archivos afectados:**
+- `Glory/src/Gbn/assets/css/forms.css` → Solo carga en editor
+- `Components/Form/FormComponent.php` → Configuración de grid layout
+- `assets/js/ui/renderers/form.js` → Aplicación de estilos inline
+
+**Solución propuesta:**
+1. Asegurar que todos los estilos de layout críticos se apliquen como inline styles
+2. Que `forms.css` solo contenga estilos auxiliares del panel/editor, no estilos funcionales
+3. O alternativamente, cargar selectivamente reglas de `forms.css` en el frontend
+
+---
 
 #### Filtro por Categoría en PostRender
 **Prioridad:** Baja  
@@ -273,6 +351,143 @@ assets/js/ui/icons/
 
 ### ⚠️ Tareas Prioritarias (Roadmap Inmediato)
 
+#### 🔴 Integración de Componentes Hijos en Biblioteca y Constructor
+**Prioridad:** Alta  
+**Estado:** Pendiente de implementación
+
+**Problema identificado:**
+1. **Botón "+" no muestra componentes hijos:** Al hacer clic en el botón "+" dentro de un `PostRender` o `FormComponent`, debería aparecer la opción de agregar sus componentes hijos específicos (`PostItem`, `PostField` para PostRender; `Input`, `Textarea`, `Select`, `Submit` para Form), pero actualmente no aparecen.
+
+2. **Componentes no aparecen en Biblioteca:** Los componentes de PostRender (`PostItem`, `PostField`) y Form (`InputComponent`, `TextareaComponent`, `SelectComponent`, `SubmitComponent`) no aparecen en la Biblioteca de Componentes del panel lateral.
+
+**Causa raíz (hipótesis):**
+- Los componentes hijo no están registrados en la biblioteca (`library.js`)
+- Falta configuración de "componentes permitidos" para cada contenedor
+- No hay lógica de filtrado de biblioteca según el contexto (dentro de form → mostrar inputs)
+
+**Arquitectura propuesta:**
+
+1. **Definir relación padre-hijo en componentes PHP:**
+   ```php
+   // En FormComponent.php
+   public function getAllowedChildren(): array 
+   {
+       return ['input', 'textarea', 'select', 'submit'];
+   }
+   
+   // En PostRenderComponent.php
+   public function getAllowedChildren(): array 
+   {
+       return ['postItem'];
+   }
+   
+   // En PostItemComponent.php
+   public function getAllowedChildren(): array 
+   {
+       return ['postField'];
+   }
+   ```
+
+2. **Exponer en `gloryGbnCfg.roleSchemas`:**
+   - Agregar propiedad `allowedChildren` a cada schema
+   - El JS puede leer qué componentes mostrar según el padre seleccionado
+
+3. **Modificar `library.js`:**
+   - Filtrar componentes según el padre actual
+   - Si estoy dentro de un `form`, mostrar solo inputs/textarea/select/submit
+   - Si estoy en nivel superior, mostrar todos los componentes "raíz"
+
+4. **Agregar a Biblioteca de Componentes:**
+   - Registrar todos los componentes de Form en la biblioteca
+   - Registrar PostItem y PostField en la biblioteca (solo visibles en contexto)
+
+**Archivos a modificar:**
+- `Components/Form/*.php` → Agregar `getAllowedChildren()`
+- `Components/PostRender/*.php` → Agregar `getAllowedChildren()`
+- `AbstractComponent.php` → Método base con default `[]`
+- `ContainerRegistry.php` → Incluir `allowedChildren` en el payload
+- `assets/js/ui/library.js` → Filtrar según contexto padre
+- `assets/js/ui/panel-core.js` → Pasar contexto padre al abrir biblioteca
+
+**Dependencias:**
+- Ninguna (puede implementarse independientemente)
+
+**Notas:**
+- Los componentes hijo solo deberían arrastrarse DENTRO de su padre válido
+- El drag-drop debería validar si el destino acepta el componente
+
+---
+
+#### ✅ RESUELTO: Sistema de Notificación por Correo para Formularios GBN
+**Prioridad:** Media  
+**Estado:** ✅ Implementado (Diciembre 2025)
+
+**Objetivo:** Sistema automático de envío de correos al administrador cuando se envía un formulario GBN.
+
+**Arquitectura implementada:**
+
+1. **AJAX Handler:** `Gbn/Ajax/Handlers/FormSubmitHandler.php`
+   - Recibe submissions de formularios GBN vía AJAX
+   - Valida honeypot anti-spam
+   - Rate limiting básico por IP (5 segundos entre envíos)
+   - Sanitiza datos del formulario
+   - Formatea contenido en HTML con diseño moderno
+   - Usa `EmailUtility::sendToAdmins()` para enviar correo
+
+2. **Frontend Script:** `assets/js/frontend/form-submit.js`
+   - Intercepta submit de formularios con `data-ajax-submit="true"`
+   - Valida formulario (HTML5 nativo)
+   - Inyecta campo honeypot automáticamente
+   - Muestra estados de carga en botón submit
+   - Muestra mensajes de éxito/error estilizados
+   - Auto-inicializa y observa DOM para formularios dinámicos
+
+3. **Configuración en FormComponent:**
+   - Campo: "Asunto del Email" con placeholders (`{{formId}}`, `{{siteName}}`)
+   - Los mensajes de éxito/error ya existían
+
+**Flujo implementado:**
+```
+[Frontend] Usuario envía form con data-ajax-submit="true"
+     ↓
+[JS] form-submit.js intercepta, valida, muestra loading
+     ↓
+[JS] fetch a wp-ajax endpoint 'gbn_form_submit'
+     ↓
+[PHP] FormSubmitHandler::handle()
+     ↓
+[PHP] Validar honeypot + rate limit + sanitizar datos
+     ↓
+[PHP] Formatear HTML → EmailUtility::sendToAdmins($subject, $htmlBody)
+     ↓
+[PHP] wp_send_json_success(['message' => '¡Formulario enviado!'])
+     ↓
+[JS] Mostrar mensaje de éxito, resetear formulario
+```
+
+**Archivos creados:**
+- `Gbn/Ajax/Handlers/FormSubmitHandler.php`
+- `assets/js/frontend/form-submit.js`
+
+**Archivos modificados:**
+- `Ajax/Registrar.php` → Registrar endpoint AJAX (wp_ajax + nopriv)
+- `GbnManager.php` → Cargar script frontend para todos los usuarios
+- `Components/Form/FormComponent.php` → Agregar campo emailSubject
+- `assets/js/ui/renderers/form.js` → Manejar data attribute emailSubject
+
+**Uso automático:**
+```html
+<!-- El formulario envía correo automáticamente al admin -->
+<form gloryForm data-form-id="contacto" data-ajax-submit="true">
+    <div gloryInput><input type="text" name="nombre" required></div>
+    <div gloryInput><input type="email" name="email" required></div>
+    <div gloryTextarea><textarea name="mensaje"></textarea></div>
+    <button type="submit" glorySubmit>Enviar</button>
+</form>
+```
+
+---
+
 #### ✅ RESUELTO: PostRender Dinámico (No Estático)
 **Prioridad:** CRÍTICA  
 **Estado:** ✅ Implementado (Diciembre 2025)
@@ -314,26 +529,58 @@ Al guardar cambios en PostRender, el contenido se volvía estático. Los posts n
 
 ---
 
-#### 🟠 Componentes de Formulario
-**Prioridad:** Alta (después de PostRender dinámico)  
-**Estado:** Rescatar lógica útil de Glory Formulario
+#### ✅ RESUELTO: Componentes de Formulario
+**Prioridad:** Alta  
+**Estado:** ✅ Implementado (Diciembre 2025) - Fase 14
 
 **Objetivo:** Versión sencilla y minimalista pero funcional.
 
-**Componentes mínimos:**
-- [ ] `FormComponent` → Contenedor `<form>` con action/method
-- [ ] `InputComponent` → Input text, email, tel, number
-- [ ] `TextareaComponent` → Área de texto
-- [ ] `SelectComponent` → Dropdown
-- [ ] `SubmitComponent` → Botón submit
+**Componentes implementados:**
+- [x] `FormComponent` → Contenedor `<form>` con action/method, AJAX submit, honeypot anti-spam
+- [x] `InputComponent` → Input text, email, tel, number, password, url con validación HTML5
+- [x] `TextareaComponent` → Área de texto con filas configurables y maxlength
+- [x] `SelectComponent` → Dropdown con opciones en formato simple (valor:etiqueta)
+- [x] `SubmitComponent` → Botón submit con texto de loading configurable
 
-**Referencia:** `Glory/src/Components/Formulario/` (evaluar qué rescatar)
+**Archivos creados:**
 
-**Consideraciones:**
-- Validación frontend básica (required, type)
-- Integración con AJAX para submit sin recarga
-- Honeypot anti-spam simple
+**PHP (Components):**
+- `Components/Form/FormComponent.php`
+- `Components/Form/InputComponent.php`
+- `Components/Form/TextareaComponent.php`
+- `Components/Form/SelectComponent.php`
+- `Components/Form/SubmitComponent.php`
+
+**JS (Renderers):**
+- `assets/js/ui/renderers/form.js`
+- `assets/js/ui/renderers/input.js`
+- `assets/js/ui/renderers/textarea.js`
+- `assets/js/ui/renderers/select.js`
+- `assets/js/ui/renderers/submit.js`
+
+**Archivos modificados:**
+- `GbnManager.php` → Registro de scripts y dependencias
+- `panel-render.js` → Resolvers de estilos y supportedRoles
+- `roles.js` → Fallback selectors para detección de elementos
+- `components.css` → Estilos base para campos de formulario
+
+**Uso en HTML:**
+```html
+<form gloryForm method="post" data-form-id="contacto">
+    <div gloryInput><label>Nombre</label><input type="text" name="nombre" required></div>
+    <div gloryInput><label>Email</label><input type="email" name="email" required></div>
+    <div gloryTextarea><label>Mensaje</label><textarea name="mensaje" rows="4"></textarea></div>
+    <button type="submit" glorySubmit>Enviar</button>
+</form>
+```
+
+**Características:**
+- Validación frontend HTML5 (required, type, pattern)
+- Soporte para AJAX submit (configurable)
+- Honeypot anti-spam integrado
 - Estilos consistentes con otros componentes GBN
+- Estados hover/focus editables desde el panel
+- Responsive por defecto
 
 ---
 

@@ -35,6 +35,10 @@ class Registrar
         // Paginación AJAX (disponible para todos los usuarios - frontend)
         add_action('wp_ajax_gbn_post_render_paginate', [Handlers\PostRenderHandler::class, 'paginate']);
         add_action('wp_ajax_nopriv_gbn_post_render_paginate', [Handlers\PostRenderHandler::class, 'paginate']);
+
+        // Fase 14.5: Envío de Formularios GBN (disponible para todos los usuarios - frontend)
+        add_action('wp_ajax_gbn_form_submit', [Handlers\FormSubmitHandler::class, 'handle']);
+        add_action('wp_ajax_nopriv_gbn_form_submit', [Handlers\FormSubmitHandler::class, 'handle']);
     }
 }
 

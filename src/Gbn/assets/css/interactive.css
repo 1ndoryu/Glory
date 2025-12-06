@@ -1,4 +1,41 @@
 /* Interactive & Drag/Drop */
+:root {
+    /* --- Colors (RGB Components for RGBA usage) --- */
+    --gbn-rgb-primary: 29, 143, 241;      /* Azul principal */
+    --gbn-rgb-secondary: 245, 158, 11;    /* Naranja secundario */
+    --gbn-rgb-green: 16, 185, 129;        /* Verde (PostRender, Input) */
+    --gbn-rgb-purple: 139, 92, 246;       /* Púrpura (PostItem, Textarea) */
+    --gbn-rgb-yellow: 251, 191, 36;       /* Amarillo (PostField) */
+    --gbn-rgb-red: 239, 68, 68;           /* Rojo (Submit) */
+    --gbn-rgb-blue-500: 59, 130, 246;     /* Blue (Form, DropLine) */
+    --gbn-rgb-blue-600: 37, 99, 235;      /* Blue Darker (Hover) */
+    --gbn-rgb-white: 255, 255, 255;
+    
+    /* --- Solid Colors --- */
+    --gbn-color-white: #fff;
+    --gbn-color-gray-bg: #f3f4f6;
+    --gbn-color-gray-text: #374151;
+    --gbn-color-gray-dark: #1f2937;
+    --gbn-color-gray-darker: #111827;
+
+    /* --- Dimensions --- */
+    --gbn-radius-sm: 2px;
+    --gbn-radius-md: 3px;
+    --gbn-radius-base: 4px;
+    --gbn-radius-lg: 6px;
+    --gbn-radius-xl: 8px;
+    --gbn-radius-full: 999px;
+
+    /* --- Z-Indices --- */
+    --gbn-z-badge: 5;
+    --gbn-z-active: 10;
+    --gbn-z-active-hover: 11;
+    --gbn-z-controls: 90;
+    --gbn-z-add-btn: 100;
+    --gbn-z-dropdown: 100;
+    --gbn-z-drop-line: 9999;
+    --gbn-z-drag-proxy: 100000;
+}
 
 .gbn-node {
     position: relative;
@@ -10,33 +47,31 @@
 }
 
 .gbn-active [data-gbnPrincipal] {
-
     position: relative;
-    outline: 1px dashed rgba(29, 143, 241, 0.35); /* Azul */
+    outline: 1px dashed rgba(var(--gbn-rgb-primary), 0.35); /* Azul */
     outline-offset: 2px;
     transition: outline-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .gbn-active [data-gbnSecundario] {
-
     position: relative;
-    outline: 1px dashed rgba(245, 158, 11, 0.35); /* Naranja */
+    outline: 1px dashed rgba(var(--gbn-rgb-secondary), 0.35); /* Naranja */
     outline-offset: 2px;
     transition: outline-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .gbn-active [data-gbnPrincipal]:hover {
-    outline-color: rgba(29, 143, 241, 0.9);
-    background-color: rgba(29, 143, 241, 0.08) !important; /* Force background */
-    box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.18);
-    z-index: 10;
+    outline-color: rgba(var(--gbn-rgb-primary), 0.9);
+    background-color: rgba(var(--gbn-rgb-primary), 0.08) !important; /* Force background */
+    box-shadow: 0 0 0 2px rgba(var(--gbn-rgb-primary), 0.18);
+    z-index: var(--gbn-z-active);
 }
 
 .gbn-active [data-gbnSecundario]:hover {
-    outline-color: rgba(245, 158, 11, 0.9);
-    background-color: rgba(245, 158, 11, 0.08) !important; /* Force background */
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.18);
-    z-index: 11;
+    outline-color: rgba(var(--gbn-rgb-secondary), 0.9);
+    background-color: rgba(var(--gbn-rgb-secondary), 0.08) !important; /* Force background */
+    box-shadow: 0 0 0 2px rgba(var(--gbn-rgb-secondary), 0.18);
+    z-index: var(--gbn-z-active-hover);
 }
 
 .gbn-block {
@@ -44,9 +79,9 @@
 }
 
 .gbn-block-active {
-    outline-color: rgba(29, 143, 241, 0.9) !important;
-    box-shadow: 0 0 0 2px rgba(29, 143, 241, 0.22);
-    background-color: rgba(29, 143, 241, 0.06);
+    outline-color: rgba(var(--gbn-rgb-primary), 0.9) !important;
+    box-shadow: 0 0 0 2px rgba(var(--gbn-rgb-primary), 0.22);
+    background-color: rgba(var(--gbn-rgb-primary), 0.06);
 }
 
 .gbn-block.gbn-loading::after {
@@ -56,9 +91,9 @@
     right: 16px;
     width: 14px;
     height: 14px;
-    border-radius: 999px;
-    border: 2px solid rgba(29, 143, 241, 0.4);
-    border-top-color: rgba(29, 143, 241, 0.95);
+    border-radius: var(--gbn-radius-full);
+    border: 2px solid rgba(var(--gbn-rgb-primary), 0.4);
+    border-top-color: rgba(var(--gbn-rgb-primary), 0.95);
     animation: gbn-spin 0.8s linear infinite;
 }
 
@@ -96,10 +131,10 @@
 
 /* Drag & Drop Styles */
 .gbn-sortable-placeholder {
-    background-color: rgba(29, 143, 241, 0.1);
-    border: 2px dashed rgba(29, 143, 241, 0.5);
+    background-color: rgba(var(--gbn-rgb-primary), 0.1);
+    border: 2px dashed rgba(var(--gbn-rgb-primary), 0.5);
     margin: 10px 0;
-    border-radius: 4px;
+    border-radius: var(--gbn-radius-base);
     pointer-events: none;
 }
 
@@ -118,12 +153,12 @@
 /* Drag & Drop Indicators */
 .gbn-drop-line {
     position: absolute;
-    background-color: #3b82f6; /* Blue-500 */
-    border-radius: 2px;
+    background-color: rgb(var(--gbn-rgb-blue-500)); /* Blue-500 */
+    border-radius: var(--gbn-radius-sm);
     pointer-events: none;
-    z-index: 9999;
+    z-index: var(--gbn-z-drop-line);
     transition: all 0.1s ease-out;
-    box-shadow: 0 0 4px rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 4px rgba(var(--gbn-rgb-blue-500), 0.5);
 }
 
 .gbn-drop-line.horizontal {
@@ -154,7 +189,7 @@
     position: absolute;
     top: -9999px;
     left: -9999px;
-    z-index: 100000;
+    z-index: var(--gbn-z-drag-proxy);
     pointer-events: none;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
@@ -167,7 +202,7 @@
     width: 100%;
     height: 100%;
     pointer-events: none; /* Let clicks pass through to content */
-    z-index: 90;
+    z-index: var(--gbn-z-controls);
     display: none; /* Controlled by JS */
 }
 
@@ -177,8 +212,8 @@
     transform: translateX(-50%);
     width: 24px;
     height: 24px;
-    background-color: #3b82f6;
-    color: white;
+    background-color: rgb(var(--gbn-rgb-blue-500));
+    color: var(--gbn-color-white);
     border: none;
     border-radius: 50%;
     font-size: 18px;
@@ -190,13 +225,13 @@
     justify-content: center;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: transform 0.2s ease, background-color 0.2s ease;
-    z-index: 100;
+    z-index: var(--gbn-z-add-btn);
     padding: unset;
     opacity: 0.8;
 }
 
 .gbn-root-add-btn:hover {
-    background-color: #2563eb;
+    background-color: rgb(var(--gbn-rgb-blue-600));
     transform: translateX(-50%) scale(1.1);
 }
 
@@ -217,10 +252,10 @@
 
 .gbn-width-btn {
     appearance: none;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
+    border: 1px solid rgba(var(--gbn-rgb-white), 0.3);
+    border-radius: var(--gbn-radius-base);
+    background: rgba(var(--gbn-rgb-white), 0.1);
+    color: var(--gbn-color-white);
     font-size: 11px;
     font-weight: 700;
     padding: 0 6px;
@@ -234,8 +269,8 @@
 }
 
 .gbn-width-btn:hover {
-    background: rgba(255, 255, 255, 0.25);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(var(--gbn-rgb-white), 0.25);
+    border-color: rgba(var(--gbn-rgb-white), 0.5);
 }
 
 .gbn-width-dropdown {
@@ -243,12 +278,12 @@
     bottom: 100%;
     left: 0;
     transform: translateY(-6px);
-    background: #fff;
-    border-radius: 6px;
+    background: var(--gbn-color-white);
+    border-radius: var(--gbn-radius-lg); /* 6px was used, var is 6px? mapped 6px to lg */
     padding: 4px;
     width: 200px;
     display: none;
-    z-index: 100;
+    z-index: var(--gbn-z-dropdown);
     max-height: 200px;
     overflow-y: unset;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Keep shadow for visibility */
@@ -277,17 +312,17 @@
     background: transparent;
     padding: 6px 2px; /* Reduced padding for 6 cols */
     font-size: 11px; /* Smaller font */
-    color: #374151;
+    color: var(--gbn-color-gray-text);
     cursor: pointer;
-    border-radius: 4px;
+    border-radius: var(--gbn-radius-base);
     text-align: center;
     transition: background 0.1s;
     white-space: nowrap;
 }
 
 .gbn-width-item:hover {
-    background: #f3f4f6;
-    color: #111827;
+    background: var(--gbn-color-gray-bg);
+    color: var(--gbn-color-gray-darker);
 }
 
 /* Triangle for dropdown (Adjusted position) */
@@ -299,7 +334,7 @@
     margin-left: -5px;
     border-width: 5px;
     border-style: solid;
-    border-color: #fff transparent transparent transparent;
+    border-color: var(--gbn-color-white) transparent transparent transparent;
     pointer-events: none; /* Let clicks pass through if needed */
     margin-top: 0px; /* Reset */
 }
@@ -321,9 +356,9 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.7);
+    background: rgba(var(--gbn-rgb-white), 0.7);
     z-index: 10;
-    border-radius: 8px;
+    border-radius: var(--gbn-radius-xl);
 }
 
 [gloryPostRender].gbn-loading::after {
@@ -334,9 +369,9 @@
     width: 32px;
     height: 32px;
     margin: -16px 0 0 -16px;
-    border-radius: 999px;
-    border: 3px solid rgba(29, 143, 241, 0.3);
-    border-top-color: rgba(29, 143, 241, 0.95);
+    border-radius: var(--gbn-radius-full);
+    border: 3px solid rgba(var(--gbn-rgb-primary), 0.3);
+    border-top-color: rgba(var(--gbn-rgb-primary), 0.95);
     animation: gbn-spin 0.8s linear infinite;
     z-index: 11;
 }
@@ -344,26 +379,26 @@
 /* PostRender editor outline */
 .gbn-active [gloryPostRender] {
     position: relative;
-    outline: 2px dashed rgba(16, 185, 129, 0.35); /* Verde */
+    outline: 2px dashed rgba(var(--gbn-rgb-green), 0.35); /* Verde */
     outline-offset: 4px;
     transition: outline-color 0.2s ease;
 }
 
 .gbn-active [gloryPostRender]:hover {
-    outline-color: rgba(16, 185, 129, 0.9);
+    outline-color: rgba(var(--gbn-rgb-green), 0.9);
 }
 
 /* PostItem editor outline */
 .gbn-active [gloryPostItem] {
     position: relative;
-    outline: 1px dashed rgba(139, 92, 246, 0.35); /* Púrpura */
+    outline: 1px dashed rgba(var(--gbn-rgb-purple), 0.35); /* Púrpura */
     outline-offset: 2px;
     transition: outline-color 0.2s ease;
     overflow: visible; /* Permite que los badges de PostFields se muestren fuera */
 }
 
 .gbn-active [gloryPostItem]:hover {
-    outline-color: rgba(139, 92, 246, 0.9);
+    outline-color: rgba(var(--gbn-rgb-purple), 0.9);
 }
 
 /* PostItem template marker in editor */
@@ -378,29 +413,29 @@
     position: absolute;
     top: -10px;
     right: 4px; /* Derecha para no chocar con badges de PostFields */
-    background: rgba(139, 92, 246, 0.9);
-    color: white;
+    background: rgba(var(--gbn-rgb-purple), 0.9);
+    color: var(--gbn-color-white);
     padding: 2px 8px;
     font-size: 10px;
     font-weight: bold;
-    border-radius: 4px;
-    z-index: 5;
+    border-radius: var(--gbn-radius-base);
+    z-index: var(--gbn-z-badge);
     white-space: nowrap;
 }
 
 /* PostField editor indicator */
 .gbn-active [gloryPostField] {
     position: relative;
-    background: rgba(251, 191, 36, 0.1);
-    border: 1px dashed rgba(251, 191, 36, 0.4);
-    border-radius: 4px;
+    background: rgba(var(--gbn-rgb-yellow), 0.1);
+    border: 1px dashed rgba(var(--gbn-rgb-yellow), 0.4);
+    border-radius: var(--gbn-radius-base);
     transition: all 0.2s ease;
     overflow: visible; /* Permite que el badge se muestre fuera del contenedor */
 }
 
 .gbn-active [gloryPostField]:hover {
-    background: rgba(251, 191, 36, 0.2);
-    border-color: rgba(251, 191, 36, 0.8);
+    background: rgba(var(--gbn-rgb-yellow), 0.2);
+    border-color: rgba(var(--gbn-rgb-yellow), 0.8);
 }
 
 /* PostField type badge */
@@ -409,13 +444,13 @@
     position: absolute;
     top: -10px;
     left: 4px;
-    background: rgba(251, 191, 36, 0.9);
-    color: #1f2937;
+    background: rgba(var(--gbn-rgb-yellow), 0.9);
+    color: var(--gbn-color-gray-dark);
     padding: 1px 4px;
     font-size: 9px;
     font-weight: 600;
-    border-radius: 3px;
-    z-index: 5;
+    border-radius: var(--gbn-radius-md);
+    z-index: var(--gbn-z-badge);
     white-space: nowrap;
 }
 
@@ -431,3 +466,173 @@
 .gbn-pr-preview-message {
     grid-column: 1 / -1; /* Occupy full width in grid */
 }
+
+/* ============================================
+   FASE 14: Form Components Editor Styles
+   ============================================ */
+
+/* Form container editor outline */
+.gbn-active [gloryForm] {
+    position: relative;
+    outline: 2px dashed rgba(var(--gbn-rgb-blue-500), 0.35); /* Azul */
+    outline-offset: 4px;
+    background: rgba(var(--gbn-rgb-blue-500), 0.03);
+    transition: outline-color 0.2s ease, background-color 0.2s ease;
+    border-radius: var(--gbn-radius-xl);
+}
+
+.gbn-active [gloryForm]:hover {
+    outline-color: rgba(var(--gbn-rgb-blue-500), 0.8);
+    background: rgba(var(--gbn-rgb-blue-500), 0.06);
+}
+
+/* Form container badge */
+.gbn-active [gloryForm]::before {
+    content: '📋 FORM';
+    position: absolute;
+    top: -10px;
+    right: 4px;
+    background: rgba(var(--gbn-rgb-blue-500), 0.9);
+    color: var(--gbn-color-white);
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: bold;
+    border-radius: var(--gbn-radius-base);
+    z-index: var(--gbn-z-badge);
+    white-space: nowrap;
+}
+
+/* Input field editor styles */
+.gbn-active [gloryInput] {
+    position: relative;
+    background: rgba(var(--gbn-rgb-green), 0.06);
+    border: 1px dashed rgba(var(--gbn-rgb-green), 0.35);
+    border-radius: var(--gbn-radius-lg);
+    transition: all 0.2s ease;
+    overflow: visible;
+    padding: 4px;
+    margin: 2px 0;
+}
+
+.gbn-active [gloryInput]:hover {
+    background: rgba(var(--gbn-rgb-green), 0.12);
+    border-color: rgba(var(--gbn-rgb-green), 0.7);
+}
+
+/* Input badge */
+.gbn-active [gloryInput]::before {
+    content: 'INPUT';
+    position: absolute;
+    top: -8px;
+    left: 4px;
+    background: rgba(var(--gbn-rgb-green), 0.85);
+    color: var(--gbn-color-white);
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: var(--gbn-radius-md);
+    z-index: var(--gbn-z-badge);
+    white-space: nowrap;
+}
+
+/* Textarea field editor styles */
+.gbn-active [gloryTextarea] {
+    position: relative;
+    background: rgba(var(--gbn-rgb-purple), 0.06);
+    border: 1px dashed rgba(var(--gbn-rgb-purple), 0.35);
+    border-radius: var(--gbn-radius-lg);
+    transition: all 0.2s ease;
+    overflow: visible;
+    padding: 4px;
+    margin: 2px 0;
+}
+
+.gbn-active [gloryTextarea]:hover {
+    background: rgba(var(--gbn-rgb-purple), 0.12);
+    border-color: rgba(var(--gbn-rgb-purple), 0.7);
+}
+
+/* Textarea badge */
+.gbn-active [gloryTextarea]::before {
+    content: 'TEXTAREA';
+    position: absolute;
+    top: -8px;
+    left: 4px;
+    background: rgba(var(--gbn-rgb-purple), 0.85);
+    color: var(--gbn-color-white);
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: var(--gbn-radius-md);
+    z-index: var(--gbn-z-badge);
+    white-space: nowrap;
+}
+
+/* Select field editor styles */
+.gbn-active [glorySelect] {
+    position: relative;
+    background: rgba(var(--gbn-rgb-secondary), 0.06);
+    border: 1px dashed rgba(var(--gbn-rgb-secondary), 0.35);
+    border-radius: var(--gbn-radius-lg);
+    transition: all 0.2s ease;
+    overflow: visible;
+    padding: 4px;
+    margin: 2px 0;
+}
+
+.gbn-active [glorySelect]:hover {
+    background: rgba(var(--gbn-rgb-secondary), 0.12);
+    border-color: rgba(var(--gbn-rgb-secondary), 0.7);
+}
+
+/* Select badge */
+.gbn-active [glorySelect]::before {
+    content: 'SELECT';
+    position: absolute;
+    top: -8px;
+    left: 4px;
+    background: rgba(var(--gbn-rgb-secondary), 0.85);
+    color: var(--gbn-color-gray-dark);
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: var(--gbn-radius-md);
+    z-index: var(--gbn-z-badge);
+    white-space: nowrap;
+}
+
+/* Submit button editor styles */
+.gbn-active [glorySubmit] {
+    position: relative;
+    outline: 2px dashed rgba(var(--gbn-rgb-red), 0.35);
+    outline-offset: 3px;
+    transition: all 0.2s ease;
+}
+
+.gbn-active [glorySubmit]:hover {
+    outline-color: rgba(var(--gbn-rgb-red), 0.8);
+}
+
+/* Submit badge - positioned outside the button */
+.gbn-active [glorySubmit]::after {
+    content: 'SUBMIT';
+    position: absolute;
+    top: -14px;
+    right: 4px;
+    background: rgba(var(--gbn-rgb-red), 0.9);
+    color: var(--gbn-color-white);
+    padding: 1px 5px;
+    font-size: 9px;
+    font-weight: 600;
+    border-radius: var(--gbn-radius-md);
+    z-index: var(--gbn-z-badge);
+    white-space: nowrap;
+}
+
+/* Color coding summary for form components:
+   - Form:     Azul (#3b82f6) - Contenedor principal
+   - Input:    Verde (#10b981) - Campos de texto
+   - Textarea: Púrpura (#8b5cf6) - Área de texto
+   - Select:   Naranja (#f59e0b) - Selectores
+   - Submit:   Rojo (#ef4444) - Botones de acción
+*/

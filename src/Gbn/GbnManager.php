@@ -110,11 +110,12 @@ class GbnManager
 
         // 1. Frontend CSS (Always loaded)
         $frontendCss = [
-            'variables'   => 'variables.css',
-            'layout'      => 'layout.css',
-            'components'  => 'components.css',
-            'gbn'         => 'gbn.css',
-            'theme-styles' => 'theme-styles.css'
+            'variables'        => 'variables.css',
+            'layout'           => 'layout.css',
+            'components'       => 'components.css',
+            'formComponents'   => 'formComponents.css', // Fase 14: Form Components
+            'gbn'              => 'gbn.css',
+            'theme-styles'     => 'theme-styles.css'
         ];
 
         // 2. Builder CSS (Only for editors)
@@ -233,6 +234,11 @@ class GbnManager
             // Fase 13.5: PostRender Frontend (filtros, paginación)
             'glory-gbn-post-render-frontend' => [
                 'file' => '/js/frontend/post-render-frontend.js',
+                'deps' => [],
+            ],
+            // Fase 14.5: Form Submit Frontend (envío AJAX de formularios)
+            'glory-gbn-form-submit' => [
+                'file' => '/js/frontend/form-submit.js',
                 'deps' => [],
             ],
         ];
@@ -416,6 +422,27 @@ class GbnManager
                 'file' => '/js/ui/renderers/post-field.js',
                 'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
             ],
+            // Fase 14: Form Components (Formularios)
+            'glory-gbn-ui-renderers-form' => [
+                'file' => '/js/ui/renderers/form.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-input' => [
+                'file' => '/js/ui/renderers/input.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-textarea' => [
+                'file' => '/js/ui/renderers/textarea.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-select' => [
+                'file' => '/js/ui/renderers/select.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
+            'glory-gbn-ui-renderers-submit' => [
+                'file' => '/js/ui/renderers/submit.js',
+                'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
+            ],
 
             'glory-gbn-ui-panel-render' => [
                 'file' => '/js/ui/panel-render.js',
@@ -432,6 +459,12 @@ class GbnManager
                     'glory-gbn-ui-renderers-post-render',
                     'glory-gbn-ui-renderers-post-item',
                     'glory-gbn-ui-renderers-post-field',
+                    // Fase 14: Form renderers
+                    'glory-gbn-ui-renderers-form',
+                    'glory-gbn-ui-renderers-input',
+                    'glory-gbn-ui-renderers-textarea',
+                    'glory-gbn-ui-renderers-select',
+                    'glory-gbn-ui-renderers-submit',
                 ],
             ],
             'glory-gbn-theme-applicator' => [
