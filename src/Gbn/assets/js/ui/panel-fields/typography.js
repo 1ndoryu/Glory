@@ -302,9 +302,9 @@
         
         var transforms = [
             { val: 'none', label: 'None', icon: getIcon('typography.transform.none') },
-            { val: 'uppercase', label: 'Uppercase', icon: 'AB' },
-            { val: 'lowercase', label: 'Lowercase', icon: 'ab' },
-            { val: 'capitalize', label: 'Capitalize', icon: 'Ab' }
+            { val: 'uppercase', label: 'Uppercase', icon: getIcon('typography.transform.uppercase') },
+            { val: 'lowercase', label: 'Lowercase', icon: getIcon('typography.transform.lowercase') },
+            { val: 'capitalize', label: 'Capitalize', icon: getIcon('typography.transform.capitalize') }
         ];
         
         var transformData = getResponsiveData('transform');

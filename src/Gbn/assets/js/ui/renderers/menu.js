@@ -23,31 +23,42 @@
     function getStyles(config, block) {
         var styles = {};
 
-        // Layout
-        if (config.layout === 'horizontal') {
+        // Layout / Direction (Standardized)
+        var dir = config.direction || (config.layout === 'vertical' ? 'column' : 'row'); // Default row
+
+        if (dir === 'row') {
             styles['display'] = 'flex';
             styles['flex-direction'] = 'row';
             styles['align-items'] = 'center';
-        } else if (config.layout === 'vertical') {
+        } else if (dir === 'column') {
             styles['display'] = 'flex';
             styles['flex-direction'] = 'column';
             styles['align-items'] = 'flex-start';
         }
 
-        // Gap entre items
+        // Gap entre items (Standardized unit)
         if (config.gap) {
-            styles['gap'] = config.gap;
+            styles['gap'] = typeof config.gap === 'number' ? config.gap + 'px' : config.gap;
         }
 
-        // Tipografía
-        if (config.fontSize) {
-            styles['font-size'] = config.fontSize;
+        // Tipografía (HasTypography)
+        // Nota: HasTypography guarda en config.typography = { size, weight, transform ... }
+        var typ = config.typography || {};
+        
+        if (typ.size) {
+            styles['font-size'] = typ.size;
         }
-        if (config.fontWeight) {
-            styles['font-weight'] = config.fontWeight;
+        if (typ.weight) {
+            styles['font-weight'] = typ.weight;
         }
-        if (config.textTransform) {
-            styles['text-transform'] = config.textTransform;
+        if (typ.transform) {
+            styles['text-transform'] = typ.transform;
+        }
+        
+        // Color (replaces linkColor) - Se aplica via CSS heredado o handleUpdate
+        // Si se aplica a wrapper, 'a' debe heredar.
+        if (config.color) {
+            styles['color'] = config.color;
         }
 
         return styles;
@@ -73,10 +84,14 @@
             return true;
         }
 
-        // Orientación del layout
-        if (path === 'layout') {
+        // Orientación del layout (Standardized)
+        if (path === 'layout' || path === 'direction') {
             if (menuList) {
-                if (value === 'horizontal') {
+                var isRow;
+                if (path === 'layout') isRow = (value === 'horizontal');
+                else isRow = (value === 'row');
+
+                if (isRow) {
                     menuList.style.display = 'flex';
                     menuList.style.flexDirection = 'row';
                     menuList.style.alignItems = 'center';
@@ -92,17 +107,18 @@
         // Gap entre items
         if (path === 'gap') {
             if (menuList) {
-                menuList.style.gap = value || '';
+                var val = typeof value === 'number' ? value + 'px' : value;
+                menuList.style.gap = val || '';
             }
             return true;
         }
 
-        // Color de enlaces
-        if (path === 'linkColor') {
+        // Color de enlaces (ahora 'color' por HasTypography)
+        if (path === 'color') {
             links.forEach(function(link) {
                 link.style.color = value || '';
             });
-            // Guardar para aplicar a nuevos links
+            // Guardar para aplicar a nuevos links y hover
             el.dataset.linkColor = value || '';
             return true;
         }
@@ -114,26 +130,35 @@
             return true;
         }
 
-        // Tamaño de fuente
-        if (path === 'fontSize') {
+        // Tamaño, Peso, Transformación (via typography.*)
+        if (path === 'typography.size') {
             links.forEach(function(link) {
                 link.style.fontSize = value || '';
             });
             return true;
         }
 
-        // Peso de fuente
-        if (path === 'fontWeight') {
+        if (path === 'typography.weight') {
             links.forEach(function(link) {
                 link.style.fontWeight = value || '';
             });
             return true;
         }
 
-        // Transformación de texto
-        if (path === 'textTransform') {
+        if (path === 'typography.transform') {
             links.forEach(function(link) {
                 link.style.textTransform = value || '';
+            });
+            return true;
+        }
+        
+        // Typography Composite (si se actualiza todo el objeto)
+        if (path === 'typography') {
+            var val = value || {};
+            links.forEach(function(link) {
+                if(val.size) link.style.fontSize = val.size;
+                if(val.weight) link.style.fontWeight = val.weight;
+                if(val.transform) link.style.textTransform = val.transform;
             });
             return true;
         }

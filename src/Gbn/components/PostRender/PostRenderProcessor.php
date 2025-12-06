@@ -386,23 +386,23 @@ class PostRenderProcessor
         $css = [];
         $class = '.' . $this->instanceClass;
 
-        // Layout del contenedor según displayMode
-        $displayMode = $this->config['displayMode'] ?? 'grid';
+        // Layout del contenedor mejorado con constantes
+        $layout = $this->config['layout'] ?? ($this->config['displayMode'] ?? 'grid');
         
-        if ($displayMode === 'grid') {
+        if ($layout === 'grid') {
             $columns = (int) ($this->config['gridColumns'] ?? 3);
-            $gap = $this->config['gap'] ?? '20px';
+            $gap = $this->config['gap'] ?? ($this->config['gridGap'] ?? '20px'); // Estandarizar gap
             
             $css[] = "{$class} { display: grid; grid-template-columns: repeat({$columns}, 1fr); gap: {$gap}; }";
             
             // Responsive: 2 columnas en tablet, 1 en móvil
             $css[] = "@media (max-width: 768px) { {$class} { grid-template-columns: repeat(2, 1fr); } }";
             $css[] = "@media (max-width: 480px) { {$class} { grid-template-columns: 1fr; } }";
-        } elseif ($displayMode === 'flex') {
+        } elseif ($layout === 'flex') {
             $direction = $this->config['flexDirection'] ?? 'row';
             $wrap = $this->config['flexWrap'] ?? 'wrap';
-            $align = $this->config['alignItems'] ?? 'stretch';
-            $justify = $this->config['justifyContent'] ?? 'flex-start';
+            $align = $this->config['alignItems'] ?? ($this->config['flexAlign'] ?? 'stretch');
+            $justify = $this->config['justifyContent'] ?? ($this->config['flexJustify'] ?? 'flex-start');
             $gap = $this->config['gap'] ?? '20px';
             
             $css[] = "{$class} { display: flex; flex-direction: {$direction}; flex-wrap: {$wrap}; align-items: {$align}; justify-content: {$justify}; gap: {$gap}; }";
@@ -664,6 +664,11 @@ class PostRenderProcessor
                     if (is_numeric($value)) $value = $value + 0;
                     
                     $config[$key] = $value;
+                }
+                
+                // Migrar configuración a nombres canónicos
+                if (class_exists(\Glory\Gbn\Schema\FieldAliasMapper::class)) {
+                    $config = \Glory\Gbn\Schema\FieldAliasMapper::migrateConfig($config);
                 }
             }
 

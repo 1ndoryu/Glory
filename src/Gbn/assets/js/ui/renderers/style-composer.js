@@ -175,7 +175,8 @@
             
             // Check for local Flex overrides
             var hasFlexOverride = config.direction || config.wrap || config.justify || config.align || 
-                                  config.flexDirection || config.flexWrap || config.flexJustify || config.flexAlign;
+                                  config.flexDirection || config.flexWrap || config.flexJustify || config.flexAlign ||
+                                  config.justifyContent || config.alignItems;
                                   
             // Check for local Grid overrides
             var hasGridOverride = config.gridColumns || config.gridRows || config.gridGap;

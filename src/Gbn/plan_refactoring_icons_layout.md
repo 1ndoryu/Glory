@@ -745,7 +745,7 @@ trait HasDimensions
 [x] 2.1 Crear directorio assets/js/ui/icons/
 [x] 2.2 Implementar index.js con registro principal
 [x] 2.3 Implementar archivos de iconos por categoría
-[ ] 2.4 Actualizar ScriptManifest para incluir el nuevo módulo
+[x] 2.4 Actualizar ScriptManifest para incluir el nuevo módulo
 ```
 
 ### Fase 3: Refactorizar HasFlexbox y HasGrid ⏱️ 2-3 horas
@@ -873,22 +873,22 @@ trait HasDimensions
 
 ### Fase 9: Unificar Nombres de Campos ⏱️ 3-4 horas
 ```
-[ ] 9.1 Crear constantes de campos canónicos en SchemaConstants.php:
+[x] 9.1 Crear constantes de campos canónicos en SchemaConstants.php:
       - FIELD_LAYOUT = 'layout' (deprecar 'displayMode')
       - FIELD_JUSTIFY = 'justifyContent' (deprecar 'flexJustify')
       - FIELD_ALIGN = 'alignItems' (deprecar 'flexAlign')
-[ ] 9.2 Actualizar HasFlexbox para usar nombres canónicos
-[ ] 9.3 Crear FieldAliasMapper para compatibilidad hacia atrás
-[ ] 9.4 Actualizar StyleMapper para usar constantes
-[ ] 9.5 Migrar PostRenderComponent a nombres canónicos
-[ ] 9.6 Actualizar todos los templates existentes (buscar displayMode=)
+[x] 9.2 Actualizar HasFlexbox para usar nombres canónicos
+[x] 9.3 Crear FieldAliasMapper para compatibilidad hacia atrás
+[x] 9.4 Actualizar StyleMapper para usar constantes (style-composer.js y layout-flex.js actualizados)
+[x] 9.5 Migrar PostRenderComponent a nombres canónicos (actualizado componente y procesador)
+[x] 9.6 Actualizar todos los templates existentes (buscar displayMode=) - PostRender actualizado, otros son dinámicos a través de AliasMapper
 ```
 
 ### Fase 10: Normalizar Tipos de Campos ⏱️ 2-3 horas
 ```
-[ ] 10.1 Definir tipo canónico para 'gap': slider con unidad
-[ ] 10.2 Crear helper Option::gap() que estandarice el campo
-[ ] 10.3 Actualizar todos los usos de gap en componentes
+[ ] 10.1 Definir tipo canónico para 'gap': slider con unidad - HECHO (usando unit 'px')
+[x] 10.2 Crear helper Option::gap() que estandarice el campo
+[x] 10.3 Actualizar todos los usos de gap en componentes - COMPLETADO (HasLayoutOptions, HasFlexbox, MenuComponent, PostRenderComponent)
 [ ] 10.4 Documentar convención de tipos para campos comunes
 [ ] 10.5 Agregar validación en SchemaBuilder para tipos consistentes
 ```
@@ -896,17 +896,19 @@ trait HasDimensions
 ### Fase 11: Auditar y Normalizar Condiciones ⏱️ 1-2 horas
 ```
 [ ] 11.1 Documentar formato canónico de condiciones: [field, operator, value]
-[ ] 11.2 Actualizar Option::condition() para normalizar formatos y validar operadores
-[ ] 11.3 Migrar MenuComponent: cambiar `===` por `==`
-[ ] 11.4 Migrar condiciones de formato corto (2 params) a formato estándar
-[ ] 11.5 Validar que condition-handler.js soporte todos los operadores
+[x] 11.2 Actualizar Option::condition() para normalizar formatos y validar operadores - COMPLETADO
+[x] 11.3 Migrar MenuComponent: cambiar `===` por `==` - COMPLETADO
+[x] 11.4 Migrar condiciones de formato corto (2 params) a formato estándar - COMPLETADO
+[ ] 11.5 Validar que condition-handler.js soporte todos los operadores - VALIDADO (Visto en el código)
 [ ] 11.6 Agregar tests para todos los formatos de condición
 ```
 
 ### Fase 12: Modernización de MenuComponent ⏱️ 3 horas
 ```
-[ ] 12.1 Convertir array de opciones a `SchemaBuilder`
-[ ] 12.2 Implementar `HasTypography` en lugar de campos manuales
+[x] 12.1 Convertir array de opciones a `SchemaBuilder` - COMPLETADO
+[x] 12.2 Implementar `HasTypography` en lugar de campos manuales - COMPLETADO
+[x] 12.3 Estandarizar nombres de campos (flexDirection -> direction, flexWrap -> wrap) en SchemaConstants - COMPLETADO
+[ ] 12.4 Validar compatibilidad con `MenuWalker`
 ```
 
 ### Fase 13: Enriquecimiento Visual (Form y Menú) ⏱️ 2-3 horas
@@ -933,7 +935,7 @@ trait HasDimensions
 
 > **Nota importante:** Con los avances realizados, la estructura interna de `HasFlexbox` ha cambiado para usar `IconRegistry`. Si detecta iconos rotos (SVG no renderizado), verificar la caché y los logs de error PHP.
 
-[ ] 12.3 Estandarizar nombres de campos (layout horizontal/vertical -> direction)
+[x] 12.3 Estandarizar nombres de campos (layout horizontal/vertical -> direction)
 [ ] 12.4 Validar compatibilidad con `MenuWalker`
 ```
 

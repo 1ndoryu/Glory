@@ -5,6 +5,7 @@ namespace Glory\Gbn\Components\Secundario;
 use Glory\Gbn\Components\AbstractComponent;
 use Glory\Gbn\Schema\SchemaBuilder;
 use Glory\Gbn\Schema\Option;
+use Glory\Gbn\Schema\SchemaConstants;
 use Glory\Gbn\Traits\HasFlexbox;
 use Glory\Gbn\Traits\HasGrid;
 use Glory\Gbn\Traits\HasSpacing;
@@ -31,11 +32,11 @@ class SecundarioComponent extends AbstractComponent
     public function getDefaults(): array
     {
         return [
-            'layout' => 'block',
-            'flexDirection' => 'row',
-            'flexWrap' => 'nowrap',
-            'flexJustify' => 'flex-start',
-            'flexAlign' => 'stretch',
+            SchemaConstants::FIELD_LAYOUT => 'block',
+            SchemaConstants::FIELD_FLEX_DIRECTION => 'row',
+            SchemaConstants::FIELD_FLEX_WRAP => 'nowrap',
+            SchemaConstants::FIELD_JUSTIFY => 'flex-start',
+            SchemaConstants::FIELD_ALIGN => 'stretch',
         ];
     }
 

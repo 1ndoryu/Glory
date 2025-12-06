@@ -14,6 +14,7 @@ namespace Glory\Gbn\Components\PostRender;
 use Glory\Gbn\Components\AbstractComponent;
 use Glory\Gbn\Schema\SchemaBuilder;
 use Glory\Gbn\Schema\Option;
+use Glory\Gbn\Schema\SchemaConstants;
 use Glory\Gbn\Traits\HasSpacing;
 use Glory\Gbn\Traits\HasBackground;
 use Glory\Gbn\Traits\HasBorder;
@@ -49,13 +50,13 @@ class PostRenderComponent extends AbstractComponent
             'postNotIn' => '',
             
             // Layout
-            'displayMode' => 'grid',
-            'gridColumns' => 3,
-            'gap' => '20px',
-            'flexDirection' => 'row',
-            'flexWrap' => 'wrap',
-            'alignItems' => 'stretch',
-            'justifyContent' => 'flex-start',
+            SchemaConstants::FIELD_LAYOUT => 'grid',
+            SchemaConstants::FIELD_GRID_COLUMNS => 3,
+            SchemaConstants::FIELD_GAP => 20,
+            SchemaConstants::FIELD_FLEX_DIRECTION => 'row',
+            SchemaConstants::FIELD_FLEX_WRAP => 'wrap',
+            SchemaConstants::FIELD_ALIGN => 'stretch',
+            SchemaConstants::FIELD_JUSTIFY => 'flex-start',
             'layoutPattern' => 'none',
             'hoverEffect' => 'none',
             
@@ -171,7 +172,7 @@ class PostRenderComponent extends AbstractComponent
         // ═══════════════════════════════════════════════
 
         // Usar el trait HasLayoutOptions para estandarizar
-        $layoutOptions = $this->getLayoutOptions('full', 'displayMode');
+        $layoutOptions = $this->getLayoutOptions('full', SchemaConstants::FIELD_LAYOUT);
         
         foreach ($layoutOptions as $option) {
             $option->tab('Layout');
@@ -281,7 +282,7 @@ class PostRenderComponent extends AbstractComponent
     {
         // Template mínimo: contenedor + un PostItem de ejemplo
         return <<<HTML
-<div gloryPostRender opciones="postType: 'post', postsPerPage: 6, displayMode: 'grid', gridColumns: 3, gap: '20px'" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+<div gloryPostRender opciones="postType: 'post', postsPerPage: 6, layout: 'grid', gridColumns: 3, gap: '20px'" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
     <article gloryPostItem class="post-item" style="padding: 16px; border: 1px solid #e5e5e5; border-radius: 8px;">
         <div gloryPostField="featuredImage" style="width: 100%; aspect-ratio: 16/9; background: #f0f0f0; margin-bottom: 12px;">
             <img src="" alt="" style="width: 100%; height: 100%; object-fit: cover;">

@@ -3,6 +3,7 @@ namespace Glory\Gbn\Traits;
 
 use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Icons\IconRegistry;
+use Glory\Gbn\Schema\SchemaConstants;
 
 /**
  * Trait HasLayoutOptions - Unifica todas las opciones de layout
@@ -71,7 +72,7 @@ trait HasLayoutOptions
     protected function getFlexLayoutOptions(string $conditionField = 'layout'): array
     {
         return [
-            Option::iconGroup('flexDirection', 'Dirección')
+            Option::iconGroup(SchemaConstants::FIELD_FLEX_DIRECTION, 'Dirección')
                 ->options([
                     ['valor' => 'row', 'etiqueta' => 'Horizontal', 'icon' => IconRegistry::get('direction.row')],
                     ['valor' => 'column', 'etiqueta' => 'Vertical', 'icon' => IconRegistry::get('direction.column')],
@@ -79,7 +80,7 @@ trait HasLayoutOptions
                 ->default('row')
                 ->condition([$conditionField, '==', 'flex']),
 
-            Option::iconGroup('flexWrap', 'Envoltura')
+            Option::iconGroup(SchemaConstants::FIELD_FLEX_WRAP, 'Envoltura')
                 ->options([
                     ['valor' => 'nowrap', 'etiqueta' => 'No envolver', 'icon' => IconRegistry::get('wrap.nowrap')],
                     ['valor' => 'wrap', 'etiqueta' => 'Envolver', 'icon' => IconRegistry::get('wrap.wrap')],
@@ -87,7 +88,7 @@ trait HasLayoutOptions
                 ->default('nowrap')
                 ->condition([$conditionField, '==', 'flex']),
 
-            Option::iconGroup('justifyContent', 'Justificación') // Usando nombre canónico (Phase 9 anticipada) o mantener flexJustify?
+            Option::iconGroup(SchemaConstants::FIELD_JUSTIFY, 'Justificación') // Usando nombre canónico (Phase 9 anticipada) o mantener flexJustify?
                                                                  // Plan Phase 3 says create HasLayoutOptions. 
                                                                  // Plan Phase 9 says "Unificar Nombres". 
                                                                  // Using standard names here 'justifyContent' is better for the future.
@@ -111,7 +112,7 @@ trait HasLayoutOptions
                 ->default('flex-start')
                 ->condition([$conditionField, '==', 'flex']),
 
-            Option::iconGroup('alignItems', 'Alineación')
+            Option::iconGroup(SchemaConstants::FIELD_ALIGN, 'Alineación')
                 ->options(IconRegistry::getGroup([
                     'align.stretch' => ['valor' => 'stretch', 'etiqueta' => 'Estirar'],
                     'align.start' => ['valor' => 'flex-start', 'etiqueta' => 'Inicio'],
@@ -121,11 +122,7 @@ trait HasLayoutOptions
                 ->default('stretch')
                 ->condition([$conditionField, '==', 'flex']),
 
-            Option::slider('gap', 'Separación (Gap)')
-                ->unit('px')
-                ->min(0)
-                ->max(120)
-                ->step(2)
+            Option::gap(SchemaConstants::FIELD_GAP, 'Separación (Gap)')
                 ->default(0)
                 ->condition([$conditionField, '==', 'flex']),
         ];
@@ -134,18 +131,14 @@ trait HasLayoutOptions
     protected function getGridLayoutOptions(string $conditionField = 'layout'): array
     {
         return [
-            Option::slider('gridColumns', 'Columnas')
+            Option::slider(SchemaConstants::FIELD_GRID_COLUMNS, 'Columnas')
                 ->min(1)
                 ->max(12)
                 ->step(1)
                 ->default(3)
                 ->condition([$conditionField, '==', 'grid']),
 
-            Option::slider('gridGap', 'Separación Grid')
-                ->unit('px')
-                ->min(0)
-                ->max(120)
-                ->step(2)
+            Option::gap(SchemaConstants::FIELD_GRID_GAP, 'Separación Grid')
                 ->default(20)
                 ->condition([$conditionField, '==', 'grid']),
         ];

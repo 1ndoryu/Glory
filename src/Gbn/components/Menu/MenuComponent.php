@@ -5,7 +5,9 @@ namespace Glory\Gbn\Components\Menu;
 use Glory\Gbn\Components\AbstractComponent;
 use Glory\Gbn\Schema\SchemaBuilder;
 use Glory\Gbn\Schema\Option;
+use Glory\Gbn\Schema\SchemaConstants;
 use Glory\Gbn\Icons\IconRegistry;
+use Glory\Gbn\Traits\HasTypography;
 
 /**
  * Componente Menu para GBN.
@@ -19,6 +21,8 @@ use Glory\Gbn\Icons\IconRegistry;
  */
 class MenuComponent extends AbstractComponent
 {
+    use HasTypography;
+    
     protected string $id = 'menu';
     protected string $label = 'Menu';
 
@@ -121,67 +125,35 @@ class MenuComponent extends AbstractComponent
         // ═══════════════════════════════════════════════
 
         $schema->addOption(
-            Option::iconGroup('layout', 'Orientación')
+            Option::iconGroup(SchemaConstants::FIELD_FLEX_DIRECTION, 'Orientación')
                 ->options([
                     [
-                        'valor' => 'horizontal',
+                        'valor' => 'row',
                         'etiqueta' => 'Horizontal',
                         'icon' => IconRegistry::get('direction.row')
                     ],
                     [
-                        'valor' => 'vertical',
+                        'valor' => 'column',
                         'etiqueta' => 'Vertical',
                         'icon' => IconRegistry::get('direction.column')
                     ]
                 ])
-                ->default('horizontal')
+                ->default('row')
                 ->tab('Estilo')
         );
 
         $schema->addOption(
-            Option::text('gap', 'Espacio entre Items')
-                ->default('2rem')
+            Option::gap()
+                ->default(32) // 2rem approx 32px
                 ->tab('Estilo')
         );
 
-        $schema->addOption(
-            Option::color('linkColor', 'Color de Enlaces')
-                ->tab('Estilo')
-        );
+        // Replace manual typography fields with HasTypography options
+        // This adds: typography (size, weight, transform...), color (text), textAlign
+        $this->addTypographyOptions($schema, 'Estilo');
 
         $schema->addOption(
             Option::color('linkColorHover', 'Color Hover')
-                ->tab('Estilo')
-        );
-
-        $schema->addOption(
-            Option::text('fontSize', 'Tamaño de Fuente')
-                ->default('1rem')
-                ->tab('Estilo')
-        );
-
-        $schema->addOption(
-            Option::select('fontWeight', 'Peso de Fuente')
-                ->options([
-                    ['valor' => '300', 'etiqueta' => 'Light'],
-                    ['valor' => '400', 'etiqueta' => 'Normal'],
-                    ['valor' => '500', 'etiqueta' => 'Medium'],
-                    ['valor' => '600', 'etiqueta' => 'Semi Bold'],
-                    ['valor' => '700', 'etiqueta' => 'Bold'],
-                ])
-                ->default('400')
-                ->tab('Estilo')
-        );
-
-        $schema->addOption(
-            Option::iconGroup('textTransform', 'Transformación')
-                ->options([
-                    ['valor' => 'none', 'etiqueta' => 'Normal', 'icon' => IconRegistry::get('text.standard')],
-                    ['valor' => 'uppercase', 'etiqueta' => 'Mayúsculas', 'icon' => IconRegistry::get('text.uppercase')],
-                    ['valor' => 'lowercase', 'etiqueta' => 'Minúsculas', 'icon' => IconRegistry::get('text.lowercase')],
-                    ['valor' => 'capitalize', 'etiqueta' => 'Capitalizado', 'icon' => IconRegistry::get('text.capitalize')],
-                ])
-                ->default('none')
                 ->tab('Estilo')
         );
 
@@ -224,13 +196,15 @@ class MenuComponent extends AbstractComponent
             'menuId' => 'mainMenu',
             'menuDepth' => 3,
             'manualItems' => '',
-            'layout' => 'horizontal',
-            'gap' => '2rem',
-            'linkColor' => '',
+            SchemaConstants::FIELD_FLEX_DIRECTION => 'row',
+            'gap' => 32,
+            'color' => '', // Replaces linkColor
             'linkColorHover' => '',
-            'fontSize' => '1rem',
-            'fontWeight' => '400',
-            'textTransform' => 'none',
+            'typography' => [ // Replaces fontSize, fontWeight, textTransform
+                'size' => '1rem',
+                'weight' => '400',
+                'transform' => 'none'
+            ],
             'mobileBreakpoint' => '768px',
             'mobileBackgroundColor' => 'rgba(248, 248, 248, 0.95)',
             'mobileAnimation' => 'slideDown'

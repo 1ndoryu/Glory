@@ -3,6 +3,7 @@ namespace Glory\Gbn\Traits;
 
 use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Icons\IconRegistry;
+use Glory\Gbn\Schema\SchemaConstants;
 
 trait HasFlexbox {
     /**
@@ -11,7 +12,7 @@ trait HasFlexbox {
      */
     protected function getFlexboxOptions(): array {
         return [
-            Option::iconGroup('layout', 'Layout')
+            Option::iconGroup(SchemaConstants::FIELD_LAYOUT, 'Layout')
                 ->options([
                     ['valor' => 'block', 'etiqueta' => 'Bloque', 'icon' => IconRegistry::get('layout.block')],
                     ['valor' => 'flex', 'etiqueta' => 'Flexbox', 'icon' => IconRegistry::get('layout.flex')],
@@ -19,21 +20,21 @@ trait HasFlexbox {
                 ])
                 ->default('block'),
             
-            Option::iconGroup('flexDirection', 'Dirección')
+            Option::iconGroup(SchemaConstants::FIELD_FLEX_DIRECTION, 'Dirección')
                 ->options([
                     ['valor' => 'row', 'etiqueta' => 'Horizontal', 'icon' => IconRegistry::get('direction.row')],
                     ['valor' => 'column', 'etiqueta' => 'Vertical', 'icon' => IconRegistry::get('direction.column')],
                 ])
-                ->condition('layout', 'flex'),
+                ->condition(SchemaConstants::FIELD_LAYOUT, '==', 'flex'),
 
-            Option::iconGroup('flexWrap', 'Envoltura')
+            Option::iconGroup(SchemaConstants::FIELD_FLEX_WRAP, 'Envoltura')
                 ->options([
                     ['valor' => 'nowrap', 'etiqueta' => 'No envolver', 'icon' => IconRegistry::get('wrap.nowrap')],
                     ['valor' => 'wrap', 'etiqueta' => 'Envolver', 'icon' => IconRegistry::get('wrap.wrap')],
                 ])
-                ->condition('layout', 'flex'),
+                ->condition(SchemaConstants::FIELD_LAYOUT, '==', 'flex'),
 
-            Option::iconGroup('flexJustify', 'Justificación')
+            Option::iconGroup(SchemaConstants::FIELD_JUSTIFY, 'Justificación')
                 ->options([
                     ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => IconRegistry::get('justify.start')],
                     ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => IconRegistry::get('justify.center')],
@@ -41,23 +42,19 @@ trait HasFlexbox {
                     ['valor' => 'space-between', 'etiqueta' => 'Espacio entre', 'icon' => IconRegistry::get('justify.between')],
                     ['valor' => 'space-around', 'etiqueta' => 'Espacio alrededor', 'icon' => IconRegistry::get('justify.around')],
                 ])
-                ->condition('layout', 'flex'),
+                ->condition(SchemaConstants::FIELD_LAYOUT, '==', 'flex'),
 
-            Option::iconGroup('flexAlign', 'Alineación')
+            Option::iconGroup(SchemaConstants::FIELD_ALIGN, 'Alineación')
                 ->options([
                     ['valor' => 'stretch', 'etiqueta' => 'Estirar', 'icon' => IconRegistry::get('align.stretch')],
                     ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => IconRegistry::get('align.start')],
                     ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => IconRegistry::get('align.center')],
                     ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => IconRegistry::get('align.end')],
                 ])
-                ->condition('layout', 'flex'),
+                ->condition(SchemaConstants::FIELD_LAYOUT, '==', 'flex'),
 
-            Option::slider('gap', 'Separación (Gap)')
-                ->unit('px')
-                ->min(0)
-                ->max(120)
-                ->step(2)
-                ->condition('layout', 'flex'),
+            Option::gap(SchemaConstants::FIELD_GAP, 'Separación (Gap)')
+                ->condition(SchemaConstants::FIELD_LAYOUT, '==', 'flex'),
         ];
     }
 }

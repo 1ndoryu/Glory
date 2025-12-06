@@ -26,8 +26,8 @@
         
         var direction = get(block, 'direction', bp) || get(block, 'flexDirection', bp);
         var wrap = get(block, 'wrap', bp) || get(block, 'flexWrap', bp);
-        var justify = get(block, 'justify', bp) || get(block, 'flexJustify', bp);
-        var align = get(block, 'align', bp) || get(block, 'flexAlign', bp);
+        var justify = get(block, 'justifyContent', bp) || get(block, 'justify', bp) || get(block, 'flexJustify', bp);
+        var align = get(block, 'alignItems', bp) || get(block, 'align', bp) || get(block, 'flexAlign', bp);
         var gap = get(block, 'gap', bp);
         
         var role = block.role;

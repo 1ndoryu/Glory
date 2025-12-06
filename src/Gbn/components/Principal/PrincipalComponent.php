@@ -5,6 +5,7 @@ namespace Glory\Gbn\Components\Principal;
 use Glory\Gbn\Components\AbstractComponent;
 use Glory\Gbn\Schema\SchemaBuilder;
 use Glory\Gbn\Schema\Option;
+use Glory\Gbn\Schema\SchemaConstants;
 use Glory\Gbn\Traits\HasFlexbox;
 use Glory\Gbn\Traits\HasGrid;
 use Glory\Gbn\Traits\HasSpacing;
@@ -31,11 +32,11 @@ class PrincipalComponent extends AbstractComponent
     public function getDefaults(): array
     {
         return [
-            'layout' => 'flex',
-            'flexDirection' => 'row',
-            'flexWrap' => 'wrap',
-            'flexJustify' => 'flex-start',
-            'flexAlign' => 'stretch',
+            SchemaConstants::FIELD_LAYOUT => 'flex',
+            SchemaConstants::FIELD_FLEX_DIRECTION => 'row',
+            SchemaConstants::FIELD_FLEX_WRAP => 'wrap',
+            SchemaConstants::FIELD_JUSTIFY => 'flex-start',
+            SchemaConstants::FIELD_ALIGN => 'stretch',
             'maxAncho' => '1200px',
         ];
     }

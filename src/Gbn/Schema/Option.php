@@ -68,6 +68,16 @@ class Option
         return new self('dimensions', $id, $label);
     }
 
+    public static function gap(string $id = 'gap', string $label = 'Separación (Gap)'): self
+    {
+        // Require SchemaConstants or hardcode? Hardcode default 'gap' is fine as it matches constant.
+        return self::slider($id, $label)
+            ->unit('px')
+            ->min(0)
+            ->max(120)
+            ->step(2);
+    }
+
     public function default($value): self
     {
         $this->data['defecto'] = $value;
@@ -142,19 +152,22 @@ class Option
         return $this;
     }
 
-    public function condition($fieldOrArray, $value = null): self
+    public function condition($arg1, $arg2 = null, $arg3 = null): self
     {
-        if (is_array($fieldOrArray)) {
-            $this->data['condicion'] = $fieldOrArray;
+        if (is_array($arg1)) {
+            $this->data['condicion'] = $arg1;
+        } elseif (func_num_args() === 3) {
+            $this->data['condicion'] = [$arg1, $arg2, $arg3];
         } else {
-            $this->data['condicion'] = [$fieldOrArray, $value];
+            // 2 arguments: Implicit '=='
+            $this->data['condicion'] = [$arg1, '==', $arg2];
         }
         return $this;
     }
 
-    public function condicion($fieldOrArray, $value = null): self
+    public function condicion($arg1, $arg2 = null, $arg3 = null): self
     {
-        return $this->condition($fieldOrArray, $value);
+        return $this->condition($arg1, $arg2, $arg3);
     }
 
     public function tab(string $tabName): self
