@@ -5,6 +5,14 @@
     var utils = function() { return Gbn.ui.fieldUtils; };
     var sync = function() { return Gbn.ui.fieldSync; };
 
+    // Helper para obtener iconos de forma segura
+    function getIcon(key, fallback) {
+        if (global.GbnIcons && global.GbnIcons.get) {
+            return global.GbnIcons.get(key);
+        }
+        return fallback || '';
+    }
+
     /**
      * Construye un campo compuesto de dimensiones (width, height, maxWidth, maxHeight)
      * Utiliza una estructura visual mejorada con iconos SVG, clonando el estilo de 'spacing'.
@@ -32,10 +40,10 @@
         
         // Definición de iconos SVG
         var ICONS = {
-            width: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16m-3-3l3 3-3 3M7 9l-3 3 3 3"/></svg>',
-            height: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16m-3-3l3 3 3-3M9 7l3-3 3 3"/></svg>',
-            maxWidth: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h20M2 7v10M22 7v10"/></svg>',
-            maxHeight: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M7 2h10M7 22h10"/></svg>'
+            width: getIcon('dimensions.width'),
+            height: getIcon('dimensions.height'),
+            maxWidth: getIcon('dimensions.maxWidth'),
+            maxHeight: getIcon('dimensions.maxHeight')
         };
 
         // Estructura fija para asegurar UI consistente. Ignoramos labels raros de PHP.

@@ -4,6 +4,14 @@
     var Gbn = global.Gbn = global.Gbn || {};
     var utils = function() { return Gbn.ui.fieldUtils; };
 
+    // Helper para obtener iconos de forma segura
+    function getIcon(key, fallback) {
+        if (global.GbnIcons && global.GbnIcons.get) {
+            return global.GbnIcons.get(key);
+        }
+        return fallback || '';
+    }
+
     /**
      * Construye un campo de tipografía compuesto (font, size, lineHeight, spacing, transform)
      */
@@ -221,10 +229,10 @@
         }
 
         // Icons
-        var iconSize = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>';
+        var iconSize = getIcon('typography.size');
         // Improved Line Height Icon (Vertical arrows with lines)
-        var iconLineHeight = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 6h18M3 12h18M3 18h18M12 6v12M9 9l3-3 3 3M9 15l3 3 3-3"/></svg>'; 
-        var iconSpacing = '<svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 12h16m-3-3l3 3-3 3M7 9l-3 3 3 3"/></svg>';
+        var iconLineHeight = getIcon('typography.lineHeight'); 
+        var iconSpacing = getIcon('typography.letterSpacing');
 
         // Pasar la propiedad CSS para leer valores computados
         gridRow.appendChild(createInput('size', '16', iconSize, 'Size', 'fontSize'));
@@ -293,7 +301,7 @@
         transformGroup.style.justifyContent = 'space-between';
         
         var transforms = [
-            { val: 'none', label: 'None', icon: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>' },
+            { val: 'none', label: 'None', icon: getIcon('typography.transform.none') },
             { val: 'uppercase', label: 'Uppercase', icon: 'AB' },
             { val: 'lowercase', label: 'Lowercase', icon: 'ab' },
             { val: 'capitalize', label: 'Capitalize', icon: 'Ab' }

@@ -5,6 +5,14 @@
     Gbn.ui = Gbn.ui || {};
     Gbn.ui.fieldUtils = Gbn.ui.fieldUtils || {};
 
+    // Helper para obtener iconos de forma segura
+    function getIcon(key, fallback) {
+        if (global.GbnIcons && global.GbnIcons.get) {
+            return global.GbnIcons.get(key);
+        }
+        return fallback || '';
+    }
+
     /**
      * Obtiene un valor anidado de un objeto usando notación de punto
      * @param {Object} obj - Objeto fuente
@@ -259,10 +267,10 @@
      * Íconos SVG para campos de spacing
      */
     var ICONS = {
-        superior: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke-opacity="0.3"></rect><path d="M4 6h16"></path></svg>',
-        derecha: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke-opacity="0.3"></rect><path d="M18 4v16"></path></svg>',
-        inferior: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke-opacity="0.3"></rect><path d="M4 18h16"></path></svg>',
-        izquierda: '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" stroke-opacity="0.3"></rect><path d="M6 4v16"></path></svg>'
+        superior: getIcon('spacing.superior'),
+        derecha: getIcon('spacing.derecha'),
+        inferior: getIcon('spacing.inferior'),
+        izquierda: getIcon('spacing.izquierda')
     };
 
     /**

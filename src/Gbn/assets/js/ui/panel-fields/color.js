@@ -5,6 +5,14 @@
     var utils = function() { return Gbn.ui.fieldUtils; };
     var sync = function() { return Gbn.ui.fieldSync; };
 
+    // Helper para obtener iconos de forma segura
+    function getIcon(key, fallback) {
+        if (global.GbnIcons && global.GbnIcons.get) {
+            return global.GbnIcons.get(key);
+        }
+        return fallback || '';
+    }
+
     /**
      * Construye un campo de color con picker y paleta global
      */
@@ -208,7 +216,7 @@
         var toggleBtn = document.createElement('button');
         toggleBtn.type = 'button';
         toggleBtn.className = 'gbn-color-toggle';
-        toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>';
+        toggleBtn.innerHTML = getIcon('action.global');
         toggleBtn.title = 'Mostrar/Ocultar Paleta Global';
         
         var palette = document.createElement('div');

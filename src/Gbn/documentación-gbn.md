@@ -489,5 +489,62 @@ El flujo es **unidireccional** (Panel → CSS). Para usar un color de tu CSS en 
 
 ---
 
-**Versión:** 2.0 (Optimizada)  
-**Relacionado:** `reglas.md`, `plan.md`, `guia-crear-componente.md`
+## 14. Arquitectura Modular JS (Diciembre 2025)
+
+### Principio: Archivos Pequeños y Enfocados
+
+Los archivos JS grandes (>500 líneas) se han refactorizado en módulos más pequeños siguiendo **Single Responsibility Principle**.
+
+### Módulos Refactorizados
+
+**`ui/theme/render.js` → Módulos de Theme Settings:**
+```
+ui/theme/
+├── render.js          → Orquestador (~225 líneas)
+├── state.js           → Estado global del módulo
+├── utils.js           → Utilidades de tabs
+└── renderers/
+    ├── page-settings.js
+    ├── menu.js
+    ├── section-text.js
+    ├── section-colors.js
+    ├── section-pages.js
+    └── section-components.js
+```
+
+**`ui/panel-render.js` → Módulos del Panel:**
+```
+ui/panel-render/
+├── state.js           → Estado del panel (editing state, active tab)
+├── style-resolvers.js → Mapa de resolvers por rol
+├── state-selector.js  → UI selector Normal/Hover/Focus
+├── tabs.js            → Utilidades de tabs
+├── config-updater.js  → Lógica de updateConfigValue
+└── theme-propagation.js → Propagación de cambios del tema
+```
+
+### Beneficios
+
+| Métrica                       | Antes      | Después     | Mejora |
+| ----------------------------- | ---------- | ----------- | ------ |
+| `render.js`                   | 702 líneas | ~225 líneas | -68%   |
+| `panel-render.js`             | 796 líneas | ~220 líneas | -72%   |
+| Responsabilidades por archivo | 6+         | 1           | ✓ SRP  |
+| Iconos hardcodeados           | ~100 SVGs  | 0           | ✓ DRY  |
+
+### Uso de IconRegistry
+
+Los iconos SVG ahora se obtienen del registro centralizado:
+
+```javascript
+// Antes (hardcodeado)
+var icon = '<svg width="16" height="16" viewBox="0 0 24 24"...';
+
+// Después (centralizado)
+var icon = GbnIcons.get('tab.style');
+```
+
+---
+
+**Versión:** 2.1 (Arquitectura Modular)  
+**Relacionado:** `reglas.md`, `plan.md`, `guia-crear-componente.md`, `plan_refactoring_icons_layout.md`

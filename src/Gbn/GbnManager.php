@@ -265,6 +265,10 @@ class GbnManager
                 'file' => '/js/ui/icons/layout-icons.js',
                 'deps' => ['glory-gbn-icons-index'],
             ],
+            'glory-gbn-icons-dimensions' => [
+                'file' => '/js/ui/icons/dimensions-icons.js',
+                'deps' => ['glory-gbn-icons-index'],
+            ],
             'glory-gbn-icons-action' => [
                 'file' => '/js/ui/icons/action-icons.js',
                 'deps' => ['glory-gbn-icons-index'],
@@ -275,6 +279,18 @@ class GbnManager
             ],
             'glory-gbn-icons-tab' => [
                 'file' => '/js/ui/icons/tab-icons.js',
+                'deps' => ['glory-gbn-icons-index'],
+            ],
+            'glory-gbn-icons-theme' => [
+                'file' => '/js/ui/icons/theme-icons.js',
+                'deps' => ['glory-gbn-icons-index'],
+            ],
+            'glory-gbn-icons-typography' => [
+                'file' => '/js/ui/icons/typography-icons.js',
+                'deps' => ['glory-gbn-icons-index'],
+            ],
+            'glory-gbn-icons-spacing' => [
+                'file' => '/js/ui/icons/spacing-icons.js',
                 'deps' => ['glory-gbn-icons-index'],
             ],
             'glory-gbn-persistence' => [
@@ -305,7 +321,7 @@ class GbnManager
             ],
             'glory-gbn-ui-fields-utils' => [
                 'file' => '/js/ui/panel-fields/utils.js',
-                'deps' => ['glory-gbn-persistence'],
+                'deps' => ['glory-gbn-persistence', 'glory-gbn-icons-index', 'glory-gbn-icons-spacing'],
             ],
             'glory-gbn-ui-fields-sync' => [
                 'file' => '/js/ui/panel-fields/sync.js',
@@ -345,7 +361,7 @@ class GbnManager
             ],
             'glory-gbn-ui-fields-typography' => [
                 'file' => '/js/ui/panel-fields/typography.js',
-                'deps' => ['glory-gbn-ui-fields-utils'],
+                'deps' => ['glory-gbn-ui-fields-utils', 'glory-gbn-icons-typography'],
             ],
             'glory-gbn-ui-fields-icon-group' => [
                 'file' => '/js/ui/panel-fields/icon-group.js',
@@ -365,7 +381,7 @@ class GbnManager
             ],
             'glory-gbn-ui-fields-dimensions' => [
                 'file' => '/js/ui/panel-fields/dimensions.js',
-                'deps' => ['glory-gbn-ui-fields-utils'],
+                'deps' => ['glory-gbn-ui-fields-utils', 'glory-gbn-icons-dimensions'],
             ],
             'glory-gbn-ui-fields-index' => [
                 'file' => '/js/ui/panel-fields/index.js',
@@ -497,9 +513,49 @@ class GbnManager
                 'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
             ],
 
+            // Panel Render Module - Refactorizado (Diciembre 2025)
+            // Los módulos siguientes dividen panel-render.js en componentes más pequeños
+            'glory-gbn-ui-panel-render-state' => [
+                'file' => '/js/ui/panel-render/state.js',
+                'deps' => ['glory-gbn-state'],
+            ],
+            'glory-gbn-ui-panel-render-style-resolvers' => [
+                'file' => '/js/ui/panel-render/style-resolvers.js',
+                'deps' => ['glory-gbn-ui-panel-render-state', 'glory-gbn-style'],
+            ],
+            'glory-gbn-ui-panel-render-state-selector' => [
+                'file' => '/js/ui/panel-render/state-selector.js',
+                'deps' => ['glory-gbn-ui-panel-render-state', 'glory-gbn-icons-state'],
+            ],
+            'glory-gbn-ui-panel-render-tabs' => [
+                'file' => '/js/ui/panel-render/tabs.js',
+                'deps' => ['glory-gbn-ui-panel-render-state', 'glory-gbn-icons-tab'],
+            ],
+            'glory-gbn-ui-panel-render-config-updater' => [
+                'file' => '/js/ui/panel-render/config-updater.js',
+                'deps' => [
+                    'glory-gbn-ui-panel-render-state',
+                    'glory-gbn-ui-panel-render-style-resolvers',
+                    'glory-gbn-responsive',
+                    'glory-gbn-state-styles',
+                ],
+            ],
+            'glory-gbn-ui-panel-render-theme-propagation' => [
+                'file' => '/js/ui/panel-render/theme-propagation.js',
+                'deps' => ['glory-gbn-ui-panel-render-style-resolvers'],
+            ],
+
             'glory-gbn-ui-panel-render' => [
                 'file' => '/js/ui/panel-render.js',
                 'deps' => [
+                    // Módulos internos refactorizados
+                    'glory-gbn-ui-panel-render-state',
+                    'glory-gbn-ui-panel-render-style-resolvers',
+                    'glory-gbn-ui-panel-render-state-selector',
+                    'glory-gbn-ui-panel-render-tabs',
+                    'glory-gbn-ui-panel-render-config-updater',
+                    'glory-gbn-ui-panel-render-theme-propagation',
+                    // Dependencias externas
                     'glory-gbn-ui-panel-fields',
                     'glory-gbn-ui-renderers-principal',
                     'glory-gbn-ui-renderers-secundario',
@@ -527,18 +583,67 @@ class GbnManager
                     // Fase 6: Iconos
                     'glory-gbn-icons-index',
                     'glory-gbn-icons-layout',
+                    'glory-gbn-icons-dimensions',
                     'glory-gbn-icons-action',
                     'glory-gbn-icons-state',
                     'glory-gbn-icons-tab',
+                    'glory-gbn-icons-theme',
+                    'glory-gbn-icons-typography',
+                    'glory-gbn-icons-spacing',
                 ],
             ],
             'glory-gbn-theme-applicator' => [
                 'file' => '/js/ui/theme/applicator.js',
                 'deps' => ['glory-gbn-state', 'glory-gbn-css-sync'],
             ],
+            // Theme Module - Refactorizado (Diciembre 2025)
+            // Los módulos siguientes dividen render.js en componentes más pequeños
+            'glory-gbn-ui-theme-state' => [
+                'file' => '/js/ui/theme/state.js',
+                'deps' => ['glory-gbn-state'],
+            ],
+            'glory-gbn-ui-theme-utils' => [
+                'file' => '/js/ui/theme/utils.js',
+                'deps' => ['glory-gbn-ui-theme-state', 'glory-gbn-icons-tab', 'glory-gbn-icons-theme'],
+            ],
+            'glory-gbn-ui-theme-renderer-page-settings' => [
+                'file' => '/js/ui/theme/renderers/page-settings.js',
+                'deps' => ['glory-gbn-ui-theme-utils', 'glory-gbn-ui-panel-fields'],
+            ],
+            'glory-gbn-ui-theme-renderer-menu' => [
+                'file' => '/js/ui/theme/renderers/menu.js',
+                'deps' => ['glory-gbn-ui-theme-utils', 'glory-gbn-icons-theme'],
+            ],
+            'glory-gbn-ui-theme-renderer-section-text' => [
+                'file' => '/js/ui/theme/renderers/section-text.js',
+                'deps' => ['glory-gbn-ui-theme-utils'],
+            ],
+            'glory-gbn-ui-theme-renderer-section-colors' => [
+                'file' => '/js/ui/theme/renderers/section-colors.js',
+                'deps' => ['glory-gbn-ui-theme-utils'],
+            ],
+            'glory-gbn-ui-theme-renderer-section-pages' => [
+                'file' => '/js/ui/theme/renderers/section-pages.js',
+                'deps' => ['glory-gbn-ui-theme-utils'],
+            ],
+            'glory-gbn-ui-theme-renderer-section-components' => [
+                'file' => '/js/ui/theme/renderers/section-components.js',
+                'deps' => ['glory-gbn-ui-theme-utils'],
+            ],
             'glory-gbn-ui-theme-render' => [
                 'file' => '/js/ui/theme/render.js',
-                'deps' => ['glory-gbn-ui-panel-fields', 'glory-gbn-theme-applicator'],
+                'deps' => [
+                    'glory-gbn-ui-panel-fields',
+                    'glory-gbn-theme-applicator',
+                    'glory-gbn-ui-theme-state',
+                    'glory-gbn-ui-theme-utils',
+                    'glory-gbn-ui-theme-renderer-page-settings',
+                    'glory-gbn-ui-theme-renderer-menu',
+                    'glory-gbn-ui-theme-renderer-section-text',
+                    'glory-gbn-ui-theme-renderer-section-colors',
+                    'glory-gbn-ui-theme-renderer-section-pages',
+                    'glory-gbn-ui-theme-renderer-section-components',
+                ],
             ],
             'glory-gbn-ui-theme-index' => [
                 'file' => '/js/ui/theme/index.js',

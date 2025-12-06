@@ -780,9 +780,37 @@ trait HasDimensions
       - Reemplazar mapa `icons` hardcodeado por llamadas a `IconRegistry.get('tab.*')`
       - Implementar fallback para tabs desconocidos
       - [x] Corrección: Refactorizar módulos JS de iconos a IIFE y encolarlos en GbnManager.php
-[ ] 6.2 Actualizar theme/render.js
-[ ] 6.3 Actualizar panel-fields/*.js
-[ ] 6.4 Eliminar iconos inline obsoletos
+[x] 6.2 Actualizar theme/render.js - REFACTORIZACIÓN MODULAR COMPLETADA (Dic 2025):
+      - Archivo original: 702 líneas → render.js orquestador: ~225 líneas
+      - Nuevos módulos creados:
+        - state.js: Gestión de estado global del panel (~110 líneas)
+        - utils.js: Utilidades compartidas, tabs con GbnIcons (~200 líneas)
+        - renderers/page-settings.js: Form de página (~80 líneas)
+        - renderers/menu.js: Menú principal (~70 líneas)
+        - renderers/section-text.js: Sección tipografía (~60 líneas)
+        - renderers/section-colors.js: Sección colores (~180 líneas)
+        - renderers/section-pages.js: Sección páginas (~50 líneas)
+        - renderers/section-components.js: Sección componentes (~200 líneas)
+      - GbnManager.php actualizado con dependencias de los nuevos scripts
+      - Los iconos ahora usan GbnIcons.get('theme.*') y GbnIcons.get('tab.*')
+[x] 6.3 Refactorizar panel-render.js - REFACTORIZACIÓN MODULAR COMPLETADA (Dic 2025):
+      - Archivo original: 796 líneas → panel-render.js orquestador: ~220 líneas
+      - Nuevos módulos en panel-render/:
+        - state.js: Estado del panel (currentEditingState, lastBlockId, lastActiveTab) (~105 líneas)
+        - style-resolvers.js: Mapa de resolvers por rol de componente (~180 líneas)
+        - state-selector.js: UI selector Normal/Hover/Focus (~160 líneas)
+        - tabs.js: Utilidades de tabs con GbnIcons (~190 líneas)
+        - config-updater.js: Lógica compleja de updateConfigValue (~280 líneas)
+        - theme-propagation.js: Propagación de cambios del tema (~100 líneas)
+      - GbnManager.php actualizado con dependencias de los nuevos scripts
+      - Iconos migrados a GbnIcons.get('state.*') y GbnIcons.get('tab.*')
+[x] 6.4 Actualizar panel-fields/*.js - COMPLETADO:
+      - typography.js: Migrado a GbnIcons.get() (size, lineHeight, spacing, transform)
+      - dimensions.js: Migrado a GbnIcons.get() (width, height, maxWidth, maxHeight)
+      - utils.js: Migrado a GbnIcons.get() para iconos de spacing (superior, derecha, etc.)
+      - Creados nuevos archivos de iconos: typography-icons.js, dimensions-icons.js, spacing-icons.js
+      - Actualizado GbnManager.php con nuevas dependencias
+[x] 6.5 Eliminar iconos inline obsoletos - COMPLETADO (reemplazados por llamadas al registro)
 ```
 
 ### Fase 7: Cleanup y Documentación ⏱️ 2 horas

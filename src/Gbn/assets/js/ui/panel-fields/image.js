@@ -4,6 +4,14 @@
     var Gbn = global.Gbn = global.Gbn || {};
     var utils = function() { return Gbn.ui.fieldUtils; };
 
+    // Helper para obtener iconos de forma segura
+    function getIcon(key, fallback) {
+        if (global.GbnIcons && global.GbnIcons.get) {
+            return global.GbnIcons.get(key);
+        }
+        return fallback || '';
+    }
+
     /**
      * Construye un campo de imagen (URL + Preview + Galería WP)
      */
@@ -38,7 +46,7 @@
         var btnGallery = document.createElement('button');
         btnGallery.type = 'button';
         btnGallery.className = 'gbn-btn-secondary';
-        btnGallery.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>';
+        btnGallery.innerHTML = getIcon('action.image');
         btnGallery.title = 'Abrir Galería';
         btnGallery.style.padding = '5px 10px';
         btnGallery.style.display = 'flex';
