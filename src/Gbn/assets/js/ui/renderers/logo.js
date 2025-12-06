@@ -8,163 +8,62 @@
     var traits = Gbn.ui.renderers.traits;
 
     /**
-     * Renderer para LogoComponent.
-     * 
-     * Subcomponente del header que gestiona el logo.
-     * Soporta modos: imagen, texto, SVG.
+     * Renderer para LogoComponent (Refactorizado BUG-016)
+     * Soporta traits comunes y modos: imagen, texto, SVG.
+     * Usa variables CSS para propiedades de hijos (--gbn-logo-*)
      */
 
     /**
+     * Helper para filtro CSS
+     */
+    function getFilterCss(filterAlias) {
+        switch (filterAlias) {
+            case 'white':
+                return 'brightness(0) invert(1)';
+            case 'black':
+                return 'brightness(0)';
+            case 'grayscale':
+                return 'grayscale(100%)';
+            case 'none':
+            default:
+                return 'none';
+        }
+    }
+
+    /**
+     * Obtiene el nombre del sitio
+     */
+    function getSiteName() {
+        return (window.gloryGbnCfg && window.gloryGbnCfg.siteTitle) || 'Logo';
+    }
+
+    /**
      * Genera los estilos CSS para el logo.
-     * @param {Object} config Configuración del bloque
-     * @param {Object} block Bloque completo
-     * @returns {Object} Objeto con propiedades CSS
      */
     function getStyles(config, block) {
-        var styles = {};
+        // Usar traits comunes (Spacing, Typography, Dimensions, Color)
+        var styles = traits.getCommonStyles(config);
 
-        // Dimensiones
-        if (config.maxHeight) {
-            styles['max-height'] = config.maxHeight;
-        }
-        if (config.maxWidth && config.maxWidth !== 'auto') {
-            styles['max-width'] = config.maxWidth;
-        }
+        // Estilos específicos directos (Wrapper)
+        if (config.maxHeight) styles['max-height'] = traits.normalizeSize(config.maxHeight);
+        if (config.maxWidth) styles['max-width'] = traits.normalizeSize(config.maxWidth);
 
-        // Estilos de texto (solo para modo texto)
-        if (config.logoMode === 'text') {
-            if (config.color) {
-                styles['color'] = config.color;
+        // Variables CSS para hijos (Image)
+        // Se aplican al wrapper y heredan/úsan los hijos vía CSS en theme-styles.css
+        if (config.logoMode === 'image') {
+            if (config.objectFit) {
+                styles['--gbn-logo-object-fit'] = config.objectFit;
             }
-            if (config.fontSize) {
-                styles['font-size'] = config.fontSize;
+            if (config.filter) {
+                styles['--gbn-logo-filter'] = getFilterCss(config.filter);
             }
-            if (config.fontWeight) {
-                styles['font-weight'] = config.fontWeight;
-            }
-        }
-
-        // Padding usando traits
-        if (config.padding) {
-            var spacingStyles = traits ? traits.getSpacingStyles(config.padding, 'padding') : {};
-            Object.assign(styles, spacingStyles);
         }
 
         return styles;
     }
 
     /**
-     * Maneja actualizaciones en tiempo real desde el panel.
-     * @param {Object} block Bloque
-     * @param {string} path Ruta de la propiedad
-     * @param {*} value Nuevo valor
-     * @returns {boolean} True si se manejó, false para delegar
-     */
-    function handleUpdate(block, path, value) {
-        if (!block || !block.element) return false;
-        var el = block.element;
-        var link = el.querySelector('a');
-        var img = el.querySelector('img');
-        var textEl = el.querySelector('.gbn-logo-text, .glory-logo-text');
-
-        // Modo de logo
-        if (path === 'logoMode') {
-            updateLogoMode(el, value, block.config);
-            return true;
-        }
-
-        // Texto del logo
-        if (path === 'logoText') {
-            if (textEl) {
-                textEl.textContent = value || getSiteName();
-            }
-            return true;
-        }
-
-        // Imagen del logo
-        if (path === 'logoImage') {
-            if (img) {
-                img.src = value || '';
-            } else if (value && block.config.logoMode === 'image') {
-                // Crear imagen si no existe
-                updateLogoMode(el, 'image', { logoImage: value });
-            }
-            return true;
-        }
-
-        // SVG del logo
-        if (path === 'logoSvg') {
-            var svgContainer = el.querySelector('.gbn-logo-svg');
-            if (svgContainer) {
-                svgContainer.innerHTML = value || '';
-            }
-            return true;
-        }
-
-        // URL del enlace
-        if (path === 'linkUrl') {
-            if (link) {
-                link.href = value || '/';
-            }
-            return true;
-        }
-
-        // Dimensiones
-        if (path === 'maxHeight') {
-            if (img) img.style.maxHeight = value || '';
-            el.style.maxHeight = value || '';
-            return true;
-        }
-
-        if (path === 'maxWidth') {
-            if (img) img.style.maxWidth = value || '';
-            el.style.maxWidth = value || '';
-            return true;
-        }
-
-        // Color de texto
-        if (path === 'color') {
-            if (textEl) textEl.style.color = value || '';
-            if (link) link.style.color = value || '';
-            return true;
-        }
-
-        // Tamaño de fuente
-        if (path === 'fontSize') {
-            if (textEl) textEl.style.fontSize = value || '';
-            if (link) link.style.fontSize = value || '';
-            return true;
-        }
-
-        // Peso de fuente
-        if (path === 'fontWeight') {
-            if (textEl) textEl.style.fontWeight = value || '';
-            if (link) link.style.fontWeight = value || '';
-            return true;
-        }
-
-        // Filtro de imagen
-        if (path === 'filter') {
-            if (img) {
-                var filterValue = getFilterCss(value);
-                img.style.filter = filterValue;
-            }
-            return true;
-        }
-
-        // Delegar a traits para spacing
-        if (traits && traits.handleCommonUpdate) {
-            return traits.handleCommonUpdate(el, path, value);
-        }
-
-        return false;
-    }
-
-    /**
      * Actualiza la estructura del logo según el modo seleccionado.
-     * @param {HTMLElement} el Elemento del logo
-     * @param {string} mode Modo: 'image', 'text', 'svg'
-     * @param {Object} config Configuración actual
      */
     function updateLogoMode(el, mode, config) {
         var link = el.querySelector('a');
@@ -172,6 +71,7 @@
             link = document.createElement('a');
             link.href = config.linkUrl || '/';
             link.rel = 'home';
+            link.className = 'gbn-logo-link';
             el.appendChild(link);
         }
 
@@ -181,11 +81,14 @@
         switch (mode) {
             case 'image':
                 var img = document.createElement('img');
-                img.src = config.logoImage || '';
+                // Si no hay imagen, usar placeholder transparente o nada
+                img.src = config.logoImage || ''; 
                 img.alt = getSiteName();
                 img.className = 'gbn-logo-img';
-                if (config.maxHeight) img.style.maxHeight = config.maxHeight;
-                if (config.filter) img.style.filter = getFilterCss(config.filter);
+                
+                // NOTA: Ya no aplicamos estilos inline para filter/object-fit
+                // Se manejan via CSS Variables en el wrapper (handleUpdate)
+                
                 link.appendChild(img);
                 break;
 
@@ -193,9 +96,6 @@
                 var textSpan = document.createElement('span');
                 textSpan.className = 'gbn-logo-text';
                 textSpan.textContent = config.logoText || getSiteName();
-                if (config.color) textSpan.style.color = config.color;
-                if (config.fontSize) textSpan.style.fontSize = config.fontSize;
-                if (config.fontWeight) textSpan.style.fontWeight = config.fontWeight;
                 link.appendChild(textSpan);
                 break;
 
@@ -216,30 +116,87 @@
     }
 
     /**
-     * Obtiene el valor CSS para el filtro de imagen.
-     * @param {string} filterAlias Alias: 'none', 'white', 'black', 'grayscale'
-     * @returns {string} Valor CSS del filtro
+     * Maneja actualizaciones en tiempo real.
      */
-    function getFilterCss(filterAlias) {
-        switch (filterAlias) {
-            case 'white':
-                return 'brightness(0) invert(1)';
-            case 'black':
-                return 'brightness(0)';
-            case 'grayscale':
-                return 'grayscale(100%)';
-            case 'none':
-            default:
-                return '';
-        }
-    }
+    function handleUpdate(block, path, value) {
+        if (!block || !block.element) return false;
+        var el = block.element;
+        var link = el.querySelector('a');
+        var img = el.querySelector('img');
+        var textEl = el.querySelector('.gbn-logo-text');
 
-    /**
-     * Obtiene el nombre del sitio desde la configuración de GBN.
-     * @returns {string} Nombre del sitio
-     */
-    function getSiteName() {
-        return (window.gloryGbnCfg && window.gloryGbnCfg.siteTitle) || 'Logo';
+        // Primero intentar traits comunes
+        if (traits.handleCommonUpdate(el, path, value)) {
+            return true;
+        }
+
+        // --- Propiedades Estructurales ---
+
+        if (path === 'logoMode') {
+            updateLogoMode(el, value, block.config);
+            return true;
+        }
+
+        if (path === 'logoText') {
+            if (textEl) {
+                textEl.textContent = value || getSiteName();
+            } else if (block.config.logoMode === 'text') {
+                updateLogoMode(el, 'text', block.config);
+            }
+            return true;
+        }
+
+        if (path === 'logoImage') {
+            if (img) {
+                img.src = value || '';
+            } else if (block.config.logoMode === 'image') {
+                updateLogoMode(el, 'image', block.config);
+            }
+            return true;
+        }
+
+        if (path === 'logoSvg') {
+            var svgContainer = el.querySelector('.gbn-logo-svg');
+            if (svgContainer) {
+                svgContainer.innerHTML = value || '';
+            } else if (block.config.logoMode === 'svg') {
+                updateLogoMode(el, 'svg', block.config);
+            }
+            return true;
+        }
+
+        if (path === 'linkUrl') {
+            if (link) link.href = value || '/';
+            return true;
+        }
+
+        // --- Propiedades de Estilo (Wrapper + Variables) ---
+
+        if (path === 'maxHeight') {
+            var val = traits.normalizeSize(value);
+            el.style.maxHeight = val || '';
+            // No necesitamos aplicarlo a img si usamos CSS correctamente (img height: auto)
+            // Pero mantenemos width auto en CSS.
+            return true;
+        }
+
+        if (path === 'maxWidth') {
+            el.style.maxWidth = traits.normalizeSize(value) || '';
+            return true;
+        }
+        
+        // Uso de Variables CSS para propiedades de imagen
+        if (path === 'objectFit') {
+            el.style.setProperty('--gbn-logo-object-fit', value || 'contain');
+            return true;
+        }
+
+        if (path === 'filter') {
+            el.style.setProperty('--gbn-logo-filter', getFilterCss(value));
+            return true;
+        }
+
+        return false;
     }
 
     // Exportar renderer

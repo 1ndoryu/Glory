@@ -67,6 +67,7 @@
 | 🛡️ 18 | Elementos editables bloqueados por CSS  | NUNCA `pointer-events: none` en elementos editables              | `interactive.css`                       |
 | 🛡️ 19 | Elementos AJAX no interactivos          | Re-escanear elementos cargados por AJAX con `Gbn.content.scan()` | `post-render.js`                        |
 | 🛡️ 20 | Badges cortados por overflow            | `overflow: visible` en contenedores con badges absolutos         | `interactive.css`                       |
+| 🛡️ 21 | Scope Global (Shared References)        | Deep clone en `getRoleDefaults()` Y en `ADD_BLOCK` action        | `roles.js`, `store.js`                  |
 
 **Checklist Obligatorio (Pre-Código):**
 - [ ] No defaults duros en JS
@@ -89,6 +90,7 @@
 - [ ] **NUNCA `pointer-events: none` en elementos editables**
 - [ ] **Re-escanear elementos cargados por AJAX**
 - [ ] **`overflow: visible` en contenedores con badges**
+- [ ] **Deep clone completo en ADD_BLOCK (store): config, styles, meta**
 
 ---
 
@@ -144,6 +146,7 @@
 | Opciones Layout duplicadas        | Trait `HasLayoutOptions` unificado                        | `HasLayoutOptions.php`              |
 | Variables CSS no leídas (BUG-003) | Refactor `css-sync.js` para leer todos roles/props        | `css-sync.js`                       |
 | Tabs sin iconos (BUG-006)         | Estandarización nombres tabs + mapa iconos                | `LogoComponent.php`, `tabs.js`      |
+| Logo Tipo/Estilos (BUG-016)       | Refactor CSS Variables + Fix DOM update logic             | `logo.js`, `theme-styles.css`       |
 
 **Otros bugs menores resueltos:** PostField hidratación, categoryFilter undefined, Docking persistente, colores paleta, placeholder imagen, Data Leak, border overflow, dirty HTML, hover especificidad, layout frontend deslogeado.
 
@@ -410,18 +413,56 @@ El módulo `css-sync.js` estaba muy limitado:
 
 ---
 
-### BUG-011: Scope Global en Padding de Botones
-**Prioridad:** Alta | **Estado:** 🔴 PENDIENTE
+### BUG-015: LogoComponent Selector de Modo No Funciona (CONDITIONAL REFRESH)
+**Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
 
-Al cambiar el padding de un botón, el cambio se refleja en **todos** los botones.
+Selector `logoMode` (Imagen/Texto/SVG) visible pero no actualiza el panel para mostrar los campos condicionales.
 
-**Causa sospechosa:** Selector CSS muy genérico o variable global compartida incorrectamente en el renderer.
-
-**Archivos:** `ButtonComponent.php`?, `button.js`?
+**Causa raíz:** `logoMode` faltaba en la lista `conditionalTriggers` de `config-updater.js`.
+**Solución:** Se agregó `logoMode` a la lista de triggers.
 
 ---
 
-## 🟠 BUGS MEDIA PRIORIDAD
+### BUG-011: Scope Global en Padding de Botones
+**Estado:** ✅ RESUELTO (DEFINITIVO) | **Fecha:** Diciembre 2025
+
+~~Al cambiar el padding de un botón, el cambio se refleja en **todos** los botones.~~
+
+**Causa raíz (Investigación completa):**
+Este bug tenía **DOS puntos de fallo** en la cadena de clonación de datos:
+
+1. **roles.js (getRoleDefaults):** Usaba `utils.assign()` (shallow copy) ✅ YA CORREGIDO
+   - Los defaults de componentes compartían objetos anidados como `padding: {}`
+   - Fix aplicado: Deep clone con `JSON.parse(JSON.stringify())`
+
+2. **store.js (ADD_BLOCK):** ⚠️ **VERDADERO CULPABLE**
+   - Cuando se agregaba un bloque al store, se asignaba directamente sin clonar
+   - Línea 73: `nextState.blocks[newBlock.id] = newBlock;` ← REFERENCIA COMPARTIDA
+   - Todos los bloques del mismo role compartían el MISMO objeto config en memoria
+   - Al editar padding de un botón, se mutaba el objeto compartido → afectaba a todos
+
+**Por qué el fix anterior fue insuficiente:**
+- El deep clone en `getRoleDefaults()` creaba copias independientes AL MOMENTO DE LLAMARLO
+- Pero cuando el bloque se agregaba al store con `ADD_BLOCK`, se asignaba por referencia
+- Resultado: Los bloques creados en la misma "oleada" compartían el config clonado
+
+**Solución aplicada (DEFINITIVA):**
+- **store.js líneas 70-108:** Deep clone completo en `ADD_BLOCK` action
+  - Config: `JSON.parse(JSON.stringify(config))` - copia profunda
+  - Styles: Clonación manual de `inline` y `current`
+  - Meta: Shallow clone (solo valores simples)
+  - Element y Schema: Mantener referencias (no deben clonarse)
+
+**Validación:**
+1. Crear 3 botones: `<a href="#" gloryButton>Botón 1</a>`, `<a href="#" gloryButton>Botón 2</a>`, etc.
+2. Editar padding del Botón 1
+3. Verificar que Botón 2 y 3 NO se vean afectados ✅
+
+**Archivos modificados:** 
+- `roles.js` (Fix parcial - líneas 133-142)
+- `store.js` (Fix definitivo - líneas 70-108)
+
+---
 
 ### BUG-004: Iconos Inconsistentes en Biblioteca de Componentes
 **Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
@@ -643,9 +684,10 @@ Refactorizar archivos que superan las 600 líneas:
 ---
 
 ### REFACTOR-004: LogoComponent (Compliance)
-**Prioridad:** Alta | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Alta | **Estado:** ✅ COMPLETADO
+**Fecha:** Diciembre 2025
 
-El componente `LogoComponent` no sigue las reglas ni principios SOLID. Necesita ser reescrito completamente bajo los estándares actuales (`ComponentInterface`, traits, renderer separado).
+Se ha refactorizado el `LogoComponent.php` y `logo.js` para cumplir con los estándares SOLID y utilizar los Traits (`HasSpacing`, `HasTypography`, `HasDimensions`) y `SchemaBuilder`. El renderer JS ahora utiliza `traits.getCommonStyles()` para una gestión de estilos consistente.
 
 ---
 
@@ -691,7 +733,7 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 ---
 
 ### FEATURE-003: Transform con Iconos para Botones (Fase 9)
-**Prioridad:** Baja | **Estado:** Pendiente
+**Prioridad:** Baja | **Estado:** 🔴 Pendiente
 
 - [ ] Crear `iconGroup` para transforms comunes (`skewX`, `scale`, `rotate`)
 - [ ] Implementar en `ButtonComponent.php`
@@ -699,8 +741,18 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 
 ---
 
+### REFACTOR-008: Detección Automática de Triggers Condicionales
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+**Problema:** La lista `conditionalTriggers` en `config-updater.js` está hardcoded (violación OCP). Cada nuevo campo condicional requiere editar este archivo central.
+**Propuesta:** 
+1. Que el `SchemaBuilder` genere un mapa de dependencias.
+2. O que la opción tenga una flag `triggersRefresh: true` (automatizado en PHP).
+
+---
+
 ### FEATURE-004: Refactorización UI Dimensions Panel
-**Prioridad:** Baja | **Estado:** Pendiente
+**Prioridad:** Baja | **Estado:** 🔴 Pendiente
 
 - [ ] Actualizar `dimensions.js` con iconos SVG, grid layout y estilo consistente con `spacing.js`
 

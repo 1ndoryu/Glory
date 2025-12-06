@@ -129,8 +129,24 @@
             initRoles();
         }
         var defaults = ROLE_DEFAULTS[role] || {};
+        
+        // [FIX BUG-011 - PARTE 1/2] Deep clone config to prevent shared references
+        // Este fix es NECESARIO pero NO SUFICIENTE por sí solo.
+        // También se requiere deep clone en store.js al agregar bloques (ADD_BLOCK action)
+        // Razón: Este clone crea copias independientes al OBTENER defaults,
+        // pero si el store asigna por referencia, los bloques aún comparten memoria.
+        // Using JSON parse/stringify is safe here as config is always JSON-serializable
+        var configClone = {};
+        if (defaults.config) {
+            try {
+                configClone = JSON.parse(JSON.stringify(defaults.config));
+            } catch (e) {
+                configClone = utils.assign({}, defaults.config);
+            }
+        }
+
         return {
-            config: utils.assign({}, defaults.config || {}),
+            config: configClone,
             schema: Array.isArray(defaults.schema) ? defaults.schema.slice() : [],
             icon: defaults.icon || null
         };

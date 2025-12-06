@@ -518,6 +518,7 @@
     padding: 20px;
 }
 
+
 @media (max-width: 768px) {
     .gbn-post-render[data-pattern="alternado_lr"] [gloryPostItem],
     .gbn-post-render[data-pattern="alternado_lr"] [gloryPostItem]:nth-child(even) {
@@ -527,5 +528,27 @@
     .gbn-post-render[data-pattern="alternado_lr"] [gloryPostField="featuredImage"] {
         flex: none;
     }
+}
+
+/* ==========================================================================
+   Logo Component - CSS Variables Support
+   ========================================================================== */
+
+:where([gloryLogo], .gbn-logo) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+:where([gloryLogo], .gbn-logo) img,
+:where([gloryLogo], .gbn-logo) .gbn-logo-img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    /* Variables injected by logo.js renderer */
+    object-fit: var(--gbn-logo-object-fit, contain);
+    filter: var(--gbn-logo-filter, none);
 }
 

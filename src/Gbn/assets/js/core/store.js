@@ -70,7 +70,40 @@
             case Actions.ADD_BLOCK:
                 var newBlock = action.payload;
                 if (newBlock && newBlock.id) {
-                    nextState.blocks[newBlock.id] = newBlock;
+                    // [FIX BUG-011] Deep clone the block to prevent shared references
+                    // Especially critical for nested objects like padding, margin, typography
+                    var clonedBlock = Object.assign({}, newBlock);
+                    
+                    // Deep clone config (serializable data)
+                    if (clonedBlock.config) {
+                        try {
+                            clonedBlock.config = JSON.parse(JSON.stringify(clonedBlock.config));
+                        } catch (e) {
+                            // Fallback to shallow copy ifJSON fails (though config should always be serializable)
+                            clonedBlock.config = Object.assign({}, clonedBlock.config);
+                        }
+                    }
+                    
+                    // Deep clone styles if present
+                    if (clonedBlock.styles) {
+                        clonedBlock.styles = Object.assign({}, clonedBlock.styles);
+                        if (clonedBlock.styles.inline) {
+                            clonedBlock.styles.inline = Object.assign({}, clonedBlock.styles.inline);
+                        }
+                        if (clonedBlock.styles.current) {
+                            clonedBlock.styles.current = Object.assign({}, clonedBlock.styles.current);
+                        }
+                    }
+                    
+                    // Shallow clone meta (usually contains simple values)
+                    if (clonedBlock.meta) {
+                        clonedBlock.meta = Object.assign({}, clonedBlock.meta);
+                    }
+                    
+                    // Keep element reference (DOM element, should not be cloned)
+                    // Keep schema array reference (read-only data from PHP)
+                    
+                    nextState.blocks[newBlock.id] = clonedBlock;
                     nextState.isDirty = true;
                 }
                 break;

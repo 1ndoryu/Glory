@@ -278,6 +278,9 @@ Antes de escribir código nuevo:
 - [ ] Especificidad con prefijo `body` en CSS generado
 - [ ] Detectar defaults vs computed (browser defaults)
 - [ ] Breakpoint explícito en `updateBlock()`
+- [ ] **Deep Clone en DOS lugares** (BUG-011):
+  - [ ] `getRoleDefaults()` en `roles.js` - Deep clone de config defaults
+  - [ ] `ADD_BLOCK` action en `store.js` - Deep clone de block.config, block.styles, block.meta
 - [ ] Excluir DOM de serialización JSON
 - [ ] Configurar `UNITLESS_PROPERTIES`
 - [ ] Placeholders locales (no URLs externas)

@@ -198,7 +198,7 @@
      * Verifica si necesita refresh por campo condicional
      */
     function checkConditionalRefresh(block, path) {
-        var conditionalTriggers = ['hasBorder', 'layout', 'display_mode', 'img_show', 'title_show', 'interaccion_modo', 'fieldType'];
+        var conditionalTriggers = ['hasBorder', 'layout', 'display_mode', 'img_show', 'title_show', 'interaccion_modo', 'fieldType', 'logoMode'];
         if (conditionalTriggers.indexOf(path) !== -1) {
             if (Gbn.ui.panel && Gbn.ui.panel.refreshControls) {
                 Gbn.ui.panel.refreshControls(block);

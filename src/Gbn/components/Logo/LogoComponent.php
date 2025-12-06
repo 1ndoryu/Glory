@@ -3,19 +3,26 @@
 namespace Glory\Gbn\Components\Logo;
 
 use Glory\Gbn\Components\AbstractComponent;
+use Glory\Gbn\Schema\SchemaBuilder;
+use Glory\Gbn\Schema\Option;
+use Glory\Gbn\Traits\HasSpacing;
+use Glory\Gbn\Traits\HasTypography;
+use Glory\Gbn\Traits\HasDimensions;
+use Glory\Gbn\Traits\HasBorder;
 
 /**
  * Componente Logo para GBN.
  * 
  * Subcomponente del Header que gestiona el logo del sitio.
  * Soporta modos: imagen, texto o SVG personalizado.
- * Independiente de Glory\Components\LogoRenderer.
  * 
  * @role logo
  * @selector [gloryLogo]
  */
 class LogoComponent extends AbstractComponent
 {
+    use HasSpacing, HasTypography, HasDimensions, HasBorder;
+
     protected string $id = 'logo';
     protected string $label = 'Logo';
 
@@ -53,141 +60,86 @@ class LogoComponent extends AbstractComponent
 
     public function getSchema(): array
     {
-        return [
-            // Tab: Contenido
-            [
-                'id' => 'logoMode',
-                'type' => 'iconGroup',
-                'label' => 'Tipo de Logo',
-                'default' => 'text',
-                'tab' => 'Contenido',
-                'options' => [
-                    [
-                        'value' => 'image',
-                        'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>',
-                        'label' => 'Imagen'
-                    ],
-                    [
-                        'value' => 'text',
-                        'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>',
-                        'label' => 'Texto'
-                    ],
-                    [
-                        'value' => 'svg',
-                        'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>',
-                        'label' => 'SVG'
-                    ]
-                ]
-            ],
-            [
-                'id' => 'logoText',
-                'type' => 'text',
-                'label' => 'Texto del Logo',
-                'default' => '',
-                'tab' => 'Contenido',
-                'condition' => ['logoMode', '===', 'text'],
-                'description' => 'Deja vacío para usar el nombre del sitio'
-            ],
-            [
-                'id' => 'logoImage',
-                'type' => 'image',
-                'label' => 'Imagen del Logo',
-                'default' => '',
-                'tab' => 'Contenido',
-                'condition' => ['logoMode', '===', 'image']
-            ],
-            [
-                'id' => 'logoSvg',
-                'type' => 'richText',
-                'label' => 'SVG del Logo',
-                'default' => '',
-                'tab' => 'Contenido',
-                'condition' => ['logoMode', '===', 'svg'],
-                'description' => 'Pega el código SVG directamente'
-            ],
-            [
-                'id' => 'linkUrl',
-                'type' => 'text',
-                'label' => 'URL del Enlace',
-                'default' => '/',
-                'tab' => 'Contenido',
-                'description' => 'Por defecto: página de inicio'
-            ],
-            // Tab: Estilo
-            [
-                'id' => 'maxHeight',
-                'type' => 'text',
-                'label' => 'Altura Máxima',
-                'default' => '2.8rem',
-                'tab' => 'Estilo'
-            ],
-            [
-                'id' => 'maxWidth',
-                'type' => 'text',
-                'label' => 'Ancho Máximo',
-                'default' => 'auto',
-                'tab' => 'Estilo'
-            ],
-            [
-                'id' => 'color',
-                'type' => 'color',
-                'label' => 'Color del Texto',
-                'default' => '',
-                'tab' => 'Estilo',
-                'condition' => ['logoMode', '===', 'text']
-            ],
-            [
-                'id' => 'fontSize',
-                'type' => 'text',
-                'label' => 'Tamaño de Fuente',
-                'default' => '1rem',
-                'tab' => 'Estilo',
-                'condition' => ['logoMode', '===', 'text']
-            ],
-            [
-                'id' => 'fontWeight',
-                'type' => 'select',
-                'label' => 'Peso de Fuente',
-                'default' => '600',
-                'tab' => 'Estilo',
-                'condition' => ['logoMode', '===', 'text'],
-                'options' => [
-                    '300' => 'Light',
-                    '400' => 'Normal',
-                    '500' => 'Medium',
-                    '600' => 'Semi Bold',
-                    '700' => 'Bold',
-                    '800' => 'Extra Bold'
-                ]
-            ],
-            [
-                'id' => 'filter',
-                'type' => 'select',
-                'label' => 'Filtro de Color',
-                'default' => 'none',
-                'tab' => 'Estilo',
-                'condition' => ['logoMode', '===', 'image'],
-                'options' => [
-                    'none' => 'Sin filtro',
-                    'white' => 'Blanco',
-                    'black' => 'Negro',
-                    'grayscale' => 'Escala de grises'
-                ],
-                'description' => 'Aplicar filtro CSS a la imagen'
-            ],
-            [
-                'id' => 'padding',
-                'type' => 'spacing',
-                'label' => 'Padding',
-                'default' => [
-                    'superior' => '0',
-                    'derecho' => '0',
-                    'inferior' => '0',
-                    'izquierdo' => '0'
-                ],
-                'tab' => 'Estilo'
-            ]
-        ];
+        $schema = SchemaBuilder::create();
+
+        // =====================================================
+        // TAB: CONTENIDO
+        // =====================================================
+
+        // 1. Modo de Logo
+        $schema->addOption(
+            Option::iconGroup('logoMode', 'Tipo de Logo')
+                ->options(\Glory\Gbn\Icons\IconRegistry::getGroup([
+                    'format.image' => ['valor' => 'image', 'etiqueta' => 'Imagen'],
+                    'format.text' => ['valor' => 'text', 'etiqueta' => 'Texto'],
+                    'format.svg' => ['valor' => 'svg', 'etiqueta' => 'SVG']
+                ]))
+                ->default('text')
+                ->tab('Contenido')
+        );
+
+        // 2. Texto (Condicional)
+        $schema->addOption(
+            Option::text('logoText', 'Texto del Logo')
+                ->default('')
+                ->tab('Contenido')
+                ->condition(['logoMode', '===', 'text'])
+                ->description('Deja vacío para usar el nombre del sitio')
+        );
+
+        // 3. Imagen (Condicional)
+        $schema->addOption(
+            Option::image('logoImage', 'Imagen del Logo')
+                ->default('')
+                ->tab('Contenido')
+                ->condition(['logoMode', '===', 'image'])
+        );
+
+        // 4. SVG (Condicional)
+        $schema->addOption(
+            Option::richText('logoSvg', 'Código SVG')
+                ->default('')
+                ->tab('Contenido')
+                ->condition(['logoMode', '===', 'svg'])
+                ->description('Pega el código SVG directamente')
+        );
+
+        // ...
+
+        // 7. Tipografía (HasTypography) - Condicional
+        foreach ($this->getTypographyOptions('Estilo') as $option) {
+            $option->condition(['logoMode', '===', 'text']);
+            $schema->addOption($option);
+        }
+
+        // 9. Object Fit (Solo Imagen)
+        $schema->addOption(
+            Option::iconGroup('objectFit', 'Ajuste de Imagen')
+                // ...
+                ->default('contain') // Logos suelen necesitar contain por defecto
+                ->tab('Estilo')
+                ->condition(['logoMode', '===', 'image'])
+        );
+
+        // 10. Filter (Específico para Imagen)
+        $schema->addOption(
+            Option::select('filter', 'Filtro de Color')
+                // ...
+                ->default('none')
+                ->tab('Estilo')
+                ->condition(['logoMode', '===', 'image'])
+        );
+
+        // 11. Border (HasBorder)
+        $this->addBorderOptions($schema, 'Estilo');
+
+        // 12. Spacing (HasSpacing)
+        foreach ($this->getSpacingOptions() as $option) {
+            $option->tab('Estilo');
+            $schema->addOption($option);
+        }
+
+        return $schema->toArray();
     }
 
     public function getDefaults(): array
@@ -200,22 +152,10 @@ class LogoComponent extends AbstractComponent
             'linkUrl' => '/',
             'maxHeight' => '2.8rem',
             'maxWidth' => 'auto',
-            'color' => '',
-            'fontSize' => '1rem',
-            'fontWeight' => '600',
             'filter' => 'none',
-            'padding' => [
-                'superior' => '0',
-                'derecho' => '0',
-                'inferior' => '0',
-                'izquierdo' => '0'
-            ]
         ];
     }
 
-    /**
-     * El logo no contiene otros componentes.
-     */
     public function getAllowedChildren(): array
     {
         return [];
