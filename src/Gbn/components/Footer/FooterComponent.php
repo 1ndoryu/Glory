@@ -81,7 +81,7 @@ class FooterComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Texto de Copyright',
                 'default' => '© {year} Todos los derechos reservados.',
-                'tab' => 'contenido',
+                'tab' => 'Contenido',
                 'description' => 'Usa {year} para el año actual'
             ],
             [
@@ -89,7 +89,7 @@ class FooterComponent extends AbstractComponent
                 'type' => 'toggle',
                 'label' => 'Mostrar Redes Sociales',
                 'default' => false,
-                'tab' => 'contenido'
+                'tab' => 'Contenido'
             ],
             // Tab: Estilo
             [
@@ -97,28 +97,28 @@ class FooterComponent extends AbstractComponent
                 'type' => 'color',
                 'label' => 'Color de Fondo',
                 'default' => '#1a1a1a',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'textColor',
                 'type' => 'color',
                 'label' => 'Color de Texto',
                 'default' => '#ffffff',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'linkColor',
                 'type' => 'color',
                 'label' => 'Color de Enlaces',
                 'default' => '#cccccc',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'linkColorHover',
                 'type' => 'color',
                 'label' => 'Color Enlaces Hover',
                 'default' => '#ffffff',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'padding',
@@ -130,14 +130,14 @@ class FooterComponent extends AbstractComponent
                     'inferior' => '2rem',
                     'izquierdo' => '1rem'
                 ],
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'columnsLayout',
                 'type' => 'iconGroup',
                 'label' => 'Distribución de Columnas',
                 'default' => '3',
-                'tab' => 'estilo',
+                'tab' => 'Estilo',
                 'options' => [
                     [
                         'value' => '1',
@@ -166,14 +166,14 @@ class FooterComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Espacio entre Columnas',
                 'default' => '2rem',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'containerMaxWidth',
                 'type' => 'text',
                 'label' => 'Ancho Máximo',
                 'default' => '1200px',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             // Tab: Avanzado
             [
@@ -181,14 +181,14 @@ class FooterComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Clases Personalizadas',
                 'default' => '',
-                'tab' => 'avanzado'
+                'tab' => 'Avanzado'
             ],
             [
                 'id' => 'excludeOnPages',
                 'type' => 'text',
                 'label' => 'Excluir en Páginas (IDs)',
                 'default' => '',
-                'tab' => 'avanzado',
+                'tab' => 'Avanzado',
                 'description' => 'IDs de páginas separadas por coma donde no se mostrará el footer'
             ]
         ];

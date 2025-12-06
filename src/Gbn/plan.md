@@ -132,16 +132,18 @@
 
 ### ✅ Bugs Críticos Resueltos (Diciembre)
 
-| Bug                             | Solución                                                  | Archivo                             |
-| :------------------------------ | :-------------------------------------------------------- | :---------------------------------- |
-| Clones parpadean / interactivos | `pointer-events: none`, debounce 300ms, flag `_isSyncing` | `post-render.js`, `interactive.css` |
-| PostRender estático al guardar  | `isEditorMode()` retorna template sin procesar            | `PostRenderProcessor.php`           |
-| Hover/Focus spacing no persiste | Agregar props camelCase a `cssDirectProps`                | `style-generator.js`                |
-| Stale block reference           | `state.get(block.id)` antes de `cloneConfig()`            | `panel-render.js`                   |
-| Atributos glory* borrados       | Preservar `glory*`, limpiar solo `data-gbn-*` internos    | `GbnManager.php`, `dom.js`          |
-| PostRender duplicación          | Detectar `data-post-id` existente                         | `PostRenderProcessor.php`           |
-| Iconos inconsistentes           | Centralización en `IconRegistry` (PHP/JS)                 | `Traits/*.php`, `panel-fields/*.js` |
-| Opciones Layout duplicadas      | Trait `HasLayoutOptions` unificado                        | `HasLayoutOptions.php`              |
+| Bug                               | Solución                                                  | Archivo                             |
+| :-------------------------------- | :-------------------------------------------------------- | :---------------------------------- |
+| Clones parpadean / interactivos   | `pointer-events: none`, debounce 300ms, flag `_isSyncing` | `post-render.js`, `interactive.css` |
+| PostRender estático al guardar    | `isEditorMode()` retorna template sin procesar            | `PostRenderProcessor.php`           |
+| Hover/Focus spacing no persiste   | Agregar props camelCase a `cssDirectProps`                | `style-generator.js`                |
+| Stale block reference             | `state.get(block.id)` antes de `cloneConfig()`            | `panel-render.js`                   |
+| Atributos glory* borrados         | Preservar `glory*`, limpiar solo `data-gbn-*` internos    | `GbnManager.php`, `dom.js`          |
+| PostRender duplicación            | Detectar `data-post-id` existente                         | `PostRenderProcessor.php`           |
+| Iconos inconsistentes             | Centralización en `IconRegistry` (PHP/JS)                 | `Traits/*.php`, `panel-fields/*.js` |
+| Opciones Layout duplicadas        | Trait `HasLayoutOptions` unificado                        | `HasLayoutOptions.php`              |
+| Variables CSS no leídas (BUG-003) | Refactor `css-sync.js` para leer todos roles/props        | `css-sync.js`                       |
+| Tabs sin iconos (BUG-006)         | Estandarización nombres tabs + mapa iconos                | `LogoComponent.php`, `tabs.js`      |
 
 **Otros bugs menores resueltos:** PostField hidratación, categoryFilter undefined, Docking persistente, colores paleta, placeholder imagen, Data Leak, border overflow, dirty HTML, hover especificidad, layout frontend deslogeado.
 
@@ -386,34 +388,25 @@ GET /wp-admin/admin-ajax.php?action=gbn_diagnostics_validate
 ---
 
 ### BUG-003: Padding Reset al Abrir Panel (Variables CSS No Leídas)
-**Estado:** ⚠️ FIX PARCIAL APLICADO | **Fecha:** Diciembre 2025
+**Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
 
-Al definir defaults via variables CSS en `:root`, los valores se aplican visualmente pero el panel de configuración **no los carga**. Al abrir el panel, los campos de padding muestran valores vacíos o se resetean.
+~~Al definir defaults via variables CSS en `:root`, los valores se aplican visualmente pero el panel de configuración **no los carga**.~~
 
-**Ejemplo:**
-```css
-:root {
-    --gbn-principal-padding-top: 20px;
-}
-```
-Los 20px se aplican visualmente pero el panel muestra vacío.
+**Causa raíz:**
+El módulo `css-sync.js` estaba muy limitado:
+- Solo leía 2 roles (`principal`, `secundario`)
+- Solo leía 3 propiedades (`padding`, `background`, `gap`)
 
-**Causa raíz identificada:**
-El módulo `css-sync.js` está incompleto:
-1. **Solo lee 2 componentes:** `principal` y `secundario` (falta `button`, `image`, `text`, etc.)
-2. **Solo lee 3 propiedades:** `padding`, `background`, `gap` (falta `display`, `borderRadius`, `color`, etc.)
-3. El fallback `cssSync.readDefaults()` en `theme-defaults.js` no funciona porque no cubre todos los casos
+**Solución aplicada (Refactorización completa css-sync.js):**
+1. **Lectura dinámica de roles:** Ahora lee TODOS los roles de `gloryGbnCfg.roleSchemas` (~18 componentes)
+2. **Lectura dinámica de propiedades:** Usa `CONFIG_TO_CSS_MAP` para leer ~40+ propiedades CSS
+3. **Detección de browser defaults:** Usa `isBrowserDefault()` centralizado de `css-map.js`
+4. **Soporte para propiedades anidadas:** Maneja correctamente `padding.superior`, `margin.derecha`, etc.
+5. **API de debugging:** Expone `getAllRoles()` y `getCssMap()` para diagnóstico
 
-**Fix parcial aplicado (effective-value.js):**
-- Cuando no hay valor en config ni en themeSettings, ahora se usa el valor computado del elemento como placeholder
-- Esto permite que los campos muestren el valor visual actual (de variables CSS) como placeholder
-- El fix excluye browser defaults para evitar mostrar valores irrelevantes
-
-**Pendiente (refactor completo):**
-1. Refactorizar `css-sync.js` para leer dinámicamente todos los roles
-2. Usar `CONFIG_TO_CSS_MAP` para leer todas las propiedades
-
-**Archivos modificados:** `effective-value.js`
+**Archivos modificados:**
+- `css-sync.js` (refactorización completa)
+- `effective-value.js` (fix de placeholder previo mantiene compatibilidad)
 
 ---
 
@@ -457,35 +450,63 @@ El módulo `css-sync.js` está incompleto:
 ---
 
 ### BUG-006: Logo/Header Tabs Sin Iconos y UI Poco Intuitiva
-**Estado:** ⚠️ FIX PARCIAL | **Fecha:** Diciembre 2025
+**Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
 
-~~Las tabs del panel de Logo no tienen iconos~~
+~~Las tabs del panel de Logo/Header no tienen iconos o usan nombres inconsistentes~~
 
-**Fix parcial aplicado:**
-- La función `getTabIcon()` en `tabs.js` ahora soporta tabs en minúscula (case-insensitive)
-- Tabs como `'contenido'` ahora se normalizan a `'Contenido'` para encontrar el icono
+**Causa raíz:**
+- Los componentes `LogoComponent.php` y `HeaderComponent.php` usaban tabs en minúscula (`'contenido'`, `'estilo'`)
+- El sistema de tabs (`tabs.js`) esperaba mayúscula inicial (`'Contenido'`, `'Estilo'`)
 
-**Pendiente:**
-- El panel de Logo es poco intuitivo (estructura confusa)
-- El panel de Header tiene tabs no centralizadas
+**Solución aplicada:**
+1. **Estandarización de tabs en LogoComponent.php:**
+   - `'contenido'` → `'Contenido'`
+   - `'estilo'` → `'Estilo'`
 
-**Archivos modificados:** `panel-render/tabs.js`
+2. **Estandarización de tabs en HeaderComponent.php:**
+   - `'configuracion'` → `'Configuración'`
+   - `'estilo'` → `'Estilo'`
+   - `'avanzado'` → `'Avanzado'`
+
+3. **Mapa de iconos ya incluye `'Configuración'`** → `'tab.content'`
+
+4. **Normalización case-insensitive mantenida** en `getTabIcon()` como fallback
+
+**Archivos modificados:**
+- `LogoComponent.php` (tabs estandarizadas)
+- `HeaderComponent.php` (tabs estandarizadas)
+- `panel-render/tabs.js` (mapa de iconos completo)
 
 ---
 
 ## 🟡 BUGS BAJA PRIORIDAD
 
 ### BUG-007: Inconsistencia de Estilos en FormComponent (Editor vs Frontend)
-**Estado:** Pendiente
+**Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
 
-El formulario usa `gap: 16px` en editor pero necesita `display: grid; grid-template-columns: 1fr 1fr` en frontend.
+~~El formulario usa `gap: 16px` en editor pero necesita `display: grid; grid-template-columns: 1fr 1fr` en frontend.~~
 
-**Archivos:** `forms.css`, `FormComponent.php`, `form.js`
+**Causa raíz:**
+- El FormComponent no tenía opciones de layout configurables
+- Solo tenía estilos fijos `display: flex; flex-direction: column; gap: 16px`
+- No había forma de configurar formularios de 2 columnas (grid)
+
+**Solución aplicada:**
+1. Agregado trait `HasLayoutOptions` al `FormComponent.php`
+2. Implementadas opciones de layout completas: flex (column/row) y grid con columnas configurables
+3. Actualizado `formComponents.css` para usar variables CSS (`--gbn-form-*`)
+4. Actualizado `form.js` renderer para generar estilos de flex/grid dinámicamente
+5. Ahora el usuario puede elegir:
+   - **Flex column** (default): Campos apilados verticalmente
+   - **Flex row**: Campos en línea horizontal
+   - **Grid con N columnas**: Layout de grid con columnas configurables (ej: 2 columnas = `1fr 1fr`)
+
+**Archivos modificados:** `FormComponent.php`, `formComponents.css`, `form.js`
 
 ---
 
 ### BUG-008: Filtro por Categoría en PostRender No Funciona
-**Estado:** Para investigación
+**Estado:** 🔒 POSPUESTO | **Razón:** Ignorar hasta que el usuario indique trabajar directamente en esto
 
 El filtro no hace nada al activarse.
 
@@ -589,5 +610,5 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 ---
 
 **Última actualización:** 6 Diciembre 2025  
-**Versión del plan:** 3.2 (BUG-004 resuelto - iconos estandarizados)  
+**Versión del plan:** 3.5 (BUG-003 y BUG-006 resueltos - css-sync.js refactorizado + tabs estandarizadas)  
 **Mantenedor:** Ver `reglas.md` para protocolo de cambios

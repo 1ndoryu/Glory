@@ -60,7 +60,7 @@ class LogoComponent extends AbstractComponent
                 'type' => 'iconGroup',
                 'label' => 'Tipo de Logo',
                 'default' => 'text',
-                'tab' => 'contenido',
+                'tab' => 'Contenido',
                 'options' => [
                     [
                         'value' => 'image',
@@ -84,7 +84,7 @@ class LogoComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Texto del Logo',
                 'default' => '',
-                'tab' => 'contenido',
+                'tab' => 'Contenido',
                 'condition' => ['logoMode', '===', 'text'],
                 'description' => 'Deja vacío para usar el nombre del sitio'
             ],
@@ -93,7 +93,7 @@ class LogoComponent extends AbstractComponent
                 'type' => 'image',
                 'label' => 'Imagen del Logo',
                 'default' => '',
-                'tab' => 'contenido',
+                'tab' => 'Contenido',
                 'condition' => ['logoMode', '===', 'image']
             ],
             [
@@ -101,7 +101,7 @@ class LogoComponent extends AbstractComponent
                 'type' => 'richText',
                 'label' => 'SVG del Logo',
                 'default' => '',
-                'tab' => 'contenido',
+                'tab' => 'Contenido',
                 'condition' => ['logoMode', '===', 'svg'],
                 'description' => 'Pega el código SVG directamente'
             ],
@@ -110,7 +110,7 @@ class LogoComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'URL del Enlace',
                 'default' => '/',
-                'tab' => 'contenido',
+                'tab' => 'Contenido',
                 'description' => 'Por defecto: página de inicio'
             ],
             // Tab: Estilo
@@ -119,21 +119,21 @@ class LogoComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Altura Máxima',
                 'default' => '2.8rem',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'maxWidth',
                 'type' => 'text',
                 'label' => 'Ancho Máximo',
                 'default' => 'auto',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'color',
                 'type' => 'color',
                 'label' => 'Color del Texto',
                 'default' => '',
-                'tab' => 'estilo',
+                'tab' => 'Estilo',
                 'condition' => ['logoMode', '===', 'text']
             ],
             [
@@ -141,7 +141,7 @@ class LogoComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Tamaño de Fuente',
                 'default' => '1rem',
-                'tab' => 'estilo',
+                'tab' => 'Estilo',
                 'condition' => ['logoMode', '===', 'text']
             ],
             [
@@ -149,7 +149,7 @@ class LogoComponent extends AbstractComponent
                 'type' => 'select',
                 'label' => 'Peso de Fuente',
                 'default' => '600',
-                'tab' => 'estilo',
+                'tab' => 'Estilo',
                 'condition' => ['logoMode', '===', 'text'],
                 'options' => [
                     '300' => 'Light',
@@ -165,7 +165,7 @@ class LogoComponent extends AbstractComponent
                 'type' => 'select',
                 'label' => 'Filtro de Color',
                 'default' => 'none',
-                'tab' => 'estilo',
+                'tab' => 'Estilo',
                 'condition' => ['logoMode', '===', 'image'],
                 'options' => [
                     'none' => 'Sin filtro',
@@ -185,7 +185,7 @@ class LogoComponent extends AbstractComponent
                     'inferior' => '0',
                     'izquierdo' => '0'
                 ],
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ]
         ];
     }

@@ -17,16 +17,54 @@
 
     /**
      * Genera los estilos inline para el formulario.
+     * 
+     * BUG-007 FIX: Ahora soporta layout flex y grid con columnas configurables.
      */
     function getStyles(config, block) {
         var styles = traits.getCommonStyles(config);
 
-        // Propiedades específicas del form
-        if (config.display) {
-            styles['display'] = config.display;
+        // Layout mode (flex, grid, block)
+        var layout = config.layout || 'flex';
+        if (layout === 'flex') {
+            styles['display'] = 'flex';
+            
+            // Flex direction
+            if (config.direction) {
+                styles['flex-direction'] = config.direction;
+            }
+            
+            // Flex wrap
+            if (config.wrap) {
+                styles['flex-wrap'] = config.wrap;
+            }
+            
+            // Justify content
+            if (config.justifyContent) {
+                styles['justify-content'] = config.justifyContent;
+            }
+            
+            // Align items
+            if (config.alignItems) {
+                styles['align-items'] = config.alignItems;
+            }
+        } else if (layout === 'grid') {
+            styles['display'] = 'grid';
+            
+            // Grid columns
+            var columns = config.gridColumns || 2;
+            styles['grid-template-columns'] = 'repeat(' + columns + ', 1fr)';
+            
+            // Grid gap (usa el mismo campo gap)
+            if (config.gridGap) {
+                styles['gap'] = config.gridGap + 'px';
+            }
+        } else {
+            styles['display'] = 'block';
         }
-        if (config.gap) {
-            styles['gap'] = config.gap;
+        
+        // Gap (para flex)
+        if (config.gap && layout === 'flex') {
+            styles['gap'] = config.gap + 'px';
         }
 
         return styles;
@@ -88,6 +126,56 @@
             // Convertir camelCase a kebab-case para el data attribute
             // successMessage -> data-success-message, emailSubject -> data-email-subject
             el.setAttribute('data-' + path.replace(/([A-Z])/g, '-$1').toLowerCase(), value);
+            return true;
+        }
+
+        // === LAYOUT PROPERTIES (BUG-007 FIX) ===
+        // Estas propiedades requieren re-render de estilos completo
+        if (path === 'layout') {
+            // Cambio de modo layout: flex, grid, block
+            // Necesita re-render completo para aplicar todos los estilos relacionados
+            if (value === 'flex') {
+                el.style.display = 'flex';
+                el.style.removeProperty('grid-template-columns');
+            } else if (value === 'grid') {
+                el.style.display = 'grid';
+                // Default 2 columnas para formularios
+                var cols = block.config && block.config.gridColumns || 2;
+                el.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+            } else {
+                el.style.display = 'block';
+                el.style.removeProperty('grid-template-columns');
+            }
+            return true;
+        }
+
+        if (path === 'direction') {
+            el.style.flexDirection = value;
+            return true;
+        }
+
+        if (path === 'wrap') {
+            el.style.flexWrap = value;
+            return true;
+        }
+
+        if (path === 'justifyContent') {
+            el.style.justifyContent = value;
+            return true;
+        }
+
+        if (path === 'alignItems') {
+            el.style.alignItems = value;
+            return true;
+        }
+
+        if (path === 'gridColumns') {
+            el.style.gridTemplateColumns = 'repeat(' + value + ', 1fr)';
+            return true;
+        }
+
+        if (path === 'gridGap' || path === 'gap') {
+            el.style.gap = value + 'px';
             return true;
         }
 

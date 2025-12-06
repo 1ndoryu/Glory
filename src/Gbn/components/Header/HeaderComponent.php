@@ -74,7 +74,7 @@ class HeaderComponent extends AbstractComponent
                 'type' => 'toggle',
                 'label' => 'Header Fijo',
                 'default' => true,
-                'tab' => 'configuracion',
+                'tab' => 'Configuración',
                 'description' => 'El header se mantendrá fijo al hacer scroll'
             ],
             [
@@ -82,7 +82,7 @@ class HeaderComponent extends AbstractComponent
                 'type' => 'toggle',
                 'label' => 'Efecto al Scroll',
                 'default' => true,
-                'tab' => 'configuracion',
+                'tab' => 'Configuración',
                 'description' => 'Aplica efecto visual cuando el usuario hace scroll'
             ],
             [
@@ -90,7 +90,7 @@ class HeaderComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Clase al Scroll',
                 'default' => 'scrolled',
-                'tab' => 'configuracion',
+                'tab' => 'Configuración',
                 'condition' => ['showScrollEffect', '===', true]
             ],
             // Tab: Estilo
@@ -99,14 +99,14 @@ class HeaderComponent extends AbstractComponent
                 'type' => 'color',
                 'label' => 'Color de Fondo',
                 'default' => 'transparent',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'backgroundColorScrolled',
                 'type' => 'color',
                 'label' => 'Color al Scroll',
                 'default' => 'rgba(255, 255, 255, 0.9)',
-                'tab' => 'estilo',
+                'tab' => 'Estilo',
                 'description' => 'Color de fondo cuando el usuario hace scroll'
             ],
             [
@@ -119,14 +119,14 @@ class HeaderComponent extends AbstractComponent
                     'inferior' => '0',
                     'izquierdo' => '0'
                 ],
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'containerMaxWidth',
                 'type' => 'text',
                 'label' => 'Ancho Máximo Contenedor',
                 'default' => '100%',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'backdropBlur',
@@ -135,7 +135,7 @@ class HeaderComponent extends AbstractComponent
                 'default' => 0,
                 'min' => 0,
                 'max' => 30,
-                'tab' => 'estilo',
+                'tab' => 'Estilo',
                 'description' => 'Efecto glassmorphism'
             ],
             [
@@ -143,7 +143,7 @@ class HeaderComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Z-Index',
                 'default' => '1000',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             // Tab: Avanzado
             [
@@ -151,14 +151,14 @@ class HeaderComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Clases Personalizadas',
                 'default' => '',
-                'tab' => 'avanzado'
+                'tab' => 'Avanzado'
             ],
             [
                 'id' => 'excludeOnPages',
                 'type' => 'text',
                 'label' => 'Excluir en Páginas (IDs)',
                 'default' => '',
-                'tab' => 'avanzado',
+                'tab' => 'Avanzado',
                 'description' => 'IDs de páginas separadas por coma donde no se mostrará el header'
             ]
         ];

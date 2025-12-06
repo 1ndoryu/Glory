@@ -592,7 +592,7 @@ $builderScripts = ScriptManifest::getBuilderScripts();
 
 ---
 
-**Versión:** 2.2 (Refactorización utils.js y GbnManager - Diciembre 2025)  
+**Versión:** 2.3 (css-sync.js refactorizado para lectura dinámica de roles/props - Diciembre 2025)  
 **Relacionado:** `reglas.md`, `plan.md`, `guia-crear-componente.md`
 
 ---

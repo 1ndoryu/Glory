@@ -57,21 +57,21 @@ class MenuItemComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Texto del Enlace',
                 'default' => 'Enlace',
-                'tab' => 'contenido'
+                'tab' => 'Contenido'
             ],
             [
                 'id' => 'linkUrl',
                 'type' => 'text',
                 'label' => 'URL',
                 'default' => '#',
-                'tab' => 'contenido'
+                'tab' => 'Contenido'
             ],
             [
                 'id' => 'linkTarget',
                 'type' => 'select',
                 'label' => 'Abrir en',
                 'default' => '_self',
-                'tab' => 'contenido',
+                'tab' => 'Contenido',
                 'options' => [
                     '_self' => 'Misma ventana',
                     '_blank' => 'Nueva ventana'
@@ -82,7 +82,7 @@ class MenuItemComponent extends AbstractComponent
                 'type' => 'toggle',
                 'label' => 'Tiene Submenú',
                 'default' => false,
-                'tab' => 'contenido'
+                'tab' => 'Contenido'
             ],
             // Tab: Estilo
             [
@@ -90,28 +90,28 @@ class MenuItemComponent extends AbstractComponent
                 'type' => 'color',
                 'label' => 'Color de Texto',
                 'default' => '',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'colorHover',
                 'type' => 'color',
                 'label' => 'Color Hover',
                 'default' => '',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'fontSize',
                 'type' => 'text',
                 'label' => 'Tamaño de Fuente',
                 'default' => '',
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             [
                 'id' => 'fontWeight',
                 'type' => 'select',
                 'label' => 'Peso de Fuente',
                 'default' => '',
-                'tab' => 'estilo',
+                'tab' => 'Estilo',
                 'options' => [
                     '' => 'Heredar',
                     '300' => 'Light',
@@ -131,7 +131,7 @@ class MenuItemComponent extends AbstractComponent
                     'inferior' => '',
                     'izquierdo' => ''
                 ],
-                'tab' => 'estilo'
+                'tab' => 'Estilo'
             ],
             // Tab: Avanzado
             [
@@ -139,14 +139,14 @@ class MenuItemComponent extends AbstractComponent
                 'type' => 'text',
                 'label' => 'Clase CSS',
                 'default' => '',
-                'tab' => 'avanzado'
+                'tab' => 'Avanzado'
             ],
             [
                 'id' => 'isActive',
                 'type' => 'toggle',
                 'label' => 'Marcar como Activo',
                 'default' => false,
-                'tab' => 'avanzado',
+                'tab' => 'Avanzado',
                 'description' => 'Añade la clase "current-menu-item"'
             ]
         ];

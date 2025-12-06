@@ -4,13 +4,23 @@
    
    NOTA: Usamos :where() para mantener especificidad 0,
    permitiendo que clases personalizadas los sobreescriban.
+   
+   BUG-007 FIX: Ahora soporta layout flex (column) o grid con columnas
+   configurables via variables CSS.
    ======================================== */
 
 /* Contenedor del formulario */
 :where([gloryForm]) {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+    /* Layout configurable via variables CSS */
+    display: var(--gbn-form-display, flex);
+    flex-direction: var(--gbn-form-flex-direction, column);
+    flex-wrap: var(--gbn-form-flex-wrap, nowrap);
+    justify-content: var(--gbn-form-justify-content, flex-start);
+    align-items: var(--gbn-form-align-items, stretch);
+    gap: var(--gbn-form-gap, 16px);
+    /* Grid options (cuando display: grid) */
+    grid-template-columns: var(--gbn-form-grid-columns, repeat(1, 1fr));
+    box-sizing: border-box;
 }
 
 /* Campos de formulario - Estructura común */
