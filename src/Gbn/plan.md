@@ -619,7 +619,7 @@ El filtro no hace nada al activarse.
 ### BUG-010: MenuComponent Responsive en Constructor
 **Estado:** 🔴 PENDIENTE
 
-El tamaño del menú no se actualiza dinámicamente al cambiar la vista (mobile/tablet) en el constructor.
+El tamaño del menú no se actualiza dinámicamente al cambiar la vista (mobile/tablet) en el constructor. ()
 
 ---
 
@@ -818,7 +818,7 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 ---
 
 ### REFACTOR-010: Migración de Campos Hover Legacy a Sistema de Estados
-**Prioridad:** Baja | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Baja | **Estado:** � EN PROGRESO | **Fecha inicio:** 6 Diciembre 2025
 **Origen:** Identificado durante análisis de BUG-009
 
 **Problema:** 
