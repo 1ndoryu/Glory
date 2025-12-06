@@ -147,122 +147,7 @@
 
 ---
 
-## 4. Roadmap de Trabajo Futuro
-
-### 🐛 Bugs Pendientes
-
-#### Inconsistencia de Estilos en FormComponent (Editor vs Frontend)
-**Prioridad:** Media-Baja | **Estado:** Pendiente
-
-El formulario usa `gap: 16px` en editor pero necesita `display: grid; grid-template-columns: 1fr 1fr` en frontend. **Solución:** Asegurar estilos de layout como inline styles o cargar `forms.css` selectivamente.
-
-**Archivos:** `forms.css`, `FormComponent.php`, `form.js`
-
----
-
-#### Filtro por Categoría en PostRender
-**Prioridad:** Baja | **Estado:** Para investigación
-
-El filtro no hace nada al activarse. **Archivos:** `post-render-frontend.js`, `PostRenderProcessor.php`
-
----
-
-### 🔍 Investigación Arquitectónica
-
-#### Iconos SVG Repetidos (RESUELTO ✅)
-**Problema:** Iconos definidos en cada componente individualmente. **Solución:** Implementado `IconRegistry.php` y sistema de iconos JS.
-
-#### Layout Options No Centralizadas (RESUELTO ✅)
-**Problema:** PostRender "Modo de Visualización" vs DivPrincipal "Layout" no comparten fuente. **Solución:** Implementado trait `HasLayoutOptions`.
-
----
-
-### ⚠️ Tareas Pendientes
-
-#### 🟡 Mejora Botón '+' en Menú Contextual para Componentes Hoja
-**Prioridad:** Baja | **Estado:** Pendiente
-
-Al hacer clic derecho en componentes atómicos (text, image, input), el "+" debería mostrar hijos del **padre**. **Solución:** Buscar padre con `allowedChildren` y usar posición `'after'`.
-
-**Archivo:** `context-menu.js`
-
----
-
-#### 🟡 Plantillas SinglePage para PostTypes
-**Prioridad:** Media | **Estado:** Diseño conceptual
-
-Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente. Similar a PostRender pero para vista individual. Reutilizar `PostFieldComponent`.
-
-**Dependencia:** Header/Footer implementados ✅
-
----
-
-### ⏳ Pendientes Confirmados (Backlog)
-
-#### 🔄 Refactorización de Archivos Grandes (Fase 16)
-**Prioridad:** Media | **Estado:** Planificado
-
-Siguiendo el principio de **archivos pequeños y enfocados** (SRP), refactorizar archivos que superan las 600 líneas:
-
-**Archivos objetivo:**
-- [ ] `post-render.js` (801 líneas) → Dividir en módulos:
-  - `post-render/state.js` → Estado y sincronización de clones
-  - `post-render/query.js` → Lógica de consultas WP y filtros
-  - `post-render/clones.js` → Gestión de clones (crear, actualizar, eliminar)
-  - `post-render/ajax-handler.js` → Manejo de respuestas AJAX y categorías
-  - `post-render.js` → Orquestador principal
-
-- [ ] `PostRenderProcessor.php` (762 líneas) → Dividir en clases:
-  - `PostQuery/QueryBuilder.php` → Construcción de WP_Query
-  - `PostQuery/FilterHandler.php` → Filtros por categoría, tags, autor
-  - `PostRender/TemplateRenderer.php` → Renderizado de plantillas
-  - `PostRender/FieldMapper.php` → Mapeo de campos (PostField)
-  - `PostRenderProcessor.php` → Orquestador principal
-
-- [ ] `inspector.js` (675 líneas) → Dividir en módulos:
-  - `inspector/state.js` → Estado del inspector (isActive, currentSection)
-  - `inspector/ui-builder.js` → Construcción de UI (tabs, secciones)
-  - `inspector/tree-view.js` → Vista de árbol de bloques
-  - `inspector/relationships.js` → Lógica de padre-hijo (allowedChildren)
-  - `inspector/actions.js` → Acciones (delete, duplicate, move)
-  - `inspector.js` → Orquestador principal
-
-- [ ] `panel-core.js` (627 líneas) → Dividir en módulos:
-  - `panel-core/initialization.js` → Inicialización y setup
-  - `panel-core/registry.js` → Registro de tipos de campos
-  - `panel-core/field-renderer.js` → Renderizado de campos
-  - `panel-core/listeners.js` → Event listeners y bindings
-  - `panel-core.js` → Orquestador principal
-
-**Beneficios esperados:**
-- Reducción de complejidad ciclomática
-- Mejor testabilidad de módulos individuales
-- Adherencia a SRP (Single Responsibility Principle)
-- Facilita el mantenimiento y depuración
-- Consistencia con refactorizaciones previas (theme/render.js, panel-render.js, utils.js)
-
-**Dependencias:** Ninguna (mejora de calidad de código)
-
----
-
-#### Fase 9: Transform con Iconos para Botones
-**Objetivo:** Exponer transformaciones CSS con presets visuales.
-
-**Tareas:**
-- [ ] Crear `iconGroup` para transforms comunes (`skewX`, `scale`, `rotate`)
-- [ ] Implementar en `ButtonComponent.php`
-- [ ] Sincronización CSS: detectar transforms de clases existentes
-- [ ] Preview en panel con iconos representativos
-
-#### Refactorización UI Dimensions Panel
-**Problema:** Diseño inconsistente con el resto del panel.
-
-**Tarea:**
-- [ ] Actualizar `dimensions.js` con iconos SVG, grid layout y estilo consistente con `spacing.js`
-
----
-
-## 5. Arquitectura de Sincronización de Estilos (Crítico)
+## 4. Arquitectura de Sincronización de Estilos (Crítico)
 
 ### Jerarquía de Prioridad (Cascade)
 
@@ -316,7 +201,7 @@ Siguiendo el principio de **archivos pequeños y enfocados** (SRP), refactorizar
 
 ---
 
-## 6. Guía Rápida: Crear Nuevo Componente
+## 5. Guía Rápida: Crear Nuevo Componente
 
 > [!TIP]
 > Consulta `guia-crear-componente.md` para la documentación completa paso a paso.
@@ -347,29 +232,7 @@ Siguiendo el principio de **archivos pequeños y enfocados** (SRP), refactorizar
 
 ---
 
-## 7. Mantenimiento del Plan
-
-### Protocolo de Actualización
-
-**Cuando agregar secciones:**
-- Nueva fase arquitectónica (ej: Fase 14)
-- Bug crítico resuelto con lección aprendida
-- Cambio de reglas o principios (actualizar `reglas.md` también)
-
-**Cuando condensar:**
-- Detalles de bugs antiguos (>3 meses) movidos a historial comprimido
-- Tareas completadas con detalles excesivos → resumir en tabla
-- Diagramas de flujo repetitivos → unificar en uno solo
-
-**Archivos hermanos obligatorios:**
-- `reglas.md`: Principios inmutables, arquitectura core
-- `documentación-gbn.md`: Guías de uso, configuración, troubleshooting
-- `guia-crear-componente.md`: Tutorial paso a paso
-- `plan_control.md`: Roadmap del GBN Control Center (diagnóstico interno)
-
----
-
-## 8. Cumplimiento SOLID y Defensa Anti-Regresiones
+## 6. Cumplimiento SOLID y Defensa Anti-Regresiones
 
 ### Principios SOLID Aplicados
 
@@ -403,7 +266,7 @@ Siguiendo el principio de **archivos pequeños y enfocados** (SRP), refactorizar
 
 ---
 
-## 9. Métricas de Salud del Sistema
+## 7. Métricas de Salud del Sistema
 
 **Comando de diagnóstico rápido:**
 ```bash
@@ -415,9 +278,9 @@ GET /wp-admin/admin-ajax.php?action=gbn_diagnostics_validate
 ```
 
 **Indicadores clave:**
-- **Total de Componentes Registrados:** 8 activos
+- **Total de Componentes Registrados:** 18 activos
 - **Tamaño Payload `gloryGbnCfg`:** ~84KB (Óptimo: <100KB)
-- **Trait más usado:** `HasSpacing` (presente en 7/8 componentes)
+- **Trait más usado:** `HasSpacing` (presente en 15/18 componentes)
 - **Health Score esperado:** >95/100 (Verde)
 
 **Ver detalles en:**
@@ -426,7 +289,7 @@ GET /wp-admin/admin-ajax.php?action=gbn_diagnostics_validate
 
 ---
 
-## 10. Historial Comprimido (Pre-Diciembre 2025)
+## 8. Historial Comprimido (Pre-Diciembre 2025)
 
 ### Fases Fundacionales (Completadas)
 
@@ -453,6 +316,278 @@ GET /wp-admin/admin-ajax.php?action=gbn_diagnostics_validate
 
 ---
 
-**Última actualización:** Diciembre 2025  
-**Versión del plan:** 2.0 (Resumido)  
+## 9. Mantenimiento del Plan
+
+### Protocolo de Actualización
+
+**Cuando agregar secciones:**
+- Nueva fase arquitectónica (ej: Fase 14)
+- Bug crítico resuelto con lección aprendida
+- Cambio de reglas o principios (actualizar `reglas.md` también)
+
+**Cuando condensar:**
+- Detalles de bugs antiguos (>3 meses) movidos a historial comprimido
+- Tareas completadas con detalles excesivos → resumir en tabla
+- Diagramas de flujo repetitivos → unificar en uno solo
+
+**Archivos hermanos obligatorios:**
+- `reglas.md`: Principios inmutables, arquitectura core
+- `documentación-gbn.md`: Guías de uso, configuración, troubleshooting
+- `guia-crear-componente.md`: Tutorial paso a paso
+- `plan_control.md`: Roadmap del GBN Control Center (diagnóstico interno)
+
+---
+
+---
+
+# 📋 TAREAS PENDIENTES (Consolidado)
+
+> [!IMPORTANT]
+> **SECCIÓN ÚNICA** con todas las tareas pendientes organizadas por prioridad.
+> Última actualización: Diciembre 2025
+
+---
+
+## 🔴 BUGS CRÍTICOS (Prioridad Alta)
+
+### BUG-001: ImageComponent No Detectado por Inspector
+**Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
+
+~~El componente `gloryImagen` no es detectado por el inspector. Los elementos `<img gloryImagen>` no responden a clicks ni aparecen en el árbol de bloques.~~
+
+**Causa raíz:** Inconsistencia de nomenclatura entre archivos:
+- `ImageComponent.php` definía selector como `gloryImage` (sin "n")
+- `roles.js` tenía fallback como `gloryImagen` (con "n")
+- Esto causaba que el scanner no detectara los elementos correctamente
+
+**Solución aplicada:**
+- Se estandarizó a `gloryImagen` (con "n") en todos los archivos
+- Archivos corregidos: `ImageComponent.php` (selector + template), `theme-styles.css`
+
+**Archivos:** `ImageComponent.php`, `roles.js`, `theme-styles.css`
+
+---
+
+### BUG-002: Tabs Duplicados en Panel de Configuración del Tema
+**Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
+
+~~Los tabs del panel "Configuración del Tema" aparecen duplicados **después** de haber abierto el panel de un componente.~~
+
+**Causa raíz:**
+- La función `cleanupCurrentMode()` no limpiaba el área de tabs `.gbn-panel-header-tabs-area` del header
+- Cuando cambiabas de un bloque (que renderiza tabs en el header) a Theme Settings (que no usa tabs), las tabs del bloque anterior persistían visualmente
+
+**Solución aplicada:**
+- Se agregó limpieza explícita del área de tabs y estados en `cleanupCurrentMode()`
+- Ahora la transición entre modos siempre limpia: tabs del header, estados del footer, clases de simulación, y bloque activo
+
+**Archivos:** `panel-core.js`
+
+---
+
+### BUG-003: Padding Reset al Abrir Panel (Variables CSS No Leídas)
+**Estado:** ⚠️ FIX PARCIAL APLICADO | **Fecha:** Diciembre 2025
+
+Al definir defaults via variables CSS en `:root`, los valores se aplican visualmente pero el panel de configuración **no los carga**. Al abrir el panel, los campos de padding muestran valores vacíos o se resetean.
+
+**Ejemplo:**
+```css
+:root {
+    --gbn-principal-padding-top: 20px;
+}
+```
+Los 20px se aplican visualmente pero el panel muestra vacío.
+
+**Causa raíz identificada:**
+El módulo `css-sync.js` está incompleto:
+1. **Solo lee 2 componentes:** `principal` y `secundario` (falta `button`, `image`, `text`, etc.)
+2. **Solo lee 3 propiedades:** `padding`, `background`, `gap` (falta `display`, `borderRadius`, `color`, etc.)
+3. El fallback `cssSync.readDefaults()` en `theme-defaults.js` no funciona porque no cubre todos los casos
+
+**Fix parcial aplicado (effective-value.js):**
+- Cuando no hay valor en config ni en themeSettings, ahora se usa el valor computado del elemento como placeholder
+- Esto permite que los campos muestren el valor visual actual (de variables CSS) como placeholder
+- El fix excluye browser defaults para evitar mostrar valores irrelevantes
+
+**Pendiente (refactor completo):**
+1. Refactorizar `css-sync.js` para leer dinámicamente todos los roles
+2. Usar `CONFIG_TO_CSS_MAP` para leer todas las propiedades
+
+**Archivos modificados:** `effective-value.js`
+
+---
+
+## 🟠 BUGS MEDIA PRIORIDAD
+
+### BUG-004: Iconos Inconsistentes en Biblioteca de Componentes
+**Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
+
+~~Algunos iconos se ven más grandes que otros (ej: Logo, Menu, Menu Item vs Área de Texto, Header, Imagen).~~
+
+**Causa raíz:**
+- Algunos iconos SVG usaban solo `viewBox="0 0 24 24"` sin atributos `width/height`
+- Otros iconos tenían `width="24" height="24" viewBox="0 0 24 24"`
+- Esta inconsistencia causaba que el navegador renderizara los SVGs de manera diferente
+
+**Solución aplicada:**
+1. Se estandarizaron TODOS los iconos para incluir `width="24" height="24" viewBox="0 0 24 24"`
+2. Los estilos CSS en `modals.css` ya forzaban `32px !important` para uniformidad
+3. Componentes corregidos: `LogoComponent`, `HeaderComponent`, `MenuComponent`, `MenuItemComponent`, `FooterComponent`
+
+**Archivos modificados:** 
+- `LogoComponent.php`, `HeaderComponent.php`, `MenuComponent.php`, `MenuItemComponent.php`, `FooterComponent.php`
+- `modals.css` (fix CSS previo, líneas 157-174)
+
+---
+
+### BUG-005: ButtonComponent Sin Estilos Default
+**Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
+
+~~El componente `gloryButton` no tiene clases CSS default ni estilos base. Aparece como texto plano.~~
+
+**Solución aplicada:**
+- Se agregaron estilos base en `theme-styles.css` para `[gloryButton]` y `.gbn-button`
+- Variables CSS disponibles: `--gbn-button-*` (display, padding, font, colors, border, etc.)
+- Estilos para estados `:hover`, `:focus`, `:active`
+- Variante secundaria `.btn-secondary` con estilos de outline
+- Usa `:where()` para mantener especificidad 0 y permitir override por clases personalizadas
+
+**Archivos modificados:** `theme-styles.css`
+
+---
+
+### BUG-006: Logo/Header Tabs Sin Iconos y UI Poco Intuitiva
+**Estado:** ⚠️ FIX PARCIAL | **Fecha:** Diciembre 2025
+
+~~Las tabs del panel de Logo no tienen iconos~~
+
+**Fix parcial aplicado:**
+- La función `getTabIcon()` en `tabs.js` ahora soporta tabs en minúscula (case-insensitive)
+- Tabs como `'contenido'` ahora se normalizan a `'Contenido'` para encontrar el icono
+
+**Pendiente:**
+- El panel de Logo es poco intuitivo (estructura confusa)
+- El panel de Header tiene tabs no centralizadas
+
+**Archivos modificados:** `panel-render/tabs.js`
+
+---
+
+## 🟡 BUGS BAJA PRIORIDAD
+
+### BUG-007: Inconsistencia de Estilos en FormComponent (Editor vs Frontend)
+**Estado:** Pendiente
+
+El formulario usa `gap: 16px` en editor pero necesita `display: grid; grid-template-columns: 1fr 1fr` en frontend.
+
+**Archivos:** `forms.css`, `FormComponent.php`, `form.js`
+
+---
+
+### BUG-008: Filtro por Categoría en PostRender No Funciona
+**Estado:** Para investigación
+
+El filtro no hace nada al activarse.
+
+**Archivos:** `post-render-frontend.js`, `PostRenderProcessor.php`
+
+---
+
+---
+
+## 🔧 REFACTORIZACIONES ARQUITECTÓNICAS (Fase 17)
+
+### REFACTOR-001: Centralización de Defaults CSS
+**Prioridad:** Alta | **Estado:** Diseño conceptual
+
+**Problema:** 
+- Los defaults CSS están dispersos en múltiples archivos (`gbn.css`, `theme-styles.css`)
+- No es claro dónde agregar defaults para nuevos componentes
+- La lógica de lectura de defaults no sigue principios SOLID
+
+**Propuesta:**
+1. Mover defaults `:where()` a carpeta de cada componente:
+   ```
+   components/
+   ├── Button/
+   │   ├── ButtonComponent.php
+   │   └── button-defaults.css  ← NUEVO
+   ```
+
+2. Cargar CSS de defaults automáticamente desde ComponentLoader
+
+3. Todos los componentes deben tener acceso directo a defaults desde Theme Settings
+
+4. **Visibility de fuente de valor:**
+   - TODOS los inputs del panel deben mostrar si el valor viene de CSS
+   - Si no hay valor CSS, mostrar placeholder diferenciado
+
+---
+
+### REFACTOR-002: Centralización de Lógica de Tabs
+**Prioridad:** Alta | **Estado:** Diseño conceptual
+
+**Problema:** La lógica de tabs está duplicada/dispersa causando bugs de duplicación.
+
+**Solución:**
+- Crear módulo `ui/tabs-manager.js` con patrón Singleton
+- Unificar lógica de `panel-core.js`, `theme/render.js`, `panel-render.js`
+- Implementar cleanup automático al cambiar de panel
+
+---
+
+### REFACTOR-003: Archivos Grandes (Fase 16)
+**Prioridad:** Media | **Estado:** Planificado
+
+Refactorizar archivos que superan las 600 líneas:
+
+- [ ] `post-render.js` (801 líneas) → Dividir en módulos
+- [ ] `PostRenderProcessor.php` (762 líneas) → Dividir en clases
+- [ ] `inspector.js` (675 líneas) → Dividir en módulos
+- [ ] `panel-core.js` (627 líneas) → Dividir en módulos
+
+---
+
+---
+
+## ⏳ FEATURES PENDIENTES
+
+### FEATURE-001: Mejora Botón '+' en Menú Contextual
+**Prioridad:** Baja | **Estado:** Pendiente
+
+Al hacer clic derecho en componentes atómicos (text, image, input), el "+" debería mostrar hijos del **padre**.
+
+**Archivo:** `context-menu.js`
+
+---
+
+### FEATURE-002: Plantillas SinglePage para PostTypes
+**Prioridad:** Media | **Estado:** Diseño conceptual
+
+Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
+
+**Dependencia:** Header/Footer implementados ✅
+
+---
+
+### FEATURE-003: Transform con Iconos para Botones (Fase 9)
+**Prioridad:** Baja | **Estado:** Pendiente
+
+- [ ] Crear `iconGroup` para transforms comunes (`skewX`, `scale`, `rotate`)
+- [ ] Implementar en `ButtonComponent.php`
+- [ ] Sincronización CSS: detectar transforms de clases existentes
+
+---
+
+### FEATURE-004: Refactorización UI Dimensions Panel
+**Prioridad:** Baja | **Estado:** Pendiente
+
+- [ ] Actualizar `dimensions.js` con iconos SVG, grid layout y estilo consistente con `spacing.js`
+
+---
+
+---
+
+**Última actualización:** 6 Diciembre 2025  
+**Versión del plan:** 3.2 (BUG-004 resuelto - iconos estandarizados)  
 **Mantenedor:** Ver `reglas.md` para protocolo de cambios

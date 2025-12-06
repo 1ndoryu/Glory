@@ -6,16 +6,16 @@
 /* Variables CSS por defecto - Sincronizables con Panel de Tema */
 :root {
     /* Principal Padding Defaults */
-    --gbn-principal-padding-top: 0px;
-    --gbn-principal-padding-right: 0px;
-    --gbn-principal-padding-bottom: 0px;
-    --gbn-principal-padding-left: 0px;
+    --gbn-principal-padding-top: 20px;
+    --gbn-principal-padding-right: 20px;
+    --gbn-principal-padding-bottom: 20px;
+    --gbn-principal-padding-left: 20px;
     
     /* Secundario Padding Defaults */
-    --gbn-secundario-padding-top: 0px;
-    --gbn-secundario-padding-right: 0px;
-    --gbn-secundario-padding-bottom: 0px;
-    --gbn-secundario-padding-left: 0px;
+    --gbn-secundario-padding-top: 20px;
+    --gbn-secundario-padding-right: 20px;
+    --gbn-secundario-padding-bottom: 20px;
+    --gbn-secundario-padding-left: 20px;
 }
 
 /* Default Styles for GBN Containers - DELETED (Moved to theme-styles.css) */

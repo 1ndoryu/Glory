@@ -169,6 +169,9 @@
     /**
      * Limpia completamente el estado del modo anterior antes de cambiar.
      * Esta función es CRÍTICA para evitar el bug de docking persistente.
+     * 
+     * [FIX BUG-002] También limpia las áreas de tabs y estados del header/footer
+     * para evitar que tabs de un modo anterior persistan en el nuevo modo.
      */
     function cleanupCurrentMode() {
         var currentMode = panelMode;
@@ -182,12 +185,25 @@
             }
         }
         
-        // 2. Limpiar clases de simulación del bloque activo
+        // 2. [FIX BUG-002] Limpiar área de tabs del header
+        // Esto previene que las tabs del panel anterior persistan
+        var tabsContainer = document.querySelector('.gbn-panel-header-tabs-area');
+        if (tabsContainer) {
+            tabsContainer.innerHTML = '';
+        }
+        
+        // 3. [FIX BUG-002] Limpiar área de estados del footer
+        var footerStatesContainer = document.querySelector('.gbn-footer-states-area');
+        if (footerStatesContainer) {
+            footerStatesContainer.innerHTML = '';
+        }
+        
+        // 4. Limpiar clases de simulación del bloque activo
         if (activeBlock && activeBlock.element) {
             activeBlock.element.classList.remove('gbn-simulated-hover', 'gbn-simulated-focus');
         }
         
-        // 3. Limpiar bloque activo
+        // 5. Limpiar bloque activo
         setActiveBlock(null);
     }
 

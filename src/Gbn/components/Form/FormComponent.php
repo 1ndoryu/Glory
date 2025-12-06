@@ -8,6 +8,7 @@ use Glory\Gbn\Schema\Option;
 use Glory\Gbn\Traits\HasSpacing;
 use Glory\Gbn\Traits\HasBackground;
 use Glory\Gbn\Traits\HasBorder;
+use Glory\Gbn\Traits\HasLayoutOptions;
 use Glory\Gbn\Icons\IconRegistry;
 
 /**
@@ -15,6 +16,9 @@ use Glory\Gbn\Icons\IconRegistry;
  * 
  * Componente contenedor <form> con configuración de action, method, 
  * y honeypot anti-spam básico.
+ * 
+ * BUG-007 FIX: Ahora incluye HasLayoutOptions para permitir layout 
+ * grid con columnas configurables (ej: 1fr 1fr para formularios de 2 columnas).
  * 
  * @role form
  * @selector [gloryForm]
@@ -24,6 +28,7 @@ class FormComponent extends AbstractComponent
     use HasSpacing;
     use HasBackground;
     use HasBorder;
+    use HasLayoutOptions;
 
     protected string $id = 'form';
     protected string $label = 'Formulario';
@@ -46,6 +51,10 @@ class FormComponent extends AbstractComponent
             'errorMessage' => 'Hubo un error al enviar el formulario.',
             'honeypot' => true,
             'ajaxSubmit' => true,
+            // Layout defaults (BUG-007 FIX)
+            'layout' => 'flex',
+            'direction' => 'column',
+            'gap' => 16,
         ];
     }
 
@@ -112,7 +121,13 @@ class FormComponent extends AbstractComponent
                 ->tab('Email')
         );
 
-        // Tab: Estilo
+        // Tab: Estilo - Layout Options (BUG-007 FIX)
+        // Permite configurar el formulario como flex (columna) o grid (columnas múltiples)
+        foreach ($this->getLayoutOptions('full', 'layout') as $option) {
+            $option->tab('Estilo');
+            $schema->addOption($option);
+        }
+
         foreach ($this->getSpacingOptions() as $option) {
             $option->tab('Estilo');
             $schema->addOption($option);

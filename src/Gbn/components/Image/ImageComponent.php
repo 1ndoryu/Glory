@@ -19,7 +19,7 @@ class ImageComponent extends AbstractComponent
     public function getSelector(): array
     {
         return [
-            'attribute' => 'gloryImage',
+            'attribute' => 'gloryImagen',
             'dataAttribute' => 'data-gbn-image',
         ];
     }
@@ -140,6 +140,6 @@ class ImageComponent extends AbstractComponent
         // 2. object-fit: var(...) para que el estilo funcione via CSS variable.
         // 3. display: block para evitar espacio fantasma inferior.
         
-        return '<div gloryImage opciones="src: \'' . $placeholder . '\', alt: \'Imagen\', width: \'200px\', height: \'200px\', maxWidth: \'100%\'" style="position: relative; display: inline-block; width: 200px; height: 200px; max-width: 100%; overflow: hidden;"><img src="' . $placeholder . '" alt="Imagen" style="width: 100%; height: 100%; object-fit: var(--gbn-img-object-fit, cover); display: block;"></div>';
+        return '<div gloryImagen opciones="src: \'' . $placeholder . '\', alt: \'Imagen\', width: \'200px\', height: \'200px\', maxWidth: \'100%\'" style="position: relative; display: inline-block; width: 200px; height: 200px; max-width: 100%; overflow: hidden;"><img src="' . $placeholder . '" alt="Imagen" style="width: 100%; height: 100%; object-fit: var(--gbn-img-object-fit, cover); display: block;"></div>';
     }
 }

@@ -31,7 +31,7 @@ class HeaderComponent extends AbstractComponent
 
     public function getIcon(): string
     {
-        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="6" rx="1"/><line x1="4" y1="6" x2="6" y2="6"/><line x1="9" y1="6" x2="15" y2="6"/><line x1="18" y1="6" x2="20" y2="6"/></svg>';
+        return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="6" rx="1"/><line x1="4" y1="6" x2="6" y2="6"/><line x1="9" y1="6" x2="15" y2="6"/><line x1="18" y1="6" x2="20" y2="6"/></svg>';
     }
 
     public function getSelector(): array

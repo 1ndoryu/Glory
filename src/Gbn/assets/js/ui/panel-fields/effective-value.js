@@ -156,10 +156,22 @@
             }
         }
         
-        // 3. Placeholder: siempre es el valor del tema (si existe)
+        // 3. Placeholder: valor del tema o valor computado como fallback
+        // [BUG-003 FIX] Si no hay valor en themeSettings, usar el valor computado
+        // Esto permite que variables CSS en theme-styles.css se muestren como placeholder
         var themePlaceholder = getThemeDefault(block.role, path);
         if (themePlaceholder !== undefined && themePlaceholder !== null) {
             result.placeholder = themePlaceholder;
+        } else if (block.element && result.source === 'none') {
+            // Fallback: usar valor computado como placeholder si no hay config ni tema
+            var computedPlaceholder = getComputedValueForPath(block.element, path);
+            if (computedPlaceholder !== undefined && computedPlaceholder !== null && computedPlaceholder !== '') {
+                // Solo usar si no es un browser default
+                var isDefault = isBrowserDefault ? isBrowserDefault(path, computedPlaceholder) : false;
+                if (!isDefault) {
+                    result.placeholder = computedPlaceholder;
+                }
+            }
         }
         
         return result;

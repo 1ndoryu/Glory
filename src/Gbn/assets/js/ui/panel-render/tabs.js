@@ -32,6 +32,7 @@
 
     /**
      * Obtiene el icono para un nombre de tab
+     * Soporta tabs en minúscula (ej: 'contenido') normalizándolas a mayúscula inicial
      * @param {string} name - Nombre del tab
      * @returns {string} SVG del icono o string vacío
      */
@@ -39,7 +40,13 @@
         var Icons = global.GbnIcons;
         if (!Icons) return '';
         
+        // Buscar primero exacto, luego con primera letra mayúscula (case-insensitive)
         var key = tabIconMap[name];
+        if (!key && name) {
+            // [FIX BUG-006] Intentar con primera letra mayúscula (ej: 'contenido' -> 'Contenido')
+            var normalized = name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+            key = tabIconMap[normalized];
+        }
         return key ? Icons.get(key) : '';
     }
 
@@ -66,15 +73,22 @@
 
     /**
      * Ordena los nombres de tabs según prioridad
+     * Soporta nombres en minúscula normalizándolos
      * @param {Array} tabNames - Array de nombres
      * @returns {Array} Nombres ordenados
      */
     function sortTabNames(tabNames) {
-        var order = ['Contenido', 'Estilo', 'Avanzado'];
+        var order = ['Contenido', 'contenido', 'Estilo', 'estilo', 'Avanzado', 'avanzado'];
         
         return tabNames.slice().sort(function(a, b) {
-            var ia = order.indexOf(a);
-            var ib = order.indexOf(b);
+            // Normalizar para comparación
+            var aNorm = a.charAt(0).toUpperCase() + a.slice(1).toLowerCase();
+            var bNorm = b.charAt(0).toUpperCase() + b.slice(1).toLowerCase();
+            
+            var orderNorm = ['Contenido', 'Estilo', 'Avanzado'];
+            var ia = orderNorm.indexOf(aNorm);
+            var ib = orderNorm.indexOf(bNorm);
+            
             if (ia !== -1 && ib !== -1) return ia - ib;
             if (ia !== -1) return -1;
             if (ib !== -1) return 1;

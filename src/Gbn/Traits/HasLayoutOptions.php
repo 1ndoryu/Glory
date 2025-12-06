@@ -89,19 +89,19 @@ trait HasLayoutOptions
                 ->condition([$conditionField, '==', 'flex']),
 
             Option::iconGroup(SchemaConstants::FIELD_JUSTIFY, 'Justificación') // Usando nombre canónico (Phase 9 anticipada) o mantener flexJustify?
-                                                                 // Plan Phase 3 says create HasLayoutOptions. 
-                                                                 // Plan Phase 9 says "Unificar Nombres". 
-                                                                 // Using standard names here 'justifyContent' is better for the future.
-                                                                 // BUT check HasFlexbox existing names: 'flexJustify', 'flexAlign'.
-                                                                 // If I use different names here, I might break style mapping if I don't update StyleMapper.
-                                                                 // The plan says "HasLayoutOptions - Unifica... Reemplaza".
-                                                                 // I should probably stick to `flexJustify` for compatibility if I'm not doing Phase 9 yet, OR be bold.
-                                                                 // Plan Phase 1 says "Posibles inconsistencias visuales... Nombres de campos inconsistentes".
-                                                                 // I'll stick to 'flexJustify' for now to match HasFlexbox unless new components use this trait.
-                                                                 // Wait, PostRender uses 'justifyContent'. 
-                                                                 // HasLayoutOptions is NEW. So I should use the BEST name.
-                                                                 // I will use 'justifyContent' and 'alignItems' as per standard CSS and PostRender.
-                                                                 // StyleMapper might need updates.
+            // Plan Phase 3 says create HasLayoutOptions. 
+            // Plan Phase 9 says "Unificar Nombres". 
+            // Using standard names here 'justifyContent' is better for the future.
+            // BUT check HasFlexbox existing names: 'flexJustify', 'flexAlign'.
+            // If I use different names here, I might break style mapping if I don't update StyleMapper.
+            // The plan says "HasLayoutOptions - Unifica... Reemplaza".
+            // I should probably stick to `flexJustify` for compatibility if I'm not doing Phase 9 yet, OR be bold.
+            // Plan Phase 1 says "Posibles inconsistencias visuales... Nombres de campos inconsistentes".
+            // I'll stick to 'flexJustify' for now to match HasFlexbox unless new components use this trait.
+            // Wait, PostRender uses 'justifyContent'. 
+            // HasLayoutOptions is NEW. So I should use the BEST name.
+            // I will use 'justifyContent' and 'alignItems' as per standard CSS and PostRender.
+            // StyleMapper might need updates.
                 ->options(IconRegistry::getGroup([
                     'justify.start' => ['valor' => 'flex-start', 'etiqueta' => 'Inicio'],
                     'justify.center' => ['valor' => 'center', 'etiqueta' => 'Centro'],

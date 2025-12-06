@@ -79,8 +79,6 @@ main {
     overflow-x: hidden;
     height: calc(100% - 40px - 36px); /* Adjusted for header/footer */
     padding-bottom: 20px;
-    margin-top: 90px;
-    padding-top: 20px;
 }
 
 #gbn-panel .gbn-panel-empty,

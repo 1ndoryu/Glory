@@ -154,6 +154,30 @@ button#gbn-close {
     color: #1d8ff1;
 }
 
+/* [FIX BUG-004] Estilos consistentes para iconos en la biblioteca */
+.gbn-library-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    height: 40px; /* Altura fija para alineamiento vertical */
+}
+
+.gbn-library-icon svg {
+    /* Tamaño fijo uniforme para todos los iconos */
+    width: 32px !important;
+    height: 32px !important;
+    max-width: 32px;
+    max-height: 32px;
+    color: inherit;
+    stroke: currentColor;
+}
+
+.gbn-library-label {
+    font-size: 13px;
+    line-height: 1.3;
+}
+
 .gbn-add-btn {
     /* padding: 5px 5px; */
     /* background: #10b981; */

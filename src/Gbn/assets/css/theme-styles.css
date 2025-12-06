@@ -109,10 +109,10 @@
     grid-template-columns: repeat(var(--gbn-principal-grid-columns, 1), 1fr);
 
     /* Spacing & Sizing */
-    padding-top: var(--gbn-principal-padding-top, 0px);
-    padding-right: var(--gbn-principal-padding-right, 0px);
-    padding-bottom: var(--gbn-principal-padding-bottom, 0px);
-    padding-left: var(--gbn-principal-padding-left, 0px);
+    padding-top: var(--gbn-principal-padding-top, 20px);
+    padding-right: var(--gbn-principal-padding-right, 20px);
+    padding-bottom: var(--gbn-principal-padding-bottom, 20px);
+    padding-left: var(--gbn-principal-padding-left, 20px);
     
     background: var(--gbn-principal-background, transparent);
     max-width: var(--gbn-principal-max-width, none);
@@ -139,10 +139,10 @@
     /* Spacing & Sizing */
     width: var(--gbn-secundario-width, 100%);
     
-    padding-top: var(--gbn-secundario-padding-top, 0px);
-    padding-right: var(--gbn-secundario-padding-right, 0px);
-    padding-bottom: var(--gbn-secundario-padding-bottom, 0px);
-    padding-left: var(--gbn-secundario-padding-left, 0px);
+    padding-top: var(--gbn-secundario-padding-top, 20px);
+    padding-right: var(--gbn-secundario-padding-right, 20px);
+    padding-bottom: var(--gbn-secundario-padding-bottom, 20px);
+    padding-left: var(--gbn-secundario-padding-left, 20px);
     
     background: var(--gbn-secundario-background, transparent);
     
@@ -153,18 +153,88 @@
 }
 
 /* Image Component */
-:where([gloryImage], .gbn-image) {
+:where([gloryImagen], .gbn-image) {
     display: inline-block;
     position: relative;
     max-width: 100%;
     box-sizing: border-box;
 }
 
-:where([gloryImage], .gbn-image) img {
+:where([gloryImagen], .gbn-image) img {
     display: block;
     width: 100%;
     height: auto;
     object-fit: var(--gbn-img-object-fit, cover);
+}
+
+/* ==========================================================================
+   Button Component - Estilos Default
+   BUG-005 FIX: Componente Button ahora tiene estilos base con variables CSS
+   ========================================================================== */
+
+:where([gloryButton], .gbn-button) {
+    /* Display & Box Model */
+    display: var(--gbn-button-display, inline-flex);
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-sizing: border-box;
+    
+    /* Spacing */
+    padding-top: var(--gbn-button-padding-top, 12px);
+    padding-right: var(--gbn-button-padding-right, 24px);
+    padding-bottom: var(--gbn-button-padding-bottom, 12px);
+    padding-left: var(--gbn-button-padding-left, 24px);
+    
+    /* Typography */
+    font-family: var(--gbn-button-font, var(--gbn-text-font, inherit));
+    font-size: var(--gbn-button-font-size, 1rem);
+    font-weight: var(--gbn-button-font-weight, 500);
+    line-height: 1.4;
+    text-decoration: none;
+    text-align: center;
+    
+    /* Colors */
+    color: var(--gbn-button-color, #ffffff);
+    background-color: var(--gbn-button-bg, var(--gbn-primary, #3b82f6));
+    
+    /* Border */
+    border: var(--gbn-button-border-width, 0px) var(--gbn-button-border-style, solid) var(--gbn-button-border-color, transparent);
+    border-radius: var(--gbn-button-border-radius, 6px);
+    
+    /* Effects */
+    cursor: pointer;
+    transition: var(--gbn-button-transition, all 0.2s ease);
+}
+
+/* Button States */
+:where([gloryButton], .gbn-button):hover {
+    background-color: var(--gbn-button-hover-bg, var(--gbn-button-bg, #2563eb));
+    color: var(--gbn-button-hover-color, var(--gbn-button-color, #ffffff));
+    transform: var(--gbn-button-hover-transform, translateY(-1px));
+    box-shadow: var(--gbn-button-hover-shadow, 0 4px 12px rgba(0, 0, 0, 0.15));
+}
+
+:where([gloryButton], .gbn-button):focus {
+    outline: 2px solid var(--gbn-button-focus-outline, var(--gbn-primary, #3b82f6));
+    outline-offset: 2px;
+}
+
+:where([gloryButton], .gbn-button):active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+/* Secondary Button Variant */
+:where([gloryButton].btn-secondary, .gbn-button-secondary) {
+    background-color: var(--gbn-button-secondary-bg, transparent);
+    color: var(--gbn-button-secondary-color, var(--gbn-primary, #3b82f6));
+    border: 2px solid var(--gbn-button-secondary-border, var(--gbn-primary, #3b82f6));
+}
+
+:where([gloryButton].btn-secondary, .gbn-button-secondary):hover {
+    background-color: var(--gbn-button-secondary-hover-bg, var(--gbn-primary, #3b82f6));
+    color: var(--gbn-button-secondary-hover-color, #ffffff);
 }
 
 /* ==========================================================================
