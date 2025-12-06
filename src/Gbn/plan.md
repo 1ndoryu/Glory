@@ -564,8 +564,17 @@ Refactorizar archivos que superan las 600 líneas:
 
 - [x] `post-render.js` (802→210 líneas) → Dividido en 5 módulos (Dic 2025)
 - [x] `inspector.js` (676→170 líneas) → Dividido en 5 módulos (Dic 2025)
-- [ ] `PostRenderProcessor.php` (762 líneas) → Dividir en clases
-- [ ] `panel-core.js` (627 líneas) → Dividir en módulos
+- [x] `panel-core.js` (644→150 líneas) → Dividido en 8 módulos (Dic 2025):
+  - `panel-core/state.js` - Estado privado del panel
+  - `panel-core/status.js` - Funciones de notificación
+  - `panel-core/active-block.js` - Manejo de bloque activo
+  - `panel-core/mode-manager.js` - Transiciones de modo
+  - `panel-core/dom.js` - Montaje y listeners
+  - `panel-core/renderers/block.js` - Render de bloque
+  - `panel-core/renderers/theme.js` - Render de tema
+  - `panel-core/renderers/page.js` - Render de página
+  - `panel-core/renderers/restore.js` - Render de restauración
+- [ ] `PostRenderProcessor.php` (768 líneas) → Dividir en clases
 
 ---
 
@@ -610,5 +619,6 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 ---
 
 **Última actualización:** 6 Diciembre 2025  
-**Versión del plan:** 3.5 (BUG-003 y BUG-006 resueltos - css-sync.js refactorizado + tabs estandarizadas)  
+**Versión del plan:** 3.6 (REFACTOR-003: panel-core.js refactorizado en 8 módulos)  
 **Mantenedor:** Ver `reglas.md` para protocolo de cambios
+

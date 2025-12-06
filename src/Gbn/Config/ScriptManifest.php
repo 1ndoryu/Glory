@@ -624,15 +624,84 @@ class ScriptManifest
     }
 
     /**
+     * Scripts de módulos panel-core (refactorizado Dic 2025)
+     * 
+     * REFACTOR-003: panel-core.js dividido en módulos especializados
+     * - Antes: 644 líneas en un solo archivo
+     * - Después: ~150 líneas + 8 módulos
+     */
+    public static function getPanelCoreModules(): array
+    {
+        return [
+            // 1. Estado base
+            'glory-gbn-ui-panel-core-state' => [
+                'file' => '/js/ui/panel-core/state.js',
+                'deps' => ['glory-gbn-state'],
+            ],
+            // 2. Utilidades (dependen de state)
+            'glory-gbn-ui-panel-core-status' => [
+                'file' => '/js/ui/panel-core/status.js',
+                'deps' => ['glory-gbn-ui-panel-core-state'],
+            ],
+            'glory-gbn-ui-panel-core-active-block' => [
+                'file' => '/js/ui/panel-core/active-block.js',
+                'deps' => ['glory-gbn-ui-panel-core-state'],
+            ],
+            // 3. DOM (depende de state y status)
+            'glory-gbn-ui-panel-core-dom' => [
+                'file' => '/js/ui/panel-core/dom.js',
+                'deps' => ['glory-gbn-ui-panel-core-state', 'glory-gbn-ui-panel-core-status'],
+            ],
+            // 4. Mode Manager (depende de state, active-block)
+            'glory-gbn-ui-panel-core-mode-manager' => [
+                'file' => '/js/ui/panel-core/mode-manager.js',
+                'deps' => ['glory-gbn-ui-panel-core-state', 'glory-gbn-ui-panel-core-active-block', 'glory-gbn-ui-panel-core-dom'],
+            ],
+            // 5. Renderers (dependen de state, mode-manager, dom)
+            'glory-gbn-ui-panel-core-renderer-block' => [
+                'file' => '/js/ui/panel-core/renderers/block.js',
+                'deps' => ['glory-gbn-ui-panel-core-state', 'glory-gbn-ui-panel-core-mode-manager', 'glory-gbn-ui-panel-core-active-block', 'glory-gbn-ui-panel-core-dom'],
+            ],
+            'glory-gbn-ui-panel-core-renderer-theme' => [
+                'file' => '/js/ui/panel-core/renderers/theme.js',
+                'deps' => ['glory-gbn-ui-panel-core-state', 'glory-gbn-ui-panel-core-mode-manager', 'glory-gbn-ui-panel-core-status'],
+            ],
+            'glory-gbn-ui-panel-core-renderer-page' => [
+                'file' => '/js/ui/panel-core/renderers/page.js',
+                'deps' => ['glory-gbn-ui-panel-core-state', 'glory-gbn-ui-panel-core-mode-manager', 'glory-gbn-ui-panel-core-status'],
+            ],
+            'glory-gbn-ui-panel-core-renderer-restore' => [
+                'file' => '/js/ui/panel-core/renderers/restore.js',
+                'deps' => ['glory-gbn-ui-panel-core-state', 'glory-gbn-ui-panel-core-mode-manager', 'glory-gbn-ui-panel-core-status'],
+            ],
+        ];
+    }
+
+    /**
      * Scripts de UI general
      */
     public static function getUIScripts(): array
     {
-        return [
-            'glory-gbn-ui-panel' => [
-                'file' => '/js/ui/panel-core.js',
-                'deps' => ['glory-gbn-ui-panel-render', 'glory-gbn-ui-theme-index'],
-            ],
+        return array_merge(
+            self::getPanelCoreModules(),
+            [
+                'glory-gbn-ui-panel' => [
+                    'file' => '/js/ui/panel-core.js',
+                    'deps' => [
+                        'glory-gbn-ui-panel-render',
+                        'glory-gbn-ui-theme-index',
+                        // Módulos de panel-core
+                        'glory-gbn-ui-panel-core-state',
+                        'glory-gbn-ui-panel-core-status',
+                        'glory-gbn-ui-panel-core-active-block',
+                        'glory-gbn-ui-panel-core-mode-manager',
+                        'glory-gbn-ui-panel-core-dom',
+                        'glory-gbn-ui-panel-core-renderer-block',
+                        'glory-gbn-ui-panel-core-renderer-theme',
+                        'glory-gbn-ui-panel-core-renderer-page',
+                        'glory-gbn-ui-panel-core-renderer-restore',
+                    ],
+                ],
             'glory-gbn-ui-dragdrop' => [
                 'file' => '/js/ui/drag-drop.js',
                 'deps' => ['glory-gbn-ui-panel'],
@@ -690,6 +759,6 @@ class ScriptManifest
                 'file' => '/js/gbn.js',
                 'deps' => ['glory-gbn-ui-inspector', 'glory-gbn-debug-overlay', 'glory-gbn-store-subscriber', 'glory-gbn-logger', 'glory-gbn-ui-context-menu'],
             ],
-        ];
+        ]);
     }
 }
