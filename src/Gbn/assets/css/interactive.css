@@ -1,16 +1,16 @@
 /* Interactive & Drag/Drop */
 :root {
     /* --- Colors (RGB Components for RGBA usage) --- */
-    --gbn-rgb-primary: 29, 143, 241;      /* Azul principal */
-    --gbn-rgb-secondary: 245, 158, 11;    /* Naranja secundario */
-    --gbn-rgb-green: 16, 185, 129;        /* Verde (PostRender, Input) */
-    --gbn-rgb-purple: 139, 92, 246;       /* Púrpura (PostItem, Textarea) */
-    --gbn-rgb-yellow: 251, 191, 36;       /* Amarillo (PostField) */
-    --gbn-rgb-red: 239, 68, 68;           /* Rojo (Submit) */
-    --gbn-rgb-blue-500: 59, 130, 246;     /* Blue (Form, DropLine) */
-    --gbn-rgb-blue-600: 37, 99, 235;      /* Blue Darker (Hover) */
+    --gbn-rgb-primary: 29, 143, 241; /* Azul principal */
+    --gbn-rgb-secondary: 245, 158, 11; /* Naranja secundario */
+    --gbn-rgb-green: 16, 185, 129; /* Verde (PostRender, Input) */
+    --gbn-rgb-purple: 139, 92, 246; /* Púrpura (PostItem, Textarea) */
+    --gbn-rgb-yellow: 251, 191, 36; /* Amarillo (PostField) */
+    --gbn-rgb-red: 239, 68, 68; /* Rojo (Submit) */
+    --gbn-rgb-blue-500: 59, 130, 246; /* Blue (Form, DropLine) */
+    --gbn-rgb-blue-600: 37, 99, 235; /* Blue Darker (Hover) */
     --gbn-rgb-white: 255, 255, 255;
-    
+
     /* --- Solid Colors --- */
     --gbn-color-white: #fff;
     --gbn-color-gray-bg: #f3f4f6;
@@ -138,11 +138,11 @@
     pointer-events: none;
 }
 
-.gbn-node[draggable="true"] {
+.gbn-node[draggable='true'] {
     cursor: grab;
 }
 
-.gbn-node[draggable="true"]:active {
+.gbn-node[draggable='true']:active {
     cursor: grabbing;
 }
 
@@ -223,7 +223,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     transition: transform 0.2s ease, background-color 0.2s ease;
     z-index: var(--gbn-z-add-btn);
     padding: unset;
@@ -340,6 +340,51 @@
 }
 
 /* ============================================
+   BUG-012 FIX: ImageComponent Editor Styles
+   ============================================ */
+
+/* 
+ * Problema: Cuando el usuario aplica un z-index alto a una imagen,
+ * esta puede superponerse a los controles del editor (.gbn-controls-group).
+ * 
+ * Solución: Usar 'isolation: isolate' en el contenedor de imagen SOLO
+ * cuando está dentro del editor (.gbn-active). Esto crea un nuevo
+ * stacking context que aisla el z-index de la imagen, evitando que
+ * afecte a elementos hermanos (como los controles).
+ * 
+ * Los controles (.gbn-controls-group) se posicionan FUERA del contexto
+ * de apilamiento de la imagen porque son hijos directos del bloque,
+ * no de la imagen.
+ */
+
+.gbn-active [gloryImagen] {
+    position: relative;
+    outline: 1px dashed rgba(var(--gbn-rgb-secondary), 0.35); /* Naranja para imágenes */
+    outline-offset: 2px;
+    transition: outline-color 0.2s ease, box-shadow 0.2s ease;
+
+    /* Crear contexto de apilamiento aislado para contener el z-index del usuario */
+    isolation: isolate;
+}
+
+.gbn-active [gloryImagen]:hover {
+    outline-color: rgba(var(--gbn-rgb-secondary), 0.9);
+    box-shadow: 0 0 0 2px rgba(var(--gbn-rgb-secondary), 0.18);
+}
+
+/* Asegurar que el img interno no escape del contenedor */
+.gbn-active [gloryImagen] img {
+    position: relative;
+    z-index: 0; /* Forzar z-index base para la imagen interna */
+}
+
+/* Controles de imagen deben estar por encima del contenido */
+.gbn-active [gloryImagen] > .gbn-controls-group,
+.gbn-active [gloryImagen] > .gbn-controls-centered {
+    z-index: var(--gbn-z-controls); /* 90 desde :root */
+}
+
+/* ============================================
    FASE 13: PostRender Components Styles
    ============================================ */
 
@@ -403,12 +448,12 @@
 
 /* PostItem template marker in editor */
 /* El template ES editable - solo aplica estilo visual indicativo */
-.gbn-active [data-gbn-is-template="true"] {
+.gbn-active [data-gbn-is-template='true'] {
     position: relative;
     /* NO usar pointer-events: none aquí - el template debe ser editable */
 }
 
-.gbn-active [data-gbn-is-template="true"]::before {
+.gbn-active [data-gbn-is-template='true']::before {
     content: 'TEMPLATE (editable)';
     position: absolute;
     top: -10px;

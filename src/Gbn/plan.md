@@ -353,7 +353,7 @@ GET /wp-admin/admin-ajax.php?action=gbn_diagnostics_validate
 
 ---
 
-## 🔴 BUGS CRÍTICOS (Prioridad Alta)
+##  BUGS CRÍTICOS (Prioridad Alta)
 
 ### BUG-001: ImageComponent No Detectado por Inspector
 **Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
@@ -553,16 +553,58 @@ Este bug tenía **DOS puntos de fallo** en la cadena de clonación de datos:
 ---
 
 ### BUG-012: Z-Index en ImageComponent
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Media | **Estado:** RESUELTO | **Fecha:** 6 Diciembre 2025
 
-Las imágenes se superponen a los controles de edición (resize handles, toolbar) en el editor. Probablemente falta contexto de apilamiento (stacking context).
+~~Las imagenes se superponen a los controles de edicion (resize handles, toolbar) en el editor.~~
 
-**Acción:** Revisar z-index en CSS del editor para component wrappers vs contenido.
+**Causa raiz REAL identificada (Investigacion profunda):**
+
+El problema NO era solo de z-index. La causa raiz era **estructural**:
+
+1. **Archivo de prueba con estructura incorrecta** - El archivo `contructor.php` usaba:
+   ```html
+   <img gloryImagen src="...">  <!-- INCORRECTO: void element -->
+   ```
+   Pero el template oficial de `ImageComponent.php` define:
+   ```html
+   <div gloryImagen><img src="..."></div>  <!-- CORRECTO: wrapper div -->
+   ```
+
+2. **Void elements no pueden tener hijos** - Los elementos `<img>` son void elements en HTML. Cuando `GlobalControls.attachTo()` intentaba hacer `block.element.appendChild(controls)` en un `<img>`, simplemente no funcionaba porque las imagenes no pueden contener otros elementos.
+
+3. **Controles nunca se insertaban** - Por eso los botones de config/add/delete no aparecian sobre las imagenes.
+
+**Solucion aplicada (DOS partes):**
+
+**PARTE 1: Fix del archivo de prueba (`contructor.php`):**
+- Cambiadas TODAS las imagenes de `<img gloryImagen>` a `<div gloryImagen><img></div>`
+- Ahora los controles SI pueden insertarse como hijos del div wrapper
+
+**PARTE 2: Estilos de editor para imagen (`interactive.css`):**
+- Outline naranja dashed para identificacion visual
+- `isolation: isolate` para contener z-index del usuario
+- Z-index base para img interno
+- Z-index alto para controles
+
+**Archivos modificados:**
+- `App/Templates/pages/contructor.php` - Fix estructura de imagenes (lineas 268-293, 434-438)
+- `assets/css/interactive.css` - Estilos de editor para `[gloryImagen]` (lineas 342-386)
+
+**Leccion aprendida:**
+Cuando un componente no muestra controles en el editor, verificar:
+1. Si el elemento puede tener hijos (void elements como img, input, br NO pueden)
+2. Si la estructura del HTML coincide con el template oficial del componente
+
+**Que revisar para confirmar la correccion:**
+1. Recargar la pagina del constructor
+2. Las imagenes ahora deben mostrar controles (config, add, delete) al pasar el mouse
+3. Al hacer hover, debe verse el outline naranja
+4. Los botones deben ser clickeables
 
 ---
 
 ### BUG-013: Filtros PostRender Invisibles en Constructor
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Media | **Estado:**  PENDIENTE
 
 Los filtros activados en PostRender no aparecen visualmente dentro del constructor, pero sí en el frontend.
 
@@ -571,13 +613,32 @@ Los filtros activados en PostRender no aparecen visualmente dentro del construct
 ---
 
 ### BUG-014: PostRender Layout (Flex/Gap)
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Media | **Estado:** ✅ RESUELTO | **Fecha:** 6 Diciembre 2025
 
-1. Modo de visualización Flex no funciona.
-2. Propiedad Gap no aplica.
-3. *Nota:* Patrón de Layout pospuesto por instrucción directa.
+~~1. Modo de visualización Flex no funciona.~~
+~~2. Propiedad Gap no aplica.~~
 
-**Archivos:** `PostRenderProcessor.php`, `post-render.js`
+**Causa raíz identificada:**
+Inconsistencia de nombres de campos entre PHP (SchemaConstants) y JS (renderers):
+
+| PHP (SchemaConstants)  | Valor constante | JS usaba          | JS corregido    |
+| ---------------------- | --------------- | ----------------- | --------------- |
+| `FIELD_LAYOUT`         | `'layout'`      | `'displayMode'`   | `'layout'` ✅    |
+| `FIELD_FLEX_DIRECTION` | `'direction'`   | `'flexDirection'` | `'direction'` ✅ |
+| `FIELD_FLEX_WRAP`      | `'wrap'`        | `'flexWrap'`      | `'wrap'` ✅      |
+
+**Archivos modificados:**
+- `assets/js/ui/renderers/post-render.js` - handleUpdate para usar nombres correctos
+- `assets/js/ui/renderers/post-render/styles.js` - getStyles y applyDisplayMode
+
+**¿Qué revisar para confirmar la corrección?**
+1. Crear o editar un componente PostRender en el constructor
+2. En la pestaña "Layout", cambiar "Modo de Visualización" a **Flex**
+3. VERIFICAR: Los items deben reorganizarse en layout flex
+4. Cambiar "Dirección" a **Vertical (column)**
+5. VERIFICAR: Los items deben apilarse verticalmente
+6. Cambiar "Gap" (separación)
+7. VERIFICAR: El espacio entre items debe actualizarse
 
 ---
 
@@ -617,9 +678,37 @@ El filtro no hace nada al activarse.
 ---
 
 ### BUG-010: MenuComponent Responsive en Constructor
-**Estado:** 🔴 PENDIENTE
+**Estado:** ✅ RESUELTO | **Fecha:** 6 Diciembre 2025
 
-El tamaño del menú no se actualiza dinámicamente al cambiar la vista (mobile/tablet) en el constructor. ()
+El tamano del menu (y header/footer) no se actualiza dinamicamente al cambiar la vista (mobile/tablet) en el constructor.
+
+**Causa raiz identificada:**
+
+1. **Header tiene `position: fixed; width: 100%`** - El header esta fijado al viewport real, no al `[data-gbn-root]`
+2. **`applyViewportSimulation()` solo modifica `[data-gbn-root]`** - La funcion en `responsive.js` reduce el `max-width` del root (375px mobile, 768px tablet)
+3. **Header ignora el root** - Como el header es `fixed` con `width: 100%`, su ancho es el viewport real (ej: 1920px), no el root simulado (375px)
+4. **Footer similar** - Aunque no es fixed, el footer puede estar fuera del root o tener `width: 100%`
+
+**Solucion aplicada (v2):**
+
+Nueva funcion `applyViewportToLayoutComponents(breakpoint, simulatedWidth)` en `responsive.js`:
+
+- **Usa `querySelectorAll`** - Maneja multiples headers/footers en la pagina
+- **Header (position: fixed):** Aplica `width` + `max-width` simulado + `left: 50%` + `transform: translateX(-50%)` para centrar
+- **Footer:** Aplica `width` + `max-width` simulado + `margin: 0 auto` para centrar
+- **Desktop:** Restaura estilos originales (remueve overrides inline)
+- **Debug logging:** Log para verificar cuantos headers/footers se encontraron
+
+**Archivos modificados:**
+- `responsive.js` (lineas 295-357) - `applyViewportToLayoutComponents()` mejorada
+
+**Que revisar para confirmar la correccion:**
+1. Abrir la pagina del constructor en el navegador
+2. Usar el selector de breakpoints (Desktop/Tablet/Mobile) en la barra de herramientas GBN
+3. VERIFICAR: El Header del tema (cargado desde header.php) debe reducir su ancho a Tablet (768px) o Mobile (375px)
+4. VERIFICAR: El Header debe permanecer centrado horizontalmente
+5. VERIFICAR: El Footer (seccion 8 del constructor) tambien debe reducir su ancho
+6. VERIFICAR: Al volver a Desktop, Header y Footer deben restaurar su ancho original
 
 ---
 
@@ -734,7 +823,7 @@ El componente `FooterComponent` ha sido refactorizado completamente.
 ---
 
 ### REFACTOR-006: Iconos de Formulario
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Media | **Estado:**  PENDIENTE
 
 Rehacer iconos para:
 - Campo de Texto
@@ -768,7 +857,7 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 ---
 
 ### FEATURE-003: Transform con Iconos para Botones (Fase 9)
-**Prioridad:** Baja | **Estado:** 🔴 Pendiente
+**Prioridad:** Baja | **Estado:**  Pendiente
 
 - [ ] Crear `iconGroup` para transforms comunes (`skewX`, `scale`, `rotate`)
 - [ ] Implementar en `ButtonComponent.php`
@@ -818,69 +907,101 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 ---
 
 ### REFACTOR-010: Migración de Campos Hover Legacy a Sistema de Estados
-**Prioridad:** Baja | **Estado:** � EN PROGRESO | **Fecha inicio:** 6 Diciembre 2025
+**Prioridad:** Baja | **Estado:**  BLOQUEADO | **Fecha análisis:** 6 Diciembre 2025
 **Origen:** Identificado durante análisis de BUG-009
 
 **Problema:** 
 Algunos componentes usan campos hover legacy (ej: `linkColorHover` en MenuComponent) con event listeners manuales en vez del sistema de estados estándar `_states.hover`.
 
 **Componentes afectados:**
-- `MenuComponent`: Usa `linkColorHover` + `applyHoverStyles()` manual
+- `MenuComponent`: Usa `linkColorHover` + `applyHoverStyles()` manual (líneas 217-238 de `menu.js`)
 - (Auditar otros componentes para campos `*Hover`)
 
-**Migración propuesta:**
+---
+
+**🚨 BLOQUEADOR ARQUITECTÓNICO IDENTIFICADO (6 Dic 2025):**
+
+El sistema de estados actual (`_states.hover` + `applyStateCss`) tiene una **limitación fundamental**:
+
+**Solo aplica estilos al elemento principal del bloque (`[data-gbn-id="..."]`).**
+
+En el caso del MenuComponent:
+- El bloque es `<nav gloryMenu data-gbn-id="xxx">` (el wrapper)
+- Los estilos hover deben aplicarse a los **enlaces `<a>` internos**, NO al wrapper
+- El selector CSS generado sería: `[data-gbn-id="xxx"] a:hover { color: red; }`
+- Actualmente el sistema genera: `[data-gbn-id="xxx"]:hover { color: red; }` ← INCORRECTO para este caso
+
+**Opciones de Solución:**
+
+| Opción | Descripción                                                                     | Complejidad | Impacto                                                                                     |
+| ------ | ------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------- |
+| **A**  | Extender `styleManager.applyStateCss()` para soportar sub-selectores opcionales | Alta        | Soporte para MenuComponent, MenuItemComponent, y futuros componentes con elementos internos |
+| **B**  | Mantener sistema legacy documentado para componentes con elementos internos     | Baja        | Funcionalidad actual preservada, inconsistencia arquitectónica aceptada                     |
+| **C**  | Crear trait `HasDescendantStates` que maneje estados para elementos hijos       | Media       | Solución reutilizable, requiere refactor del styleManager                                   |
+
+**Archivos que requerirían modificación (Opción A/C):**
+- `render/styleManager.js` - Función `applyStateCss()` para aceptar parámetro opcional `descendantSelector`
+- `services/style-generator.js` - Función `generateBlockStates()` para incluir sub-selectores
+- `ui/panel-render/state-selector.js` - (Opcional) UI para seleccionar elemento target del estado
+- Schema PHP de componentes afectados para definir qué elementos reciben estados
+
+**Decisión:** POSPUESTO hasta que se necesite soporte de estados en más componentes con estructura de elementos internos.
+
+---
+
+**Plan original (si se resuelve el bloqueador):**
 1. **PHP:** Eliminar campos `*Hover` del schema
 2. **PHP:** Agregar soporte de estados en el componente (ver ButtonComponent como referencia)
 3. **JS:** Usar `Gbn.styleManager.applyStateCss(block, 'hover', styles)` en vez de event listeners
 4. **Panel:** Los campos de estado ya existen (selector Normal/Hover/Focus en footer)
 
-**Beneficios:**
+**Beneficios futuros:**
 - Consistencia arquitectónica
 - Menos código duplicado
 - Estados persisten correctamente en CSS generado
 - UI unificada para todos los componentes
 
-**Complejidad:** Media - requiere cambios en PHP y JS, pero el sistema ya existe
+**Complejidad REAL:** Alta - requiere extensión arquitectónica del sistema de estados
 
 ---
 
 ### FEATURE-004: Refactorización UI Dimensions Panel
-**Prioridad:** Baja | **Estado:** 🔴 Pendiente
+**Prioridad:** Baja | **Estado:**  Pendiente
 
 - [ ] Actualizar `dimensions.js` con iconos SVG, grid layout y estilo consistente con `spacing.js`
 
 ---
 
 ### FEATURE-005: Bordes Avanzados
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Media | **Estado:**  PENDIENTE
 
 Agregar modo avanzado a las opciones de borde para permitir control direccional independiente (Top, Right, Bottom, Left).
 
 ---
 
 ### FEATURE-006: Estilo Específico para Input (Inner)
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Media | **Estado:**  PENDIENTE
 
 En el `InputComponent`, agregar una pestaña/opción específica para estilizar el elemento `<input>` interno (donde se escribe), separado del contenedor.
 
 ---
 
 ### FEATURE-007: Herencia Tipografía Formulario
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Media | **Estado:**  PENDIENTE
 
 Unificar tipografía en `FormComponent`. El padre debe manejar la configuración de fuentes y los inputs hijos deben heredarla por defecto.
 
 ---
 
 ### FEATURE-008: Rediseño UI Field Dimensions
-**Prioridad:** Baja | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Baja | **Estado:**  PENDIENTE
 
 El campo `gbn-field-dimensions` no sigue los patrones de diseño UI del resto del panel. Estandarizar visualmente.
 
 ---
 
 ### REFACTOR-009: Auditoría y Centralización de Iconos (DRY)
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Media | **Estado:**  PENDIENTE
 
 **Problema:** Se detectó que algunos componentes (ej: FooterComponent -> columnsLayout) siguen usando SVGs hardcodeados en lugar de `IconRegistry`.
 **Acción:**
@@ -890,9 +1011,26 @@ El campo `gbn-field-dimensions` no sigue los patrones de diseño UI del resto de
 
 ---
 
+### REFACTOR-011: Auditoría de Nombres de Campos JS vs PHP (SchemaConstants)
+**Prioridad:** Media | **Estado:**  PENDIENTE
+**Origen:** Identificado durante fix de BUG-014
+
+**Problema:** 
+Durante el fix de BUG-014 se descubrió que el JS usa nombres de campos legacy (`displayMode`, `flexDirection`, `flexWrap`) mientras PHP usa nombres canónicos definidos en `SchemaConstants.php` (`layout`, `direction`, `wrap`).
+
+Esta inconsistencia puede existir en otros componentes.
+
+**Acción propuesta:**
+1. Auditar TODOS los renderers JS (`assets/js/ui/renderers/*.js`)
+2. Comparar nombres de campos con `SchemaConstants.php`
+3. Usar los nombres definidos en SchemaConstants como fuente de verdad
+4. Documentar cualquier mapeo legacy necesario
+
 ---
 
-**Última actualización:** 6 Diciembre 2025  
-**Versión del plan:** 4.0 (BUG-017 RESUELTO: Fix para campos sin preselección - defaults del schema)  
+---
+
+**Ultima actualizacion:** 6 Diciembre 2025  
+**Version del plan:** 4.3 (BUG-010 FIX: Header/Footer responsive en constructor con applyViewportToLayoutComponents)  
 **Mantenedor:** Ver `reglas.md` para protocolo de cambios
 

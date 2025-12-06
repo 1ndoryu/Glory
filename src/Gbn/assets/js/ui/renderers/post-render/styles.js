@@ -28,8 +28,9 @@
     function getStyles(config, block) {
         var styles = traits.getCommonStyles(config);
 
-        // Layout del contenedor según displayMode
-        var displayMode = config.displayMode || 'grid';
+        // Layout del contenedor según campo 'layout' (SchemaConstants::FIELD_LAYOUT)
+        // NOTA: PHP usa 'layout', no 'displayMode' (FIX BUG-014)
+        var displayMode = config.layout || 'grid';
 
         if (displayMode === 'grid') {
             var columns = parseInt(config.gridColumns, 10) || 3;
@@ -40,8 +41,9 @@
             styles['gap'] = traits.normalizeSize(gap);
         } else if (displayMode === 'flex') {
             styles['display'] = 'flex';
-            styles['flex-direction'] = config.flexDirection || 'row';
-            styles['flex-wrap'] = config.flexWrap || 'wrap';
+            // FIX BUG-014: PHP usa 'direction' y 'wrap' (SchemaConstants)
+            styles['flex-direction'] = config.direction || 'row';
+            styles['flex-wrap'] = config.wrap || 'wrap';
             styles['align-items'] = config.alignItems || 'stretch';
             styles['justify-content'] = config.justifyContent || 'flex-start';
             styles['gap'] = traits.normalizeSize(config.gap) || '20px';
@@ -112,8 +114,9 @@
             el.style.gap = traits.normalizeSize(config.gap) || '20px';
         } else if (mode === 'flex') {
             el.style.display = 'flex';
-            el.style.flexDirection = config.flexDirection || 'row';
-            el.style.flexWrap = config.flexWrap || 'wrap';
+            // FIX BUG-014: PHP usa 'direction' y 'wrap' (SchemaConstants)
+            el.style.flexDirection = config.direction || 'row';
+            el.style.flexWrap = config.wrap || 'wrap';
             el.style.alignItems = config.alignItems || 'stretch';
             el.style.justifyContent = config.justifyContent || 'flex-start';
             el.style.gap = traits.normalizeSize(config.gap) || '20px';
