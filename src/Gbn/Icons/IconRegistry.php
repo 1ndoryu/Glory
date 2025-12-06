@@ -26,7 +26,7 @@ class IconRegistry
         if (class_exists(BorderIcons::class)) self::$icons = array_merge(self::$icons, BorderIcons::all());
         if (class_exists(FormatIcons::class)) self::$icons = array_merge(self::$icons, FormatIcons::all());
         
-        // if (class_exists(ActionIcons::class)) self::$icons = array_merge(self::$icons, ActionIcons::all());
+        if (class_exists(ActionIcons::class)) self::$icons = array_merge(self::$icons, ActionIcons::all());
         
         self::$initialized = true;
     }

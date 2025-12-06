@@ -914,11 +914,11 @@ trait HasDimensions
 ### Fase 13: Enriquecimiento Visual (Form y Menú) ⏱️ 2-3 horas
 ```
 [x] 13.1 FormComponent:
-      - Agregar iconos a opciones de 'method' (GET/POST) en IconRegistry
-      - Agregar iconos a opciones de 'ajaxSubmit' y 'honeypot' si se convierten a iconGroup
+      - Agregar iconos a opciones de 'method' (GET/POST) en IconRegistry - COMPLETADO (ActionIcons)
+      - Agregar iconos a opciones de 'ajaxSubmit' y 'honeypot' si se convierten a iconGroup - Opcional (Toggle es suficiente)
 [x] 13.2 MenuComponent:
-      - Agregar iconos a opciones de 'fontWeight' y 'textTransform' en IconRegistry
-      - Convertir selects simples a iconGroups donde aporte valor
+      - Agregar iconos a opciones de 'fontWeight' y 'textTransform' en IconRegistry - COMPLETADO (typography.js / FormatIcons)
+      - Convertir selects simples a iconGroups donde aporte valor - COMPLETADO
 [ ] 13.3 Actualizar SchemaBuilder para permitir definir `tabIcon` desde PHP (opcional)
 ```
 
