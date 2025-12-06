@@ -384,4 +384,15 @@ class PostRenderComponent extends AbstractComponent
 </div>
 HTML;
     }
+
+    /**
+     * PostRender solo acepta PostItem como hijo directo.
+     * Los PostItem son los templates que se replican por cada post.
+     * 
+     * @return array<string>
+     */
+    public function getAllowedChildren(): array
+    {
+        return ['postItem'];
+    }
 }

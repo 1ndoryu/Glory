@@ -5,6 +5,35 @@
     var utils = Gbn.utils;
     var state = Gbn.state;
 
+    /**
+     * Obtiene los componentes hijos permitidos para un rol dado.
+     * Consulta gloryGbnCfg.containers que viene del PHP (ContainerRegistry).
+     * 
+     * @param {string} role - El rol del componente padre
+     * @returns {array} Array de roles de componentes permitidos como hijos
+     */
+    function getAllowedChildrenForRole(role) {
+        // Consultar la configuración que viene del PHP
+        if (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.containers && gloryGbnCfg.containers[role]) {
+            var container = gloryGbnCfg.containers[role];
+            if (container.allowedChildren && Array.isArray(container.allowedChildren) && container.allowedChildren.length > 0) {
+                return container.allowedChildren;
+            }
+        }
+        
+        // Fallback: si no hay configuración, usar defaults razonables
+        // Esto mantiene compatibilidad con componentes que no definan allowedChildren
+        var fallbackMap = {
+            'principal': ['secundario'],
+            'secundario': ['secundario', 'text', 'image', 'button', 'form', 'postRender'],
+            'form': ['input', 'textarea', 'select', 'submit', 'secundario'],
+            'postRender': ['postItem'],
+            'postItem': ['postField', 'text', 'image', 'secundario', 'button']
+        };
+        
+        return fallbackMap[role] || ['secundario', 'text', 'image', 'button'];
+    }
+
     function ensureBaseline(block) {
         if (!block || !block.element || !block.element.classList) { return; }
         block.element.classList.add('gbn-node');
@@ -64,17 +93,13 @@
             event.preventDefault(); event.stopPropagation();
             if (Gbn.ui && Gbn.ui.library && typeof Gbn.ui.library.open === 'function') {
                 var position = 'after';
-                var allowed = [];
+                var allowed = getAllowedChildrenForRole(block.role);
                 
-                if (block.role === 'principal') {
+                // Determinar posición según el tipo de componente
+                if (block.role === 'principal' || block.role === 'form' || block.role === 'postRender' || block.role === 'postItem' || block.role === 'secundario') {
                     position = 'append';
-                    allowed = ['secundario'];
-                } else if (block.role === 'secundario') {
-                    position = 'append';
-                    allowed = ['secundario', 'text', 'image', 'button'];
                 } else {
                     position = 'after';
-                    allowed = ['secundario', 'text', 'image', 'button'];
                 }
                 
                 Gbn.ui.library.open(block.element, position, allowed);
@@ -454,15 +479,14 @@
                 if (!this.currentBlock) return;
                 if (Gbn.ui && Gbn.ui.library && typeof Gbn.ui.library.open === 'function') {
                     var position = 'after';
-                    var allowed = [];
+                    var allowed = getAllowedChildrenForRole(this.currentBlock.role);
                     var role = this.currentBlock.role;
                     
-                    if (role === 'principal') {
-                        position = 'append'; allowed = ['secundario'];
-                    } else if (role === 'secundario') {
-                        position = 'append'; allowed = ['secundario', 'text', 'image', 'button'];
+                    // Determinar posición según el tipo de componente
+                    if (role === 'principal' || role === 'form' || role === 'postRender' || role === 'postItem' || role === 'secundario') {
+                        position = 'append';
                     } else {
-                        position = 'after'; allowed = ['secundario', 'text', 'image', 'button'];
+                        position = 'after';
                     }
                     Gbn.ui.library.open(this.currentBlock.element, position, allowed);
                 }

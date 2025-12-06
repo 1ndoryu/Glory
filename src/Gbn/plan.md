@@ -351,70 +351,105 @@ assets/js/ui/icons/
 
 ### ⚠️ Tareas Prioritarias (Roadmap Inmediato)
 
-#### 🔴 Integración de Componentes Hijos en Biblioteca y Constructor
+#### ✅ RESUELTO: Integración de Componentes Hijos en Biblioteca y Constructor
+**Prioridad:** Alta  
+**Estado:** ✅ Implementado (Diciembre 2025)
+
+**Problema original:**
+1. El botón "+" no mostraba componentes hijos específicos al hacer clic dentro de FormComponent o PostRender.
+2. Los componentes hijos (Input, Textarea, Select, Submit, PostItem, PostField) no aparecían en la Biblioteca.
+
+**Solución implementada:**
+
+1. **Método `getAllowedChildren()` en la Interfaz y Clase Base:**
+   - `ComponentInterface.php`: Agregado método a la interfaz
+   - `AbstractComponent.php`: Implementación base que devuelve `[]`
+
+2. **Implementación en Componentes Contenedores:**
+   - `FormComponent.php`: `['input', 'textarea', 'select', 'submit', 'secundario']`
+   - `PostRenderComponent.php`: `['postItem']`
+   - `PostItemComponent.php`: `['postField', 'text', 'image', 'secundario', 'button']`
+   - `PrincipalComponent.php`: `['secundario']`
+   - `SecundarioComponent.php`: `['secundario', 'text', 'image', 'button', 'form', 'postRender']`
+
+3. **Exposición al Frontend:**
+   - `ComponentLoader.php`: Incluye `allowedChildren` en el registro
+   - `ContainerRegistry.php`: Expone `allowedChildren` en `resolveSingle()` y `rolePayload()`
+   - `gloryGbnCfg.containers[role].allowedChildren` disponible en JS
+
+4. **JavaScript Dinámico:**
+   - `inspector.js`: Nueva función `getAllowedChildrenForRole(role)` que consulta la configuración del PHP
+   - Fallback a defaults razonables para compatibilidad
+
+**Archivos modificados:**
+- `Components/ComponentInterface.php`
+- `Components/AbstractComponent.php`
+- `Components/Form/FormComponent.php`
+- `Components/PostRender/PostRenderComponent.php`
+- `Components/PostRender/PostItemComponent.php`
+- `Components/Principal/PrincipalComponent.php`
+- `Components/Secundario/SecundarioComponent.php`
+- `Components/ComponentLoader.php`
+- `Config/ContainerRegistry.php`
+- `assets/js/ui/inspector.js`
+
+**Uso:**
+Ahora al hacer clic en "+" dentro de un FormComponent, la biblioteca muestra solo: Input, Textarea, Select, Submit, Secundario.
+Al hacer clic en "+" dentro de un PostRender, muestra solo: PostItem.
+Al hacer clic en "+" dentro de un PostItem, muestra: PostField, Text, Image, Secundario, Button.
+
+**Notas futuras:**
+- El drag-drop aún no valida si el destino acepta el componente (pendiente)
+- Considerar agregar validación visual al arrastrar sobre contenedores inválidos
+
+---
+
+#### 🔴 Integración del Menú Contextual con Componentes Hijos
 **Prioridad:** Alta  
 **Estado:** Pendiente de implementación
 
 **Problema identificado:**
-1. **Botón "+" no muestra componentes hijos:** Al hacer clic en el botón "+" dentro de un `PostRender` o `FormComponent`, debería aparecer la opción de agregar sus componentes hijos específicos (`PostItem`, `PostField` para PostRender; `Input`, `Textarea`, `Select`, `Submit` para Form), pero actualmente no aparecen.
+Al hacer click derecho sobre un componente, el menú contextual debería mostrar un botón "+" inteligente que respete las relaciones padre-hijo definidas en `getAllowedChildren()`.
 
-2. **Componentes no aparecen en Biblioteca:** Los componentes de PostRender (`PostItem`, `PostField`) y Form (`InputComponent`, `TextareaComponent`, `SelectComponent`, `SubmitComponent`) no aparecen en la Biblioteca de Componentes del panel lateral.
+**Comportamiento esperado:**
 
-**Causa raíz (hipótesis):**
-- Los componentes hijo no están registrados en la biblioteca (`library.js`)
-- Falta configuración de "componentes permitidos" para cada contenedor
-- No hay lógica de filtrado de biblioteca según el contexto (dentro de form → mostrar inputs)
+1. **Click derecho en Principal:**
+   - Mostrar opción "+" que abre la biblioteca filtrada solo con `secundario`
 
-**Arquitectura propuesta:**
+2. **Click derecho en Secundario:**
+   - Mostrar opción "+" que abre la biblioteca con todos sus hijos permitidos (secundario, text, image, button, form, postRender)
 
-1. **Definir relación padre-hijo en componentes PHP:**
-   ```php
-   // En FormComponent.php
-   public function getAllowedChildren(): array 
-   {
-       return ['input', 'textarea', 'select', 'submit'];
-   }
-   
-   // En PostRenderComponent.php
-   public function getAllowedChildren(): array 
-   {
-       return ['postItem'];
-   }
-   
-   // En PostItemComponent.php
-   public function getAllowedChildren(): array 
-   {
-       return ['postField'];
-   }
-   ```
+3. **Click derecho en FormComponent:**
+   - Mostrar opción "+" que abre la biblioteca filtrada solo con campos de formulario (input, textarea, select, submit)
 
-2. **Exponer en `gloryGbnCfg.roleSchemas`:**
-   - Agregar propiedad `allowedChildren` a cada schema
-   - El JS puede leer qué componentes mostrar según el padre seleccionado
+4. **Click derecho en PostRender:**
+   - Mostrar opción "+" que abre la biblioteca filtrada solo con `postItem`
 
-3. **Modificar `library.js`:**
-   - Filtrar componentes según el padre actual
-   - Si estoy dentro de un `form`, mostrar solo inputs/textarea/select/submit
-   - Si estoy en nivel superior, mostrar todos los componentes "raíz"
+5. **Click derecho en PostItem:**
+   - Mostrar opción "+" que abre la biblioteca con (postField, text, image, secundario, button)
 
-4. **Agregar a Biblioteca de Componentes:**
-   - Registrar todos los componentes de Form en la biblioteca
-   - Registrar PostItem y PostField en la biblioteca (solo visibles en contexto)
+**Implementación requerida:**
+
+1. **Modificar `context-menu.js`:**
+   - Importar o replicar la función `getAllowedChildrenForRole()` de inspector.js
+   - Agregar botón "+" con ícono que llame a `Gbn.ui.library.open()` con los roles permitidos
+   - El botón solo aparece si `getAllowedChildren().length > 0`
+
+2. **Unificar lógica:**
+   - Considerar mover `getAllowedChildrenForRole()` a un módulo compartido (utils.js o nuevo archivo)
+   - Evitar duplicación de código entre inspector.js y context-menu.js
 
 **Archivos a modificar:**
-- `Components/Form/*.php` → Agregar `getAllowedChildren()`
-- `Components/PostRender/*.php` → Agregar `getAllowedChildren()`
-- `AbstractComponent.php` → Método base con default `[]`
-- `ContainerRegistry.php` → Incluir `allowedChildren` en el payload
-- `assets/js/ui/library.js` → Filtrar según contexto padre
-- `assets/js/ui/panel-core.js` → Pasar contexto padre al abrir biblioteca
+- `assets/js/ui/context-menu.js` → Agregar botón "+" inteligente
+- `assets/js/core/utils.js` (opcional) → Centralizar `getAllowedChildrenForRole()`
 
 **Dependencias:**
-- Ninguna (puede implementarse independientemente)
+- ✅ Integración de Componentes Hijos (completada)
 
-**Notas:**
-- Los componentes hijo solo deberían arrastrarse DENTRO de su padre válido
-- El drag-drop debería validar si el destino acepta el componente
+**Lecciones aprendidas (IMPORTANTE):**
+Esta tarea existe porque **no se consideró la funcionalidad del constructor al crear los componentes**. Es un error grave que debe evitarse en el futuro. Ver `guia-crear-componente.md` para el checklist actualizado.
+
+Comentario del usuario: olvide mencionar que cuando por ejemplo se da al boton mas a un field + de postRender, los componentes que muestra deberían ser los de su padre postRender, igual cuando le doy al + de un input del form muestra los componentes Botón Imagen, Contenedor Secundario en vez de los de su padre. 
 
 ---
 

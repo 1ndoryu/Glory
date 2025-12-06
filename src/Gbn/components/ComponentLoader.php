@@ -48,6 +48,7 @@ class ComponentLoader
                             'icon' => $instance->getIcon(),
                             'template' => $instance->getTemplate(),
                             'selector' => $instance->getSelector(),
+                            'allowedChildren' => $instance->getAllowedChildren(),
                             'defaults' => [
                                 'config' => $instance->getDefaults(),
                                 'schema' => $instance->getSchema(),

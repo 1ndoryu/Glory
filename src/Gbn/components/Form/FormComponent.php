@@ -136,4 +136,15 @@ class FormComponent extends AbstractComponent
     {
         return '<form gloryForm method="post" class="gbn-form"><div gloryDiv style="display:flex;flex-direction:column;gap:16px;"><!-- Agregar campos aquí --></div></form>';
     }
+
+    /**
+     * Componentes permitidos como hijos directos del formulario.
+     * Incluye todos los componentes de campos de formulario.
+     * 
+     * @return array<string>
+     */
+    public function getAllowedChildren(): array
+    {
+        return ['input', 'textarea', 'select', 'submit', 'secundario'];
+    }
 }

@@ -269,10 +269,71 @@ var FALLBACK_SELECTORS = {
 
 ---
 
-## Checklist de Verificación
+## ⚠️ CRÍTICO: Componentes Contenedores y `getAllowedChildren()`
 
-- [ ] Clase PHP con `getRole()`, `getLabel()`, `getSelector()`, `buildSchema()`
+> [!CAUTION]
+> **LECCIÓN APRENDIDA (Error Grave):** Al crear los componentes Form y PostRender, se olvidó implementar `getAllowedChildren()`, lo que causó que el botón "+" no mostrara los componentes hijos correctos en el constructor. Este error costó horas de debugging y refactorización. **NO REPETIR.**
+
+### ¿Qué es `getAllowedChildren()`?
+
+Si tu componente es un **contenedor** (puede tener otros componentes dentro), DEBES implementar este método para definir qué componentes pueden ser sus hijos.
+
+```php
+/**
+ * Define qué componentes pueden insertarse dentro de este contenedor.
+ * 
+ * @return array<string> Roles de componentes hijos permitidos
+ */
+public function getAllowedChildren(): array
+{
+    return ['input', 'textarea', 'select', 'submit'];
+}
+```
+
+### ¿Cuándo es obligatorio?
+
+| Tipo de Componente | ¿Requiere `getAllowedChildren()`? | Ejemplo                               |
+| :----------------- | :-------------------------------- | :------------------------------------ |
+| Contenedor         | ✅ **Obligatorio**                 | FormComponent, PostRender, PostItem   |
+| Atómico            | ❌ No (hereda `[]` de base)        | ButtonComponent, TextComponent, Input |
+
+### Ejemplos Reales
+
+```php
+// FormComponent.php - Contenedor de campos de formulario
+public function getAllowedChildren(): array
+{
+    return ['input', 'textarea', 'select', 'submit', 'secundario'];
+}
+
+// PostRenderComponent.php - Contenedor de items de post
+public function getAllowedChildren(): array
+{
+    return ['postItem'];
+}
+
+// PostItemComponent.php - Template de cada post (también es contenedor)
+public function getAllowedChildren(): array
+{
+    return ['postField', 'text', 'image', 'secundario', 'button'];
+}
+```
+
+### Checklist para Contenedores
+
+- [ ] ¿Tu componente puede contener otros componentes?
+  - ✅ Sí → Implementar `getAllowedChildren()` retornando array de roles
+  - ❌ No → No hacer nada (hereda `[]` de AbstractComponent)
+- [ ] ¿Los roles en el array existen como componentes registrados?
+- [ ] ¿Probaste el botón "+" dentro de tu componente en el constructor?
+
+---
+
+## Checklist Final de Verificación
+
+- [ ] Clase PHP con `getId()`, `getLabel()`, `getSelector()`, `getSchema()`
 - [ ] Traits usados para opciones comunes
+- [ ] **`getAllowedChildren()` implementado (si es contenedor)**
 - [ ] Renderer JS con `getStyles()` y `handleUpdate()`
 - [ ] Renderer usa `traits.getCommonStyles()` y `traits.handleCommonUpdate()`
 - [ ] Script registrado en `GbnManager.php` con dependencias
@@ -283,17 +344,19 @@ var FALLBACK_SELECTORS = {
   - [ ] Cambios se aplican en tiempo real
   - [ ] Cambios persisten al guardar
   - [ ] Funciona en frontend sin GBN
+  - [ ] **Botón "+" muestra hijos correctos (si es contenedor)**
 
 ---
 
 ## Errores Comunes y Soluciones
 
-| Error                   | Causa                              | Solución                                 |
-| :---------------------- | :--------------------------------- | :--------------------------------------- |
-| Panel no muestra campos | Componente no registrado           | Verificar `ComponentLoader::load()`      |
-| Estilos no se aplican   | Renderer no registrado             | Verificar deps en `GbnManager.php`       |
-| `traits is undefined`   | Script carga antes que traits      | Agregar `renderer-traits` a dependencias |
-| Valores no persisten    | Falta mapeo en `CONFIG_TO_CSS_MAP` | Agregar mapeo en `utils.js`              |
+| Error                    | Causa                              | Solución                                 |
+| :----------------------- | :--------------------------------- | :--------------------------------------- |
+| Panel no muestra campos  | Componente no registrado           | Verificar `ComponentLoader::load()`      |
+| Estilos no se aplican    | Renderer no registrado             | Verificar deps en `GbnManager.php`       |
+| `traits is undefined`    | Script carga antes que traits      | Agregar `renderer-traits` a dependencias |
+| Valores no persisten     | Falta mapeo en `CONFIG_TO_CSS_MAP` | Agregar mapeo en `utils.js`              |
+| **"+" no muestra hijos** | Falta `getAllowedChildren()`       | Implementar método en clase PHP          |
 
 ---
 
@@ -345,5 +408,6 @@ $this->addCustomCssOption($builder, 'avanzado');
 
 ---
 
-**Versión:** 2.0 (Optimizada)  
+**Versión:** 2.1 (Incluye getAllowedChildren)  
 **Relacionado:** `reglas.md`, `documentación-gbn.md`, `plan.md`
+

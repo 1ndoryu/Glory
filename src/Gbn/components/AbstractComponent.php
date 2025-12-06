@@ -60,4 +60,16 @@ abstract class AbstractComponent implements ComponentInterface
     {
         return '';
     }
+
+    /**
+     * Retorna los roles de componentes hijos permitidos.
+     * Por defecto devuelve array vacío (sin restricciones específicas).
+     * Los componentes contenedores deben sobrescribir este método.
+     * 
+     * @return array<string>
+     */
+    public function getAllowedChildren(): array
+    {
+        return [];
+    }
 }

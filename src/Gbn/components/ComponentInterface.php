@@ -54,4 +54,13 @@ interface ComponentInterface
      * @return string
      */
     public function getTemplate(): string;
+
+    /**
+     * Retorna los roles de componentes hijos permitidos dentro de este componente.
+     * Si devuelve un array vacío, significa que no tiene restricciones (contenedor genérico)
+     * o que no acepta hijos específicos (componente atómico).
+     * 
+     * @return array<string> Array de roles de componentes permitidos como hijos (ej: ['input', 'textarea'])
+     */
+    public function getAllowedChildren(): array;
 }

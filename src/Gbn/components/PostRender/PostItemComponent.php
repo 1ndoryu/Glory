@@ -191,4 +191,15 @@ class PostItemComponent extends AbstractComponent
 </article>
 HTML;
     }
+
+    /**
+     * PostItem acepta PostField (campos semánticos) y elementos de diseño.
+     * Permite construir templates flexibles para cada post.
+     * 
+     * @return array<string>
+     */
+    public function getAllowedChildren(): array
+    {
+        return ['postField', 'text', 'image', 'secundario', 'button'];
+    }
 }

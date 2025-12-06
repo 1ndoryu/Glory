@@ -145,4 +145,15 @@ class SecundarioComponent extends AbstractComponent
     {
         return '<div gloryDivSecundario class="divSecundario"></div>';
     }
+
+    /**
+     * Secundario es el contenedor versátil principal.
+     * Acepta casi cualquier componente como hijo.
+     * 
+     * @return array<string>
+     */
+    public function getAllowedChildren(): array
+    {
+        return ['secundario', 'text', 'image', 'button', 'form', 'postRender'];
+    }
 }

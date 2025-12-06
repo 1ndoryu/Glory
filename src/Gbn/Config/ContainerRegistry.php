@@ -70,6 +70,7 @@ final class ContainerRegistry
             'icon' => $definition['icon'] ?? '',
             'template' => $definition['template'] ?? '',
             'selector' => $definition['selector'] ?? [],
+            'allowedChildren' => $definition['allowedChildren'] ?? [],
             'config' => $defaults['config'],
             'schema' => $defaults['schema'],
         ];
@@ -155,6 +156,7 @@ final class ContainerRegistry
             $payload[$role] = [
                 'label' => $data['label'] ?? $role,
                 'icon' => $data['icon'] ?? '',
+                'allowedChildren' => $data['allowedChildren'] ?? [],
                 'config' => isset($data['config']) && is_array($data['config']) ? $data['config'] : [],
                 'schema' => isset($data['schema']) && is_array($data['schema']) ? $data['schema'] : [],
             ];

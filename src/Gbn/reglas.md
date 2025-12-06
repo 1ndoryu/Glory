@@ -268,6 +268,7 @@ Antes de escribir código nuevo:
 - [ ] Verificar `block.element` existe antes de `getComputedStyle`
 - [ ] Nuevas props CSS editables en estados → agregar a `cssDirectProps`
 - [ ] **NUNCA `pointer-events: none` en elementos editables** (ver Bug 🛡️18)
+- [ ] **Componentes contenedores DEBEN implementar `getAllowedChildren()`** (ver guia-crear-componente.md)
 - [ ] **Re-escanear elementos cargados por AJAX** para registrarlos en store
 - [ ] **`overflow: visible`** en contenedores con badges posicionados fuera
 
@@ -352,5 +353,54 @@ var cssDirectProps = [
 
 ---
 
-**Versión:** 2.1 (Actualizada Diciembre 2025)  
+## 9. Componentes Contenedores y Relaciones Padre-Hijo
+
+> [!CAUTION]
+> **LECCIÓN APRENDIDA (Error Crítico - Diciembre 2025):** Los componentes Form y PostRender se crearon sin implementar `getAllowedChildren()`, causando que el botón "+" del constructor no mostrara los hijos correctos. Este error costó horas de debugging. **NO REPETIR.**
+
+### Regla Inmutable
+
+**Todo componente que pueda contener otros componentes DEBE implementar `getAllowedChildren()`.**
+
+```php
+// En ComponentInterface.php
+public function getAllowedChildren(): array;
+
+// En AbstractComponent.php (default)
+public function getAllowedChildren(): array { return []; }
+
+// En contenedores específicos (OBLIGATORIO)
+public function getAllowedChildren(): array
+{
+    return ['childRole1', 'childRole2'];
+}
+```
+
+### Componentes Contenedores Actuales
+
+| Componente               | `getAllowedChildren()`                                       |
+| :----------------------- | :----------------------------------------------------------- |
+| `PrincipalComponent`     | `['secundario']`                                             |
+| `SecundarioComponent`    | `['secundario', 'text', 'image', 'button', 'form', 'postRender']` |
+| `FormComponent`          | `['input', 'textarea', 'select', 'submit', 'secundario']`    |
+| `PostRenderComponent`    | `['postItem']`                                               |
+| `PostItemComponent`      | `['postField', 'text', 'image', 'secundario', 'button']`     |
+
+### Impacto en el Sistema
+
+1. **inspector.js**: La función `getAllowedChildrenForRole(role)` consulta `gloryGbnCfg.containers[role].allowedChildren`
+2. **library.js**: Filtra componentes según `allowedRoles` pasado al abrir
+3. **context-menu.js**: (Pendiente) Mostrará botón "+" con hijos permitidos
+
+### Checklist al Crear Componentes Contenedores
+
+- [ ] ¿Puede contener otros componentes? → Implementar `getAllowedChildren()`
+- [ ] ¿Los roles retornados existen como componentes registrados?
+- [ ] ¿Probé el botón "+" dentro de mi componente en el constructor?
+- [ ] ¿Actualicé la tabla de componentes contenedores en `reglas.md`?
+
+---
+
+**Versión:** 2.2 (Añadida regla de componentes contenedores - Diciembre 2025)  
 **Relacionado:** `plan.md`, `documentación-gbn.md`, `guia-crear-componente.md`
+

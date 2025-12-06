@@ -122,4 +122,15 @@ class PrincipalComponent extends AbstractComponent
     {
         return '<div gloryDiv class="divPrincipal"><div gloryDivSecundario class="divSecundario"></div></div>';
     }
+
+    /**
+     * Principal acepta contenedores secundarios como hijos principales.
+     * Los secundarios son los bloques de contenido internos.
+     * 
+     * @return array<string>
+     */
+    public function getAllowedChildren(): array
+    {
+        return ['secundario'];
+    }
 }
