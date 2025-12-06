@@ -624,42 +624,25 @@ El tamaño del menú no se actualiza dinámicamente al cambiar la vista (mobile/
 ---
 
 ### BUG-017: Campos del Panel No Muestran Valor Preseleccionado
-**Prioridad:** Alta | **Estado:** 🟡 EN PROGRESO - PENDIENTE REVISIÓN
+**Estado:** ✅ RESUELTO | **Fecha:** 6 Diciembre 2025
 
-Al abrir el panel de configuración de un componente (ej: LogoComponent), los campos como `logoMode` (iconGroup) no muestran el valor actual del componente. El campo aparece sin selección aunque el componente ya tenga un valor definido.
+~~Al abrir el panel de configuración de un componente (ej: LogoComponent), los campos como `logoMode` (iconGroup) no muestran el valor actual del componente.~~
 
-**Comportamiento esperado:** 
-- Si el componente tiene `logoMode: 'text'`, el iconGroup debe mostrar "Texto" como seleccionado al abrir el panel.
-
-**Comportamiento actual:**
-- El iconGroup aparece sin ninguna opción seleccionada.
-- Solo después de hacer clic en una opción se ve la selección.
-
-**Causa raíz identificada:**
+**Causa raíz:**
 - `getEffectiveValue()` en `effective-value.js` buscaba valores en:
   1. `block.config` (valor guardado)
   2. `computedStyle` (de clases CSS)
   3. `themeDefault` (valores del tema)
 - **FALTABA**: Buscar en los **defaults del schema PHP** (`getDefaults()`)
-- Para campos no-CSS como `logoMode`, `fieldType`, etc., el valor nunca se encontraba porque:
-  - No hay `block.config.logoMode` guardado (el bloque es nuevo)
-  - No hay `computedStyle` (no es una propiedad CSS)
-  - No hay `themeDefault` (no es un ajuste de tema)
+- Para campos no-CSS como `logoMode`, `fieldType`, etc., el valor nunca se encontraba
 
 **Solución aplicada:**
-- **`effective-value.js`** (líneas 116-128): Nueva búsqueda en `gloryGbnCfg.roleSchemas[role].config`
+- **`effective-value.js`** (líneas 116-130): Nueva búsqueda en `gloryGbnCfg.roleSchemas[role].config`
 - Si no hay valor en config ni computed, buscar en los defaults del schema PHP
-- Nueva fuente: `source: 'schema-default'`
+- Nueva fuente de valor: `source: 'schema-default'`
 
 **Archivos modificados:**
 - `assets/js/ui/panel-fields/effective-value.js`
-
-**¿Qué revisar para confirmar la corrección?**
-1. Cargar el constructor de GBN
-2. Agregar un componente Logo (o cualquier componente con iconGroup)
-3. VERIFICAR: El campo `logoMode` debe mostrar "Texto" (la primera opción/default) como seleccionado
-4. Cambiar a "Imagen" y verificar que el campo condicional aparece
-5. Guardar, recargar y verificar que la selección persiste
 
 ---
 
@@ -910,6 +893,6 @@ El campo `gbn-field-dimensions` no sigue los patrones de diseño UI del resto de
 ---
 
 **Última actualización:** 6 Diciembre 2025  
-**Versión del plan:** 4.0 (BUG-017 EN REVISIÓN: Fix para campos sin preselección - defaults del schema)  
+**Versión del plan:** 4.0 (BUG-017 RESUELTO: Fix para campos sin preselección - defaults del schema)  
 **Mantenedor:** Ver `reglas.md` para protocolo de cambios
 
