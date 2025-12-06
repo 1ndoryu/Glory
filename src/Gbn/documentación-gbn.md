@@ -546,5 +546,51 @@ var icon = GbnIcons.get('tab.style');
 
 ---
 
-**Versión:** 2.1 (Arquitectura Modular)  
+## 15. Refactorización utils.js y GbnManager.php (Diciembre 2025)
+
+### utils.js → Módulos Especializados
+
+El archivo `panel-fields/utils.js` (758 líneas) se dividió en módulos más pequeños:
+
+```
+ui/panel-fields/
+├── utils.js              → Orquestador (~75 líneas)
+├── deep-access.js        → getDeepValue, setDeepValue
+├── theme-defaults.js     → getThemeDefault
+├── css-map.js            → CONFIG_TO_CSS_MAP, BROWSER_DEFAULTS
+├── computed-styles.js    → getComputedValue, getComputedValueForPath
+├── config-values.js      → getConfigValue, getValueSource
+├── effective-value.js    → getEffectiveValue (lógica de valor efectivo)
+├── condition-handler.js  → shouldShowField
+├── state-utils.js        → SUPPORTED_STATES, getStateConfig
+└── helpers.js            → parseSpacingValue, ICONS
+```
+
+### GbnManager.php → ScriptManifest
+
+Las definiciones de scripts (~560 líneas) se extrajeron a `Config/ScriptManifest.php`:
+
+```php
+// Antes (inline en GbnManager.php)
+$builderScripts = [
+    'glory-gbn-icons-index' => [...],
+    'glory-gbn-icons-layout' => [...],
+    // ~150 entradas más...
+];
+
+// Después (ScriptManifest)
+$frontendScripts = ScriptManifest::getFrontendScripts();
+$builderScripts = ScriptManifest::getBuilderScripts();
+```
+
+### Métricas de Mejora
+
+| Archivo          | Antes      | Después     | Reducción |
+| ---------------- | ---------- | ----------- | --------- |
+| `utils.js`       | 758 líneas | ~75 líneas  | -90%      |
+| `GbnManager.php` | 855 líneas | ~296 líneas | -65%      |
+
+---
+
+**Versión:** 2.2 (Refactorización utils.js y GbnManager - Diciembre 2025)  
 **Relacionado:** `reglas.md`, `plan.md`, `guia-crear-componente.md`, `plan_refactoring_icons_layout.md`

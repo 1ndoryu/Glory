@@ -815,11 +815,51 @@ trait HasDimensions
 
 ### Fase 7: Cleanup y Documentación ⏱️ 2 horas
 ```
-[ ] 7.1 Eliminar código duplicado
-[ ] 7.2 Actualizar documentación de componentes
+[x] 7.1 Eliminar código duplicado
+[x] 7.2 Actualizar documentación de componentes
 [ ] 7.3 Crear guía de uso del IconRegistry
 [ ] 7.4 Actualizar plan.md principal
 ```
+
+### Fase 7.5: Refactorización de utils.js y GbnManager.php ⏱️ COMPLETADO (Dic 2025)
+
+**utils.js (758 líneas → ~75 líneas + 8 módulos)**
+```
+[x] Crear deep-access.js       → getDeepValue, setDeepValue, deleteDeepValue, hasDeepValue
+[x] Crear theme-defaults.js    → getThemeDefault, hasThemeDefault
+[x] Crear css-map.js           → CONFIG_TO_CSS_MAP, UNITLESS_PROPERTIES, BROWSER_DEFAULTS, isBrowserDefault
+[x] Crear computed-styles.js   → getComputedValue, getComputedValueForPath, getMultipleComputedValues
+[x] Crear config-values.js     → getConfigValue, getResponsiveConfigValue, getValueSource
+[x] Crear effective-value.js   → getEffectiveValue (lógica compleja de valor efectivo)
+[x] Crear condition-handler.js → shouldShowField, shouldShowFieldMultiple
+[x] Crear state-utils.js       → SUPPORTED_STATES, getStateConfig, hasStateStyles
+[x] Crear helpers.js           → ICONS, parseSpacingValue, obtenerSchemaDelRole
+[x] Refactorizar utils.js      → Orquestador que verifica módulos cargados
+```
+
+**GbnManager.php (855 líneas → ~296 líneas + ScriptManifest)**
+```
+[x] Crear Config/ScriptManifest.php con métodos por categoría:
+    - getFrontendScripts()     → Scripts públicos (siempre cargados)
+    - getIconScripts()         → Scripts del IconRegistry JS
+    - getServiceScripts()      → Servicios del builder
+    - getPanelFieldScripts()   → Módulos de panel-fields (refactorizados)
+    - getRendererScripts()     → Renderers de componentes
+    - getPanelRenderScripts()  → Módulos de panel-render
+    - getThemeScripts()        → Módulos del theme settings
+    - getUIScripts()           → Scripts de UI general
+    - getBuilderScripts()      → Combina todos los del builder
+[x] Actualizar GbnManager.php para usar ScriptManifest
+[x] Eliminar ~560 líneas de definiciones inline
+```
+
+**Métricas:**
+| Archivo            | Antes      | Después     | Reducción       |
+| ------------------ | ---------- | ----------- | --------------- |
+| `utils.js`         | 758 líneas | ~75 líneas  | -90%            |
+| `GbnManager.php`   | 855 líneas | ~296 líneas | -65%            |
+| Total módulos JS   | 1          | 9           | +8 módulos      |
+| Total archivos PHP | 0 nuevo    | 1 nuevo     | +ScriptManifest |
 
 ### Fase 8: Estandarizar MenuComponent ⏱️ 2-3 horas
 ```
@@ -966,3 +1006,21 @@ trait HasDimensions
 - Cons: Más difícil de editar visualmente
 
 Alternativa futura: Migrar a archivos `.svg` si los iconos crecen mucho.
+
+# Nota del usuario
+
+dejo esto aqui como una lista de archivs a refactoriza
+
+801	post-render.js
+762	PostRenderProcessor.php
+675	inspector.js
+627	panel-core.js
+575	renderer-traits.js
+542	app.js
+471	PostFieldComponent.php
+434	form-submit.js
+401	state-styles.js
+377	FormSubmitHandler.php
+362	applicator.js
+361	context-menu.js
+355	typography.js

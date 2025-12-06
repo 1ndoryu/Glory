@@ -30,6 +30,13 @@
 | `SchemaBuilder.php`     | API fluida para definir campos del panel               |
 | `ContainerRegistry.php` | Registro central (fuente de verdad para `roleSchemas`) |
 
+#### Config (`src/Gbn/Config/`) *(Refactorizado Dic 2025)*
+| Clase                   | Responsabilidad                                              |
+| :---------------------- | :----------------------------------------------------------- |
+| `RoleConfig.php`        | Configuración de roles de componentes                        |
+| `ContainerRegistry.php` | Registro de containers y relaciones padre-hijo               |
+| `ScriptManifest.php`    | Registro centralizado de scripts JS (extraído de GbnManager) |
+
 #### Traits (`src/Gbn/Traits/`)
 - `HasFlexbox`, `HasGrid` → Layout
 - `HasSpacing`, `HasTypography` → Estilo
@@ -92,10 +99,21 @@
 - `theme/applicator.js` → Aplica configuraciones globales (Variables CSS)
 - `theme/render.js` → Panel de configuración del tema
 
-**Panel Fields (`panel-fields/`):**
-- `registry.js` → Registro auto-registrable (OCP)
-- `utils.js` → Utilidades compartidas, `CONFIG_TO_CSS_MAP`
-- Campos: `color.js`, `fraction.js`, `icon-group.js`, `rich-text.js`, `select.js`, `slider.js`, `spacing.js`, `text.js`, `toggle.js`, `typography.js`, `dimensions.js`, `image.js`
+**Panel Fields (`panel-fields/`):** *(Refactorizado Dic 2025)*
+- `utils.js` → Orquestador que verifica módulos cargados
+- **Módulos Core:**
+  - `deep-access.js` → Acceso profundo a objetos (getDeepValue, setDeepValue)
+  - `css-map.js` → CONFIG_TO_CSS_MAP, BROWSER_DEFAULTS
+  - `theme-defaults.js` → Valores por defecto del tema
+  - `computed-styles.js` → Lectura de getComputedStyle
+  - `config-values.js` → Obtención de valores de config
+  - `effective-value.js` → Lógica de valor efectivo para campos
+  - `condition-handler.js` → Evaluación de condiciones de campos
+  - `state-utils.js` → Utilidades para estados CSS (hover, focus)
+  - `helpers.js` → Parsing de spacing, iconos, schemas
+- **Campos:**
+  - `registry.js` → Registro auto-registrable (OCP)
+  - Campos: `color.js`, `spacing.js`, `typography.js`, `dimensions.js`, etc.
 
 **Renderers (`renderers/`):**
 - **`renderer-traits.js`**: Sistema de traits JS (funciones reutilizables)
@@ -405,6 +423,6 @@ public function getAllowedChildren(): array
 
 ---
 
-**Versión:** 2.3 (Añadidos Header y Footer - Diciembre 2025)  
-**Relacionado:** `plan.md`, `documentación-gbn.md`, `guia-crear-componente.md`
+**Versión:** 2.4 (Refactorización utils.js y GbnManager - Diciembre 2025)  
+**Relacionado:** `plan.md`, `documentación-gbn.md`, `guia-crear-componente.md`, `plan_refactoring_icons_layout.md`
 
