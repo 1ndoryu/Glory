@@ -256,6 +256,27 @@ class GbnManager
 
         // 4. Builder Scripts (Only for editors)
         $builderScripts = [
+            // Fase 6: Iconos Centralizados
+            'glory-gbn-icons-index' => [
+                'file' => '/js/ui/icons/index.js',
+                'deps' => [],
+            ],
+            'glory-gbn-icons-layout' => [
+                'file' => '/js/ui/icons/layout-icons.js',
+                'deps' => ['glory-gbn-icons-index'],
+            ],
+            'glory-gbn-icons-action' => [
+                'file' => '/js/ui/icons/action-icons.js',
+                'deps' => ['glory-gbn-icons-index'],
+            ],
+            'glory-gbn-icons-state' => [
+                'file' => '/js/ui/icons/state-icons.js',
+                'deps' => ['glory-gbn-icons-index'],
+            ],
+            'glory-gbn-icons-tab' => [
+                'file' => '/js/ui/icons/tab-icons.js',
+                'deps' => ['glory-gbn-icons-index'],
+            ],
             'glory-gbn-persistence' => [
                 'file' => '/js/services/persistence.js',
                 'deps' => ['glory-gbn-services'],
@@ -503,6 +524,12 @@ class GbnManager
                     'glory-gbn-ui-renderers-menu',
                     'glory-gbn-ui-renderers-footer',
                     'glory-gbn-ui-renderers-menu-item',
+                    // Fase 6: Iconos
+                    'glory-gbn-icons-index',
+                    'glory-gbn-icons-layout',
+                    'glory-gbn-icons-action',
+                    'glory-gbn-icons-state',
+                    'glory-gbn-icons-tab',
                 ],
             ],
             'glory-gbn-theme-applicator' => [

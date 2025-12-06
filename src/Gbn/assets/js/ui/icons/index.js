@@ -1,79 +1,88 @@
-/**
- * IconRegistry - Registro centralizado de iconos SVG para GBN Builder
- * 
- * Uso:
- *   import { Icons } from './icons/index.js';
- *   const gridIcon = Icons.get('layout.grid');
- */
-
-import { layoutIcons } from './layout-icons.js';
-import { actionIcons } from './action-icons.js';
-import { stateIcons } from './state-icons.js';
-import { tabIcons } from './tab-icons.js';
-
-export const Icons = {
-    _registry: {
-        ...layoutIcons,
-        ...actionIcons,
-        ...stateIcons,
-        ...tabIcons
-    },
+;(function(global) {
+    'use strict';
+    
+    // Core definition
+    var GbnIcons = global.GbnIcons = global.GbnIcons || {};
+    GbnIcons.registry = {};
+    
+    // Parts container for split loading
+    GbnIcons.parts = GbnIcons.parts || {};
 
     /**
-     * Obtiene un icono por su clave
-     * @param {string} key - Clave del icono (ej: 'layout.grid')
-     * @param {Object} attrs - Atributos opcionales
-     * @returns {string} SVG del icono
+     * Initializes the registry by merging all loaded parts.
+     * Can be called multiple times as new parts are loaded.
      */
-    get(key, attrs = {}) {
-        let icon = this._registry[key];
-        
-        if (!icon) {
-            console.warn(`IconRegistry: Icono no encontrado: ${key}`);
-            return this._fallback();
+    GbnIcons.init = function() {
+        if (GbnIcons.parts) {
+            for (var key in GbnIcons.parts) {
+                if (GbnIcons.parts.hasOwnProperty(key)) {
+                    // Start logging for debugging
+                    // console.log("[GbnIcons] Merging part: " + key);
+                    var part = GbnIcons.parts[key];
+                    for (var iconKey in part) {
+                        if (part.hasOwnProperty(iconKey)) {
+                            GbnIcons.registry[iconKey] = part[iconKey];
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    /**
+     * Get an icon by key
+     * @param {string} key - Icon key (e.g. 'layout.grid')
+     * @param {Object} attrs - Optional attributes overrides
+     * @returns {string} SVG string
+     */
+    GbnIcons.get = function(key, attrs) {
+        // Ensure init has run at least once or runs now
+        if (Object.keys(GbnIcons.registry).length === 0) {
+            GbnIcons.init();
         }
 
-        // Sobrescribir atributos si se proporcionan
+        var icon = GbnIcons.registry[key];
+        
+        if (!icon) {
+            console.warn('[IconRegistry] Icon not found: ' + key);
+            return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>';
+        }
+
+        attrs = attrs || {};
         if (Object.keys(attrs).length > 0) {
-            Object.entries(attrs).forEach(([attr, value]) => {
-                // Si el atributo ya existe
-                const regex = new RegExp(`${attr}="[^"]*"`, 'g');
-                if (regex.test(icon)) {
-                    icon = icon.replace(regex, `${attr}="${value}"`);
-                } else {
-                    // Si no existe, agregarlo al inicio del tag
-                    icon = icon.replace('<svg', `<svg ${attr}="${value}"`);
+            for (var attr in attrs) {
+                if (attrs.hasOwnProperty(attr)) {
+                    var value = attrs[attr];
+                    var regex = new RegExp(attr + '="[^"]*"', 'g');
+                    if (regex.test(icon)) {
+                        icon = icon.replace(regex, attr + '="' + value + '"');
+                    } else {
+                        // Add if missing
+                        icon = icon.replace('<svg', '<svg ' + attr + '="' + value + '"');
+                    }
                 }
-            });
+            }
         }
 
         return icon;
-    },
+    };
 
     /**
-     * Obtiene múltiples iconos como array de opciones
-     * Útil par iconGroup
+     * Get options array for iconGroup
      */
-    getOptions(keys) {
-        return keys.map(key => ({
-            value: key.split('.').pop(),
-            icon: this.get(key)
-        }));
-    },
-
-    /**
-     * Helper para inyectar en window si es necesario
-     */
-    init() {
-        if (typeof window !== 'undefined') {
-            window.GbnIcons = this;
+    GbnIcons.getOptions = function(keys) {
+        var options = [];
+        for (var i = 0; i < keys.length; i++) {
+            var key = keys[i];
+            options.push({
+                value: key.split('.').pop(),
+                icon: GbnIcons.get(key)
+            });
         }
-    },
+        return options;
+    };
 
-    _fallback() {
-        return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>';
-    }
-};
+    // Auto-init immediately in case parts are already loaded
+    GbnIcons.init();
 
-// Auto-inicializar si estamos en navegador
-Icons.init();
+})(window);

@@ -779,6 +779,7 @@ trait HasDimensions
       - Importar IconRegistry
       - Reemplazar mapa `icons` hardcodeado por llamadas a `IconRegistry.get('tab.*')`
       - Implementar fallback para tabs desconocidos
+      - [x] Corrección: Refactorizar módulos JS de iconos a IIFE y encolarlos en GbnManager.php
 [ ] 6.2 Actualizar theme/render.js
 [ ] 6.3 Actualizar panel-fields/*.js
 [ ] 6.4 Eliminar iconos inline obsoletos
