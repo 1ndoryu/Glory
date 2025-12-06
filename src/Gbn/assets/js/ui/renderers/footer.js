@@ -22,18 +22,40 @@
     function getStyles(config, block) {
         var styles = {};
 
-        // Colores
+        // 1. Colores y Variables CSS
         if (config.backgroundColor) {
             styles['background-color'] = config.backgroundColor;
         }
-        if (config.textColor) {
-            styles['color'] = config.textColor;
+        if (config.color) { // Standardized from textColor
+            styles['color'] = config.color;
+        }
+        
+        // Variables para enlaces (Sincronización con CSS)
+        if (config.linkColor) {
+            styles['--gbn-footer-link-color'] = config.linkColor;
+        }
+        if (config.linkColorHover) {
+            styles['--gbn-footer-link-hover-color'] = config.linkColorHover;
         }
 
-        // Padding usando traits
-        if (config.padding) {
-            var spacingStyles = traits ? traits.getSpacingStyles(config.padding, 'padding') : {};
-            Object.assign(styles, spacingStyles);
+        // 2. Traits Integration
+        if (traits) {
+            // Spacing
+            if (config.padding) {
+                Object.assign(styles, traits.getSpacingStyles(config.padding, 'padding'));
+            }
+            // Typography (Standard)
+            if (config.typography) {
+                 Object.assign(styles, traits.getTypographyStyles(config.typography));
+            }
+            // Text Align
+            if (config.textAlign) {
+                styles['text-align'] = config.textAlign;
+            }
+             // Background (Image, Size, Position)
+            if (traits.getBackgroundStyles && (config.backgroundImage || config.backgroundColor)) {
+                 Object.assign(styles, traits.getBackgroundStyles(config));
+            }
         }
 
         return styles;
@@ -51,7 +73,15 @@
         var el = block.element;
         var container = el.querySelector('.gbn-footer-container');
         var contentArea = el.querySelector('.gbn-footer-content');
-        var links = el.querySelectorAll('a');
+
+        // --- Traits Delegation (Prioridad Alta) ---
+        if (traits && traits.handleCommonUpdate) {
+            if (traits.handleCommonUpdate(el, path, value)) {
+                return true;
+            }
+        }
+
+        // --- Campos Específicos ---
 
         // Color de fondo
         if (path === 'backgroundColor') {
@@ -59,41 +89,37 @@
             return true;
         }
 
-        // Color de texto
-        if (path === 'textColor') {
+        // Color de texto (Estandarizado)
+        if (path === 'color') {
             el.style.color = value || '';
             return true;
         }
 
-        // Color de enlaces
+        // Enlaces
         if (path === 'linkColor') {
-            links.forEach(function(link) {
-                link.style.color = value || '';
+            el.style.setProperty('--gbn-footer-link-color', value || '');
+            // Actualización visual inmediata (Legacy fallback)
+            var links = el.querySelectorAll('a');
+            links.forEach(function(link) { 
+                link.style.color = value || ''; 
             });
             el.dataset.linkColor = value || '';
             return true;
         }
 
-        // Color hover de enlaces
         if (path === 'linkColorHover') {
-            el.dataset.linkColorHover = value || '';
+            el.style.setProperty('--gbn-footer-link-hover-color', value || '');
             applyLinkHoverStyles(el, value);
             return true;
         }
 
-        // Texto de copyright
+        // Copyright
         if (path === 'copyrightText') {
-            var copyrightEl = el.querySelector('.gbn-footer-bottom p, .gbn-footer-copyright');
-            if (copyrightEl) {
-                var text = value || '';
-                // Reemplazar {year} con el año actual
-                text = text.replace(/{year}/g, new Date().getFullYear());
-                copyrightEl.innerHTML = text;
-            }
+            updateCopyright(el, { copyrightText: value });
             return true;
         }
 
-        // Mostrar redes sociales
+        // Redes Sociales
         if (path === 'showSocialLinks') {
             var socialContainer = el.querySelector('.gbn-footer-social');
             if (socialContainer) {
@@ -112,7 +138,7 @@
             return true;
         }
 
-        // Gap entre columnas
+        // Gap
         if (path === 'gap') {
             if (contentArea) {
                 contentArea.style.gap = value || '';
@@ -120,7 +146,7 @@
             return true;
         }
 
-        // Ancho máximo del contenedor
+        // Ancho Máximo
         if (path === 'containerMaxWidth') {
             if (container) {
                 container.style.maxWidth = value || '';
@@ -129,65 +155,40 @@
             return true;
         }
 
-        // Clases personalizadas
-        if (path === 'customClass') {
-            // Limpiar clases anteriores
-            el.className = el.className.replace(/\bgbn-custom-\S+/g, '').trim();
-            if (value) {
-                value.split(' ').forEach(function(cls) {
-                    if (cls) el.classList.add(cls);
-                });
-            }
-            return true;
-        }
-
-        // Delegar a traits para spacing y propiedades comunes
-        if (traits && traits.handleCommonUpdate) {
-            return traits.handleCommonUpdate(el, path, value);
-        }
-
         return false;
     }
 
     /**
-     * Aplica estilos hover a los enlaces del footer.
-     * @param {HTMLElement} el Elemento del footer
-     * @param {string} hoverColor Color hover
+     * Aplica estilos hover a enlaces (JS fallback).
      */
     function applyLinkHoverStyles(el, hoverColor) {
         var links = el.querySelectorAll('a');
-        var originalColor = el.dataset.linkColor || '';
+        var originalColor = el.style.getPropertyValue('--gbn-footer-link-color') || el.dataset.linkColor || '';
 
         links.forEach(function(link) {
-            // Remover listeners anteriores
             if (link._hoverIn) {
                 link.removeEventListener('mouseenter', link._hoverIn);
                 link.removeEventListener('mouseleave', link._hoverOut);
             }
 
-            link._hoverIn = function() {
-                link.style.color = hoverColor || '';
-            };
-            link._hoverOut = function() {
-                link.style.color = originalColor;
-            };
-
-            link.addEventListener('mouseenter', link._hoverIn);
-            link.addEventListener('mouseleave', link._hoverOut);
+            if (hoverColor) {
+                link._hoverIn = function() { link.style.color = hoverColor; };
+                link._hoverOut = function() { link.style.color = originalColor; };
+                link.addEventListener('mouseenter', link._hoverIn);
+                link.addEventListener('mouseleave', link._hoverOut);
+            }
         });
     }
 
     /**
-     * Actualiza el texto del copyright con placeholders.
-     * @param {HTMLElement} footerElement Elemento del footer
-     * @param {Object} config Configuración del footer
+     * Actualiza el texto del copyright.
      */
     function updateCopyright(footerElement, config) {
         var copyrightEl = footerElement.querySelector('.gbn-footer-bottom p, .gbn-footer-copyright');
         if (copyrightEl && config.copyrightText) {
             var text = config.copyrightText;
             text = text.replace(/{year}/g, new Date().getFullYear());
-            text = text.replace(/{siteName}/g, window.gloryGbnCfg && window.gloryGbnCfg.siteTitle || '');
+            text = text.replace(/{siteName}/g, (global.gloryGbnCfg && global.gloryGbnCfg.siteTitle) || '');
             copyrightEl.innerHTML = text;
         }
     }

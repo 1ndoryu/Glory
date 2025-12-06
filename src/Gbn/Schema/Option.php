@@ -13,6 +13,11 @@ class Option
         $this->data['etiqueta'] = $label;
     }
 
+    public function getId(): string
+    {
+        return $this->data['id'];
+    }
+
     public static function text(string $id, string $label): self
     {
         return new self('text', $id, $label);

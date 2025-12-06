@@ -532,13 +532,23 @@ Este bug tenía **DOS puntos de fallo** en la cadena de clonación de datos:
 ---
 
 ### BUG-009: MenuComponent - Fuentes y Hover
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Estado:** ✅ RESUELTO | **Fecha:** 6 Diciembre 2025
 
-1. No se puede cambiar la fuente del menú.
-2. La estructura de "Color Hover" es inconsistente con el resto de opciones GBN.
-3. Falta documentación sobre soporte universal de hover.
+**Problemas originales:**
+1. ~~No se puede cambiar la fuente del menú~~ → **✅ CORREGIDO**
+2. ~~Estructura de "Color Hover" inconsistente~~ → **⏩ Movido a REFACTOR-010**
+3. ~~Falta documentación de hover~~ → **⏩ Movido a REFACTOR-010**
 
-**Acción:** Reparar selector de fuente, estandarizar estructura de opciones de estado, documentar.
+**Causa raíz:** El renderer `menu.js` no usaba `traits.getTypographyStyles()` ni `traits.applyTypography()` para la propiedad `font`, solo mapeaba manualmente size/weight/transform.
+
+**Solución aplicada:**
+- `getStyles()`: Ahora usa `traits.getTypographyStyles(config.typography)` para incluir font-family
+- `handleUpdate()`: Delega propiedades `typography.*` a `traits.applyTypography()`
+- Ahora maneja correctamente: **font**, size, weight, lineHeight, letterSpacing, transform
+
+**Archivos modificados:** `assets/js/ui/renderers/menu.js`
+
+**Nota:** La migración completa del sistema hover legacy se documentó en **REFACTOR-010**.
 
 ---
 
@@ -692,9 +702,11 @@ Se ha refactorizado el `LogoComponent.php` y `logo.js` para cumplir con los est�
 ---
 
 ### REFACTOR-005: FooterComponent (Compliance)
-**Prioridad:** Alta | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Alta | **Estado:** � EN PROGRESO
 
-El componente `FooterComponent` no sigue las reglas ni principios SOLID. Necesita ser reescrito.
+**ESTADO FINAL:** ✅ COMPLETADO (Diciembre 2025) - Se ha reescrito el `FooterComponent` para implementar `SchemaBuilder` y utilizar los Traits estándar. Se añadieron opciones para variables CSS y se estandarizó `textColor` a `color`.
+
+El componente `FooterComponent` ha sido refactorizado completamente.
 
 ---
 
@@ -742,12 +754,39 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 ---
 
 ### REFACTOR-008: Detección Automática de Triggers Condicionales
-**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+**Prioridad:** Media | **Estado:** � EN PROGRESO (Iniciado: 6 Diciembre 2025)
 
 **Problema:** La lista `conditionalTriggers` en `config-updater.js` está hardcoded (violación OCP). Cada nuevo campo condicional requiere editar este archivo central.
 **Propuesta:** 
 1. Que el `SchemaBuilder` genere un mapa de dependencias.
 2. O que la opción tenga una flag `triggersRefresh: true` (automatizado en PHP).
+
+---
+
+### REFACTOR-010: Migración de Campos Hover Legacy a Sistema de Estados
+**Prioridad:** Baja | **Estado:** 🔴 PENDIENTE
+**Origen:** Identificado durante análisis de BUG-009
+
+**Problema:** 
+Algunos componentes usan campos hover legacy (ej: `linkColorHover` en MenuComponent) con event listeners manuales en vez del sistema de estados estándar `_states.hover`.
+
+**Componentes afectados:**
+- `MenuComponent`: Usa `linkColorHover` + `applyHoverStyles()` manual
+- (Auditar otros componentes para campos `*Hover`)
+
+**Migración propuesta:**
+1. **PHP:** Eliminar campos `*Hover` del schema
+2. **PHP:** Agregar soporte de estados en el componente (ver ButtonComponent como referencia)
+3. **JS:** Usar `Gbn.styleManager.applyStateCss(block, 'hover', styles)` en vez de event listeners
+4. **Panel:** Los campos de estado ya existen (selector Normal/Hover/Focus en footer)
+
+**Beneficios:**
+- Consistencia arquitectónica
+- Menos código duplicado
+- Estados persisten correctamente en CSS generado
+- UI unificada para todos los componentes
+
+**Complejidad:** Media - requiere cambios en PHP y JS, pero el sistema ya existe
 
 ---
 
@@ -783,6 +822,17 @@ Unificar tipografía en `FormComponent`. El padre debe manejar la configuración
 **Prioridad:** Baja | **Estado:** 🔴 PENDIENTE
 
 El campo `gbn-field-dimensions` no sigue los patrones de diseño UI del resto del panel. Estandarizar visualmente.
+
+---
+
+### REFACTOR-009: Auditoría y Centralización de Iconos (DRY)
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+**Problema:** Se detectó que algunos componentes (ej: FooterComponent -> columnsLayout) siguen usando SVGs hardcodeados en lugar de `IconRegistry`.
+**Acción:**
+1. Auditar TODOS los componentes (`components/**/*.php`).
+2. Identificar opciones con `icon` o `options` que contengan SVG string.
+3. Migrar esos iconos a clases en `Icons/` y usarlos vía `IconRegistry::get()` o `IconRegistry::getGroup()`.
 
 ---
 

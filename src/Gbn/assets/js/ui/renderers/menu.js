@@ -41,18 +41,10 @@
             styles['gap'] = typeof config.gap === 'number' ? config.gap + 'px' : config.gap;
         }
 
-        // Tipografía (HasTypography)
-        // Nota: HasTypography guarda en config.typography = { size, weight, transform ... }
-        var typ = config.typography || {};
-        
-        if (typ.size) {
-            styles['font-size'] = typ.size;
-        }
-        if (typ.weight) {
-            styles['font-weight'] = typ.weight;
-        }
-        if (typ.transform) {
-            styles['text-transform'] = typ.transform;
+        // Tipografía (HasTypography) - USAR TRAITS CORRECTAMENTE
+        // FIX BUG-009: Ahora usa traits.getTypographyStyles para incluir font-family
+        if (traits && traits.getTypographyStyles && config.typography) {
+            Object.assign(styles, traits.getTypographyStyles(config.typography));
         }
         
         // Color (replaces linkColor) - Se aplica via CSS heredado o handleUpdate
@@ -130,35 +122,30 @@
             return true;
         }
 
-        // Tamaño, Peso, Transformación (via typography.*)
-        if (path === 'typography.size') {
+        // FIX BUG-009: Tipografía - DELEGAR A TRAITS
+        // Ahora las propiedades typography.* se manejan via traits.handleCommonUpdate
+        // Esto incluye font, size, weight, lineHeight, letterSpacing, transform
+        // 
+        // Pero necesitamos aplicar los estilos a los enlaces, no al wrapper
+        if (path.indexOf('typography.') === 0) {
+            var typoProp = path.replace('typography.', '');
             links.forEach(function(link) {
-                link.style.fontSize = value || '';
+                traits.applyTypography(link, typoProp, value);
             });
             return true;
         }
 
-        if (path === 'typography.weight') {
-            links.forEach(function(link) {
-                link.style.fontWeight = value || '';
-            });
-            return true;
-        }
-
-        if (path === 'typography.transform') {
-            links.forEach(function(link) {
-                link.style.textTransform = value || '';
-            });
-            return true;
-        }
-        
         // Typography Composite (si se actualiza todo el objeto)
+        // Esto probablemente nunca se llame, pero lo conservamos por compatibilidad
         if (path === 'typography') {
             var val = value || {};
             links.forEach(function(link) {
-                if(val.size) link.style.fontSize = val.size;
-                if(val.weight) link.style.fontWeight = val.weight;
-                if(val.transform) link.style.textTransform = val.transform;
+                if (val.font) traits.applyTypography(link, 'font', val.font);
+                if (val.size) traits.applyTypography(link, 'size', val.size);
+                if (val.weight) traits.applyTypography(link, 'weight', val.weight);
+                if (val.lineHeight) traits.applyTypography(link, 'lineHeight', val.lineHeight);
+                if (val.letterSpacing) traits.applyTypography(link, 'letterSpacing', val.letterSpacing);
+                if (val.transform) traits.applyTypography(link, 'transform', val.transform);
             });
             return true;
         }
@@ -205,6 +192,25 @@
 
     /**
      * Aplica estilos hover a los enlaces del menú.
+     * 
+     * ⚠️ LEGACY IMPLEMENTATION - Sistema de Hover Manual
+     * ================================================
+     * Esta función usa event listeners manuales para aplicar estilos hover,
+     * lo cual NO es consistente con el sistema de estados estándar de GBN.
+     * 
+     * SISTEMA ESTÁNDAR (usado en ButtonComponent, TextComponent):
+     * - Estados se guardan en config._states.hover
+     * - Se aplican via Gbn.styleManager.applyStateCss(block, 'hover', styles)
+     * - Persisten automáticamente en CSS generado
+     * - UI unificada en panel (selector Normal/Hover/Focus)
+     * 
+     * RAZÓN DE MANTENER TEMPORALMENTE:
+     * - Migrar requiere cambios en MenuComponent.php (agregar soporte de estados)
+     * - Requiere remover campo linkColorHover del schema
+     * - Funcionalidad actual opera correctamente
+     * 
+     * TODO: Ver REFACTOR-010 en plan.md para migración completa
+     * 
      * @param {HTMLElement} el Elemento del menú
      * @param {string} hoverColor Color hover
      */
