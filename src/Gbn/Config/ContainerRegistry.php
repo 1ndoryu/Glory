@@ -147,18 +147,67 @@ final class ContainerRegistry
     }
 
     /**
-     * @return array<string,array{config:array,schema:array}>
+     * Extrae los campos que disparan condiciones desde un schema ya generado.
+     * 
+     * Analiza el array del schema (ya en formato final) y extrae los IDs
+     * de campos usados como triggers en condiciones de otros campos.
+     * 
+     * Ejemplo: Si una opción tiene 'condicion' => ['layout', '==', 'flex'],
+     * entonces 'layout' será incluido como trigger.
+     * 
+     * NOTA: Este método sigue el principio OCP - cualquier nuevo campo condicional
+     * en cualquier componente será detectado automáticamente sin modificar JS.
+     * 
+     * @param array $schema Array de opciones del schema
+     * @return array<string> Array único de IDs de campos que son triggers
+     */
+    private static function extractConditionalTriggers(array $schema): array
+    {
+        $triggers = [];
+        
+        foreach ($schema as $option) {
+            if (!is_array($option)) {
+                continue;
+            }
+            
+            // Buscar la key 'condicion' (formato español usado en Option.php)
+            $condition = $option['condicion'] ?? null;
+            
+            if ($condition !== null && is_array($condition)) {
+                // Formato canónico: [campo, operador, valor]
+                // El primer elemento es siempre el campo trigger
+                if (isset($condition[0]) && is_string($condition[0])) {
+                    $trigger = $condition[0];
+                    
+                    // Evitar duplicados
+                    if (!in_array($trigger, $triggers, true)) {
+                        $triggers[] = $trigger;
+                    }
+                }
+            }
+        }
+        
+        return $triggers;
+    }
+
+    /**
+     * @return array<string,array{config:array,schema:array,conditionalTriggers:array}>
      */
     public static function rolePayload(): array
     {
         $payload = [];
         foreach (self::resolveAll() as $role => $data) {
+            $schema = isset($data['schema']) && is_array($data['schema']) ? $data['schema'] : [];
+            
             $payload[$role] = [
                 'label' => $data['label'] ?? $role,
                 'icon' => $data['icon'] ?? '',
                 'allowedChildren' => $data['allowedChildren'] ?? [],
                 'config' => isset($data['config']) && is_array($data['config']) ? $data['config'] : [],
-                'schema' => isset($data['schema']) && is_array($data['schema']) ? $data['schema'] : [],
+                'schema' => $schema,
+                // REFACTOR-008: Triggers automáticos extraídos del schema
+                // Antes esto era hardcodeado en config-updater.js
+                'conditionalTriggers' => self::extractConditionalTriggers($schema),
             ];
         }
         return $payload;

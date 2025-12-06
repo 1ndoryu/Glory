@@ -592,11 +592,6 @@ $builderScripts = ScriptManifest::getBuilderScripts();
 
 ---
 
-**Versión:** 2.3 (css-sync.js refactorizado para lectura dinámica de roles/props - Diciembre 2025)  
-**Relacionado:** `reglas.md`, `plan.md`, `guia-crear-componente.md`
-
----
-
 ## 16. Sistema de Iconos (IconRegistry)
 
 Para evitar duplicación y mantener consistencia visual, GBN utiliza un registro centralizado de iconos SVG.
@@ -688,3 +683,52 @@ Usa siempre `valor` y `etiqueta` en español.
 ['value' => 'start', 'label' => 'Start'] // Inglés/Legacy
 ['start' => 'Inicio'] // Key-Value pair (solo permitido en arrays simples legacy)
 ```
+
+---
+
+## 18. Sistema de Campos Condicionales (REFACTOR-008)
+
+Los campos condicionales son aquellos que solo se muestran cuando otro campo tiene un valor específico.
+
+### Cómo Definirlos (PHP)
+
+```php
+// Campo que solo aparece cuando logoMode === 'text'
+Option::text('logoText', 'Texto del Logo')
+    ->condition(['logoMode', '==', 'text'])
+```
+
+### Cómo Funciona Internamente
+
+1. `ContainerRegistry::extractConditionalTriggers()` analiza el schema
+2. Extrae los campos usados como triggers (primer elemento de la condición)
+3. Los expone en `gloryGbnCfg.roleSchemas[role].conditionalTriggers`
+4. `config-updater.js` lee esto dinámicamente y refresca el panel
+
+### API de Debugging
+
+```javascript
+// Obtener triggers de un componente específico
+Gbn.ui.panelRender.configUpdater.getConditionalTriggers('logo')
+// Retorna: ['logoMode']
+
+// Ver todos los triggers disponibles
+Object.keys(gloryGbnCfg.roleSchemas).forEach(function(role) {
+    var triggers = gloryGbnCfg.roleSchemas[role].conditionalTriggers;
+    if (triggers && triggers.length > 0) {
+        console.log(role + ':', triggers);
+    }
+});
+```
+
+### Beneficios
+
+- **OCP**: Agregar campos condicionales en PHP → auto-propagación a JS
+- **Cero mantenimiento**: No hay lista hardcodeada que actualizar
+- **Debugging fácil**: API expuesta para verificación
+
+---
+
+**Versión:** 2.4 (REFACTOR-008: Campos condicionales automáticos - Diciembre 2025)  
+**Relacionado:** `reglas.md`, `plan.md`, `guia-crear-componente.md`
+

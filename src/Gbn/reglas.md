@@ -337,6 +337,32 @@ var cssDirectProps = [
 3. Resolver en `panel-render.js` (`styleResolvers`)
 4. Dependencias correctas (incluir `renderer-traits` si usa traits JS)
 
+### Añadir Campos Condicionales (REFACTOR-008)
+
+> [!TIP]
+> Los triggers condicionales se detectan **automáticamente** desde el schema.
+> NO es necesario editar `config-updater.js` manualmente.
+
+**Cómo funciona:**
+1. Define la condición en PHP con `->condition(['campo', '==', 'valor'])`
+2. `ContainerRegistry::extractConditionalTriggers()` extrae el campo trigger automáticamente
+3. Los triggers se exponen en `gloryGbnCfg.roleSchemas[role].conditionalTriggers`
+4. `config-updater.js` lee los triggers dinámicamente y refresca el panel
+
+**Ejemplo:**
+```php
+// El campo 'logoText' solo aparece cuando logoMode === 'text'
+Option::text('logoText', 'Texto del Logo')
+    ->condition(['logoMode', '==', 'text'])
+```
+
+**Verificar:**
+```javascript
+// En consola del navegador
+Gbn.ui.panelRender.configUpdater.getConditionalTriggers('logo')
+// Debería retornar: ['logoMode']
+```
+
 ### Elementos Cargados por AJAX (Preview Dinámico)
 
 > [!CAUTION]
@@ -426,6 +452,6 @@ public function getAllowedChildren(): array
 
 ---
 
-**Versión:** 2.4 (Refactorización utils.js y GbnManager - Diciembre 2025)  
+**Versión:** 2.5 (REFACTOR-008: Campos condicionales automáticos - Diciembre 2025)  
 **Relacionado:** `plan.md`, `documentación-gbn.md`, `guia-crear-componente.md`
 

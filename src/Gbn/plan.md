@@ -623,6 +623,46 @@ El tamaño del menú no se actualiza dinámicamente al cambiar la vista (mobile/
 
 ---
 
+### BUG-017: Campos del Panel No Muestran Valor Preseleccionado
+**Prioridad:** Alta | **Estado:** 🟡 EN PROGRESO - PENDIENTE REVISIÓN
+
+Al abrir el panel de configuración de un componente (ej: LogoComponent), los campos como `logoMode` (iconGroup) no muestran el valor actual del componente. El campo aparece sin selección aunque el componente ya tenga un valor definido.
+
+**Comportamiento esperado:** 
+- Si el componente tiene `logoMode: 'text'`, el iconGroup debe mostrar "Texto" como seleccionado al abrir el panel.
+
+**Comportamiento actual:**
+- El iconGroup aparece sin ninguna opción seleccionada.
+- Solo después de hacer clic en una opción se ve la selección.
+
+**Causa raíz identificada:**
+- `getEffectiveValue()` en `effective-value.js` buscaba valores en:
+  1. `block.config` (valor guardado)
+  2. `computedStyle` (de clases CSS)
+  3. `themeDefault` (valores del tema)
+- **FALTABA**: Buscar en los **defaults del schema PHP** (`getDefaults()`)
+- Para campos no-CSS como `logoMode`, `fieldType`, etc., el valor nunca se encontraba porque:
+  - No hay `block.config.logoMode` guardado (el bloque es nuevo)
+  - No hay `computedStyle` (no es una propiedad CSS)
+  - No hay `themeDefault` (no es un ajuste de tema)
+
+**Solución aplicada:**
+- **`effective-value.js`** (líneas 116-128): Nueva búsqueda en `gloryGbnCfg.roleSchemas[role].config`
+- Si no hay valor en config ni computed, buscar en los defaults del schema PHP
+- Nueva fuente: `source: 'schema-default'`
+
+**Archivos modificados:**
+- `assets/js/ui/panel-fields/effective-value.js`
+
+**¿Qué revisar para confirmar la corrección?**
+1. Cargar el constructor de GBN
+2. Agregar un componente Logo (o cualquier componente con iconGroup)
+3. VERIFICAR: El campo `logoMode` debe mostrar "Texto" (la primera opción/default) como seleccionado
+4. Cambiar a "Imagen" y verificar que el campo condicional aparece
+5. Guardar, recargar y verificar que la selección persiste
+
+---
+
 ---
 
 ## 🔧 REFACTORIZACIONES ARQUITECTÓNICAS (Fase 17)
@@ -754,12 +794,43 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 ---
 
 ### REFACTOR-008: Detección Automática de Triggers Condicionales
-**Prioridad:** Media | **Estado:** � EN PROGRESO (Iniciado: 6 Diciembre 2025)
+**Prioridad:** Media | **Estado:** ✅ RESUELTO | **Fecha:** 6 Diciembre 2025
 
-**Problema:** La lista `conditionalTriggers` en `config-updater.js` está hardcoded (violación OCP). Cada nuevo campo condicional requiere editar este archivo central.
-**Propuesta:** 
-1. Que el `SchemaBuilder` genere un mapa de dependencias.
-2. O que la opción tenga una flag `triggersRefresh: true` (automatizado en PHP).
+**Problema:** La lista `conditionalTriggers` en `config-updater.js` estaba hardcodeada (violación OCP). Cada nuevo campo condicional requería editar este archivo central.
+
+**Solución Implementada:**
+
+1. **ContainerRegistry.php** - Nuevo método `extractConditionalTriggers(array $schema)`:
+   - Analiza el array del schema ya generado
+   - Extrae los campos usados como triggers en condiciones (`condicion`)
+   - Se ejecuta automáticamente en `rolePayload()`
+   - Los triggers se exponen en `gloryGbnCfg.roleSchemas[role].conditionalTriggers`
+
+2. **config-updater.js** - Función `getConditionalTriggers(role)`:
+   - Lee triggers desde `gloryGbnCfg.roleSchemas[role].conditionalTriggers`
+   - Fallback a lista legacy para compatibilidad durante transición
+   - Expuesta en API pública para debugging: `Gbn.ui.panelRender.configUpdater.getConditionalTriggers('logo')`
+
+3. **SchemaBuilder.php** - Método auxiliar `extractConditionalTriggers()`:
+   - Permite extraer triggers antes de llamar `toArray()` si se necesita
+
+**Beneficios:**
+- ✅ Principio OCP: Agregar campos condicionales en PHP → auto-propagación a JS
+- ✅ Sin modificación manual de `conditionalTriggers`
+- ✅ Retrocompatible con fallback legacy
+- ✅ Debugging: `Gbn.ui.panelRender.configUpdater.getConditionalTriggers('role')`
+
+**Archivos modificados:**
+- `Config/ContainerRegistry.php` (nuevo método + rolePayload actualizado)
+- `Schema/SchemaBuilder.php` (método auxiliar)
+- `assets/js/ui/panel-render/config-updater.js` (lectura dinámica)
+
+**¿Qué revisar para confirmar la corrección?**
+1. Abrir el constructor y agregar un componente con campos condicionales (ej: Logo)
+2. Cambiar el campo trigger (ej: logoMode de "text" a "image")
+3. VERIFICAR: El panel debe refrescarse y mostrar los campos condicionales correctos
+4. Abrir consola JS y ejecutar: `Gbn.ui.panelRender.configUpdater.getConditionalTriggers('logo')`
+5. VERIFICAR: Debe retornar `['logoMode']` (el trigger extraído del schema)
 
 ---
 
@@ -839,6 +910,6 @@ El campo `gbn-field-dimensions` no sigue los patrones de diseño UI del resto de
 ---
 
 **Última actualización:** 6 Diciembre 2025  
-**Versión del plan:** 3.7 (REFACTOR-003 COMPLETADO: PostRenderProcessor.php dividido en 4 módulos)  
+**Versión del plan:** 4.0 (BUG-017 EN REVISIÓN: Fix para campos sin preselección - defaults del schema)  
 **Mantenedor:** Ver `reglas.md` para protocolo de cambios
 

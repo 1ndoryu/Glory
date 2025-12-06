@@ -113,6 +113,22 @@
             result.source = 'config';
         }
         
+        // [FIX BUG-017] Si no hay valor en config, buscar en defaults del schema PHP
+        // Los defaults se definen en getDefaults() del componente y se exponen en gloryGbnCfg
+        // Esto es CRÍTICO para campos no-CSS como logoMode, fieldType, etc.
+        if (result.source === 'none' && block.role) {
+            var cfg = global.gloryGbnCfg;
+            if (cfg && cfg.roleSchemas && cfg.roleSchemas[block.role]) {
+                var roleData = cfg.roleSchemas[block.role];
+                var schemaDefault = getDeepValue(roleData.config, path);
+                
+                if (schemaDefault !== undefined && schemaDefault !== null && schemaDefault !== '') {
+                    result.value = schemaDefault;
+                    result.source = 'schema-default';
+                }
+            }
+        }
+        
         // 2. Si no hay valor guardado, leer del computedStyle
         if (result.source === 'none' && block.element) {
             

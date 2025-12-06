@@ -196,14 +196,63 @@
 
     /**
      * Verifica si necesita refresh por campo condicional
+     * 
+     * REFACTOR-008: Los triggers ahora se leen dinámicamente desde el schema
+     * del componente en lugar de estar hardcodeados. Esto sigue el principio OCP.
+     * 
+     * La información de triggers viene de gloryGbnCfg.roleSchemas[role].conditionalTriggers,
+     * que se genera automáticamente en ContainerRegistry.php al analizar las condiciones.
+     * 
+     * @param {Object} block - Bloque actualizado
+     * @param {string} path - Path del campo modificado
      */
     function checkConditionalRefresh(block, path) {
-        var conditionalTriggers = ['hasBorder', 'layout', 'display_mode', 'img_show', 'title_show', 'interaccion_modo', 'fieldType', 'logoMode'];
-        if (conditionalTriggers.indexOf(path) !== -1) {
+        var triggers = getConditionalTriggers(block.role);
+        
+        if (triggers.indexOf(path) !== -1) {
             if (Gbn.ui.panel && Gbn.ui.panel.refreshControls) {
                 Gbn.ui.panel.refreshControls(block);
             }
         }
+    }
+
+    /**
+     * Obtiene los triggers condicionales para un role específico
+     * 
+     * Lee los triggers desde gloryGbnCfg.roleSchemas[role].conditionalTriggers
+     * que fueron extraídos automáticamente del schema en PHP.
+     * 
+     * @param {string} role - Role del componente
+     * @returns {Array<string>} Lista de campos que disparan refresh
+     */
+    function getConditionalTriggers(role) {
+        // Fallback: lista legacy para compatibilidad durante transición
+        // TODO: Remover fallback después de verificar que todos los componentes
+        // tienen sus triggers correctamente definidos en el schema
+        var fallbackTriggers = ['hasBorder', 'layout', 'display_mode', 'img_show', 'title_show', 'interaccion_modo', 'fieldType', 'logoMode'];
+        
+        // Leer desde gloryGbnCfg.roleSchemas
+        var cfg = global.gloryGbnCfg;
+        if (!cfg || !cfg.roleSchemas || !role) {
+            return fallbackTriggers;
+        }
+        
+        var roleSchema = cfg.roleSchemas[role];
+        if (!roleSchema || !roleSchema.conditionalTriggers) {
+            // Si el role no tiene triggers definidos, usar fallback
+            return fallbackTriggers;
+        }
+        
+        var triggers = roleSchema.conditionalTriggers;
+        
+        // Validar que sea un array
+        if (!Array.isArray(triggers)) {
+            return fallbackTriggers;
+        }
+        
+        // Si el array está vacío, el componente no tiene campos condicionales
+        // En ese caso NO usar fallback - es intencional
+        return triggers;
     }
 
     /**
@@ -314,7 +363,9 @@
     Gbn.ui.panelRender.configUpdater = {
         updateConfigValue: updateConfigValue,
         getCssPropertyForPath: getCssPropertyForPath,
-        dispatchConfigChanged: dispatchConfigChanged
+        dispatchConfigChanged: dispatchConfigChanged,
+        // REFACTOR-008: Exponer para debugging y verificación
+        getConditionalTriggers: getConditionalTriggers
     };
 
 })(window);
