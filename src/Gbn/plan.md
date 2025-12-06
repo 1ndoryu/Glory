@@ -410,6 +410,17 @@ El módulo `css-sync.js` estaba muy limitado:
 
 ---
 
+### BUG-011: Scope Global en Padding de Botones
+**Prioridad:** Alta | **Estado:** 🔴 PENDIENTE
+
+Al cambiar el padding de un botón, el cambio se refleja en **todos** los botones.
+
+**Causa sospechosa:** Selector CSS muy genérico o variable global compartida incorrectamente en el renderer.
+
+**Archivos:** `ButtonComponent.php`?, `button.js`?
+
+---
+
 ## 🟠 BUGS MEDIA PRIORIDAD
 
 ### BUG-004: Iconos Inconsistentes en Biblioteca de Componentes
@@ -479,6 +490,46 @@ El módulo `css-sync.js` estaba muy limitado:
 
 ---
 
+### BUG-009: MenuComponent - Fuentes y Hover
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+1. No se puede cambiar la fuente del menú.
+2. La estructura de "Color Hover" es inconsistente con el resto de opciones GBN.
+3. Falta documentación sobre soporte universal de hover.
+
+**Acción:** Reparar selector de fuente, estandarizar estructura de opciones de estado, documentar.
+
+---
+
+### BUG-012: Z-Index en ImageComponent
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+Las imágenes se superponen a los controles de edición (resize handles, toolbar) en el editor. Probablemente falta contexto de apilamiento (stacking context).
+
+**Acción:** Revisar z-index en CSS del editor para component wrappers vs contenido.
+
+---
+
+### BUG-013: Filtros PostRender Invisibles en Constructor
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+Los filtros activados en PostRender no aparecen visualmente dentro del constructor, pero sí en el frontend.
+
+**Causa sospechosa:** JS de inicialización de filtros no se dispara o el DOM del editor no coincide con lo esperado por el script.
+
+---
+
+### BUG-014: PostRender Layout (Flex/Gap)
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+1. Modo de visualización Flex no funciona.
+2. Propiedad Gap no aplica.
+3. *Nota:* Patrón de Layout pospuesto por instrucción directa.
+
+**Archivos:** `PostRenderProcessor.php`, `post-render.js`
+
+---
+
 ## 🟡 BUGS BAJA PRIORIDAD
 
 ### BUG-007: Inconsistencia de Estilos en FormComponent (Editor vs Frontend)
@@ -514,6 +565,13 @@ El filtro no hace nada al activarse.
 
 ---
 
+### BUG-010: MenuComponent Responsive en Constructor
+**Estado:** 🔴 PENDIENTE
+
+El tamaño del menú no se actualiza dinámicamente al cambiar la vista (mobile/tablet) en el constructor.
+
+---
+
 ---
 
 ## 🔧 REFACTORIZACIONES ARQUITECTÓNICAS (Fase 17)
@@ -546,14 +604,16 @@ El filtro no hace nada al activarse.
 ---
 
 ### REFACTOR-002: Centralización de Lógica de Tabs
-**Prioridad:** Alta | **Estado:** Diseño conceptual
+**Prioridad:** Alta | **Estado:** ✅ COMPLETADO
+**Fecha:** Diciembre 2025
 
-**Problema:** La lógica de tabs está duplicada/dispersa causando bugs de duplicación.
+**Problema:** La lógica de tabs estaba duplicada/dispersa causando bugs de duplicación.
 
-**Solución:**
-- Crear módulo `ui/tabs-manager.js` con patrón Singleton
-- Unificar lógica de `panel-core.js`, `theme/render.js`, `panel-render.js`
-- Implementar cleanup automático al cambiar de panel
+**Solución Implementada:**
+- Creado módulo `ui/tabs-manager.js` con patrón Singleton.
+- Unificada lógica de `panel-render/tabs.js` y `theme/utils.js` delegando al manager.
+- Centralizado mapa de iconos y normalización de nombres.
+- Simplificado mantenimineto: un solo lugar para cambiar orden o iconos de tabs.
 
 ---
 
@@ -579,6 +639,32 @@ Refactorizar archivos que superan las 600 líneas:
   - `PostItemRenderer.php` - Renderizado de items individuales
   - `PostRenderStyles.php` - Generación de CSS scoped y estilos
   - `PostRenderUI.php` - Componentes UI (filtros, paginación, mensajes)
+
+---
+
+### REFACTOR-004: LogoComponent (Compliance)
+**Prioridad:** Alta | **Estado:** 🔴 PENDIENTE
+
+El componente `LogoComponent` no sigue las reglas ni principios SOLID. Necesita ser reescrito completamente bajo los estándares actuales (`ComponentInterface`, traits, renderer separado).
+
+---
+
+### REFACTOR-005: FooterComponent (Compliance)
+**Prioridad:** Alta | **Estado:** 🔴 PENDIENTE
+
+El componente `FooterComponent` no sigue las reglas ni principios SOLID. Necesita ser reescrito.
+
+---
+
+### REFACTOR-006: Iconos de Formulario
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+Rehacer iconos para:
+- Campo de Texto
+- Selector
+- Botón Enviar
+
+Están mal diseñados o incorrectos. Usar `IconRegistry`.
 
 ---
 
@@ -617,6 +703,34 @@ Editar plantillas `single-post.php` y `single-{cpt}.php` visualmente.
 **Prioridad:** Baja | **Estado:** Pendiente
 
 - [ ] Actualizar `dimensions.js` con iconos SVG, grid layout y estilo consistente con `spacing.js`
+
+---
+
+### FEATURE-005: Bordes Avanzados
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+Agregar modo avanzado a las opciones de borde para permitir control direccional independiente (Top, Right, Bottom, Left).
+
+---
+
+### FEATURE-006: Estilo Específico para Input (Inner)
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+En el `InputComponent`, agregar una pestaña/opción específica para estilizar el elemento `<input>` interno (donde se escribe), separado del contenedor.
+
+---
+
+### FEATURE-007: Herencia Tipografía Formulario
+**Prioridad:** Media | **Estado:** 🔴 PENDIENTE
+
+Unificar tipografía en `FormComponent`. El padre debe manejar la configuración de fuentes y los inputs hijos deben heredarla por defecto.
+
+---
+
+### FEATURE-008: Rediseño UI Field Dimensions
+**Prioridad:** Baja | **Estado:** 🔴 PENDIENTE
+
+El campo `gbn-field-dimensions` no sigue los patrones de diseño UI del resto del panel. Estandarizar visualmente.
 
 ---
 

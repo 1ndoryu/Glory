@@ -486,6 +486,10 @@ class ScriptManifest
                 'file' => '/js/ui/panel-render/state.js',
                 'deps' => ['glory-gbn-state'],
             ],
+            'glory-gbn-ui-tabs-manager' => [
+                'file' => '/js/ui/tabs-manager.js',
+                'deps' => ['glory-gbn-icons-tab'],
+            ],
             'glory-gbn-ui-panel-render-style-resolvers' => [
                 'file' => '/js/ui/panel-render/style-resolvers.js',
                 'deps' => ['glory-gbn-ui-panel-render-state', 'glory-gbn-style'],
@@ -496,7 +500,7 @@ class ScriptManifest
             ],
             'glory-gbn-ui-panel-render-tabs' => [
                 'file' => '/js/ui/panel-render/tabs.js',
-                'deps' => ['glory-gbn-ui-panel-render-state', 'glory-gbn-icons-tab'],
+                'deps' => ['glory-gbn-ui-panel-render-state', 'glory-gbn-ui-tabs-manager'],
             ],
             'glory-gbn-ui-panel-render-config-updater' => [
                 'file' => '/js/ui/panel-render/config-updater.js',
@@ -575,7 +579,7 @@ class ScriptManifest
             ],
             'glory-gbn-ui-theme-utils' => [
                 'file' => '/js/ui/theme/utils.js',
-                'deps' => ['glory-gbn-ui-theme-state', 'glory-gbn-icons-tab', 'glory-gbn-icons-theme'],
+                'deps' => ['glory-gbn-ui-theme-state', 'glory-gbn-icons-tab', 'glory-gbn-icons-theme', 'glory-gbn-ui-tabs-manager'],
             ],
             'glory-gbn-ui-theme-renderer-page-settings' => [
                 'file' => '/js/ui/theme/renderers/page-settings.js',
