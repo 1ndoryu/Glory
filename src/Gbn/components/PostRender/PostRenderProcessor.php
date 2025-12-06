@@ -54,6 +54,42 @@ class PostRenderProcessor
     }
 
     /**
+     * Detecta si estamos en modo editor GBN.
+     * 
+     * En modo editor, NO procesamos el PostRender para que el usuario pueda
+     * editar el template original. El JS (post-render.js) manejará el preview.
+     * 
+     * Condiciones para modo editor:
+     * - Usuario puede editar posts (current_user_can('edit_posts'))
+     * - NO es una petición AJAX (las peticiones AJAX de preview son manejadas por el handler)
+     * - NO es una petición REST API
+     * 
+     * @return bool True si estamos en modo editor
+     */
+    private static function isEditorMode(): bool
+    {
+        // Si no puede editar, no está en modo editor
+        if (!current_user_can('edit_posts')) {
+            return false;
+        }
+        
+        // Las peticiones AJAX de preview deben procesarse normalmente
+        // (son manejadas por PostRenderHandler, no por processContent)
+        if (wp_doing_ajax()) {
+            return false;
+        }
+        
+        // Las peticiones REST API no son modo editor
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            return false;
+        }
+        
+        // Si llegamos aquí, es un usuario editor viendo la página normalmente
+        // El editor GBN cargará el template sin procesar
+        return true;
+    }
+
+    /**
      * Renderiza el componente PostRender completo.
      * 
      * @return string HTML renderizado
@@ -561,11 +597,24 @@ class PostRenderProcessor
      * Procesa el contenido del frontend buscando componentes PostRender.
      * Usa DOMDocument para manejar HTML anidado correctamente.
      * 
+     * IMPORTANTE: En modo editor, NO procesamos el contenido para que el
+     * usuario pueda editar el template original. El procesamiento dinámico
+     * solo ocurre en el frontend para usuarios que no están editando.
+     * 
      * @param string $content Contenido de la página/post
      * @return string Contenido procesado
      */
     public static function processContent(string $content): string
     {
+        // ========================================================================
+        // MODO EDITOR: No procesar para que el usuario edite el template original
+        // El editor GBN necesita ver el template (PostItem) sin los posts clonados.
+        // post-render.js manejará el preview en el editor.
+        // ========================================================================
+        if (self::isEditorMode()) {
+            return $content;
+        }
+        
         // Detección case-insensitive porque DOMDocument convierte a minúsculas
         if (stripos($content, 'gloryPostRender') === false) {
             return $content;
@@ -593,21 +642,11 @@ class PostRenderProcessor
         
         foreach ($postRenderNodes as $node) {
             // ========================================================================
-            // DETECCIÓN DE CONTENIDO YA PROCESADO
-            // Si el nodo tiene 'gbn-post-render' como clase o 'data-post-type' como
-            // atributo, significa que ya pasó por el procesador anteriormente.
-            // Saltar para evitar duplicación de posts.
+            // NOTA: Ya no detectamos "contenido ya procesado" aquí.
+            // persistence.js ahora limpia los clones de PostRender antes de guardar,
+            // garantizando que el HTML guardado solo contiene el template original.
+            // Esto permite que PostRender sea siempre 100% dinámico.
             // ========================================================================
-            $classAttr = $node->hasAttribute('class') ? $node->getAttribute('class') : '';
-            $isAlreadyProcessed = (
-                strpos($classAttr, 'gbn-post-render') !== false ||
-                $node->hasAttribute('data-post-type')
-            );
-            
-            if ($isAlreadyProcessed) {
-                // Ya fue procesado, no volver a procesar
-                continue;
-            }
             
             // Parsear configuración desde el atributo opciones
             $config = [];

@@ -146,9 +146,9 @@
 }
 
 .gbn-node.gbn-drag-over {
-    /* Optional: highlight the container being hovered */
-    /* outline: 2px dashed #3b82f6; */
-    /* outline-offset: -2px; */
+    /* Highlight opcional para el contenedor siendo hovereado durante drag */
+    /* Se activa via JavaScript cuando corresponde */
+    outline: none; /* Placeholder para evitar ruleset vacío */
 }
 .gbn-drag-proxy {
     position: absolute;
@@ -359,6 +359,7 @@
     outline: 1px dashed rgba(139, 92, 246, 0.35); /* Púrpura */
     outline-offset: 2px;
     transition: outline-color 0.2s ease;
+    overflow: visible; /* Permite que los badges de PostFields se muestren fuera */
 }
 
 .gbn-active [gloryPostItem]:hover {
@@ -366,23 +367,25 @@
 }
 
 /* PostItem template marker in editor */
+/* El template ES editable - solo aplica estilo visual indicativo */
 .gbn-active [data-gbn-is-template="true"] {
-    opacity: 0.5;
-    pointer-events: none;
+    position: relative;
+    /* NO usar pointer-events: none aquí - el template debe ser editable */
 }
 
 .gbn-active [data-gbn-is-template="true"]::before {
-    content: 'TEMPLATE';
+    content: 'TEMPLATE (editable)';
     position: absolute;
-    top: 4px;
-    right: 4px;
+    top: -10px;
+    right: 4px; /* Derecha para no chocar con badges de PostFields */
     background: rgba(139, 92, 246, 0.9);
     color: white;
-    padding: 2px 6px;
+    padding: 2px 8px;
     font-size: 10px;
     font-weight: bold;
     border-radius: 4px;
     z-index: 5;
+    white-space: nowrap;
 }
 
 /* PostField editor indicator */
@@ -392,6 +395,7 @@
     border: 1px dashed rgba(251, 191, 36, 0.4);
     border-radius: 4px;
     transition: all 0.2s ease;
+    overflow: visible; /* Permite que el badge se muestre fuera del contenedor */
 }
 
 .gbn-active [gloryPostField]:hover {
@@ -415,9 +419,12 @@
     white-space: nowrap;
 }
 
-/* PostRender clones (preview items) */
+/* PostRender clones (preview items) - NO EDITABLES */
+/* Los clones son solo visuales, se aplican estilos viá JS pero reforzamos aquí */
 [data-gbn-pr-clone] {
-    pointer-events: auto;
+    pointer-events: none !important; /* Reforzar: clones no interactivos */
+    opacity: 0.85;
+    cursor: default;
 }
 
 /* Preview message styles */

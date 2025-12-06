@@ -138,6 +138,8 @@
 - ✅ **CSS Specificity Normalizada**: `:where()` en `init.css`
 
 #### Bugs Resueltos (Últimos)
+- ✅ **PostRender Preview WYSIWYG - Parpadeo e interacción en clones**: Los clones del preview parpadeaban al pasar el mouse y permitían interacción incorrecta. Solución: 1) `pointer-events: none` en clones, 2) MutationObserver inteligente que filtra mutaciones de hover/selección del editor, 3) Debounce aumentado a 300ms con flag anti-recursivo. Ahora el template es editable y los clones son visuales estables.
+- ✅ **PostRender Estático - Contenido no dinámico**: Al guardar PostRender, el contenido quedaba estático porque `PostRenderProcessor.php` procesaba el contenido ANTES de que el editor cargara. Solución multi-capa: 1) `isEditorMode()` en PHP detecta editores y NO procesa (retorna template original), 2) `persistence.js` limpia clones de preview JS, 3) `post-render.js` genera preview temporal con clones marcados. Ahora el editor ve el template original y los cambios estructurales persisten.
 - ✅ **Hover/Focus Spacing - Persistencia**: Al editar padding/margin en estados hover/focus, los valores funcionaban en tiempo real pero NO persistían después de guardar. El problema era que `extractStyles()` en `style-generator.js` no incluía las propiedades de spacing camelCase (`paddingTop`, `marginLeft`, etc.) en la lista `cssDirectProps`. Solución: agregar propiedades `paddingTop/Right/Bottom/Left` y `marginTop/Right/Bottom/Left` a `cssDirectProps`.
 - ✅ **Hover/Focus Spacing - Padding/Margin no funcionaban en estados**: Los paths como `padding.superior` no se mapeaban correctamente a propiedades CSS (`paddingTop`) al editar estados hover/focus. El código usaba el último segmento del path (`superior`) en lugar de la propiedad CSS correcta. Solución: manejo explícito para paths de spacing que traduce direcciones en español a CSS camelCase.
 - ✅ **Stale Block Reference - Pérdida de valores de spacing/margin**: Al editar padding-top y luego padding-bottom, el segundo valor sobrescribía el primero porque la referencia del bloque pasada a los campos del panel era una captura del momento de renderizado. Solución: usar `state.get(block.id)` antes de `cloneConfig()` para obtener el bloque fresco del store.
@@ -160,11 +162,242 @@
 
 ### 🐛 Bugs Pendientes
 
-(Sin bugs pendientes actualmente)
+#### Filtro por Categoría en PostRender
+**Prioridad:** Baja  
+**Estado:** Para investigación
+
+**Síntoma:** Al activar el filtro por categoría en PostRender, no hace nada.
+
+**Archivos a investigar:**
+- `post-render-frontend.js`
+- `PostRenderProcessor.php`
 
 ---
 
-### ⏳ Pendientes Confirmados
+#### ✅ RESUELTO: PostRender Preview WYSIWYG - Pulir interacciones
+**Prioridad:** Media  
+**Estado:** ✅ Resuelto (Diciembre 2025)
+
+**Contexto:** Se implementó un preview WYSIWYG que muestra todos los posts reales en el editor. El primer post es el template editable y los demás son clones sincronizados con MutationObserver.
+
+**Problemas resueltos:**
+1. ~~**No se puede editar el template**~~ - CSS bloqueaba `pointer-events` en el template
+2. ~~**Los clones parpadean al pasar el mouse**~~ - El MutationObserver se disparaba con eventos hover/focus
+3. ~~**Interacción en clones no deshabilitada**~~ - Los clones permitían interacción incorrectamente
+
+**Solución implementada (multi-capa):**
+
+**Archivos modificados:**
+- `post-render.js` - Lógica de clones y MutationObserver
+- `interactive.css` - Reglas CSS que bloqueaban interacción
+
+**1. Corrección CSS crítica en `interactive.css`:**
+   - **ANTES (incorrecto):** `[data-gbn-is-template] { pointer-events: none }` bloqueaba el template editable
+   - **AHORA:** Template editable, solo clones con `pointer-events: none !important`
+   - Badge visual "✏️ TEMPLATE (editable)" para indicar cuál es el template
+
+**2. Clones no interactivos (en `post-render.js`):**
+   - `pointer-events: none` en clones para deshabilitar toda interacción
+   - `opacity: 0.85` para indicar visualmente que son clones (no editables)
+   - Limpieza de `data-gbn-id` de clones para evitar conflictos con el store
+
+**3. MutationObserver inteligente:**
+   - Filtrado de mutaciones: solo sincroniza en cambios estructurales reales (`childList`)
+   - Ignora cambios de atributos de hover/selección del editor (`gbn-selected`, `gbn-hovered`, `gbn-simulated`)
+   - Ignora cambios de estilo inline (son temporales, hover CSS nativo)
+   - Solo observa atributos relevantes: `class`, `src`, `href`, `alt`
+
+**4. Sincronización estable:**
+   - Debounce aumentado de 100ms a 300ms para dar tiempo a interacciones del usuario
+   - Flag `_isSyncing` para prevenir sincronización recursiva
+   - Verificación de `clone.parentNode` antes de reemplazar (safety check)
+
+**5. Re-escaneo de elementos después del preview:**
+   - Los elementos del template se re-escanean para asegurar que están en el store de GBN
+   - Necesario porque el preview AJAX modifica elementos después del escaneo inicial
+
+**Resultado:** Template editable sin parpadeo, clones visuales estables, interacción fluida.
+
+
+### 🔍 Investigación Arquitectónica (SOLID / Centralización)
+
+> [!NOTE]
+> Estas tareas requieren análisis profundo antes de implementar. No resolver directamente.
+
+#### Iconos SVG Repetidos en Componentes
+**Problema:** Los iconos SVG se especifican en cada componente individualmente, causando código repetitivo e inconsistencias potenciales.
+
+**Síntoma observado:**
+- Los iconos de "Modo de Visualización" en PostRender son diferentes a los de "Layout" en DivPrincipal
+- Mismo concepto (layout flex/grid) → diferentes iconos
+
+**Preguntas a resolver:**
+- ¿Existe un registro centralizado de iconos?
+- ¿Se pueden compartir iconos entre componentes?
+- ¿Deberíamos crear un `IconRegistry` similar a `registry.js` de campos?
+
+**Propuesta inicial:**
+```
+assets/js/ui/icons/
+├── index.js          → Registro centralizado
+├── layout-icons.js   → Iconos de layout (flex, grid, columns)
+├── action-icons.js   → Iconos de acciones (edit, delete, move)
+└── state-icons.js    → Iconos de estados (normal, hover, focus)
+```
+
+**Archivos afectados:**
+- `components/Principal/PrincipalComponent.php`
+- `components/PostRender/PostRenderComponent.php`
+- `panel-render.js` (state selector)
+- Todos los renderers con iconos
+
+---
+
+#### Opciones de Layout No Centralizadas
+**Problema:** Las opciones de "Modo de Visualización" (PostRender) y "Layout" (DivPrincipal) no comparten la misma fuente, aunque conceptualmente son lo mismo.
+
+**Preguntas a resolver:**
+- ¿Por qué PostRender tiene opciones diferentes?
+- ¿Debería existir un trait `HasLayoutOptions` compartido?
+- ¿Los esquemas de layout deberían definirse en un solo lugar?
+
+**Hipótesis:**
+- PostRender fue desarrollado con opciones específicas para su caso de uso
+- No se reutilizó `HasFlexbox` o `HasGrid` correctamente
+
+**Acción requerida:** Auditar diferencias entre:
+- `PrincipalComponent::buildSchema()` → opciones de layout
+- `PostRenderComponent::buildSchema()` → opciones de display_mode
+
+---
+
+### ⚠️ Tareas Prioritarias (Roadmap Inmediato)
+
+#### ✅ RESUELTO: PostRender Dinámico (No Estático)
+**Prioridad:** CRÍTICA  
+**Estado:** ✅ Implementado (Diciembre 2025)
+
+**Problema original:**
+Al guardar cambios en PostRender, el contenido se volvía estático. Los posts no se actualizaban cuando había nuevos posts. Los cambios en la estructura del template (mover título, etc.) no se persistían.
+
+**Causa raíz:**
+`PostRenderProcessor.php` procesaba el contenido ANTES de que el editor GBN cargara, por lo que el editor veía HTML con posts clonados en lugar del template original.
+
+**Solución implementada (Multi-capa):**
+
+1. **`PostRenderProcessor.php`** - Detección de modo editor:
+   - Nuevo método `isEditorMode()` que detecta si el usuario puede editar
+   - Si está en modo editor, `processContent()` retorna el HTML SIN procesar
+   - El editor ve el template original (PostItem), no los posts clonados
+   - El procesamiento dinámico solo ocurre en frontend para usuarios no-editores
+
+2. **`persistence.js`** - Limpieza antes de guardar:
+   - Nueva función `cleanPostRenderClones()` que limpia clones de preview JS
+   - Elimina banners informativos y badges del editor
+   - Limpia atributos de procesamiento previo
+
+3. **`post-render.js`** - Preview en editor:
+   - `requestPreview()` genera clones temporales para vista previa
+   - Los clones tienen `data-gbn-pr-clone` para identificarlos
+   - Banner informativo: "Modo Plantilla: Los cambios afectan a todos los posts"
+   - Selectores case-insensitive para compatibilidad DOM
+
+**Flujo corregido:**
+```
+[PHP] Template original (sin procesar para editores) →
+[Editor GBN] Ve el template, JS genera preview con clones →
+[Usuario edita] Cambios afectan el template original →
+[Guardar] persistence.js limpia clones JS →
+[DB] Solo template guardado →
+[Frontend público] PostRenderProcessor ejecuta query dinámica
+```
+
+---
+
+#### 🟠 Componentes de Formulario
+**Prioridad:** Alta (después de PostRender dinámico)  
+**Estado:** Rescatar lógica útil de Glory Formulario
+
+**Objetivo:** Versión sencilla y minimalista pero funcional.
+
+**Componentes mínimos:**
+- [ ] `FormComponent` → Contenedor `<form>` con action/method
+- [ ] `InputComponent` → Input text, email, tel, number
+- [ ] `TextareaComponent` → Área de texto
+- [ ] `SelectComponent` → Dropdown
+- [ ] `SubmitComponent` → Botón submit
+
+**Referencia:** `Glory/src/Components/Formulario/` (evaluar qué rescatar)
+
+**Consideraciones:**
+- Validación frontend básica (required, type)
+- Integración con AJAX para submit sin recarga
+- Honeypot anti-spam simple
+- Estilos consistentes con otros componentes GBN
+
+---
+
+#### 🟠 Plantillas de Layout: Header y Footer
+**Prioridad:** Alta  
+**Estado:** Requiere diseño arquitectónico
+
+**Objetivo:** Header y Footer editables como "páginas especiales" siguiendo lógica similar a PostRender.
+
+**Características deseadas:**
+- Modificables desde panel Y desde código (como PostRender)
+- Página especial dedicada para editar Header
+- Página especial dedicada para editar Footer
+- Acceso directo desde Theme Settings
+
+**Arquitectura propuesta:**
+```
+/wp-admin/admin.php?page=gbn-edit-header  → Editar Header
+/wp-admin/admin.php?page=gbn-edit-footer  → Editar Footer
+```
+
+**Flujo:**
+1. Usuario accede a página especial de Header
+2. GBN carga el HTML del header como contenido editable
+3. Cambios se guardan en `wp_options` (gbn_header_template)
+4. Frontend renderiza header desde template guardado
+
+**Referencia:** Evaluar lógica útil de `Glory/src/Components/Header/`
+
+**Archivos nuevos estimados:**
+- `pages/HeaderEditorPage.php`
+- `pages/FooterEditorPage.php`
+- `services/TemplateService.php` → Guardar/cargar templates
+
+---
+
+#### 🟡 Plantillas SinglePage para PostTypes
+**Prioridad:** Media (después de Header/Footer)  
+**Estado:** Diseño conceptual
+
+**Objetivo:** Siguiendo principios de PostRender, poder editar plantillas para páginas individuales de posts (single-post.php, single-{cpt}.php).
+
+**Concepto:**
+- Página especial para editar plantilla de "Single Post"
+- Página especial para editar plantilla de "Single {CPT}"
+- Campos dinámicos similares a PostField (`[title]`, `[content]`, `[featured_image]`, etc.)
+
+**Arquitectura similar a PostRender:**
+```
+/wp-admin/admin.php?page=gbn-edit-single&post_type=post
+/wp-admin/admin.php?page=gbn-edit-single&post_type=producto
+```
+
+**Diferencia con PostRender:**
+- PostRender = Listado de posts (archive)
+- SinglePage = Vista individual de UN post (single)
+
+**Dependencias:**
+- Requiere que Header/Footer estén implementados
+- Reutilizar `PostFieldComponent` para campos dinámicos
+
+---
+
+### ⏳ Pendientes Confirmados (Backlog)
 
 #### Fase 9: Transform con Iconos para Botones
 **Objetivo:** Exponer transformaciones CSS con presets visuales.

@@ -58,6 +58,93 @@
         };
     }
 
+    /**
+     * Limpia los clones de PostRender antes de persistir.
+     * PostRender debe ser 100% dinámico: solo guardamos el template (PostItem original),
+     * no los posts clonados que se generan en el preview.
+     * 
+     * @param {HTMLElement} container Contenedor raíz del contenido
+     * @returns {void}
+     */
+    function cleanPostRenderClones(container) {
+        if (!container) return;
+        
+        // Buscar todos los contenedores PostRender
+        var postRenders = container.querySelectorAll('[gloryPostRender], [glorypostrender]');
+        
+        postRenders.forEach(function(pr) {
+            // Eliminar todos los clones generados por el preview
+            var clones = pr.querySelectorAll('[data-gbn-pr-clone]');
+            clones.forEach(function(clone) {
+                clone.parentNode.removeChild(clone);
+            });
+            
+            // Restaurar y limpiar template original
+            var template = pr.querySelector('[data-gbn-is-template]');
+            if (template) {
+                template.style.display = '';
+                template.removeAttribute('data-gbn-is-template');
+                template.removeAttribute('data-gbn-original-structure');
+            }
+            
+            // RESTAURAR CONTENIDO ORIGINAL DE LOS CAMPOS DE PREVIEW
+            // Antes de guardar, volvemos a poner los placeholders originales
+            var previewFields = pr.querySelectorAll('[data-gbn-preview-field]');
+            previewFields.forEach(function(field) {
+                var originalContent = field.getAttribute('data-gbn-original-content');
+                if (originalContent !== null) {
+                    field.innerHTML = originalContent;
+                }
+                // Limpiar atributos de preview
+                field.removeAttribute('data-gbn-original-content');
+                field.removeAttribute('data-gbn-preview-field');
+            });
+            
+            // Limpiar atributos de preview del template
+            var postItems = pr.querySelectorAll('[gloryPostItem], [glorypostitem]');
+            postItems.forEach(function(item) {
+                item.removeAttribute('data-post-id');
+                item.removeAttribute('data-categories');
+                item.removeAttribute('data-gbn-preview-populated');
+                item.removeAttribute('data-gbn-preview-post-id');
+                item.removeAttribute('data-gbn-is-template');
+                item.removeAttribute('data-gbn-original-structure');
+            });
+            
+            // Limpiar mensajes de preview
+            var messages = pr.querySelectorAll('.gbn-pr-preview-message');
+            messages.forEach(function(msg) {
+                msg.parentNode.removeChild(msg);
+            });
+            
+            // Limpiar indicador de posts encontrados
+            var indicators = pr.querySelectorAll('.gbn-pr-posts-indicator');
+            indicators.forEach(function(ind) {
+                ind.parentNode.removeChild(ind);
+            });
+            
+            // Limpiar banner informativo de modo plantilla (solo visible en editor)
+            var infobanners = pr.querySelectorAll('.gbn-pr-template-info');
+            infobanners.forEach(function(banner) {
+                banner.parentNode.removeChild(banner);
+            });
+            
+            // Limpiar badges de plantilla de los PostItems
+            var badges = pr.querySelectorAll('.gbn-template-badge');
+            badges.forEach(function(badge) {
+                badge.parentNode.removeChild(badge);
+            });
+            
+            // Limpiar atributos que indican procesamiento previo
+            // Esto fuerza a PostRenderProcessor a procesar de nuevo en el frontend
+            pr.classList.remove('gbn-post-render');
+            pr.removeAttribute('data-post-type');
+            pr.removeAttribute('data-posts-per-page');
+            pr.removeAttribute('data-pattern');
+            pr.removeAttribute('data-hover-effect');
+        });
+    }
+
     function collectBlocksPayload() {
         var blocks = state.all();
         var tree = computeTree(blocks);
@@ -95,13 +182,19 @@
             ? Gbn.services.styleGenerator.generateCss(blocksMap) 
             : '';
 
-        // Capturar HTML del contenido para persistencia estructural (Nuevos bloques)
+        // Capturar HTML del contenido para persistencia estructural
+        // IMPORTANTE: Clonamos para limpiar sin afectar el DOM visible
         var rootHtml = '';
         var rootEl = document.querySelector('[data-gbn-root]') || document.querySelector('main');
         if (rootEl) {
-            // Clonar para limpiar clases de UI si es necesario, aunque el backend debería limpiar
-            // Por ahora enviamos raw, DomProcessor limpiará
-            rootHtml = rootEl.innerHTML;
+            // Clonar el contenedor para no modificar el DOM visible
+            var clonedRoot = rootEl.cloneNode(true);
+            
+            // Limpiar clones de PostRender del clon
+            // Esto asegura que PostRender sea 100% dinámico (solo guardamos el template)
+            cleanPostRenderClones(clonedRoot);
+            
+            rootHtml = clonedRoot.innerHTML;
         }
 
         var payload = {

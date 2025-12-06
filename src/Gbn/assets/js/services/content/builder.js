@@ -197,6 +197,15 @@
         if (!presets.styles || !presets.styles[block.id]) {
             styleManager.ensureBaseline(block);
         }
+        
+        // Inicializar renderers que tengan lógica especial de arranque
+        // PostRender necesita solicitar preview de posts via AJAX
+        if (role === 'postRender' && Gbn.ui && Gbn.ui.renderers && Gbn.ui.renderers.postRender && Gbn.ui.renderers.postRender.init) {
+            // Diferir la inicialización para asegurar que el DOM esté listo
+            setTimeout(function() {
+                Gbn.ui.renderers.postRender.init(block);
+            }, 50);
+        }
 
         return block;
     }
