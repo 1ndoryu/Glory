@@ -20,10 +20,10 @@
 
     /* --- Dimensions --- */
     --gbn-radius-sm: 2px;
-    --gbn-radius-md: 3px;
-    --gbn-radius-base: 4px;
-    --gbn-radius-lg: 6px;
-    --gbn-radius-xl: 8px;
+    --gbn-radius-md: 2px;
+    --gbn-radius-base: 2px;
+    --gbn-radius-lg: 2px;
+    --gbn-radius-xl: 2px;
     --gbn-radius-full: 999px;
 
     /* --- Z-Indices --- */
@@ -379,7 +379,7 @@
 /* PostRender editor outline */
 .gbn-active [gloryPostRender] {
     position: relative;
-    outline: 2px dashed rgba(var(--gbn-rgb-green), 0.35); /* Verde */
+    outline: 1px dashed rgba(var(--gbn-rgb-green), 0.35); /* Verde */
     outline-offset: 4px;
     transition: outline-color 0.2s ease;
 }
@@ -474,7 +474,7 @@
 /* Form container editor outline */
 .gbn-active [gloryForm] {
     position: relative;
-    outline: 2px dashed rgba(var(--gbn-rgb-blue-500), 0.35); /* Azul */
+    outline: 1px dashed rgba(var(--gbn-rgb-blue-500), 0.35); /* Azul */
     outline-offset: 4px;
     background: rgba(var(--gbn-rgb-blue-500), 0.03);
     transition: outline-color 0.2s ease, background-color 0.2s ease;
@@ -604,7 +604,7 @@
 /* Submit button editor styles */
 .gbn-active [glorySubmit] {
     position: relative;
-    outline: 2px dashed rgba(var(--gbn-rgb-red), 0.35);
+    outline: 1px dashed rgba(var(--gbn-rgb-red), 0.35);
     outline-offset: 3px;
     transition: all 0.2s ease;
 }
