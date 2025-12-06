@@ -102,13 +102,26 @@
                 .gbn-ctx-tab:hover svg {
                     opacity: 1;
                 }
+                .gbn-ctx-add {
+                    padding: 3px 6px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    color: #999;
+                    font-size: 12px;
+                    font-weight: bold;
+                    margin-left: auto;
+                    transition: all 0.1s;
+                }
+                .gbn-ctx-add:hover {
+                    background: #e8f4fc;
+                    color: #2271b1;
+                }
                 .gbn-ctx-delete {
                     padding: 3px 6px;
                     border-radius: 4px;
                     cursor: pointer;
                     color: #999;
                     font-size: 10px;
-                    margin-left: auto;
                 }
                 .gbn-ctx-delete:hover {
                     background: #fef0f0;
@@ -116,6 +129,22 @@
                 }
             `;
             document.head.appendChild(style);
+        },
+
+        /**
+         * Obtiene los componentes hijos permitidos para un rol dado.
+         * Delega a utils.getAllowedChildrenForRole() para centralización.
+         * 
+         * @param {string} role - El rol del componente padre
+         * @returns {array} Array de roles de componentes permitidos como hijos
+         */
+        getAllowedChildrenForRole: function(role) {
+            // Usar la versión centralizada de Gbn.utils
+            if (Gbn.utils && typeof Gbn.utils.getAllowedChildrenForRole === 'function') {
+                return Gbn.utils.getAllowedChildrenForRole(role);
+            }
+            // Fallback si utils no está disponible
+            return [];
         },
 
         createMenu: function() {
@@ -196,6 +225,24 @@
                     self.close();
                     self.openPanel(block, null);
                 };
+                
+                // Botón añadir hijo (+) - Solo aparece si el componente acepta hijos
+                var allowedChildren = self.getAllowedChildrenForRole(block.role);
+                if (allowedChildren && allowedChildren.length > 0) {
+                    var addBtn = document.createElement('span');
+                    addBtn.className = 'gbn-ctx-add';
+                    addBtn.innerHTML = '+';
+                    addBtn.title = 'Añadir componente hijo';
+                    addBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        self.close();
+                        // Abre la biblioteca filtrada con los hijos permitidos
+                        if (Gbn.ui && Gbn.ui.library && typeof Gbn.ui.library.open === 'function') {
+                            Gbn.ui.library.open(block.element, 'append', allowedChildren);
+                        }
+                    };
+                    header.appendChild(addBtn);
+                }
                 
                 // Botón eliminar inline
                 var del = document.createElement('span');

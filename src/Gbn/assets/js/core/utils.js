@@ -179,6 +179,34 @@
         qs: function (selector, root) { return (root || document).querySelector(selector); },
         qsa: function (selector, root) { return toArray((root || document).querySelectorAll(selector)); },
         getConfig: function () { return global.gloryGbnCfg || {}; },
+        /**
+         * Obtiene los componentes hijos permitidos para un rol dado.
+         * Consulta gloryGbnCfg.containers que viene del PHP (ContainerRegistry).
+         * 
+         * @param {string} role - El rol del componente padre
+         * @returns {array} Array de roles de componentes permitidos como hijos
+         */
+        getAllowedChildrenForRole: function (role) {
+            // Consultar la configuración que viene del PHP
+            if (typeof gloryGbnCfg !== 'undefined' && gloryGbnCfg.containers && gloryGbnCfg.containers[role]) {
+                var container = gloryGbnCfg.containers[role];
+                if (container.allowedChildren && Array.isArray(container.allowedChildren) && container.allowedChildren.length > 0) {
+                    return container.allowedChildren;
+                }
+            }
+            
+            // Fallback: si no hay configuración, usar defaults razonables
+            // Esto mantiene compatibilidad con componentes que no definan allowedChildren
+            var fallbackMap = {
+                'principal': ['secundario'],
+                'secundario': ['secundario', 'text', 'image', 'button', 'form', 'postRender'],
+                'form': ['input', 'textarea', 'select', 'submit', 'secundario'],
+                'postRender': ['postItem'],
+                'postItem': ['postField', 'text', 'image', 'secundario', 'button']
+            };
+            
+            return fallbackMap[role] || [];
+        },
     };
 
     Gbn.utils = utils;

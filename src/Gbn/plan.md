@@ -404,54 +404,82 @@ Al hacer clic en "+" dentro de un PostItem, muestra: PostField, Text, Image, Sec
 
 ---
 
-#### 🔴 Integración del Menú Contextual con Componentes Hijos
+#### ✅ RESUELTO: Integración del Menú Contextual con Componentes Hijos
 **Prioridad:** Alta  
-**Estado:** Pendiente de implementación
+**Estado:** ✅ Implementado (Diciembre 2025)
 
-**Problema identificado:**
-Al hacer click derecho sobre un componente, el menú contextual debería mostrar un botón "+" inteligente que respete las relaciones padre-hijo definidas en `getAllowedChildren()`.
+**Problema original:**
+Al hacer click derecho sobre un componente, el menú contextual no mostraba un botón "+" inteligente que respetara las relaciones padre-hijo definidas en `getAllowedChildren()`.
 
-**Comportamiento esperado:**
+**Solución implementada:**
 
-1. **Click derecho en Principal:**
-   - Mostrar opción "+" que abre la biblioteca filtrada solo con `secundario`
+1. **Centralización de `getAllowedChildrenForRole()` en `utils.js`:**
+   - Movida la función de `inspector.js` a `core/utils.js` para evitar duplicación
+   - Consulta `gloryGbnCfg.containers[role].allowedChildren` del PHP
+   - Fallbacks razonables para compatibilidad
 
-2. **Click derecho en Secundario:**
-   - Mostrar opción "+" que abre la biblioteca con todos sus hijos permitidos (secundario, text, image, button, form, postRender)
+2. **Refactorización de `inspector.js`:**
+   - Ahora delega a `utils.getAllowedChildrenForRole(role)`
+   - Código más limpio y centralizado
 
-3. **Click derecho en FormComponent:**
-   - Mostrar opción "+" que abre la biblioteca filtrada solo con campos de formulario (input, textarea, select, submit)
-
-4. **Click derecho en PostRender:**
-   - Mostrar opción "+" que abre la biblioteca filtrada solo con `postItem`
-
-5. **Click derecho en PostItem:**
-   - Mostrar opción "+" que abre la biblioteca con (postField, text, image, secundario, button)
-
-**Implementación requerida:**
-
-1. **Modificar `context-menu.js`:**
-   - Importar o replicar la función `getAllowedChildrenForRole()` de inspector.js
-   - Agregar botón "+" con ícono que llame a `Gbn.ui.library.open()` con los roles permitidos
+3. **Modificación de `context-menu.js`:**
+   - Añadido método `getAllowedChildrenForRole()` que delega a utils
+   - Añadido botón "+" en el header de cada bloque del menú contextual
    - El botón solo aparece si `getAllowedChildren().length > 0`
+   - Al hacer clic, abre `Gbn.ui.library.open()` con posición `'append'` y roles filtrados
+   - Estilos CSS para el nuevo botón (`.gbn-ctx-add`)
 
-2. **Unificar lógica:**
-   - Considerar mover `getAllowedChildrenForRole()` a un módulo compartido (utils.js o nuevo archivo)
-   - Evitar duplicación de código entre inspector.js y context-menu.js
+**Archivos modificados:**
+- `assets/js/core/utils.js` → Nueva función `getAllowedChildrenForRole()`
+- `assets/js/ui/inspector.js` → Refactorizado para usar `utils.getAllowedChildrenForRole()`
+- `assets/js/ui/context-menu.js` → Nuevo botón "+" con lógica de filtrado
 
-**Archivos a modificar:**
-- `assets/js/ui/context-menu.js` → Agregar botón "+" inteligente
-- `assets/js/core/utils.js` (opcional) → Centralizar `getAllowedChildrenForRole()`
+**Comportamiento implementado:**
 
-**Dependencias:**
-- ✅ Integración de Componentes Hijos (completada)
+| Click derecho en...   | Botón "+" muestra...                                              |
+| :-------------------- | :---------------------------------------------------------------- |
+| Principal             | `['secundario']`                                                  |
+| Secundario            | `['secundario', 'text', 'image', 'button', 'form', 'postRender']` |
+| FormComponent         | `['input', 'textarea', 'select', 'submit', 'secundario']`         |
+| PostRender            | `['postItem']`                                                    |
+| PostItem              | `['postField', 'text', 'image', 'secundario', 'button']`          |
+| Input/Text/Image/etc. | Sin botón "+" (no aceptan hijos)                                  |
 
-**Lecciones aprendidas (IMPORTANTE):**
-Esta tarea existe porque **no se consideró la funcionalidad del constructor al crear los componentes**. Es un error grave que debe evitarse en el futuro. Ver `guia-crear-componente.md` para el checklist actualizado.
+**Notas:**
+- El drag-drop aún no valida si el destino acepta el componente (pendiente futuro)
+- El sistema es extensible: cualquier nuevo componente que implemente `getAllowedChildren()` funcionará automáticamente
 
-Comentario del usuario: olvide mencionar que cuando por ejemplo se da al boton mas a un field + de postRender, los componentes que muestra deberían ser los de su padre postRender, igual cuando le doy al + de un input del form muestra los componentes Botón Imagen, Contenedor Secundario en vez de los de su padre. 
+> [!WARNING]
+> **Bug conocido (Baja prioridad):** El botón "+" en componentes hoja (text, image, input, postField, etc.) no aparece, pero debería mostrar los hijos permitidos del **padre**. Por ejemplo, al hacer clic derecho en un título (text) dentro de un PostItem, debería mostrar el "+" con los componentes permitidos del PostItem padre. Ver tarea pendiente: "Mejora del Botón '+' en Menú Contextual para Componentes Hoja".
 
 ---
+
+#### 🟡 Mejora del Botón '+' en Menú Contextual para Componentes Hoja
+**Prioridad:** Baja  
+**Estado:** Pendiente
+
+**Problema identificado:**
+Al hacer clic derecho en componentes que no aceptan hijos (text, image, input, postField, button, etc.), el botón "+" no aparece. Sin embargo, **debería aparecer mostrando los hijos permitidos del componente padre**.
+
+**Ejemplo del bug:**
+- Usuario hace clic derecho en un título (text) dentro de un PostItem
+- El menú NO muestra botón "+" porque `text` no tiene `allowedChildren`
+- **Comportamiento esperado:** Debería mostrar "+" con los hijos del padre (PostItem): `['postField', 'text', 'image', 'secundario', 'button']`
+
+**Solución propuesta:**
+
+1. En `context-menu.js`, si `allowedChildren.length === 0`:
+   - Buscar el padre más cercano que SÍ tenga `allowedChildren`
+   - Usar `block.element.parentElement.closest('[data-gbn-id]')` para encontrar el padre
+   - Obtener el bloque padre del store y usar sus `allowedChildren`
+
+2. Cambiar la posición de inserción de `'append'` a `'after'` cuando se usa el contexto del padre
+
+**Archivos a modificar:**
+- `assets/js/ui/context-menu.js` → `renderContent()` sección del botón "+"
+
+---
+
 
 #### ✅ RESUELTO: Sistema de Notificación por Correo para Formularios GBN
 **Prioridad:** Media  
