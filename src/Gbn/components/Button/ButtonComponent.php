@@ -21,9 +21,12 @@ use Glory\Gbn\Traits\HasSpacing;
 use Glory\Gbn\Traits\HasCustomCSS;
 use Glory\Gbn\Traits\HasBorder;
 
+use Glory\Gbn\Traits\HasDimensions;
+use Glory\Gbn\Traits\HasTypography;
+
 class ButtonComponent extends AbstractComponent
 {
-    use HasSpacing, HasCustomCSS, HasBorder;
+    use HasSpacing, HasCustomCSS, HasBorder, HasDimensions, HasTypography;
 
     protected string $id = 'button';
     protected string $label = 'Botón';
@@ -87,17 +90,9 @@ class ButtonComponent extends AbstractComponent
         // TAB: ESTILO
         // =====================================================
 
-        // 4. Ancho del Botón
-        $schema->addOption(
-            Option::select('width', 'Ancho del Botón')
-                ->options([
-                    'auto' => 'Automático',
-                    '100%' => 'Completo (100%)',
-                    'fit-content' => 'Ajustar al contenido'
-                ])
-                ->default('auto')
-                ->tab('Estilo')
-        );
+        // 4. Dimensiones (Width, Height, Max-Width, Max-Height)
+        // Sustituye al campo manual 'width'
+        $this->addDimensionsOptions($schema, 'Estilo');
 
         // 5. Display Type
         $schema->addOption(
@@ -110,22 +105,9 @@ class ButtonComponent extends AbstractComponent
                 ->tab('Estilo')
         );
 
-        // 6. Alineación del texto
-        $schema->addOption(
-            Option::iconGroup('textAlign', 'Alineación')
-                ->options([
-                    ['valor' => 'left', 'etiqueta' => 'Izquierda', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M17 9.5H3M21 4.5H3M21 14.5H3M17 19.5H3"/></svg>'],
-                    ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M19 9.5H5M21 4.5H3M21 14.5H3M19 19.5H5"/></svg>'],
-                    ['valor' => 'right', 'etiqueta' => 'Derecha', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 9.5H7M21 4.5H3M21 14.5H3M21 19.5H7"/></svg>'],
-                ])
-                ->tab('Estilo')
-        );
-
-        // 7. Tipografía (con font-weight)
-        $schema->addOption(
-            Option::typography('typography', 'Tipografía')
-                ->tab('Estilo')
-        );
+        // 6. Tipografía (Font, Color, Align)
+        // Sustituye campos manuales textAlign, typography, color
+        $this->addTypographyOptions($schema, 'Estilo');
 
         // 8. Color de Fondo
         $schema->addOption(
@@ -135,12 +117,7 @@ class ButtonComponent extends AbstractComponent
                 ->description('Sobrescribe el color de la clase CSS')
         );
         
-        // 9. Color de Texto
-        $schema->addOption(
-            Option::color('color', 'Color de Texto')
-                ->allowTransparency()
-                ->tab('Estilo')
-        );
+        // 8. Color de Fondo (HasTypography ya agrega 'color' de texto)
 
         // 10. Spacing (Padding & Margin)
         foreach ($this->getSpacingOptions() as $option) {

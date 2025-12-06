@@ -760,17 +760,17 @@ trait HasDimensions
 ```
 [x] 4.1 Refactorizar PostRenderComponent para usar HasLayoutOptions
 [x] 4.2 Crear alias de campos si es necesario (displayMode -> layout)
-[ ] 4.3 Actualizar `ButtonComponent` para usar `HasTypography` y `HasDimensions`
-[ ] 4.4 Refactorizar `HasTypography` para que sea flexible (soportar subconjuntos de opciones)
+[x] 4.3 Actualizar `ButtonComponent` para usar `HasTypography` y `HasDimensions`
+[x] 4.4 Refactorizar `HasTypography` para que sea flexible (soportar subconjuntos de opciones)
 [ ] 4.5 Probar todos los casos de uso
 ```
 
 ### Fase 5: Migrar Traits Restantes ⏱️ 4-5 horas
 ```
-[ ] 5.1 Actualizar HasBackground.php
-[ ] 5.2 Actualizar HasPositioning.php
-[ ] 5.3 Actualizar HasBorder.php
-[ ] 5.4 Actualizar HasTypography.php (si aplica)
+[x] 5.1 Actualizar HasBackground.php
+[x] 5.2 Actualizar HasPositioning.php
+[x] 5.3 Actualizar HasBorder.php
+[x] 5.4 Actualizar HasTypography.php (si aplica)
 ```
 
 ### Fase 6: Migrar Archivos JS ⏱️ 3-4 horas
@@ -861,7 +861,7 @@ trait HasDimensions
 - [ ] **Visualización**: Confirmar que visualmente los iconos son idénticos o mejores que antes (ahora vienen centralizados de `Glory/src/Gbn/Icons`).
 - [x] **Tests Diagnóstico**: Ejecutar `php Glory/src/Gbn/Diagnostics/test_icons.php` y `php Glory/src/Gbn/Diagnostics/test_layout.php` para confirmar integridad del sistema (opcional).
 - [x] **Archivos JS**: Verificar que existen `assets/js/ui/icons/index.js` y sus compañeros. (Nota: Aún no están conectados al runtime JS principal, eso es Fase 6).
-- [ ] **Funcionalidad (HasFlexbox)**: Al editar un bloque con opciones de layout, asegurar que los cambios se aplican correctamente (la lógica subyacente de `HasFlexbox` no cambió, solo la definición de iconos).
+- [x] **Funcionalidad (HasFlexbox)**: Al editar un bloque con opciones de layout, asegurar que los cambios se aplican correctamente (la lógica subyacente de `HasFlexbox` no cambió, solo la definición de iconos).
 
 > **Nota importante:** Con los avances realizados, la estructura interna de `HasFlexbox` ha cambiado para usar `IconRegistry`. Si detecta iconos rotos (SVG no renderizado), verificar la caché y los logs de error PHP.
 

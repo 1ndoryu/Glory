@@ -3,6 +3,7 @@
 namespace Glory\Gbn\Traits;
 
 use Glory\Gbn\Schema\Option;
+use Glory\Gbn\Icons\IconRegistry;
 
 trait HasPositioning
 {
@@ -17,13 +18,13 @@ trait HasPositioning
 
         // 1. Position - Tab: Avanzado
         $options[] = Option::iconGroup('position', 'Posición')
-            ->options([
-                ['valor' => 'static', 'etiqueta' => 'Static', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>'],
-                ['valor' => 'relative', 'etiqueta' => 'Relative', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 4"/><rect x="8" y="8" width="8" height="8"/></svg>'],
-                ['valor' => 'absolute', 'etiqueta' => 'Absolute', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" stroke-opacity="0.2"/><rect x="12" y="4" width="8" height="8"/></svg>'],
-                ['valor' => 'fixed', 'etiqueta' => 'Fixed', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><circle cx="12" cy="12" r="3"/></svg>'],
-                ['valor' => 'sticky', 'etiqueta' => 'Sticky', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 8h16"/></svg>'],
-            ])
+            ->options(IconRegistry::getGroup([
+                'pos.static' => ['valor' => 'static', 'etiqueta' => 'Static'],
+                'pos.relative' => ['valor' => 'relative', 'etiqueta' => 'Relative'],
+                'pos.absolute' => ['valor' => 'absolute', 'etiqueta' => 'Absolute'],
+                'pos.fixed' => ['valor' => 'fixed', 'etiqueta' => 'Fixed'],
+                'pos.sticky' => ['valor' => 'sticky', 'etiqueta' => 'Sticky'],
+            ]))
             ->default('static')
             ->tab('Avanzado');
 
@@ -35,12 +36,12 @@ trait HasPositioning
 
         // 3. Overflow - Tab: Avanzado
         $options[] = Option::iconGroup('overflow', 'Desbordamiento (Overflow)')
-            ->options([
-                ['valor' => 'visible', 'etiqueta' => 'Visible', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M12 8v8M8 12h8"/></svg>'],
-                ['valor' => 'hidden', 'etiqueta' => 'Oculto', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 4l16 16M20 4L4 20"/></svg>'],
-                ['valor' => 'scroll', 'etiqueta' => 'Scroll', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M12 8v3"/><path d="M12 16v-3"/><path d="M9 13l3 3 3-3"/></svg>'],
-                ['valor' => 'auto', 'etiqueta' => 'Auto', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><circle cx="12" cy="12" r="3"/></svg>'],
-            ])
+            ->options(IconRegistry::getGroup([
+                'overflow.visible' => ['valor' => 'visible', 'etiqueta' => 'Visible'],
+                'overflow.hidden' => ['valor' => 'hidden', 'etiqueta' => 'Oculto'],
+                'overflow.scroll' => ['valor' => 'scroll', 'etiqueta' => 'Scroll'],
+                'overflow.auto' => ['valor' => 'auto', 'etiqueta' => 'Auto'],
+            ]))
             ->default('visible')
             ->tab('Avanzado');
 

@@ -4,6 +4,7 @@ namespace Glory\Gbn\Traits;
 
 use Glory\Gbn\Schema\SchemaBuilder;
 use Glory\Gbn\Schema\Option;
+use Glory\Gbn\Icons\IconRegistry;
 
 /**
  * Trait HasBorder - Fase 11 Refactorización SOLID
@@ -49,12 +50,12 @@ trait HasBorder
         // 3. Style (Icon Group)
         $builder->addOption(
             Option::iconGroup('borderStyle', 'Estilo de Borde')
-                ->options([
-                    ['valor' => 'solid', 'etiqueta' => 'Sólido', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="2" y1="12" x2="22" y2="12"/></svg>'],
-                    ['valor' => 'dashed', 'etiqueta' => 'Discontinuo', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 12h2"/><path d="M11 12h2"/><path d="M17 12h2"/></svg>'],
-                    ['valor' => 'dotted', 'etiqueta' => 'Punteado', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="4" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="20" cy="12" r="1"/></svg>'],
-                    ['valor' => 'double', 'etiqueta' => 'Doble', 'icon' => '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="2" y1="9" x2="22" y2="9"/><line x1="2" y1="15" x2="22" y2="15"/></svg>'],
-                ])
+                ->options(IconRegistry::getGroup([
+                    'border.style.solid' => ['valor' => 'solid', 'etiqueta' => 'Sólido'],
+                    'border.style.dashed' => ['valor' => 'dashed', 'etiqueta' => 'Discontinuo'],
+                    'border.style.dotted' => ['valor' => 'dotted', 'etiqueta' => 'Punteado'],
+                    'border.style.double' => ['valor' => 'double', 'etiqueta' => 'Doble'],
+                ]))
                 ->default('solid')
                 ->tab($tab)
                 ->condition('hasBorder', true)
