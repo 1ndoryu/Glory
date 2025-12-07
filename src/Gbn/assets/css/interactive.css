@@ -453,20 +453,6 @@
     /* NO usar pointer-events: none aquí - el template debe ser editable */
 }
 
-.gbn-active [data-gbn-is-template='true']::before {
-    content: 'TEMPLATE (editable)';
-    position: absolute;
-    top: -10px;
-    right: 4px; /* Derecha para no chocar con badges de PostFields */
-    background: rgba(var(--gbn-rgb-purple), 0.9);
-    color: var(--gbn-color-white);
-    padding: 2px 8px;
-    font-size: 10px;
-    font-weight: bold;
-    border-radius: var(--gbn-radius-base);
-    z-index: var(--gbn-z-badge);
-    white-space: nowrap;
-}
 
 /* PostField editor indicator */
 .gbn-active [gloryPostField] {
@@ -478,26 +464,6 @@
     overflow: visible; /* Permite que el badge se muestre fuera del contenedor */
 }
 
-.gbn-active [gloryPostField]:hover {
-    background: rgba(var(--gbn-rgb-yellow), 0.2);
-    border-color: rgba(var(--gbn-rgb-yellow), 0.8);
-}
-
-/* PostField type badge */
-.gbn-active [gloryPostField]::before {
-    content: attr(gloryPostField);
-    position: absolute;
-    top: -10px;
-    left: 4px;
-    background: rgba(var(--gbn-rgb-yellow), 0.9);
-    color: var(--gbn-color-gray-dark);
-    padding: 1px 4px;
-    font-size: 9px;
-    font-weight: 600;
-    border-radius: var(--gbn-radius-md);
-    z-index: var(--gbn-z-badge);
-    white-space: nowrap;
-}
 
 /* PostRender clones (preview items) - NO EDITABLES */
 /* Los clones son solo visuales, se aplican estilos viá JS pero reforzamos aquí */
@@ -531,21 +497,6 @@
     background: rgba(var(--gbn-rgb-blue-500), 0.06);
 }
 
-/* Form container badge */
-.gbn-active [gloryForm]::before {
-    content: '📋 FORM';
-    position: absolute;
-    top: -10px;
-    right: 4px;
-    background: rgba(var(--gbn-rgb-blue-500), 0.9);
-    color: var(--gbn-color-white);
-    padding: 2px 8px;
-    font-size: 10px;
-    font-weight: bold;
-    border-radius: var(--gbn-radius-base);
-    z-index: var(--gbn-z-badge);
-    white-space: nowrap;
-}
 
 /* Input field editor styles */
 .gbn-active [gloryInput] {
@@ -564,21 +515,7 @@
     border-color: rgba(var(--gbn-rgb-green), 0.7);
 }
 
-/* Input badge */
-.gbn-active [gloryInput]::before {
-    content: 'INPUT';
-    position: absolute;
-    top: -8px;
-    left: 4px;
-    background: rgba(var(--gbn-rgb-green), 0.85);
-    color: var(--gbn-color-white);
-    padding: 1px 5px;
-    font-size: 9px;
-    font-weight: 600;
-    border-radius: var(--gbn-radius-md);
-    z-index: var(--gbn-z-badge);
-    white-space: nowrap;
-}
+
 
 /* Textarea field editor styles */
 .gbn-active [gloryTextarea] {
@@ -597,21 +534,7 @@
     border-color: rgba(var(--gbn-rgb-purple), 0.7);
 }
 
-/* Textarea badge */
-.gbn-active [gloryTextarea]::before {
-    content: 'TEXTAREA';
-    position: absolute;
-    top: -8px;
-    left: 4px;
-    background: rgba(var(--gbn-rgb-purple), 0.85);
-    color: var(--gbn-color-white);
-    padding: 1px 5px;
-    font-size: 9px;
-    font-weight: 600;
-    border-radius: var(--gbn-radius-md);
-    z-index: var(--gbn-z-badge);
-    white-space: nowrap;
-}
+
 
 /* Select field editor styles */
 .gbn-active [glorySelect] {
@@ -630,22 +553,6 @@
     border-color: rgba(var(--gbn-rgb-secondary), 0.7);
 }
 
-/* Select badge */
-.gbn-active [glorySelect]::before {
-    content: 'SELECT';
-    position: absolute;
-    top: -8px;
-    left: 4px;
-    background: rgba(var(--gbn-rgb-secondary), 0.85);
-    color: var(--gbn-color-gray-dark);
-    padding: 1px 5px;
-    font-size: 9px;
-    font-weight: 600;
-    border-radius: var(--gbn-radius-md);
-    z-index: var(--gbn-z-badge);
-    white-space: nowrap;
-}
-
 /* Submit button editor styles */
 .gbn-active [glorySubmit] {
     position: relative;
@@ -658,21 +565,6 @@
     outline-color: rgba(var(--gbn-rgb-red), 0.8);
 }
 
-/* Submit badge - positioned outside the button */
-.gbn-active [glorySubmit]::after {
-    content: 'SUBMIT';
-    position: absolute;
-    top: -14px;
-    right: 4px;
-    background: rgba(var(--gbn-rgb-red), 0.9);
-    color: var(--gbn-color-white);
-    padding: 1px 5px;
-    font-size: 9px;
-    font-weight: 600;
-    border-radius: var(--gbn-radius-md);
-    z-index: var(--gbn-z-badge);
-    white-space: nowrap;
-}
 
 /* Color coding summary for form components:
    - Form:     Azul (#3b82f6) - Contenedor principal

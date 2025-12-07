@@ -1,12 +1,18 @@
 /* Theme Styles - Maps GBN variables to content elements */
 
+/*
+
+Los comento porque interfieren con los estilos del usuario. 
+Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where con naturalidad a los elementos nativos del html, h1, h2, sin tener que especificar cosas como --gbn-page-bg o data-gbn-root, esto agrega complejidad.
+
+7 de diciembre de 2025
+
 :where([data-gbn-root]) {
     background-color: var(--gbn-page-bg, var(--gbn-bg));
     color: var(--gbn-text-color);
     font-family: var(--gbn-text-font);
     font-size: var(--gbn-text-size);
     
-    /* Page Defaults */
     max-width: var(--gbn-page-max-width, 100%);
     padding-top: var(--gbn-page-pt, 0px);
     padding-right: var(--gbn-page-pr, 0px);
@@ -91,6 +97,7 @@
     text-transform: var(--gbn-h6-transform, none);
     margin-bottom: 0.5em;
 }
+*/ 
 
 /* 
    Component Base Styles (Level 2) 

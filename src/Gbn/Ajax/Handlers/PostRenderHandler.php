@@ -122,6 +122,16 @@ class PostRenderHandler
             'link' => get_tag_link($tag->term_id),
         ], $tags) : [];
 
+        // Obtener todos los post meta para campos meta:xxx
+        $allMeta = get_post_meta($post->ID);
+        $metaFormatted = [];
+        foreach ($allMeta as $key => $values) {
+            // Excluir metas internos de WordPress (empiezan con _)
+            if (strpos($key, '_') !== 0) {
+                $metaFormatted[$key] = is_array($values) && count($values) === 1 ? $values[0] : $values;
+            }
+        }
+
         return [
             'id' => $post->ID,
             'title' => get_the_title($post),
@@ -138,6 +148,7 @@ class PostRenderHandler
             'tags' => $tagList,
             'commentCount' => (int) get_comments_number($post->ID),
             'postType' => $post->post_type,
+            'meta' => $metaFormatted, // Todos los post meta para campos meta:xxx
         ];
     }
 
@@ -204,7 +215,7 @@ class PostRenderHandler
             $excerpt = wp_trim_words(get_the_excerpt($post), 20);
             $categories = get_the_category($post->ID);
             $catSlugs = array_map(fn($c) => $c->slug, $categories);
-            
+
             $html .= sprintf(
                 '<article gloryPostItem class="gbn-post-item" data-post-id="%d" data-categories="%s">',
                 $post->ID,
@@ -247,4 +258,3 @@ class PostRenderHandler
         return $html;
     }
 }
-
