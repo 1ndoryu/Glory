@@ -50,11 +50,11 @@ class GbnManager
         // Must run AFTER PostRender processing (priority 20 vs 15)
         add_filter('the_content', [\Glory\Gbn\Components\PostRender\PostRenderProcessor::class, 'processContent'], 15);
         add_filter('the_content', [self::class, 'filterFrontendContent'], 20);
-        
+
         // Fase 13.5: Invalidar cache de PostRender cuando cambian posts
         add_action('save_post', [\Glory\Gbn\Services\PostRenderService::class, 'clearCacheOnPostChange'], 10, 1);
         add_action('delete_post', [\Glory\Gbn\Services\PostRenderService::class, 'clearCacheOnPostChange'], 10, 1);
-        add_action('transition_post_status', function($new, $old, $post) {
+        add_action('transition_post_status', function ($new, $old, $post) {
             if ($new !== $old) {
                 \Glory\Gbn\Services\PostRenderService::clearCacheOnPostChange($post->ID);
             }

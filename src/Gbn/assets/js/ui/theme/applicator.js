@@ -419,8 +419,12 @@
     Gbn.ui.themeApplicator = Gbn.ui.theme.applicator;
 
     // Initialize Settings on Load
+    // ADR-001: El TEMA (PHP) ahora genera los theme settings en el <head> via ThemeSettingsRenderer.php
+    // GBN solo los aplica si:
+    // 1. El PHP no genero el style (fallback para desarrollo)
+    // 2. Durante edicion en tiempo real (via applySingleValue)
     document.addEventListener('DOMContentLoaded', function () {
-        // 1. Load Config
+        // 1. Load Config into Gbn.config (siempre necesario para edicion)
         var config = window.gloryGbnCfg || {};
         if (window.Gbn) {
             if (!window.Gbn.config) window.Gbn.config = {};
@@ -428,10 +432,22 @@
             if (config.pageSettings) window.Gbn.config.pageSettings = config.pageSettings;
         }
 
-        // 2. Apply Settings
-        if (config.themeSettings) {
-            applyThemeSettings(config.themeSettings);
+        // 2. Verificar si el tema PHP ya aplico los theme settings
+        // Si existe <style id="glory-theme-settings">, el PHP ya lo hizo
+        var phpStyleExists = document.getElementById('glory-theme-settings');
+
+        // 3. Apply Settings SOLO si PHP no los genero
+        // Esto evita duplicar variables CSS y conflictos de especificidad
+        if (!phpStyleExists) {
+            if (config.themeSettings) {
+                if (Gbn.log) Gbn.log.info('Theme Settings: PHP style not found, applying via JS (fallback)');
+                applyThemeSettings(config.themeSettings);
+            }
+        } else {
+            if (Gbn.log) Gbn.log.info('Theme Settings: PHP style found, skipping JS application (ADR-001)');
         }
+
+        // Page settings siempre se aplican via JS (estilos inline en el elemento root)
         if (config.pageSettings) {
             applyPageSettings(config.pageSettings);
         }

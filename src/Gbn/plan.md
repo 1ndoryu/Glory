@@ -285,6 +285,23 @@ El padre FormComponent maneja fuentes, inputs heredan por defecto.
 
 ---
 
+### FEATURE-009: Forzar Estilos desde Configuraciones Defaults
+**Estado:** PENDIENTE | **Prioridad:** Media
+
+**Descripcion:** Permitir que las configuraciones de "Theme Settings" (defaults globales) puedan forzar estilos a los elementos que usen esas variables CSS.
+
+**Contexto:**
+- Actualmente el PHP genera variables CSS como `--gbn-principal-padding-top`
+- Pero los elementos no las consumen automaticamente
+- El CSS del tema debe usar `var(--gbn-principal-padding-top, default)` para que funcionen
+
+**Opciones de implementacion:**
+1. **Opcion A - CSS del tema:** El desarrollador escribe CSS que consume las variables
+2. **Opcion B - CSS generado por PHP:** El tema genera reglas CSS que aplican las variables a selectores como `[gloryDiv]`
+3. **Opcion C - Inline styles:** GBN aplica estilos inline a elementos que tienen roles
+
+**Archivo relacionado:** `App/Helpers/ThemeSettingsRenderer.php`
+
 ---
 
 # HISTORIAL DE BUGS RESUELTOS (Compacto)

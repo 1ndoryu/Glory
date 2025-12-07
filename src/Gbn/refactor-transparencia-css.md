@@ -247,67 +247,447 @@ entonces GBN esta haciendo algo mal.
 
 ---
 
-### Fase 2: Sistema de Preview Responsive (Iframe Real)
-**Estado:** PENDIENTE
-**Dependencia:** Fase 1 completada (o en paralelo)
-**Estimacion:** 4-6 horas
+### Fase 2: Arquitectura Iframe-First (Opcion G)
+**Estado:** EN PLANIFICACION
+**Dependencia:** Fase 1 completada
+**Estimacion:** 8-12 horas (es un cambio arquitectonico mayor)
 **Relacionado:** BUG-022
 
-#### 2.1 Diseno del Sistema
-- [ ] **2.1.1** Definir estructura del iframe container
-- [ ] **2.1.2** Definir parametro URL para modo preview (`?gbn-preview=1`)
-- [ ] **2.1.3** Definir protocolo de comunicacion (postMessage)
-- [ ] **2.1.4** Documentar flujo de sincronizacion bidireccional
+> [!CAUTION]
+> Esta es una refactorizacion arquitectonica significativa. El contenido editable vivira SIEMPRE dentro de un iframe. La pagina padre sera solo el "shell" del editor.
 
-**Diagrama de Arquitectura:**
+#### Problemas del Primer Intento (Documentados)
+
+| Problema                   | Causa Raiz                                                     | Solucion en Opcion G                                                 |
+| -------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Inspector no visible       | El inspector vivia en la pagina padre, no dentro del iframe    | Inspector como overlay ENCIMA del iframe, con coordenadas calculadas |
+| Header/Footer duplicados   | El iframe cargaba TODO el template WordPress                   | PHP detecta `?gbn-iframe=1` y NO carga header/footer del tema        |
+| Cambios no se reflejaban   | El iframe cargaba desde servidor (estado guardado), no memoria | El contenido se inyecta via postMessage, NO se recarga la pagina     |
+| Sincronizacion de guardado | Dos instancias de GBN compitiendo                              | UNA sola instancia de GBN en el padre, iframe es solo renderer       |
+
+---
+
+#### 2.1 Arquitectura General
+
+**Diagrama de Componentes:**
 ```
-+-------------------+                    +-------------------+
-|   GBN Editor      |                    |   Preview Iframe  |
-|   (Pagina real)   |                    |   (375px/768px)   |
-+-------------------+                    +-------------------+
-        |                                        |
-        |  1. Usuario cambia breakpoint          |
-        |--------------------------------------->|
-        |                                        |
-        |  2. Iframe carga pagina con            |
-        |     ?gbn-preview=1&width=375           |
-        |                                        |
-        |  3. Usuario edita en editor            |
-        |--------------------------------------->|
-        |  postMessage: {type:'update',          |
-        |                blockId, styles}        |
-        |                                        |
-        |  4. Iframe aplica cambios              |
-        |                                        |
-        |  5. Usuario guarda                     |
-        |<---------------------------------------|
-        |  Editor tiene la fuente de verdad     |
-        |                                        |
-+-------------------+                    +-------------------+
++============================================================================+
+|  PAGINA PADRE (Shell del Editor)                                           |
+|  - GBN Core (state.js, store.js, persistence.js)                           |
+|  - Panel lateral (panel-core.js, panel-render.js)                          |
+|  - Dock de herramientas (dock.js)                                          |
+|  - Inspector OVERLAY (se dibuja encima del iframe)                         |
+|  - Theme Settings, Library, Context Menu                                   |
++============================================================================+
+|                                                                            |
+|  +----------------------------------------------------------------------+  |
+|  |  IFRAME CONTAINER (posicion relativa para el overlay)               |  |
+|  |  - CSS: position: relative; overflow: hidden;                       |  |
+|  |  - Redimensionable: 100% | 768px | 375px                            |  |
+|  |                                                                      |  |
+|  |  +----------------------------------------------------------------+  |  |
+|  |  |  IFRAME (contenido editable)                                  |  |  |
+|  |  |  - Carga con ?gbn-iframe=1                                    |  |  |
+|  |  |  - NO carga: header.php, footer.php, GBN scripts              |  |  |
+|  |  |  - SI carga: CSS del tema, contenido de la pagina             |  |  |
+|  |  |  - Contiene: gbn-iframe-bridge.js (receptor de mensajes)      |  |  |
+|  |  +----------------------------------------------------------------+  |  |
+|  |                                                                      |  |
+|  |  +----------------------------------------------------------------+  |  |
+|  |  |  INSPECTOR OVERLAY (position: absolute sobre el iframe)       |  |  |
+|  |  |  - Hover highlight, selection highlight                       |  |  |
+|  |  |  - Botones de control (+, delete, move)                       |  |  |
+|  |  |  - Calcula posiciones usando iframe.getBoundingClientRect()   |  |  |
+|  |  +----------------------------------------------------------------+  |  |
+|  +----------------------------------------------------------------------+  |
+|                                                                            |
++============================================================================+
 ```
 
-#### 2.2 Implementacion Backend (PHP)
-- [ ] **2.2.1** Detectar parametro `?gbn-preview=1` en PHP
-- [ ] **2.2.2** En modo preview: no cargar scripts de edicion, solo estilos del tema
-- [ ] **2.2.3** Inyectar script minimo de sincronizacion (`preview-receiver.js`)
+**Flujo de Datos Unidireccional:**
+```
+Usuario hace click en elemento dentro del iframe
+    |
+    v
+[gbn-iframe-bridge.js] Detecta click, envia postMessage al padre
+    |
+    v
+[inspector-overlay.js] Recibe blockId, dibuja highlight sobre el iframe
+    |
+    v
+[panel-core.js] Abre panel con config del bloque (desde state.js del padre)
+    |
+    v
+Usuario edita valor en panel
+    |
+    v
+[state.js] Actualiza estado en memoria (PADRE es fuente de verdad)
+    |
+    v
+[postMessage] Envia cambio al iframe: {type: 'updateStyle', blockId, css}
+    |
+    v
+[gbn-iframe-bridge.js] Aplica style inline al elemento
+    |
+    v
+[persistence.js] Guarda desde el PADRE (serializa estado + DOM del iframe)
+```
 
-#### 2.3 Implementacion Frontend (JS)
-- [ ] **2.3.1** Crear `services/preview-frame.js` - Maneja creacion y comunicacion del iframe
-- [ ] **2.3.2** Modificar `services/responsive.js` - Delegar a preview-frame en tablet/mobile
-- [ ] **2.3.3** Modificar `ui/dock.js` - Conectar botones de breakpoint
-- [ ] **2.3.4** Crear `preview-receiver.js` - Script que corre dentro del iframe
+---
 
-#### 2.4 CSS del Contenedor
-- [ ] **2.4.1** Estilos para el contenedor del iframe (centrado, sombra, marco de dispositivo)
-- [ ] **2.4.2** Transiciones suaves entre breakpoints
+#### 2.2 Componentes a Crear/Modificar
 
-#### 2.5 Sincronizacion
-- [ ] **2.5.1** Editor -> Iframe: Enviar cambios de estilos via postMessage
-- [ ] **2.5.2** Iframe -> Editor: (Opcional) Feedback visual de que se aplico
-- [ ] **2.5.3** Manejar caso de recarga del iframe (re-enviar estado actual)
+##### 2.2.1 PHP: Modo Iframe
+**Archivo:** `GbnManager.php` (modificar)
+
+```php
+// Detectar modo iframe
+public static function isIframeMode(): bool {
+    return isset($_GET['gbn-iframe']) && $_GET['gbn-iframe'] === '1';
+}
+
+// En wp_enqueue_scripts:
+if (self::isIframeMode()) {
+    // NO cargar scripts del editor
+    // Solo cargar: gbn-iframe-bridge.js (minimo)
+    wp_enqueue_script('gbn-iframe-bridge', ...);
+    return;
+}
+```
+
+**Archivo:** `header.php` / `footer.php` del TEMA (modificar)
+
+```php
+<?php
+// Al inicio de header.php y footer.php
+if (isset($_GET['gbn-iframe']) && $_GET['gbn-iframe'] === '1') {
+    // En modo iframe: NO renderizar header/footer
+    // Solo continuar si es el content area
+    return;
+}
+?>
+```
+
+**Nota:** Alternativa mejor - usar un template especial `iframe-content.php`:
+```php
+// En functions.php del tema
+add_filter('template_include', function($template) {
+    if (isset($_GET['gbn-iframe'])) {
+        return get_template_directory() . '/iframe-content.php';
+    }
+    return $template;
+});
+```
+
+##### 2.2.2 JS: Iframe Container Manager
+**Archivo nuevo:** `assets/js/services/iframe-manager.js`
+
+Responsabilidades:
+- Crear el iframe y el contenedor overlay
+- Manejar redimensionamiento (desktop/tablet/mobile)
+- Comunicacion bidireccional via postMessage
+- Sincronizar estado inicial al cargar
+
+```javascript
+// API Publica
+Gbn.iframeManager = {
+    init: function(containerId) { ... },
+    setViewport: function(breakpoint) { ... }, // 'desktop' | 'tablet' | 'mobile'
+    sendUpdate: function(blockId, styles) { ... },
+    getIframeDocument: function() { ... },
+    destroy: function() { ... }
+};
+```
+
+##### 2.2.3 JS: Iframe Bridge (corre DENTRO del iframe)
+**Archivo nuevo:** `assets/js/gbn-iframe-bridge.js`
+
+Responsabilidades:
+- Escuchar postMessage del padre
+- Aplicar cambios de estilo al DOM
+- Detectar clicks y enviar blockId al padre
+- Detectar hover y enviar posiciones al padre
+
+```javascript
+// NO depende de Gbn.* (es independiente)
+(function() {
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'gbn:updateStyle') {
+            var el = document.querySelector('[data-gbn-id="' + event.data.blockId + '"]');
+            if (el) el.style.cssText = event.data.cssText;
+        }
+        if (event.data.type === 'gbn:injectState') {
+            // Inyectar HTML inicial desde el padre
+        }
+    });
+    
+    document.addEventListener('click', function(e) {
+        var block = e.target.closest('[data-gbn-id]');
+        if (block) {
+            parent.postMessage({
+                type: 'gbn:blockClicked',
+                blockId: block.getAttribute('data-gbn-id'),
+                rect: block.getBoundingClientRect()
+            }, '*');
+        }
+    });
+})();
+```
+
+##### 2.2.4 JS: Inspector Overlay (se dibuja SOBRE el iframe)
+**Archivo nuevo:** `assets/js/ui/inspector/overlay-renderer.js`
+
+Responsabilidades:
+- Crear elemento overlay (div con position: absolute)
+- Recibir coordenadas del iframe y dibujar highlight
+- CUIDADO: Las coordenadas del iframe son relativas a su viewport, hay que sumar el offset del iframe container
+
+```javascript
+// Calculo de posiciones
+function translateRectFromIframe(iframeRect, elementRect) {
+    return {
+        top: iframeRect.top + elementRect.top,
+        left: iframeRect.left + elementRect.left,
+        width: elementRect.width,
+        height: elementRect.height
+    };
+}
+```
+
+##### 2.2.5 Modificar: responsive.js
+**Archivo:** `assets/js/services/responsive.js` (modificar)
+
+```javascript
+// En lugar de:
+function applyViewportSimulation(breakpoint) {
+    var root = document.querySelector('[data-gbn-root]');
+    root.style.maxWidth = widths[breakpoint];
+}
+
+// Ahora:
+function applyViewportSimulation(breakpoint) {
+    // Delegar al iframe manager
+    if (Gbn.iframeManager) {
+        Gbn.iframeManager.setViewport(breakpoint);
+    }
+}
+```
+
+##### 2.2.6 Modificar: persistence.js
+**Archivo:** `assets/js/services/persistence.js` (modificar)
+
+Al guardar, serializar el contenido del IFRAME, no de la pagina padre:
+
+```javascript
+function collectContent() {
+    var iframeDoc = Gbn.iframeManager.getIframeDocument();
+    var contentRoot = iframeDoc.querySelector('[data-gbn-root]');
+    // Serializar contentRoot...
+}
+```
+
+---
+
+#### 2.3 Flujos Detallados
+
+##### 2.3.1 Flujo: Carga Inicial
+
+```
+1. Usuario abre pagina.php?gbn=1 (modo editor)
+   
+2. PADRE carga:
+   - Shell del editor (panel, dock, inspector overlay)
+   - Crea iframe con src="pagina.php?gbn-iframe=1"
+   
+3. IFRAME carga:
+   - PHP detecta gbn-iframe=1
+   - NO incluye header.php / footer.php
+   - SI incluye CSS del tema
+   - SI incluye contenido de la pagina
+   - SI incluye gbn-iframe-bridge.js
+   
+4. IFRAME envia postMessage: {type: 'gbn:ready'}
+
+5. PADRE recibe 'ready':
+   - Escanea DOM del iframe para construir state.js
+   - O: Envia estado guardado via postMessage al iframe
+   
+6. Editor listo para usarse
+```
+
+##### 2.3.2 Flujo: Usuario hace click en elemento
+
+```
+1. Click dentro del IFRAME
+
+2. [gbn-iframe-bridge.js]:
+   - Detecta click en elemento con [data-gbn-id]
+   - Obtiene rect via getBoundingClientRect()
+   - Envia postMessage al padre:
+     {type: 'gbn:blockClicked', blockId: 'xyz', rect: {...}}
+
+3. [inspector-overlay.js] en PADRE:
+   - Recibe mensaje
+   - Traduce coordenadas (sumar offset del iframe container)
+   - Dibuja highlight en el overlay
+   - Marca bloque como seleccionado en state.js
+
+4. [panel-core.js]:
+   - Abre panel con schema del bloque seleccionado
+```
+
+##### 2.3.3 Flujo: Usuario edita valor en panel
+
+```
+1. Usuario cambia padding a 20px en el panel
+
+2. [panel-render.js]:
+   - Llama: Gbn.actions.updateBlock(blockId, {padding: {top: '20px'}}, breakpoint)
+
+3. [state.js]:
+   - Actualiza estado en memoria
+   - Dispara evento 'gbn:configChanged'
+
+4. [store-subscriber.js]:
+   - Escucha evento
+   - Genera nuevo CSS para el bloque
+   - Envia postMessage al iframe:
+     {type: 'gbn:updateStyle', blockId: 'xyz', cssText: 'padding-top: 20px;'}
+
+5. [gbn-iframe-bridge.js] en IFRAME:
+   - Recibe mensaje
+   - Aplica: element.style.cssText = cssText
+   - (Opcional) Envia confirmacion
+
+6. El usuario ve el cambio reflejado en tiempo real
+```
+
+##### 2.3.4 Flujo: Cambio de Breakpoint
+
+```
+1. Usuario hace click en boton "Tablet" en el dock
+
+2. [dock.js]:
+   - Llama: Gbn.responsive.setBreakpoint('tablet')
+
+3. [responsive.js]:
+   - Actualiza currentBreakpoint
+   - Llama: Gbn.iframeManager.setViewport('tablet')
+
+4. [iframe-manager.js]:
+   - Cambia width del iframe container a 768px
+   - Transicion CSS suave
+   - Las media queries del CSS del tema ahora funcionan nativamente
+
+5. [panel-render.js]:
+   - Recibe evento 'gbn:breakpointChanged'
+   - Re-renderiza panel con valores del nuevo breakpoint
+```
+
+##### 2.3.5 Flujo: Guardar
+
+```
+1. Usuario hace click en "Guardar"
+
+2. [persistence.js]:
+   - Obtiene DOM del iframe: iframe.contentDocument
+   - Serializa contenido de [data-gbn-root]
+   - Combina con estado de state.js
+   - Envia AJAX al backend
+
+3. Backend:
+   - Guarda HTML en post_meta o en el contenido
+   - Responde OK
+
+4. Usuario recibe confirmacion
+```
+
+---
+
+#### 2.4 Consideraciones Criticas
+
+##### 2.4.1 Cross-Origin
+El iframe carga la misma pagina (mismo dominio), asi que NO hay problemas de cross-origin.
+
+##### 2.4.2 Performance
+- El iframe solo carga contenido, sin header/footer/scripts pesados
+- El inspector overlay usa RAF para actualizaciones suaves
+- Los postMessage son asincronos pero rapidos
+
+##### 2.4.3 Header/Footer en Editor
+**Pregunta:** Si el iframe no tiene header/footer, como los edita el usuario?
+
+**Respuesta:** El header y footer se editan en una vista donde SI estan presentes. Opciones:
+1. **Modo "Editar Header"**: Carga un iframe especial solo con header
+2. **Vista Desktop siempre tiene header/footer**: Solo tablet/mobile usan iframe reducido
+
+**Decision recomendada:** Opcion 2 - En desktop el iframe incluye todo, en tablet/mobile se ocultan con CSS (not header/footer PHP).
+
+##### 2.4.4 Scroll Sync
+Si el usuario hace scroll en el iframe, el overlay debe moverse junto. Solucion:
+```javascript
+iframe.contentWindow.addEventListener('scroll', function() {
+    parent.postMessage({type: 'gbn:scroll', scrollY: this.scrollY}, '*');
+});
+```
+
+##### 2.4.5 Drag and Drop entre bloques
+El drag-drop actual funciona en el DOM directo. Con iframe:
+- El drag se inicia en el overlay (padre)
+- La posicion del drop se calcula usando coordenadas traducidas
+- El drop modifica el DOM del iframe via postMessage
+
+---
+
+#### 2.5 Tareas de Implementacion
+
+##### Fase 2.A: Infraestructura Base
+- [ ] **2.A.1** Crear template `iframe-content.php` en el tema
+- [ ] **2.A.2** Modificar `GbnManager.php` para detectar `?gbn-iframe=1`
+- [ ] **2.A.3** Crear `gbn-iframe-bridge.js` (version minima)
+- [ ] **2.A.4** Crear `iframe-manager.js` con init/destroy
+
+##### Fase 2.B: Inspector sobre Iframe
+- [ ] **2.B.1** Crear `overlay-renderer.js` para dibujar highlights
+- [ ] **2.B.2** Implementar traduccion de coordenadas iframe->padre
+- [ ] **2.B.3** Conectar clicks del iframe con seleccion en padre
+- [ ] **2.B.4** Conectar hover del iframe con highlight en overlay
+
+##### Fase 2.C: Sincronizacion de Estilos
+- [ ] **2.C.1** Modificar `store-subscriber.js` para enviar cambios al iframe
+- [ ] **2.C.2** Implementar recepcion de cambios en `gbn-iframe-bridge.js`
+- [ ] **2.C.3** Verificar que cambios son bidireccionales
+
+##### Fase 2.D: Cambio de Viewport
+- [ ] **2.D.1** Modificar `responsive.js` para delegar a `iframe-manager.js`
+- [ ] **2.D.2** Implementar `setViewport()` con transiciones
+- [ ] **2.D.3** Verificar media queries funcionan nativamente
+
+##### Fase 2.E: Persistencia
+- [ ] **2.E.1** Modificar `persistence.js` para leer DOM del iframe
+- [ ] **2.E.2** Verificar que el guardado funciona igual que antes
+- [ ] **2.E.3** Verificar que los cambios persisten al recargar
+
+##### Fase 2.F: Casos Especiales
+- [ ] **2.F.1** Header/Footer: Decidir estrategia y implementar
+- [ ] **2.F.2** Drag-Drop: Adaptar para funcionar con iframe
+- [ ] **2.F.3** Context Menu: Posicionar sobre overlay
+- [ ] **2.F.4** Library: Insertar elementos en el iframe
+
+---
+
+#### 2.6 Riesgos y Mitigaciones
+
+| Riesgo                    | Probabilidad | Impacto | Mitigacion                            |
+| ------------------------- | ------------ | ------- | ------------------------------------- |
+| Latencia en postMessage   | Baja         | Media   | Usar debounce para cambios frecuentes |
+| Coordenadas incorrectas   | Media        | Alta    | Tests exhaustivos de traduccion       |
+| Memory leaks en listeners | Media        | Media   | Cleanup explicito en destroy()        |
+| Incompatibilidad IE11     | Baja         | Baja    | postMessage es compatible             |
+| Scroll desincronizado     | Media        | Media   | Listener de scroll en iframe          |
 
 **Notas de la implementacion:**
-<!-- La IA agregara notas aqui -->
+<!-- La IA agregara notas aqui durante la implementacion -->
 
 ---
 
@@ -419,44 +799,37 @@ Negativas:
 ---
 
 ### Fase 1.5: Theme Settings Transparente (NUEVA)
-**Estado:** PENDIENTE
+**Estado:** COMPLETADA
 **Prioridad:** ALTA (Complemento de Fase 1)
-**Estimacion:** 2-3 horas
+**Fecha:** 7 Diciembre 2025
 
-#### 1.5.1 Backend PHP (Tema)
-- [ ] Crear clase `ThemeSettingsRenderer` en el tema (no en GBN)
-- [ ] Hook en `wp_head` para generar `<style>` con Theme Settings guardados
-- [ ] Leer de `wp_options` (key: `gbn_theme_settings`)
-- [ ] Usar selectores `:where(h1)`, `:where(h2)`, `:where(p)`, etc.
+#### 1.5.1 Backend PHP (Tema) - COMPLETADO
+- [x] Crear `ThemeSettingsRenderer.php` en `App/Helpers/`
+- [x] Hook en `wp_head` para generar `<style>` con Theme Settings guardados
+- [x] Leer de `wp_options` (key: `gbn_theme_settings`)
+- [x] Usar selectores `:where(h1)`, `:where(h2)`, `:where(p)`, etc.
+- [x] Filtrar propiedades invalidas (contenido, posicionamiento, defaults)
 
-**Archivo a crear:** `Glory/App/Theme/ThemeSettingsRenderer.php`
+**Archivo creado:** `App/Helpers/ThemeSettingsRenderer.php`
 
-```php
-// Ejemplo de implementacion
-class ThemeSettingsRenderer {
-    public function render(): void {
-        $settings = get_option('gbn_theme_settings', []);
-        if (empty($settings)) return;
-        
-        echo '<style id="glory-theme-settings">';
-        // Solo emitir valores que el usuario explicitamente guardo
-        if (!empty($settings['typography']['h1']['fontSize'])) {
-            echo ':where(h1) { font-size: ' . esc_attr($settings['typography']['h1']['fontSize']) . '; }';
-        }
-        // ... etc
-        echo '</style>';
-    }
-}
-```
+**Implementacion:**
+- Hook `wp_head` con prioridad 5
+- Genera `<style id="glory-theme-settings">`
+- Tipografia: `:where(h1)`, etc. para especificidad 0
+- Filtros inteligentes:
+  - Lista de propiedades ignoradas (texto, url, position, etc.)
+  - Validacion de valores CSS (ignora defaults como `block`, `none`, `0px`)
+  - Ignora valores de contenido (URLs, textos largos)
 
-#### 1.5.2 Frontend JS (GBN)
-- [ ] Modificar `theme-settings.js` para leer valores computados del DOM
-- [ ] Crear elementos de referencia temporales si no existen (h1, h2, p, etc.)
+#### 1.5.2 Frontend JS (GBN) - COMPLETADO
+- [x] Modificar `applicator.js` para NO duplicar aplicacion de settings
+- [x] Detectar existencia de `<style id="glory-theme-settings">`
+- [x] `applySingleValue()` para edicion en tiempo real
+
+#### 1.5.3 Items Opcionales (Mejoras Futuras)
+- [ ] Crear elementos de referencia temporales para leer valores computados
 - [ ] Mostrar valores reales en el panel, no defaults hardcodeados
 
-#### 1.5.3 Limpieza
-- [ ] Eliminar variables `--gbn-h1-*`, `--gbn-text-*` que quedaron en el JS
-- [ ] Actualizar `applicator.js` para trabajar con el nuevo sistema
 
 ---
 
@@ -470,6 +843,10 @@ class ThemeSettingsRenderer {
 - Se decidio que la solucion para BUG-022 debe ser iframe real, no inyeccion CSS
 - Se creo este roadmap para guiar el trabajo
 - **Fase 0 y 1 completadas** - Limpieza de ~776 lineas de CSS
+- **Fase 1.5 completada** - Theme Settings ahora generados por PHP del tema:
+  - Tipografia con `:where()` para especificidad 0
+  - Filtros inteligentes para ignorar defaults y propiedades invalidas
+  - El sitio funciona IDENTICAMENTE con o sin GBN activo
 - **ADR-001 documentada** - Theme Settings seran aplicados por el tema, no por GBN
 
 ---
@@ -486,9 +863,13 @@ class ThemeSettingsRenderer {
 
 ## 7. Historial de Cambios
 
-| Fecha      | Cambio                                      | Autor |
-| ---------- | ------------------------------------------- | ----- |
-| 2025-12-07 | Creacion del documento                      | IA    |
-| 2025-12-07 | Fase 0 y 1 completadas, ADR-001 documentada | IA    |
-| 2025-12-07 | Agregada Fase 1.5 para Theme Settings       | IA    |
+| Fecha      | Cambio                                                     | Autor |
+| ---------- | ---------------------------------------------------------- | ----- |
+| 2025-12-07 | Creacion del documento                                     | IA    |
+| 2025-12-07 | Fase 0 y 1 completadas, ADR-001 documentada                | IA    |
+| 2025-12-07 | Agregada Fase 1.5 para Theme Settings                      | IA    |
+| 2025-12-07 | Fase 1.5.1 (PHP) y 1.5.2 parcial completadas               | IA    |
+| 2025-12-07 | **Fase 1.5 COMPLETADA** - Filtros inteligentes de defaults | IA    |
+| 2025-12-07 | **Fase 2 REPLANIFICADA** - Arquitectura Iframe-First (Opcion G) con plan exhaustivo para resolver problemas de inspector, duplicacion header/footer, sincronizacion de estado | IA    |
+
 

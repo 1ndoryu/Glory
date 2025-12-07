@@ -1,7 +1,7 @@
-;(function (global) {
+(function (global) {
     'use strict';
 
-    var Gbn = global.Gbn = global.Gbn || {};
+    var Gbn = (global.Gbn = global.Gbn || {});
     var utils = Gbn.utils;
 
     if (!utils || !utils.hasDocumentBody()) {
@@ -20,7 +20,7 @@
     }
 
     utils.debug('Iniciando GBN modular');
-    if (Gbn.log) Gbn.log.info('GBN Initialized', { version: config.version || 'unknown' });
+    if (Gbn.log) Gbn.log.info('GBN Initialized', {version: config.version || 'unknown'});
     // console.log('[GBN-DEBUG] GBN Main Init');
 
     var content = Gbn.content;
@@ -50,23 +50,22 @@
             utils.debug('Aplicando Theme Settings antes de hidratación (Sincronizado)');
             Gbn.ui.theme.applicator.applyThemeSettings(config.themeSettings);
         }
-        
+
         var blocks = content.scan(document);
         content.hydrate(blocks);
-        
+
         if (inspector && typeof inspector.init === 'function') {
             inspector.init(blocks, config);
         }
     }
 
     initGBN();
-    
+
     // Initialize Debug Overlay
     if (Gbn.ui.debug && Gbn.ui.debug.overlay) {
         Gbn.ui.debug.overlay.init();
     }
-    
+
     // Note: store-subscriber.js auto-initializes on load if store exists
     // Note: validator.js is a static module, no init needed
 })(window);
-
