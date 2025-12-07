@@ -39,6 +39,7 @@
 | MenuComponent       | `menu`       | `[gloryMenu]`          | Spacing, Typography                             | ✅      |
 | FooterComponent     | `footer`     | `[gloryFooter]`        | Spacing, Background, Grid                       | ✅      |
 | MenuItemComponent   | `menuItem`   | `[gloryMenuItem]`      | Spacing, Typography                             | ✅      |
+| TarjetaComponent    | `tarjeta`    | `[gloryTarjeta]`       | Flexbox, Grid, Spacing, Background, Positioning | ✅      |
 
 ---
 

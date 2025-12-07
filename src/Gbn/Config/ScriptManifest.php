@@ -473,6 +473,11 @@ class ScriptManifest
                 'file' => '/js/ui/renderers/menu-item.js',
                 'deps' => ['glory-gbn-ui-renderers-shared', 'glory-gbn-ui-renderers-traits'],
             ],
+            // TarjetaComponent - Componente unificado para tarjetas con imagen de fondo
+            'glory-gbn-ui-renderers-tarjeta' => [
+                'file' => '/js/ui/renderers/tarjeta.js',
+                'deps' => ['glory-gbn-ui-renderers-style-composer', 'glory-gbn-ui-renderers-traits'],
+            ],
         ];
     }
 
@@ -555,6 +560,7 @@ class ScriptManifest
             'glory-gbn-ui-renderers-menu',
             'glory-gbn-ui-renderers-footer',
             'glory-gbn-ui-renderers-menu-item',
+            'glory-gbn-ui-renderers-tarjeta',
             'glory-gbn-icons-index',
             'glory-gbn-icons-layout',
             'glory-gbn-icons-dimensions',
@@ -706,63 +712,64 @@ class ScriptManifest
                         'glory-gbn-ui-panel-core-renderer-restore',
                     ],
                 ],
-            'glory-gbn-ui-dragdrop' => [
-                'file' => '/js/ui/drag-drop.js',
-                'deps' => ['glory-gbn-ui-panel'],
-            ],
-            'glory-gbn-ui-library' => [
-                'file' => '/js/ui/library.js',
-                'deps' => ['glory-gbn-ui-panel'],
-            ],
-            'glory-gbn-ui-dock' => [
-                'file' => '/js/ui/dock.js',
-                'deps' => ['glory-gbn-ui-panel'],
-            ],
-            // Inspector módulos (refactorizado Dic 2025)
-            'glory-gbn-ui-inspector-state' => [
-                'file' => '/js/ui/inspector/state.js',
-                'deps' => ['glory-gbn-state'],
-            ],
-            'glory-gbn-ui-inspector-controls' => [
-                'file' => '/js/ui/inspector/controls.js',
-                'deps' => ['glory-gbn-ui-inspector-state', 'glory-gbn-state'],
-            ],
-            'glory-gbn-ui-inspector-global-controls' => [
-                'file' => '/js/ui/inspector/global-controls.js',
-                'deps' => ['glory-gbn-ui-inspector-controls', 'glory-gbn-state'],
-            ],
-            'glory-gbn-ui-inspector-hover-manager' => [
-                'file' => '/js/ui/inspector/hover-manager.js',
-                'deps' => ['glory-gbn-ui-inspector-state', 'glory-gbn-ui-inspector-global-controls', 'glory-gbn-state'],
-            ],
-            'glory-gbn-ui-inspector' => [
-                'file' => '/js/ui/inspector.js',
-                'deps' => [
-                    'glory-gbn-ui-dragdrop',
-                    'glory-gbn-ui-library',
-                    'glory-gbn-ui-dock',
-                    'glory-gbn-ui-inspector-state',
-                    'glory-gbn-ui-inspector-controls',
-                    'glory-gbn-ui-inspector-global-controls',
-                    'glory-gbn-ui-inspector-hover-manager',
+                'glory-gbn-ui-dragdrop' => [
+                    'file' => '/js/ui/drag-drop.js',
+                    'deps' => ['glory-gbn-ui-panel'],
                 ],
-            ],
-            'glory-gbn-debug-overlay' => [
-                'file' => '/js/ui/debug/overlay.js',
-                'deps' => ['glory-gbn-ui-panel'],
-            ],
-            'glory-gbn-ui-context-menu' => [
-                'file' => '/js/ui/context-menu.js',
-                'deps' => ['glory-gbn-ui-panel'],
-            ],
-            'glory-gbn-store-subscriber' => [
-                'file' => '/js/ui/store-subscriber.js',
-                'deps' => ['glory-gbn-store', 'glory-gbn-ui-panel-render'],
-            ],
-            'glory-gbn' => [
-                'file' => '/js/gbn.js',
-                'deps' => ['glory-gbn-ui-inspector', 'glory-gbn-debug-overlay', 'glory-gbn-store-subscriber', 'glory-gbn-logger', 'glory-gbn-ui-context-menu'],
-            ],
-        ]);
+                'glory-gbn-ui-library' => [
+                    'file' => '/js/ui/library.js',
+                    'deps' => ['glory-gbn-ui-panel'],
+                ],
+                'glory-gbn-ui-dock' => [
+                    'file' => '/js/ui/dock.js',
+                    'deps' => ['glory-gbn-ui-panel'],
+                ],
+                // Inspector módulos (refactorizado Dic 2025)
+                'glory-gbn-ui-inspector-state' => [
+                    'file' => '/js/ui/inspector/state.js',
+                    'deps' => ['glory-gbn-state'],
+                ],
+                'glory-gbn-ui-inspector-controls' => [
+                    'file' => '/js/ui/inspector/controls.js',
+                    'deps' => ['glory-gbn-ui-inspector-state', 'glory-gbn-state'],
+                ],
+                'glory-gbn-ui-inspector-global-controls' => [
+                    'file' => '/js/ui/inspector/global-controls.js',
+                    'deps' => ['glory-gbn-ui-inspector-controls', 'glory-gbn-state'],
+                ],
+                'glory-gbn-ui-inspector-hover-manager' => [
+                    'file' => '/js/ui/inspector/hover-manager.js',
+                    'deps' => ['glory-gbn-ui-inspector-state', 'glory-gbn-ui-inspector-global-controls', 'glory-gbn-state'],
+                ],
+                'glory-gbn-ui-inspector' => [
+                    'file' => '/js/ui/inspector.js',
+                    'deps' => [
+                        'glory-gbn-ui-dragdrop',
+                        'glory-gbn-ui-library',
+                        'glory-gbn-ui-dock',
+                        'glory-gbn-ui-inspector-state',
+                        'glory-gbn-ui-inspector-controls',
+                        'glory-gbn-ui-inspector-global-controls',
+                        'glory-gbn-ui-inspector-hover-manager',
+                    ],
+                ],
+                'glory-gbn-debug-overlay' => [
+                    'file' => '/js/ui/debug/overlay.js',
+                    'deps' => ['glory-gbn-ui-panel'],
+                ],
+                'glory-gbn-ui-context-menu' => [
+                    'file' => '/js/ui/context-menu.js',
+                    'deps' => ['glory-gbn-ui-panel'],
+                ],
+                'glory-gbn-store-subscriber' => [
+                    'file' => '/js/ui/store-subscriber.js',
+                    'deps' => ['glory-gbn-store', 'glory-gbn-ui-panel-render'],
+                ],
+                'glory-gbn' => [
+                    'file' => '/js/gbn.js',
+                    'deps' => ['glory-gbn-ui-inspector', 'glory-gbn-debug-overlay', 'glory-gbn-store-subscriber', 'glory-gbn-logger', 'glory-gbn-ui-context-menu'],
+                ],
+            ]
+        );
     }
 }

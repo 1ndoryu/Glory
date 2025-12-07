@@ -1,9 +1,9 @@
-;(function (global) {
+(function (global) {
     'use strict';
 
-    var Gbn = global.Gbn = global.Gbn || {};
+    var Gbn = (global.Gbn = global.Gbn || {});
     var utils = Gbn.utils;
-    
+
     // Namespacing
     Gbn.content = Gbn.content || {};
 
@@ -11,52 +11,45 @@
     var ROLE_MAP = {};
 
     var FALLBACK_SELECTORS = {
-        principal: { attribute: 'gloryDiv', dataAttribute: 'data-gbnPrincipal' },
-        secundario: { attribute: 'gloryDivSecundario', dataAttribute: 'data-gbnSecundario' },
-        text: { attribute: 'gloryTexto', dataAttribute: 'data-gbn-text' },
-        button: { attribute: 'gloryButton', dataAttribute: 'data-gbn-button' },
-        image: { attribute: 'gloryImagen', dataAttribute: 'data-gbn-image' },
+        principal: {attribute: 'gloryDiv', dataAttribute: 'data-gbnPrincipal'},
+        secundario: {attribute: 'gloryDivSecundario', dataAttribute: 'data-gbnSecundario'},
+        text: {attribute: 'gloryTexto', dataAttribute: 'data-gbn-text'},
+        button: {attribute: 'gloryButton', dataAttribute: 'data-gbn-button'},
+        image: {attribute: 'gloryImagen', dataAttribute: 'data-gbn-image'},
         // Fase 13: Componentes PostRender
-        postRender: { attribute: 'gloryPostRender', dataAttribute: 'data-gbn-post-render' },
-        postItem: { attribute: 'gloryPostItem', dataAttribute: 'data-gbn-post-item' },
-        postField: { attribute: 'gloryPostField', dataAttribute: 'data-gbn-post-field' },
+        postRender: {attribute: 'gloryPostRender', dataAttribute: 'data-gbn-post-render'},
+        postItem: {attribute: 'gloryPostItem', dataAttribute: 'data-gbn-post-item'},
+        postField: {attribute: 'gloryPostField', dataAttribute: 'data-gbn-post-field'},
         // Fase 14: Componentes de Formulario
-        form: { attribute: 'gloryForm', dataAttribute: 'data-gbn-form' },
-        input: { attribute: 'gloryInput', dataAttribute: 'data-gbn-input' },
-        textarea: { attribute: 'gloryTextarea', dataAttribute: 'data-gbn-textarea' },
-        select: { attribute: 'glorySelect', dataAttribute: 'data-gbn-select' },
-        submit: { attribute: 'glorySubmit', dataAttribute: 'data-gbn-submit' },
+        form: {attribute: 'gloryForm', dataAttribute: 'data-gbn-form'},
+        input: {attribute: 'gloryInput', dataAttribute: 'data-gbn-input'},
+        textarea: {attribute: 'gloryTextarea', dataAttribute: 'data-gbn-textarea'},
+        select: {attribute: 'glorySelect', dataAttribute: 'data-gbn-select'},
+        submit: {attribute: 'glorySubmit', dataAttribute: 'data-gbn-submit'},
         // Fase 15: Componentes de Layout (Header, Footer, Menu, Logo)
-        header: { attribute: 'gloryHeader', dataAttribute: 'data-gbn-header' },
-        logo: { attribute: 'gloryLogo', dataAttribute: 'data-gbn-logo' },
-        menu: { attribute: 'gloryMenu', dataAttribute: 'data-gbn-menu' },
-        footer: { attribute: 'gloryFooter', dataAttribute: 'data-gbn-footer' },
-        menuItem: { attribute: 'gloryMenuItem', dataAttribute: 'data-gbn-menu-item' }
+        header: {attribute: 'gloryHeader', dataAttribute: 'data-gbn-header'},
+        logo: {attribute: 'gloryLogo', dataAttribute: 'data-gbn-logo'},
+        menu: {attribute: 'gloryMenu', dataAttribute: 'data-gbn-menu'},
+        footer: {attribute: 'gloryFooter', dataAttribute: 'data-gbn-footer'},
+        menuItem: {attribute: 'gloryMenuItem', dataAttribute: 'data-gbn-menu-item'},
+        // TarjetaComponent - Tarjetas con imagen de fondo
+        tarjeta: {attribute: 'gloryTarjeta', dataAttribute: 'data-gbn-tarjeta'}
     };
-
 
     function ensureSelector(role, selector) {
         var existing = ROLE_MAP[role] || {};
         var fallback = FALLBACK_SELECTORS[role] || {};
-        var attr = existing.attr
-            || (selector && (selector.attribute || selector.attr))
-            || fallback.attribute
-            || fallback.attr
-            || null;
-        var dataAttr = existing.dataAttr
-            || (selector && (selector.dataAttribute || selector.dataAttr))
-            || fallback.dataAttribute
-            || fallback.dataAttr
-            || null;
+        var attr = existing.attr || (selector && (selector.attribute || selector.attr)) || fallback.attribute || fallback.attr || null;
+        var dataAttr = existing.dataAttr || (selector && (selector.dataAttribute || selector.dataAttr)) || fallback.dataAttribute || fallback.dataAttr || null;
         ROLE_MAP[role] = {
             attr: attr,
-            dataAttr: dataAttr,
+            dataAttr: dataAttr
         };
     }
 
     function initRoles() {
         var containerDefs = utils.getConfig().containers || {};
-        
+
         // Merge PHP definitions into ROLE_DEFAULTS
         Object.keys(containerDefs).forEach(function (role) {
             var def = containerDefs[role];
@@ -72,15 +65,13 @@
             }
         });
 
-
-
         if (!Object.keys(ROLE_DEFAULTS).length) {
             var legacyRoles = utils.getConfig().roles || {};
             Object.keys(legacyRoles).forEach(function (role) {
                 var data = legacyRoles[role] || {};
                 ROLE_DEFAULTS[role] = {
                     config: utils.assign({}, data.config || {}),
-                    schema: Array.isArray(data.schema) ? data.schema.slice() : [],
+                    schema: Array.isArray(data.schema) ? data.schema.slice() : []
                 };
                 ensureSelector(role, {});
             });
@@ -129,7 +120,7 @@
             initRoles();
         }
         var defaults = ROLE_DEFAULTS[role] || {};
-        
+
         // [FIX BUG-011 - PARTE 1/2] Deep clone config to prevent shared references
         // Este fix es NECESARIO pero NO SUFICIENTE por sí solo.
         // También se requiere deep clone en store.js al agregar bloques (ADD_BLOCK action)
@@ -158,12 +149,15 @@
         ensureSelector: ensureSelector,
         detectRole: detectRole,
         getRoleDefaults: getRoleDefaults,
-        getMap: function() { return ROLE_MAP; },
-        getFallback: function() { return FALLBACK_SELECTORS; }
+        getMap: function () {
+            return ROLE_MAP;
+        },
+        getFallback: function () {
+            return FALLBACK_SELECTORS;
+        }
     };
 
     // Initialize immediately to populate ROLE_MAP for scanner
     initRoles();
     initPriority();
-
 })(window);

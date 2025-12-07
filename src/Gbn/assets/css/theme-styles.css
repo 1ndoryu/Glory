@@ -97,7 +97,7 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
     text-transform: var(--gbn-h6-transform, none);
     margin-bottom: 0.5em;
 }
-*/ 
+*/
 
 /* 
    Component Base Styles (Level 2) 
@@ -105,7 +105,8 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
    Consumes Theme Variables (Level 3) to apply defaults.
 */
 
-:where([gloryDiv], .primario), [data-gbn-role="principal"] {
+:where([gloryDiv], .primario),
+[data-gbn-role='principal'] {
     /* Layout & Flex Defaults */
     display: var(--gbn-principal-display, flex);
     flex-direction: var(--gbn-principal-flex-direction, row);
@@ -120,20 +121,21 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
     padding-right: var(--gbn-principal-padding-right, 20px);
     padding-bottom: var(--gbn-principal-padding-bottom, 20px);
     padding-left: var(--gbn-principal-padding-left, 20px);
-    
+
     background: var(--gbn-principal-background, transparent);
     max-width: var(--gbn-principal-max-width, none);
-    
+
     /* Typography */
     text-align: var(--gbn-principal-alineacion, inherit);
-    
+
     /* Ensure box-sizing */
     box-sizing: border-box;
     margin-left: auto;
     margin-right: auto;
 }
 
-:where([gloryDivSecundario], .secundario), [data-gbn-role="secundario"] {
+:where([gloryDivSecundario], .secundario),
+[data-gbn-role='secundario'] {
     /* Layout & Flex Defaults */
     display: var(--gbn-secundario-display);
     flex-direction: var(--gbn-secundario-flex-direction);
@@ -145,17 +147,17 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
 
     /* Spacing & Sizing */
     width: var(--gbn-secundario-width, 100%);
-    
+
     padding-top: var(--gbn-secundario-padding-top, 20px);
     padding-right: var(--gbn-secundario-padding-right, 20px);
     padding-bottom: var(--gbn-secundario-padding-bottom, 20px);
     padding-left: var(--gbn-secundario-padding-left, 20px);
-    
+
     background: var(--gbn-secundario-background, transparent);
-    
+
     /* Typography */
     text-align: var(--gbn-secundario-alineacion, inherit);
-    
+
     box-sizing: border-box;
 }
 
@@ -186,16 +188,16 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
     justify-content: center;
     gap: 8px;
     box-sizing: border-box;
-    
+
     /* Spacing */
     padding-top: var(--gbn-button-padding-top, 12px);
     padding-right: var(--gbn-button-padding-right, 24px);
     padding-bottom: var(--gbn-button-padding-bottom, 12px);
     padding-left: var(--gbn-button-padding-left, 24px);
-    
+
     /* Colors */
     color: var(--gbn-button-color, #ffffff);
-    
+
     /* Effects */
     cursor: pointer;
     transition: var(--gbn-button-transition, all 0.2s ease);
@@ -237,7 +239,9 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
 }
 
 @keyframes gbn-spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 /* Item Template - PostItem */
@@ -276,57 +280,57 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
 /* PostField Elements 
    Los atributos glory* ahora se preservan en el frontend
    permitiendo que estos selectores funcionen correctamente */
-:where([gloryPostField="featuredImage"]) {
+:where([gloryPostField='featuredImage']) {
     aspect-ratio: var(--gbn-post-img-ratio, 16/9);
     overflow: hidden;
 }
 
-:where([gloryPostField="featuredImage"]) img {
+:where([gloryPostField='featuredImage']) img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: transform 0.3s ease;
 }
 
-:where([gloryPostItem]:hover) :where([gloryPostField="featuredImage"]) img {
+:where([gloryPostItem]:hover) :where([gloryPostField='featuredImage']) img {
     transform: scale(1.05);
 }
 
-:where([gloryPostField="title"]) {
+:where([gloryPostField='title']) {
     font-size: var(--gbn-post-title-size, 1.25rem);
     font-weight: var(--gbn-post-title-weight, 600);
     line-height: 1.3;
     color: var(--gbn-post-title-color, inherit);
 }
 
-:where([gloryPostField="title"]) a {
+:where([gloryPostField='title']) a {
     color: inherit;
     text-decoration: none;
     transition: color 0.2s ease;
 }
 
-:where([gloryPostField="title"]) a:hover {
+:where([gloryPostField='title']) a:hover {
     color: var(--gbn-primary, #3b82f6);
 }
 
-:where([gloryPostField="excerpt"]) {
+:where([gloryPostField='excerpt']) {
     font-size: var(--gbn-post-excerpt-size, 0.95rem);
     color: var(--gbn-post-excerpt-color, #666);
     line-height: 1.6;
 }
 
-:where([gloryPostField="date"]) {
+:where([gloryPostField='date']) {
     font-size: var(--gbn-post-date-size, 0.85rem);
     color: var(--gbn-post-date-color, #888);
 }
 
-:where([gloryPostField="author"]) {
+:where([gloryPostField='author']) {
     font-size: 0.9rem;
     font-weight: 500;
 }
 
-:where([gloryPostField="categories"]),
-:where([gloryPostField="tags"]) {
+:where([gloryPostField='categories']),
+:where([gloryPostField='tags']) {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
@@ -441,11 +445,11 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
     :where([gloryPostRender], .gbn-post-render) {
         grid-template-columns: 1fr;
     }
-    
+
     .gbn-pr-filter {
         justify-content: center;
     }
-    
+
     .gbn-pr-filter-btn {
         padding: 6px 14px;
         font-size: 0.85rem;
@@ -457,39 +461,38 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
    ========================================================================== */
 
 /* Pattern: alternado_lr - Imagen alterna izquierda/derecha */
-.gbn-post-render[data-pattern="alternado_lr"] {
+.gbn-post-render[data-pattern='alternado_lr'] {
     display: block;
 }
 
-.gbn-post-render[data-pattern="alternado_lr"] [gloryPostItem] {
+.gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem] {
     display: flex;
     flex-direction: row;
     align-items: stretch;
     margin-bottom: var(--gbn-post-render-gap, 20px);
 }
 
-.gbn-post-render[data-pattern="alternado_lr"] [gloryPostItem]:nth-child(even) {
+.gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem]:nth-child(even) {
     flex-direction: row-reverse;
 }
 
-.gbn-post-render[data-pattern="alternado_lr"] [gloryPostField="featuredImage"] {
+.gbn-post-render[data-pattern='alternado_lr'] [gloryPostField='featuredImage'] {
     flex: 0 0 50%;
     aspect-ratio: auto;
 }
 
-.gbn-post-render[data-pattern="alternado_lr"] [gloryPostItem] > *:not([gloryPostField="featuredImage"]) {
+.gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem] > *:not([gloryPostField='featuredImage']) {
     flex: 1;
     padding: 20px;
 }
 
-
 @media (max-width: 768px) {
-    .gbn-post-render[data-pattern="alternado_lr"] [gloryPostItem],
-    .gbn-post-render[data-pattern="alternado_lr"] [gloryPostItem]:nth-child(even) {
+    .gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem],
+    .gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem]:nth-child(even) {
         flex-direction: column;
     }
-    
-    .gbn-post-render[data-pattern="alternado_lr"] [gloryPostField="featuredImage"] {
+
+    .gbn-post-render[data-pattern='alternado_lr'] [gloryPostField='featuredImage'] {
         flex: none;
     }
 }
@@ -516,3 +519,54 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
     filter: var(--gbn-logo-filter, none);
 }
 
+/* ==========================================================================
+   TarjetaComponent - Componente unificado para tarjetas con imagen de fondo
+   Mantiene compatibilidad con las clases .service-card existentes
+   ========================================================================== */
+
+:where([gloryTarjeta], .gbn-tarjeta) {
+    /* Layout & Flex Defaults - igual que secundario */
+    display: var(--gbn-tarjeta-display);
+    flex-direction: var(--gbn-tarjeta-flex-direction);
+    flex-wrap: var(--gbn-tarjeta-flex-wrap);
+    justify-content: var(--gbn-tarjeta-justify-content);
+    align-items: var(--gbn-tarjeta-align-items);
+    gap: var(--gbn-tarjeta-gap);
+    grid-template-columns: repeat(var(--gbn-tarjeta-grid-columns, 1), 1fr);
+
+    /* Spacing & Sizing */
+    width: var(--gbn-tarjeta-width, 100%);
+
+    padding-top: var(--gbn-tarjeta-padding-top);
+    padding-right: var(--gbn-tarjeta-padding-right);
+    padding-bottom: var(--gbn-tarjeta-padding-bottom);
+    padding-left: var(--gbn-tarjeta-padding-left);
+
+    background: var(--gbn-tarjeta-background, transparent);
+
+    /* Typography */
+    text-align: var(--gbn-tarjeta-alineacion, inherit);
+
+    /* Necesario para el posicionamiento de .card-bg-image */
+    position: relative;
+    overflow: hidden;
+
+    box-sizing: border-box;
+}
+
+/* El elemento interno .card-bg-image hereda la imagen configurada desde el panel */
+:where([gloryTarjeta], .gbn-tarjeta) > .card-bg-image {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* El contenido debe estar por encima del fondo */
+:where([gloryTarjeta], .gbn-tarjeta) > .card-content {
+    position: relative;
+    z-index: 1;
+}
