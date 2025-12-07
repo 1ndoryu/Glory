@@ -128,12 +128,12 @@
 
 :where([gloryDivSecundario], .secundario), [data-gbn-role="secundario"] {
     /* Layout & Flex Defaults */
-    display: var(--gbn-secundario-display, flex);
-    flex-direction: var(--gbn-secundario-flex-direction, column);
-    flex-wrap: var(--gbn-secundario-flex-wrap, nowrap);
-    justify-content: var(--gbn-secundario-justify-content, flex-start);
-    align-items: var(--gbn-secundario-align-items, stretch);
-    gap: var(--gbn-secundario-gap, 0px);
+    display: var(--gbn-secundario-display);
+    flex-direction: var(--gbn-secundario-flex-direction);
+    flex-wrap: var(--gbn-secundario-flex-wrap);
+    justify-content: var(--gbn-secundario-justify-content);
+    align-items: var(--gbn-secundario-align-items);
+    gap: var(--gbn-secundario-gap);
     grid-template-columns: repeat(var(--gbn-secundario-grid-columns, 1), 1fr);
 
     /* Spacing & Sizing */
@@ -186,55 +186,12 @@
     padding-bottom: var(--gbn-button-padding-bottom, 12px);
     padding-left: var(--gbn-button-padding-left, 24px);
     
-    /* Typography */
-    font-family: var(--gbn-button-font, var(--gbn-text-font, inherit));
-    font-size: var(--gbn-button-font-size, 1rem);
-    font-weight: var(--gbn-button-font-weight, 500);
-    line-height: 1.4;
-    text-decoration: none;
-    text-align: center;
-    
     /* Colors */
     color: var(--gbn-button-color, #ffffff);
-    background-color: var(--gbn-button-bg, var(--gbn-primary, #3b82f6));
-    
-    /* Border */
-    border: var(--gbn-button-border-width, 0px) var(--gbn-button-border-style, solid) var(--gbn-button-border-color, transparent);
-    border-radius: var(--gbn-button-border-radius, 6px);
     
     /* Effects */
     cursor: pointer;
     transition: var(--gbn-button-transition, all 0.2s ease);
-}
-
-/* Button States */
-:where([gloryButton], .gbn-button):hover {
-    background-color: var(--gbn-button-hover-bg, var(--gbn-button-bg, #2563eb));
-    color: var(--gbn-button-hover-color, var(--gbn-button-color, #ffffff));
-    transform: var(--gbn-button-hover-transform, translateY(-1px));
-    box-shadow: var(--gbn-button-hover-shadow, 0 4px 12px rgba(0, 0, 0, 0.15));
-}
-
-:where([gloryButton], .gbn-button):focus {
-    outline: 2px solid var(--gbn-button-focus-outline, var(--gbn-primary, #3b82f6));
-    outline-offset: 2px;
-}
-
-:where([gloryButton], .gbn-button):active {
-    transform: translateY(0);
-    box-shadow: none;
-}
-
-/* Secondary Button Variant */
-:where([gloryButton].btn-secondary, .gbn-button-secondary) {
-    background-color: var(--gbn-button-secondary-bg, transparent);
-    color: var(--gbn-button-secondary-color, var(--gbn-primary, #3b82f6));
-    border: 2px solid var(--gbn-button-secondary-border, var(--gbn-primary, #3b82f6));
-}
-
-:where([gloryButton].btn-secondary, .gbn-button-secondary):hover {
-    background-color: var(--gbn-button-secondary-hover-bg, var(--gbn-primary, #3b82f6));
-    color: var(--gbn-button-secondary-hover-color, #ffffff);
 }
 
 /* ==========================================================================

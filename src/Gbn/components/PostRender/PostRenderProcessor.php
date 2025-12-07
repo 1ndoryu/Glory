@@ -76,7 +76,7 @@ class PostRenderProcessor
         $this->template = $template;
         $this->editorAttrs = $editorAttrs;
         $this->instanceClass = 'gbn-pr-' . substr(md5(uniqid('', true)), 0, 8);
-        
+
         // Inicializar módulos auxiliares
         $this->styles = new PostRenderStyles($config, $this->instanceClass);
         $this->ui = new PostRenderUI($config, $this->instanceClass);
@@ -102,17 +102,17 @@ class PostRenderProcessor
         if (!current_user_can('edit_posts')) {
             return false;
         }
-        
+
         // Las peticiones AJAX de preview deben procesarse normalmente
         if (wp_doing_ajax()) {
             return false;
         }
-        
+
         // Las peticiones REST API no son modo editor
         if (defined('REST_REQUEST') && REST_REQUEST) {
             return false;
         }
-        
+
         // Si llegamos aquí, es un usuario editor viendo la página normalmente
         return true;
     }
@@ -126,7 +126,7 @@ class PostRenderProcessor
     {
         // 1. Ejecutar query
         $query = PostRenderService::query($this->config);
-        
+
         if (!$query->have_posts()) {
             return $this->ui->renderEmpty();
         }
@@ -144,21 +144,31 @@ class PostRenderProcessor
 
         // 4. Generar filtro de categorías si está habilitado
         $categoryFilter = $this->ui->isCategoryFilterEnabled()
-            ? $this->ui->renderCategoryFilter($query->posts) 
+            ? $this->ui->renderCategoryFilter($query->posts)
             : '';
 
         // 5. Construir contenedor
         $containerStyles = $this->styles->getContainerStyles();
         $containerAttrs = $this->styles->getContainerAttributes();
-        
-        // Agregar atributos del editor si existen
+
+        // Combinar clases: clase de instancia + gbn-post-render + clases originales del template
+        $originalClasses = $this->editorAttrs['class'] ?? '';
+        $combinedClasses = $this->instanceClass . ' gbn-post-render';
+        if (!empty($originalClasses)) {
+            $combinedClasses .= ' ' . $originalClasses;
+        }
+
+        // Agregar atributos del editor si existen (excepto class que ya lo manejamos)
         $editorAttrsStr = '';
         foreach ($this->editorAttrs as $attr => $value) {
+            if ($attr === 'class') {
+                continue; // Ya lo combinamos arriba
+            }
             $editorAttrsStr .= sprintf(' %s="%s"', esc_attr($attr), esc_attr($value));
         }
 
         $html = '';
-        
+
         // CSS inline
         if (!empty($css)) {
             $html .= '<style>' . $css . '</style>';
@@ -170,7 +180,7 @@ class PostRenderProcessor
         // Contenedor con atributos del editor preservados
         $html .= sprintf(
             '<div class="%s" %s%s style="%s">%s</div>',
-            esc_attr($this->instanceClass . ' gbn-post-render'),
+            esc_attr($combinedClasses),
             $containerAttrs,
             $editorAttrsStr,
             esc_attr($containerStyles),
@@ -216,7 +226,7 @@ class PostRenderProcessor
         if (self::isEditorMode()) {
             return $content;
         }
-        
+
         // Detección case-insensitive porque DOMDocument convierte a minúsculas
         if (stripos($content, 'gloryPostRender') === false) {
             return $content;
@@ -226,25 +236,25 @@ class PostRenderProcessor
         $doc = new DOMDocument();
         $doc->encoding = 'UTF-8';
         libxml_use_internal_errors(true);
-        
+
         // Preservar encoding UTF-8 usando meta charset
         $htmlWithMeta = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="gbn-root-wrapper">' . $content . '</div></body></html>';
         $doc->loadHTML($htmlWithMeta, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
         libxml_clear_errors();
 
         $xpath = new DOMXPath($doc);
-        
+
         // Buscar elementos con atributo glorypostrender (minúsculas - DOMDocument convierte)
         $postRenderNodes = $xpath->query('//*[@glorypostrender or @gloryPostRender]');
-        
+
         if ($postRenderNodes->length === 0) {
             return $content;
         }
-        
+
         foreach ($postRenderNodes as $node) {
             self::processPostRenderNode($doc, $node);
         }
-        
+
         // Extraer el contenido procesado del wrapper
         $wrapper = $doc->getElementById('gbn-root-wrapper');
         if ($wrapper) {
@@ -254,7 +264,7 @@ class PostRenderProcessor
             }
             return $result;
         }
-        
+
         return $content;
     }
 
@@ -268,17 +278,17 @@ class PostRenderProcessor
     {
         // Parsear configuración desde el atributo opciones
         $config = self::parseNodeConfig($node);
-        
+
         // Capturar atributos del editor GBN para preservarlos
         $editorAttrs = self::extractEditorAttributes($node);
 
         // Extraer template (manejar contenido ya procesado)
         $innerHtml = self::extractTemplate($doc, $node);
-        
+
         // Crear el procesador y obtener el HTML renderizado
         $processor = new self($config, $innerHtml, $editorAttrs);
         $renderedHtml = $processor->render();
-        
+
         // Reemplazar el nodo con el contenido renderizado
         self::replaceNodeWithHtml($doc, $node, $renderedHtml);
     }
@@ -292,32 +302,32 @@ class PostRenderProcessor
     private static function parseNodeConfig(\DOMElement $node): array
     {
         $config = [];
-        
+
         if (!$node->hasAttribute('opciones')) {
             return $config;
         }
-        
+
         $opcionesStr = $node->getAttribute('opciones');
         // Parsear formato key: 'value', key: value
         preg_match_all("/(\w+):\s*'([^']*)'|(\w+):\s*([^,\s]+)/", $opcionesStr, $opts);
-        
+
         foreach ($opts[0] as $i => $match) {
             $key = !empty($opts[1][$i]) ? $opts[1][$i] : $opts[3][$i];
             $value = !empty($opts[2][$i]) ? $opts[2][$i] : $opts[4][$i];
-            
+
             // Convertir booleanos y números
             if ($value === 'true') $value = true;
             if ($value === 'false') $value = false;
             if (is_numeric($value)) $value = $value + 0;
-            
+
             $config[$key] = $value;
         }
-        
+
         // Migrar configuración a nombres canónicos
         if (class_exists(\Glory\Gbn\Schema\FieldAliasMapper::class)) {
             $config = \Glory\Gbn\Schema\FieldAliasMapper::migrateConfig($config);
         }
-        
+
         return $config;
     }
 
@@ -331,10 +341,16 @@ class PostRenderProcessor
     {
         $editorAttrs = [];
         $attrsToPreserve = [
-            'class', 'data-gbn-id', 'data-gbn-role', 'data-gbn-post-render', 
-            'data-gbn-ready', 'data-gbn-schema', 'draggable', 'glorypostrender'
+            'class',
+            'data-gbn-id',
+            'data-gbn-role',
+            'data-gbn-post-render',
+            'data-gbn-ready',
+            'data-gbn-schema',
+            'draggable',
+            'glorypostrender'
         ];
-        
+
         foreach ($attrsToPreserve as $attrName) {
             if ($node->hasAttribute($attrName)) {
                 $value = $node->getAttribute($attrName);
@@ -345,7 +361,7 @@ class PostRenderProcessor
                 $editorAttrs[$attrName] = $value;
             }
         }
-        
+
         return $editorAttrs;
     }
 
@@ -361,7 +377,7 @@ class PostRenderProcessor
         $innerHtml = '';
         $postItemCount = 0;
         $firstPostItem = null;
-        
+
         foreach ($node->childNodes as $child) {
             // Contar PostItems con data-post-id (indicador de contenido ya procesado)
             if ($child instanceof \DOMElement) {
@@ -378,14 +394,14 @@ class PostRenderProcessor
             }
             $innerHtml .= $doc->saveHTML($child);
         }
-        
+
         // Si detectamos múltiples PostItems procesados, usar solo el template (primer item)
         if ($postItemCount > 1 && $firstPostItem) {
             // Limpiar atributos de datos del post anterior del template
             $innerHtml = preg_replace('/\s*data-post-id="[^"]*"/', '', $firstPostItem);
             $innerHtml = preg_replace('/\s*data-categories="[^"]*"/', '', $innerHtml);
         }
-        
+
         return $innerHtml;
     }
 
@@ -403,20 +419,20 @@ class PostRenderProcessor
         libxml_use_internal_errors(true);
         $tempDoc->loadHTML('<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body><div id="temp-wrap">' . $renderedHtml . '</div></body></html>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
         libxml_clear_errors();
-        
+
         $tempWrapper = $tempDoc->getElementById('temp-wrap');
         if (!$tempWrapper) {
             return;
         }
-        
+
         // Crear un fragmento para insertar múltiples nodos
         $fragment = $doc->createDocumentFragment();
-        
+
         foreach ($tempWrapper->childNodes as $child) {
             $importedNode = $doc->importNode($child, true);
             $fragment->appendChild($importedNode);
         }
-        
+
         // Reemplazar el nodo original con el fragmento
         $node->parentNode->replaceChild($fragment, $node);
     }
