@@ -5,13 +5,55 @@
 
 ---
 
-## 1. Filosofía y Principios
+## 1. Filosofia y Principios
 
-1. **HTML Limpio**: Sin shortcodes, markup semántico y válido.
-2. **Independencia de GBN**: Las páginas funcionan correctamente aunque GBN esté desactivado.
-3. **Código Minimalista**: Principios SOLID, evitar duplicación.
-4. **Componentes Agnósticos**: Los componentes aceptan progresivamente GBN sin romper su uso independiente.
-5. **Sincronización Bidireccional**: Cambios en código o interfaz se reflejan en ambos lados.
+> [!CAUTION]
+> **PRINCIPIO FUNDAMENTAL:** GBN es un editor WYSIWYG **transparente**. Permite al cliente editar lo que el programador ya construyo. GBN **NO** debe inyectar estilos propios ni competir con el CSS del desarrollador.
+
+### 1.1 Principios Inmutables
+
+1. **HTML Limpio**: Sin shortcodes, markup semantico y valido.
+2. **Independencia de GBN**: Las paginas funcionan correctamente aunque GBN este desactivado.
+3. **Codigo Minimalista**: Principios SOLID, evitar duplicacion.
+4. **Componentes Agnosticos**: Los componentes aceptan progresivamente GBN sin romper su uso independiente.
+5. **Sincronizacion Bidireccional**: Cambios en codigo o interfaz se reflejan en ambos lados.
+6. **Transparencia CSS**: GBN respeta y trabaja CON el CSS del desarrollador, nunca contra el.
+
+### 1.2 Filosofia de Transparencia CSS (NUEVO - Diciembre 2025)
+
+> [!IMPORTANT]
+> Esta seccion documenta una correccion de rumbo arquitectonico. GBN se habia desviado de su proposito original.
+
+**Proposito de GBN:**
+- El programador escribe su HTML/CSS (clases, inline styles, media queries)
+- GBN detecta elementos editables via atributos `glory*`
+- El cliente edita valores visuales
+- GBN aplica cambios via `style="..."` inline (mayor especificidad que clases)
+- Los cambios se guardan como HTML modificado
+- Sin GBN activo, la pagina sigue funcionando identicamente
+
+**Lo que GBN NO debe hacer:**
+- Inyectar variables CSS en `:root` como "defaults"
+- Definir estilos base para componentes (eso es trabajo del desarrollador)
+- Crear dependencias ocultas en archivos CSS propios
+- Requerir que el desarrollador conozca los internals de GBN para que su pagina funcione
+- Competir en especificidad con el CSS del tema
+
+**Regla de Oro:**
+```
+Si desactivas GBN y el sitio se ve diferente (roto, sin estilos), 
+entonces GBN esta haciendo algo mal.
+```
+
+**CSS Permitido en GBN:**
+1. Estilos del **editor** (panel, dock, inspector, overlays) - Solo activos cuando GBN esta activo
+2. Estilos de **interaccion** (hover, selected) - Solo en modo edicion
+3. Reseteos minimos para elementos **creados por GBN** (ej: un boton insertado desde biblioteca)
+
+**CSS Prohibido en GBN:**
+1. Variables CSS globales como "defaults" para componentes
+2. Estilos base que reemplacen o complementen el tema
+3. Media queries o breakpoints propios (usar los del desarrollador)
 
 ---
 

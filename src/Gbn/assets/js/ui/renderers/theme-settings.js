@@ -27,7 +27,7 @@
         // 1. Detectar breakpoint activo
         var breakpoint = (Gbn.responsive && Gbn.responsive.getCurrentBreakpoint) ? Gbn.responsive.getCurrentBreakpoint() : 'desktop';
         
-        // 2. Lógica Responsive: Escribir en _responsive[bp] si no es desktop
+        // 2. Logica Responsive: Escribir en _responsive[bp] si no es desktop
         var cursor;
         if (breakpoint !== 'desktop' && path.startsWith('components.')) {
             // Path ejemplo: "components.principal.padding.superior"
@@ -53,7 +53,7 @@
             }
             cursor[relativePath[relativePath.length - 1]] = value;
         } else {
-            // Desktop o paths no-components: escribir en raíz
+            // Desktop o paths no-components: escribir en raiz
             cursor = current;
             for (var i = 0; i < segments.length - 1; i++) {
                 var key = segments[i];
@@ -78,7 +78,7 @@
             }
         }
         
-        // 4. Persistir en Store (CRÍTICO: Usar state.updateConfig)
+        // 4. Persistir en Store (CRITICO: Usar state.updateConfig)
         if (Gbn.state && Gbn.state.updateConfig) {
             Gbn.state.updateConfig(block.id, current, breakpoint);
         }
@@ -87,14 +87,19 @@
         if (!Gbn.config) Gbn.config = {};
         Gbn.config.themeSettings = current;
         
-        // 6. Aplicar cambios visuales inmediatos (Applicator)
-        if (Gbn.ui.panelTheme && Gbn.ui.panelTheme.applyThemeSettings) {
-            Gbn.ui.panelTheme.applyThemeSettings(current); // Esto dispara el estilo inline en el root
+        // 6. BUG-021 FIX: Aplicar SOLO la variable CSS que cambio, no todo el config
+        // Esto evita inyectar +100 variables de defaults que no fueron configurados por el usuario
+        // Sigue el principio de flujo unidireccional: cambio puntual -> aplicacion puntual
+        if (Gbn.ui.theme && Gbn.ui.theme.applicator && Gbn.ui.theme.applicator.applySingleValue) {
+            Gbn.ui.theme.applicator.applySingleValue(path, value, breakpoint);
         } else if (Gbn.ui.theme && Gbn.ui.theme.applicator && Gbn.ui.theme.applicator.applyThemeSettings) {
-             Gbn.ui.theme.applicator.applyThemeSettings(current);
+            // Fallback: si applySingleValue no existe, usar el metodo completo
+            // pero solo pasando los valores guardados, no los defaults
+            var savedSettings = Gbn.config.themeSettings || {};
+            Gbn.ui.theme.applicator.applyThemeSettings(savedSettings);
         }
         
-        // 7. Disparar evento de cambio de configuración
+        // 7. Disparar evento de cambio de configuracion
         var event;
         if (typeof global.CustomEvent === 'function') {
             event = new CustomEvent('gbn:configChanged', { detail: { id: 'theme-settings', path: path, breakpoint: breakpoint } });
@@ -104,7 +109,7 @@
         }
         global.dispatchEvent(event);
         
-        // 8. Disparar evento específico para defaults (Bug 27/28 Fix)
+        // 8. Disparar evento especifico para defaults (Bug 27/28 Fix)
         if (path.startsWith('components.')) {
             var pathParts = path.split('.');
             if (pathParts.length >= 3) {
@@ -126,7 +131,7 @@
             }
         }
         
-        // Retornar TRUE para indicar que ya manejamos todo y panel-render no debe hacer nada más
+        // Retornar TRUE para indicar que ya manejamos todo y panel-render no debe hacer nada mas
         return true;
     }
 
