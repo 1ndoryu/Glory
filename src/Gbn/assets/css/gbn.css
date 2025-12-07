@@ -1,65 +1,50 @@
-@import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,200..900;1,200..900&display=swap');
 @layer gbn {
-/* GBN Modular CSS */
-/* GBN Modular CSS - Imports handled by GbnManager.php for dynamic versioning */
+    /* GBN Modular CSS */
+    /* REFACTOR-001: Variables de componentes ELIMINADAS (7 Dic 2025) */
+    /* Los defaults de padding/flex/etc ahora son responsabilidad del CSS del desarrollador */
+    /* GBN solo aplica estilos via style="" inline cuando el usuario edita */
 
-/* Variables CSS por defecto - Sincronizables con Panel de Tema */
-:root {
-    /* Principal Padding Defaults */
-    --gbn-principal-padding-top: 0px;
-    --gbn-principal-padding-right: 0px;
-    --gbn-principal-padding-bottom: 0px;
-    --gbn-principal-padding-left: 0px;
-    
-    /* Secundario Padding Defaults */
-    --gbn-secundario-padding-top: 0px;
-    --gbn-secundario-padding-right: 0px;
-    --gbn-secundario-padding-bottom: 0px;
-    --gbn-secundario-padding-left: 0px;
-}
+    /* Ensure content render is visible */
+    [gloryContentRender],
+    [data-gbnContent] {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        /* Add defaults if needed, e.g. padding */
+    }
 
-/* Default Styles for GBN Containers - DELETED (Moved to theme-styles.css) */
-
-/* Ensure content render is visible */
-[gloryContentRender], [data-gbnContent] {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    /* Add defaults if needed, e.g. padding */
-}
-
-/* Debug Overlay */
-#gbn-debug-overlay {
-    font-family: 'Consolas', 'Monaco', monospace;
-    font-size: 12px;
-    line-height: 1.4;
-    color: #0f0;
-    background: rgba(0, 0, 0, 0.95);
-    border: 1px solid #333;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-    backdrop-filter: blur(5px);
-}
-#gbn-debug-overlay table td, #gbn-debug-overlay table th {
-    padding: 2px 5px;
-    border-bottom: 1px solid #222;
-}
-#gbn-debug-overlay details > summary {
-    outline: none;
-    list-style: none;
-}
-#gbn-debug-overlay details > summary::-webkit-details-marker {
-    display: none;
-}
-#gbn-debug-overlay details > summary::before {
-    content: '▶';
-    display: inline-block;
-    margin-right: 5px;
-    font-size: 10px;
-    transition: transform 0.2s;
-}
-#gbn-debug-overlay details[open] > summary::before {
-    transform: rotate(90deg);
-}
-
+    /* Debug Overlay */
+    #gbn-debug-overlay {
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #0f0;
+        background: rgba(0, 0, 0, 0.95);
+        border: 1px solid #333;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(5px);
+    }
+    #gbn-debug-overlay table td,
+    #gbn-debug-overlay table th {
+        padding: 2px 5px;
+        border-bottom: 1px solid #222;
+    }
+    #gbn-debug-overlay details > summary {
+        outline: none;
+        list-style: none;
+    }
+    #gbn-debug-overlay details > summary::-webkit-details-marker {
+        display: none;
+    }
+    #gbn-debug-overlay details > summary::before {
+        content: '▶';
+        display: inline-block;
+        margin-right: 5px;
+        font-size: 10px;
+        transition: transform 0.2s;
+    }
+    #gbn-debug-overlay details[open] > summary::before {
+        transform: rotate(90deg);
+    }
 }

@@ -1,230 +1,37 @@
-/* Theme Styles - Maps GBN variables to content elements */
-
-/*
-
-Los comento porque interfieren con los estilos del usuario. 
-Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where con naturalidad a los elementos nativos del html, h1, h2, sin tener que especificar cosas como --gbn-page-bg o data-gbn-root, esto agrega complejidad.
-
-7 de diciembre de 2025
-
-:where([data-gbn-root]) {
-    background-color: var(--gbn-page-bg, var(--gbn-bg));
-    color: var(--gbn-text-color);
-    font-family: var(--gbn-text-font);
-    font-size: var(--gbn-text-size);
-    
-    max-width: var(--gbn-page-max-width, 100%);
-    padding-top: var(--gbn-page-pt, 0px);
-    padding-right: var(--gbn-page-pr, 0px);
-    padding-bottom: var(--gbn-page-pb, 0px);
-    padding-left: var(--gbn-page-pl, 0px);
-    margin-left: auto;
-    margin-right: auto;
-}
-
-:where([data-gbn-root]) p {
-    color: var(--gbn-text-color);
-    font-family: var(--gbn-text-font);
-    font-size: var(--gbn-text-size);
-    line-height: var(--gbn-text-lh, 1.6);
-    letter-spacing: var(--gbn-text-ls, normal);
-    text-transform: var(--gbn-text-transform, none);
-    margin-bottom: 1em;
-}
-
-:where([data-gbn-root]) h1 {
-    color: var(--gbn-h1-color);
-    font-size: var(--gbn-h1-size);
-    font-family: var(--gbn-text-font);
-    font-weight: 700;
-    line-height: var(--gbn-h1-lh, 1.2);
-    letter-spacing: var(--gbn-h1-ls, normal);
-    text-transform: var(--gbn-h1-transform, none);
-    margin-bottom: 0.5em;
-}
-
-:where([data-gbn-root]) h2 {
-    color: var(--gbn-h2-color, var(--gbn-h1-color));
-    font-size: var(--gbn-h2-size, 2rem);
-    font-family: var(--gbn-text-font);
-    font-weight: 700;
-    line-height: var(--gbn-h2-lh, 1.3);
-    letter-spacing: var(--gbn-h2-ls, normal);
-    text-transform: var(--gbn-h2-transform, none);
-    margin-bottom: 0.5em;
-}
-
-:where([data-gbn-root]) h3 {
-    color: var(--gbn-h3-color, var(--gbn-h1-color));
-    font-size: var(--gbn-h3-size, 1.75rem);
-    font-family: var(--gbn-text-font);
-    font-weight: 600;
-    line-height: var(--gbn-h3-lh, 1.3);
-    letter-spacing: var(--gbn-h3-ls, normal);
-    text-transform: var(--gbn-h3-transform, none);
-    margin-bottom: 0.5em;
-}
-
-:where([data-gbn-root]) h4 {
-    color: var(--gbn-h4-color, var(--gbn-h1-color));
-    font-size: var(--gbn-h4-size, 1.5rem);
-    font-family: var(--gbn-text-font);
-    font-weight: 600;
-    line-height: var(--gbn-h4-lh, 1.4);
-    letter-spacing: var(--gbn-h4-ls, normal);
-    text-transform: var(--gbn-h4-transform, none);
-    margin-bottom: 0.5em;
-}
-
-:where([data-gbn-root]) h5 {
-    color: var(--gbn-h5-color, var(--gbn-h1-color));
-    font-size: var(--gbn-h5-size, 1.25rem);
-    font-family: var(--gbn-text-font);
-    font-weight: 600;
-    line-height: var(--gbn-h5-lh, 1.4);
-    letter-spacing: var(--gbn-h5-ls, normal);
-    text-transform: var(--gbn-h5-transform, none);
-    margin-bottom: 0.5em;
-}
-
-:where([data-gbn-root]) h6 {
-    color: var(--gbn-h6-color, var(--gbn-h1-color));
-    font-size: var(--gbn-h6-size, 1rem);
-    font-family: var(--gbn-text-font);
-    font-weight: 600;
-    line-height: var(--gbn-h6-lh, 1.4);
-    letter-spacing: var(--gbn-h6-ls, normal);
-    text-transform: var(--gbn-h6-transform, none);
-    margin-bottom: 0.5em;
-}
-*/
-
-/* 
-   Component Base Styles (Level 2) 
-   Uses :where() to have 0 specificity, allowing external classes to override easily.
-   Consumes Theme Variables (Level 3) to apply defaults.
-*/
-
-:where([gloryDiv], .primario),
-[data-gbn-role='principal'] {
-    /* Layout & Flex Defaults */
-    display: var(--gbn-principal-display, flex);
-    flex-direction: var(--gbn-principal-flex-direction, row);
-    flex-wrap: var(--gbn-principal-flex-wrap, wrap);
-    justify-content: var(--gbn-principal-justify-content, flex-start);
-    align-items: var(--gbn-principal-align-items, stretch);
-    gap: var(--gbn-principal-gap, 0px);
-    grid-template-columns: repeat(var(--gbn-principal-grid-columns, 1), 1fr);
-
-    /* Spacing & Sizing */
-    padding-top: var(--gbn-principal-padding-top, 20px);
-    padding-right: var(--gbn-principal-padding-right, 20px);
-    padding-bottom: var(--gbn-principal-padding-bottom, 20px);
-    padding-left: var(--gbn-principal-padding-left, 20px);
-
-    background: var(--gbn-principal-background, transparent);
-    max-width: var(--gbn-principal-max-width, none);
-
-    /* Typography */
-    text-align: var(--gbn-principal-alineacion, inherit);
-
-    /* Ensure box-sizing */
-    box-sizing: border-box;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-:where([gloryDivSecundario], .secundario),
-[data-gbn-role='secundario'] {
-    /* Layout & Flex Defaults */
-    display: var(--gbn-secundario-display);
-    flex-direction: var(--gbn-secundario-flex-direction);
-    flex-wrap: var(--gbn-secundario-flex-wrap);
-    justify-content: var(--gbn-secundario-justify-content);
-    align-items: var(--gbn-secundario-align-items);
-    gap: var(--gbn-secundario-gap);
-    grid-template-columns: repeat(var(--gbn-secundario-grid-columns, 1), 1fr);
-
-    /* Spacing & Sizing */
-    width: var(--gbn-secundario-width, 100%);
-
-    padding-top: var(--gbn-secundario-padding-top, 20px);
-    padding-right: var(--gbn-secundario-padding-right, 20px);
-    padding-bottom: var(--gbn-secundario-padding-bottom, 20px);
-    padding-left: var(--gbn-secundario-padding-left, 20px);
-
-    background: var(--gbn-secundario-background, transparent);
-
-    /* Typography */
-    text-align: var(--gbn-secundario-alineacion, inherit);
-
-    box-sizing: border-box;
-}
-
-/* Image Component */
-:where([gloryImagen], .gbn-image) {
-    display: inline-block;
-    position: relative;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
-:where([gloryImagen], .gbn-image) img {
-    display: block;
-    width: 100%;
-    height: auto;
-    object-fit: var(--gbn-img-object-fit, cover);
-}
+/* ============================================================================
+   THEME-STYLES.CSS - REFACTOR-001 (7 Diciembre 2025)
+   ============================================================================
+   
+   FILOSOFIA DE TRANSPARENCIA CSS:
+   Este archivo ahora SOLO contiene estilos para estados del EDITOR.
+   
+   ELIMINADO:
+   - Estilos base para [gloryDiv], [gloryDivSecundario], [gloryButton], etc.
+   - Variables CSS como defaults de componentes
+   - Media queries de layout
+   - Patrones de diseño (alternado_lr, etc.)
+   
+   RAZON:
+   GBN es un editor WYSIWYG transparente. El desarrollador escribe su HTML/CSS
+   y GBN solo aplica cambios via style="" inline cuando el usuario edita.
+   Sin GBN activo, la pagina DEBE verse identica.
+   
+   Ver: reglas.md seccion 1.2 "Filosofia de Transparencia CSS"
+   ============================================================================ */
 
 /* ==========================================================================
-   Button Component - Estilos Default
-   BUG-005 FIX: Componente Button ahora tiene estilos base con variables CSS
+   ESTADOS DEL EDITOR - Loading
+   Solo visibles cuando GBN esta activo y procesando
    ========================================================================== */
 
-:where([gloryButton], .gbn-button) {
-    /* Display & Box Model */
-    display: var(--gbn-button-display, inline-flex);
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    box-sizing: border-box;
-
-    /* Spacing */
-    padding-top: var(--gbn-button-padding-top, 12px);
-    padding-right: var(--gbn-button-padding-right, 24px);
-    padding-bottom: var(--gbn-button-padding-bottom, 12px);
-    padding-left: var(--gbn-button-padding-left, 24px);
-
-    /* Colors */
-    color: var(--gbn-button-color, #ffffff);
-
-    /* Effects */
-    cursor: pointer;
-    transition: var(--gbn-button-transition, all 0.2s ease);
-}
-
-/* ==========================================================================
-   FASE 13: PostRender - Componente de Contenido Dinámico
-   ========================================================================== */
-
-/* Contenedor Principal PostRender */
-:where([gloryPostRender], .gbn-post-render) {
-    display: var(--gbn-post-render-display, grid);
-    gap: var(--gbn-post-render-gap, 20px);
-    grid-template-columns: var(--gbn-post-render-columns, repeat(3, 1fr));
-    box-sizing: border-box;
-    width: 100%;
-    transition: opacity 0.3s ease;
-}
-
-/* Loading State */
-:where([gloryPostRender], .gbn-post-render).gbn-loading {
+/* Loading State para PostRender */
+.gbn-loading {
     opacity: 0.6;
     pointer-events: none;
     position: relative;
 }
 
-:where([gloryPostRender], .gbn-post-render).gbn-loading::after {
+.gbn-loading::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -233,7 +40,7 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
     height: 32px;
     margin: -16px 0 0 -16px;
     border: 3px solid rgba(0, 0, 0, 0.1);
-    border-top-color: var(--gbn-primary, #3b82f6);
+    border-top-color: #3b82f6;
     border-radius: 50%;
     animation: gbn-spin 0.8s linear infinite;
 }
@@ -244,98 +51,10 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
     }
 }
 
-/* Item Template - PostItem */
-:where([gloryPostItem], .gbn-post-item) {
-    display: var(--gbn-post-item-display, flex);
-    flex-direction: var(--gbn-post-item-flex-direction, column);
-    gap: var(--gbn-post-item-gap, 12px);
-    background: var(--gbn-post-item-bg, #ffffff);
-    border-radius: var(--gbn-post-item-radius, 8px);
-    overflow: hidden;
-    box-sizing: border-box;
-    transition: box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease;
-}
-
-/* Post Item Hover Effects (via classes) */
-.gbn-hover-lift:hover {
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-    transform: translateY(-4px);
-}
-
-.gbn-hover-scale:hover {
-    transform: scale(1.02);
-}
-
-.gbn-hover-glow:hover {
-    box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
-}
-
-/* Hidden item (for filtering) */
-.gbn-pr-hidden {
-    opacity: 0;
-    transform: scale(0.95);
-    pointer-events: none;
-}
-
-/* PostField Elements 
-   Los atributos glory* ahora se preservan en el frontend
-   permitiendo que estos selectores funcionen correctamente */
-:where([gloryPostField='featuredImage']) {
-    aspect-ratio: var(--gbn-post-img-ratio, 16/9);
-    overflow: hidden;
-}
-
-:where([gloryPostField='featuredImage']) img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-:where([gloryPostItem]:hover) :where([gloryPostField='featuredImage']) img {
-    transform: scale(1.05);
-}
-
-:where([gloryPostField='title']) {
-    font-size: var(--gbn-post-title-size, 1.25rem);
-    font-weight: var(--gbn-post-title-weight, 600);
-    line-height: 1.3;
-    color: var(--gbn-post-title-color, inherit);
-}
-
-:where([gloryPostField='title']) a {
-    color: inherit;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-:where([gloryPostField='title']) a:hover {
-    color: var(--gbn-primary, #3b82f6);
-}
-
-:where([gloryPostField='excerpt']) {
-    font-size: var(--gbn-post-excerpt-size, 0.95rem);
-    color: var(--gbn-post-excerpt-color, #666);
-    line-height: 1.6;
-}
-
-:where([gloryPostField='date']) {
-    font-size: var(--gbn-post-date-size, 0.85rem);
-    color: var(--gbn-post-date-color, #888);
-}
-
-:where([gloryPostField='author']) {
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-:where([gloryPostField='categories']),
-:where([gloryPostField='tags']) {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    font-size: 0.8rem;
-}
+/* ==========================================================================
+   ESTADOS DEL EDITOR - Empty/Feedback
+   Mensajes de estado para el usuario del constructor
+   ========================================================================== */
 
 /* Empty State */
 .gbn-post-render-empty {
@@ -347,226 +66,25 @@ Tendreos de deshaceros de todo esto, y dejar que los default funcionen con where
     grid-column: 1 / -1;
 }
 
-/* ==========================================================================
-   Category Filter UI
-   ========================================================================== */
-
-.gbn-pr-filter {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 16px 0;
-    margin-bottom: 20px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+/* Preview message styles */
+.gbn-pr-preview-message {
+    grid-column: 1 / -1;
 }
 
-.gbn-pr-filter-btn {
-    padding: 8px 18px;
-    background: transparent;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    border-radius: 100px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #555;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.gbn-pr-filter-btn:hover {
-    border-color: var(--gbn-primary, #3b82f6);
-    color: var(--gbn-primary, #3b82f6);
-}
-
-.gbn-pr-filter-btn.active {
-    background: var(--gbn-primary, #3b82f6);
-    border-color: var(--gbn-primary, #3b82f6);
-    color: #ffffff;
-}
-
-/* ==========================================================================
-   Pagination UI
-   ========================================================================== */
-
-.gbn-pr-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 24px 0;
-    margin-top: 20px;
-}
-
-.gbn-pr-page-btn {
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    border-radius: 8px;
-    font-size: 1.2rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.gbn-pr-page-btn:hover:not(:disabled) {
-    background: var(--gbn-primary, #3b82f6);
-    border-color: var(--gbn-primary, #3b82f6);
-    color: #ffffff;
-}
-
-.gbn-pr-page-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-.gbn-pr-page-info {
-    font-size: 0.95rem;
-    color: #666;
-}
-
-.gbn-pr-page-info .current {
-    font-weight: 600;
-    color: var(--gbn-primary, #3b82f6);
-}
-
-/* ==========================================================================
-   Responsive Grid - PostRender
-   ========================================================================== */
-
-@media (max-width: 1024px) {
-    :where([gloryPostRender], .gbn-post-render) {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 640px) {
-    :where([gloryPostRender], .gbn-post-render) {
-        grid-template-columns: 1fr;
-    }
-
-    .gbn-pr-filter {
-        justify-content: center;
-    }
-
-    .gbn-pr-filter-btn {
-        padding: 6px 14px;
-        font-size: 0.85rem;
-    }
-}
-
-/* ==========================================================================
-   Layout Patterns - Alternado (Left/Right)
-   ========================================================================== */
-
-/* Pattern: alternado_lr - Imagen alterna izquierda/derecha */
-.gbn-post-render[data-pattern='alternado_lr'] {
-    display: block;
-}
-
-.gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem] {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    margin-bottom: var(--gbn-post-render-gap, 20px);
-}
-
-.gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem]:nth-child(even) {
-    flex-direction: row-reverse;
-}
-
-.gbn-post-render[data-pattern='alternado_lr'] [gloryPostField='featuredImage'] {
-    flex: 0 0 50%;
-    aspect-ratio: auto;
-}
-
-.gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem] > *:not([gloryPostField='featuredImage']) {
-    flex: 1;
-    padding: 20px;
-}
-
-@media (max-width: 768px) {
-    .gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem],
-    .gbn-post-render[data-pattern='alternado_lr'] [gloryPostItem]:nth-child(even) {
-        flex-direction: column;
-    }
-
-    .gbn-post-render[data-pattern='alternado_lr'] [gloryPostField='featuredImage'] {
-        flex: none;
-    }
-}
-
-/* ==========================================================================
-   Logo Component - CSS Variables Support
-   ========================================================================== */
-
-:where([gloryLogo], .gbn-logo) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-start;
-    text-decoration: none;
-    box-sizing: border-box;
-}
-
-:where([gloryLogo], .gbn-logo) img,
-:where([gloryLogo], .gbn-logo) .gbn-logo-img {
-    width: auto;
-    height: auto;
-    max-width: 100%;
-    /* Variables injected by logo.js renderer */
-    object-fit: var(--gbn-logo-object-fit, contain);
-    filter: var(--gbn-logo-filter, none);
-}
-
-/* ==========================================================================
-   TarjetaComponent - Componente unificado para tarjetas con imagen de fondo
-   Mantiene compatibilidad con las clases .service-card existentes
-   ========================================================================== */
-
-:where([gloryTarjeta], .gbn-tarjeta) {
-    /* Layout & Flex Defaults - igual que secundario */
-    display: var(--gbn-tarjeta-display);
-    flex-direction: var(--gbn-tarjeta-flex-direction);
-    flex-wrap: var(--gbn-tarjeta-flex-wrap);
-    justify-content: var(--gbn-tarjeta-justify-content);
-    align-items: var(--gbn-tarjeta-align-items);
-    gap: var(--gbn-tarjeta-gap);
-    grid-template-columns: repeat(var(--gbn-tarjeta-grid-columns, 1), 1fr);
-
-    /* Spacing & Sizing */
-    width: var(--gbn-tarjeta-width, 100%);
-
-    padding-top: var(--gbn-tarjeta-padding-top);
-    padding-right: var(--gbn-tarjeta-padding-right);
-    padding-bottom: var(--gbn-tarjeta-padding-bottom);
-    padding-left: var(--gbn-tarjeta-padding-left);
-
-    background: var(--gbn-tarjeta-background, transparent);
-
-    /* Typography */
-    text-align: var(--gbn-tarjeta-alineacion, inherit);
-
-    /* Necesario para el posicionamiento de .card-bg-image */
-    position: relative;
-    overflow: hidden;
-
-    box-sizing: border-box;
-}
-
-/* El elemento interno .card-bg-image hereda la imagen configurada desde el panel */
-:where([gloryTarjeta], .gbn-tarjeta) > .card-bg-image {
-    position: absolute;
-    inset: 0;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    z-index: 0;
+/* Hidden item (for filtering in editor) */
+.gbn-pr-hidden {
+    opacity: 0;
+    transform: scale(0.95);
     pointer-events: none;
 }
 
-/* El contenido debe estar por encima del fondo */
-:where([gloryTarjeta], .gbn-tarjeta) > .card-content {
-    position: relative;
-    z-index: 1;
+/* ==========================================================================
+   CLONES DE PREVIEW - PostRender
+   Los clones son solo visuales, no editables
+   ========================================================================== */
+
+[data-gbn-pr-clone] {
+    pointer-events: none !important;
+    opacity: 0.85;
+    cursor: default;
 }

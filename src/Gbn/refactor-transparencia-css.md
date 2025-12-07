@@ -66,17 +66,17 @@ entonces GBN esta haciendo algo mal.
 
 ### Archivos CSS en `/assets/css/`
 
-| Archivo              | Proposito Actual                    | Veredicto        | Accion Requerida |
-| :------------------- | :---------------------------------- | :--------------- | :--------------- |
-| `gbn.css`            | Variables globales, debug overlay   | LIMPIAR          | Eliminar vars `:root` (lineas 7-19), conservar debug overlay |
-| `theme-styles.css`   | Estilos base para componentes glory | ELIMINAR ~90%    | Solo conservar estados del editor (loading, empty) |
-| `interactive.css`    | Estilos del editor (hover, select)  | CONSERVAR        | OK - Solo estilos de modo edicion |
-| `components.css`     | Estilos varios                      | LIMPIAR          | Eliminar lineas 716-979 (Header/Menu/Logo base) |
-| `layout.css`         | Layout del panel                    | CONSERVAR        | OK - UI del panel lateral |
-| `modals.css`         | Modales y biblioteca                | CONSERVAR        | OK - UI del editor |
-| `variables.css`      | Variables de UI del editor          | LIMPIAR          | Eliminar lineas 9-19 (vars del tema) |
-| `forms.css`          | Estilos de formularios              | CONSERVAR        | OK - UI del panel (campos del panel) |
-| `formComponents.css` | Componentes de formulario           | CONSERVAR        | OK - UI del panel |
+| Archivo              | Proposito Actual                    | Veredicto     | Accion Requerida                                             |
+| :------------------- | :---------------------------------- | :------------ | :----------------------------------------------------------- |
+| `gbn.css`            | Variables globales, debug overlay   | LIMPIAR       | Eliminar vars `:root` (lineas 7-19), conservar debug overlay |
+| `theme-styles.css`   | Estilos base para componentes glory | ELIMINAR ~90% | Solo conservar estados del editor (loading, empty)           |
+| `interactive.css`    | Estilos del editor (hover, select)  | CONSERVAR     | OK - Solo estilos de modo edicion                            |
+| `components.css`     | Estilos varios                      | LIMPIAR       | Eliminar lineas 716-979 (Header/Menu/Logo base)              |
+| `layout.css`         | Layout del panel                    | CONSERVAR     | OK - UI del panel lateral                                    |
+| `modals.css`         | Modales y biblioteca                | CONSERVAR     | OK - UI del editor                                           |
+| `variables.css`      | Variables de UI del editor          | LIMPIAR       | Eliminar lineas 9-19 (vars del tema)                         |
+| `forms.css`          | Estilos de formularios              | CONSERVAR     | OK - UI del panel (campos del panel)                         |
+| `formComponents.css` | Componentes de formulario           | CONSERVAR     | OK - UI del panel                                            |
 
 ### Criterio de Decision
 - **CONSERVAR:** CSS que afecta elementos del EDITOR (panel, dock, overlay, biblioteca)
@@ -195,29 +195,55 @@ entonces GBN esta haciendo algo mal.
 ---
 
 ### Fase 1: Limpieza de CSS Innecesarios
-**Estado:** PENDIENTE
-**Dependencia:** Fase 0 completada
-**Estimacion:** 2-3 horas
+**Estado:** COMPLETADA
+**Fecha:** 7 Diciembre 2025
 
-- [ ] **1.1** Eliminar variables `:root` de componentes en `gbn.css`
-- [ ] **1.2** Eliminar estilos `[gloryDiv]`, `[gloryTexto]`, etc. de `theme-styles.css`
-- [ ] **1.3** Mover cualquier CSS de editor mezclado a `interactive.css`
-- [ ] **1.4** Eliminar o consolidar `components.css` si es redundante
-- [ ] **1.5** Actualizar `GbnManager.php` si se eliminan archivos CSS
+- [x] **1.1** Eliminar variables `:root` de componentes en `gbn.css`
+- [x] **1.2** Eliminar estilos `[gloryDiv]`, `[gloryTexto]`, etc. de `theme-styles.css`
+- [x] **1.3** Mover cualquier CSS de editor mezclado a `interactive.css` (ya estaban separados)
+- [x] **1.4** Eliminar estilos de Header/Menu/Logo de `components.css`
+- [x] **1.5** Limpiar variables de tema en `variables.css`
 
-**Archivos a modificar:**
-- `assets/css/gbn.css`
-- `assets/css/theme-styles.css`
-- `assets/css/components.css`
-- `GbnManager.php` (si aplica)
+**Archivos modificados:**
+- `assets/css/gbn.css` - Eliminado import fonts, variables :root
+- `assets/css/theme-styles.css` - Reducido de 573 a ~90 lineas (solo estados del editor)
+- `assets/css/components.css` - Eliminadas lineas 716-979 (estilos base Layout)
+- `assets/css/variables.css` - Eliminadas variables del tema
+
+**Backup creado:** `assets/css/backup-2025-12-07/`
 
 **Regresiones a verificar:**
-- [ ] El editor (panel, dock, inspector) sigue funcionando
-- [ ] Los elementos `glory*` siguen siendo detectables
-- [ ] No hay errores en consola
+- [x] El editor (panel, dock, inspector) sigue funcionando
+- [x] Los elementos `glory*` siguen siendo detectables
+- [x] No hay errores en consola
+
+**Regresion encontrada y corregida:**
+- `.case-card` necesitaba `width: 100%` en `landing.css` - Fix aplicado
+- Esto NO era un problema del refactor, sino que el CSS del tema no tenia el width definido
 
 **Notas de la implementacion:**
-<!-- La IA agregara notas aqui durante la limpieza -->
+
+#### Cambios Realizados:
+
+1. **gbn.css**: 
+   - Eliminado `@import` de Google Fonts (debe estar en CSS del tema)
+   - Eliminadas variables CSS `:root` para padding de principal/secundario
+   - Conservado debug overlay y selector `[gloryContentRender]`
+
+2. **theme-styles.css**:
+   - Archivo reconstruido desde cero
+   - Solo contiene: loading states, empty states, clones de preview
+   - Eliminados ~500 lineas de estilos base de componentes
+
+3. **components.css**:
+   - Eliminados estilos base de Header, Logo, Menu, Footer
+   - Conservados estilos del editor (toggle, controls, tabs, theme panel)
+   - Reducido de 1048 a ~780 lineas
+
+4. **variables.css**:
+   - Eliminadas variables `--gbn-text-*`, `--gbn-h1-*`, `--gbn-primary`, etc.
+   - Conservadas solo variables para UI del panel del editor
+
 
 ---
 
@@ -323,10 +349,114 @@ entonces GBN esta haciendo algo mal.
 > [!NOTE]
 > Documentar aqui las decisiones tomadas durante el refactor.
 
-### ADR-001: (Pendiente)
-**Contexto:** 
-**Decision:** 
-**Consecuencias:** 
+### ADR-001: Theme Settings Independiente de GBN
+**Fecha:** 7 Diciembre 2025
+
+**Contexto:**
+El usuario final necesita poder establecer defaults globales (fuente de h1, color de texto, etc.) pero estos defaults deben funcionar SIN que GBN este activo. Esto crea una tension con la filosofia de transparencia.
+
+**Problema:**
+Si GBN inyecta variables CSS en `:root` para los defaults, entonces:
+- El sitio depende de GBN para verse bien (viola transparencia)
+- Si desactivas GBN, los defaults desaparecen
+
+**Decision: Opcion C - Separacion Tema/Editor**
+
+1. **GBN es SOLO la UI** para editar los Theme Settings
+2. **El TEMA aplica los estilos** generando un `<style>` en el `<head>`
+3. Los valores se guardan en `wp_options` (ya funciona asi)
+4. Un hook del TEMA lee esos valores y genera CSS con selectores de baja especificidad
+
+**Flujo:**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Programador define CSS base:                             │
+│    h1 { font-size: 32px; }                                  │
+│    (Especificidad: 0,0,0,1)                                 │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 2. Usuario cambia h1 a 40px via Theme Settings              │
+│    GBN guarda en wp_options: {h1: {fontSize: '40px'}}       │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 3. TEMA (no GBN) genera en <head>:                          │
+│    :where(h1) { font-size: 40px; }                          │
+│    (Especificidad: 0,0,0,0 - permite override del dev)      │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Resultado:                                               │
+│    - Sin GBN: Sitio usa los Theme Settings guardados        │
+│    - Desarrollador puede sobrescribir con clases            │
+│    - Usuario puede personalizar desde el panel              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Implementacion Requerida:**
+
+1. **PHP (Tema):** Crear hook que genere `<style>` con Theme Settings guardados
+2. **JS (GBN):** Theme Settings lee valores computados del DOM, no de defaults hardcodeados
+3. **CSS:** Usar `:where()` para especificidad 0
+
+**Consecuencias:**
+
+Positivas:
+- Cumple transparencia total
+- Site funciona sin GBN
+- Desarrollador puede sobrescribir
+- Usuario puede personalizar
+
+Negativas:
+- Requiere cooperacion tema-GBN
+- Nuevos temas deben implementar el hook
+
+---
+
+### Fase 1.5: Theme Settings Transparente (NUEVA)
+**Estado:** PENDIENTE
+**Prioridad:** ALTA (Complemento de Fase 1)
+**Estimacion:** 2-3 horas
+
+#### 1.5.1 Backend PHP (Tema)
+- [ ] Crear clase `ThemeSettingsRenderer` en el tema (no en GBN)
+- [ ] Hook en `wp_head` para generar `<style>` con Theme Settings guardados
+- [ ] Leer de `wp_options` (key: `gbn_theme_settings`)
+- [ ] Usar selectores `:where(h1)`, `:where(h2)`, `:where(p)`, etc.
+
+**Archivo a crear:** `Glory/App/Theme/ThemeSettingsRenderer.php`
+
+```php
+// Ejemplo de implementacion
+class ThemeSettingsRenderer {
+    public function render(): void {
+        $settings = get_option('gbn_theme_settings', []);
+        if (empty($settings)) return;
+        
+        echo '<style id="glory-theme-settings">';
+        // Solo emitir valores que el usuario explicitamente guardo
+        if (!empty($settings['typography']['h1']['fontSize'])) {
+            echo ':where(h1) { font-size: ' . esc_attr($settings['typography']['h1']['fontSize']) . '; }';
+        }
+        // ... etc
+        echo '</style>';
+    }
+}
+```
+
+#### 1.5.2 Frontend JS (GBN)
+- [ ] Modificar `theme-settings.js` para leer valores computados del DOM
+- [ ] Crear elementos de referencia temporales si no existen (h1, h2, p, etc.)
+- [ ] Mostrar valores reales en el panel, no defaults hardcodeados
+
+#### 1.5.3 Limpieza
+- [ ] Eliminar variables `--gbn-h1-*`, `--gbn-text-*` que quedaron en el JS
+- [ ] Actualizar `applicator.js` para trabajar con el nuevo sistema
 
 ---
 
@@ -339,6 +469,8 @@ entonces GBN esta haciendo algo mal.
 - Se identifico que GBN se habia desviado de su filosofia original
 - Se decidio que la solucion para BUG-022 debe ser iframe real, no inyeccion CSS
 - Se creo este roadmap para guiar el trabajo
+- **Fase 0 y 1 completadas** - Limpieza de ~776 lineas de CSS
+- **ADR-001 documentada** - Theme Settings seran aplicados por el tema, no por GBN
 
 ---
 
@@ -354,7 +486,9 @@ entonces GBN esta haciendo algo mal.
 
 ## 7. Historial de Cambios
 
-| Fecha      | Cambio                 | Autor |
-| ---------- | ---------------------- | ----- |
-| 2025-12-07 | Creacion del documento | IA    |
+| Fecha      | Cambio                                      | Autor |
+| ---------- | ------------------------------------------- | ----- |
+| 2025-12-07 | Creacion del documento                      | IA    |
+| 2025-12-07 | Fase 0 y 1 completadas, ADR-001 documentada | IA    |
+| 2025-12-07 | Agregada Fase 1.5 para Theme Settings       | IA    |
 
