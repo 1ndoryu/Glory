@@ -1,11 +1,11 @@
-;(function (global) {
+(function (global) {
     'use strict';
 
-    var Gbn = global.Gbn = global.Gbn || {};
+    var Gbn = (global.Gbn = global.Gbn || {});
     var utils = Gbn.utils;
     var state = Gbn.state;
     var styleManager = Gbn.styleManager;
-    
+
     Gbn.content = Gbn.content || {};
 
     function buildBlock(el) {
@@ -19,7 +19,7 @@
         }
         domHelpers.normalizeAttributes(el, role);
         var meta = {};
-        
+
         var ROLE_MAP = roles.getMap();
         var FALLBACK_SELECTORS = roles.getFallback();
 
@@ -41,22 +41,42 @@
             }
             var typeAttr = attrName ? el.getAttribute(attrName) : null;
             meta.postType = typeAttr && typeAttr !== 'content' ? typeAttr : 'post';
-            
+
             var estilosAttr = el.getAttribute('estilos');
             meta.inlineArgs = configHelpers.extractInlineArgs(estilosAttr);
-            
+
             // Ensure postType is in options so it populates the config
             if (meta.postType) {
                 meta.options.postType = meta.postType;
             }
         }
-        
+
         // Pre-process text content for text role
         if (role === 'text') {
-            // Infer 'texto' from innerHTML if not provided in options
-            if (!meta.options.texto) {
+            // BUG-020 FIX: Verificar si el elemento tiene hijos GBN antes de inferir texto
+            // Si tiene hijos GBN, NO capturar innerHTML como texto porque contiene estructura
+            var hasGbnChildren = false;
+            var children = el.children;
+            for (var i = 0; i < children.length; i++) {
+                var child = children[i];
+                if (child.classList && child.classList.contains('gbn-controls-group')) {
+                    continue;
+                }
+                var attrs = child.attributes;
+                for (var j = 0; j < attrs.length; j++) {
+                    var attrName = attrs[j].name.toLowerCase();
+                    if (attrName.startsWith('glory') || attrName === 'data-gbn-id') {
+                        hasGbnChildren = true;
+                        break;
+                    }
+                }
+                if (hasGbnChildren) break;
+            }
+
+            // Solo inferir 'texto' si NO tiene hijos GBN
+            if (!meta.options.texto && !hasGbnChildren) {
                 // Use innerHTML to preserve formatting (br, span, etc)
-                // We must be careful not to capture GBN controls if they exist, 
+                // We must be careful not to capture GBN controls if they exist,
                 // but buildBlock is usually called on clean nodes.
                 var currentText = el.innerHTML.trim();
                 if (currentText) {
@@ -64,6 +84,11 @@
                 } else {
                     meta.options.texto = 'Nuevo texto';
                 }
+            }
+
+            // Si tiene hijos GBN, marcar en meta para que el panel sepa que es un contenedor
+            if (hasGbnChildren) {
+                meta.isContainer = true;
             }
 
             // Infer 'tag' from tagName if not provided in options
@@ -81,7 +106,7 @@
             if (fieldTypeAttr && !meta.options.fieldType) {
                 meta.options.fieldType = fieldTypeAttr;
             }
-            
+
             // También leer otros atributos que podrían estar presentes
             // Por ejemplo: format para fechas, wordLimit para excerpts, etc.
             // Estos pueden venir como atributos separados o en 'opciones'
@@ -124,12 +149,12 @@
         // Esto evita que los fallbacks CSS se guarden como configuración del componente
         try {
             var hasRealInlineStyles = el.hasAttribute('style') && el.getAttribute('style').trim() !== '';
-            
+
             if (hasRealInlineStyles) {
                 var roleDefaults = roles.getRoleDefaults(role);
                 // NO pasar roleDefaults.config, solo un objeto vacío para evitar herencia CSS
                 var inlineConfig = configHelpers.syncInlineStyles(block.styles.inline, roleDefaults.schema, {});
-                
+
                 // Merge options from attributes into inlineConfig so they populate the panel
                 if (meta.options) {
                     inlineConfig = utils.assign({}, inlineConfig, meta.options);
@@ -154,7 +179,7 @@
             var presets = utils.getConfig().presets || {};
             if (presets.config && presets.config[block.id]) {
                 var presetCfg = presets.config[block.id];
-                var nextCfg = (presetCfg && typeof presetCfg === 'object' && presetCfg.config) ? presetCfg.config : presetCfg;
+                var nextCfg = presetCfg && typeof presetCfg === 'object' && presetCfg.config ? presetCfg.config : presetCfg;
                 if (nextCfg && typeof nextCfg === 'object') {
                     state.updateConfig(block.id, nextCfg);
                 }
@@ -170,39 +195,61 @@
                 block.styles.current = utils.assign({}, presets.styles[block.id]);
             }
         } catch (_) {}
-        
+
         // Ensure text content is applied from config if it exists (persistence fix)
+        // BUG-020 FIX: Solo aplicar texto si el elemento NO tiene hijos GBN
         if (role === 'text' && block.config && block.config.texto) {
-             // Only update if different to avoid unnecessary DOM touches, 
-             // but we must trust config over initial HTML if config exists and we are in editor mode
-             // actually, we should just apply it.
-             var currentHTML = el.innerHTML;
-             if (block.config.texto !== currentHTML) {
-                 // Check for controls to preserve them
-                 var controls = el.querySelector('.gbn-controls-group');
-                 el.innerHTML = block.config.texto;
-                 if (controls) {
-                     el.appendChild(controls);
-                 }
-             }
-             
-             // Also apply typography styles if present in config but not in inline styles
-             // This is a bit redundant if presets.styles handled it, but good for safety
-             if (block.config.typography && Gbn.ui && Gbn.ui.panelApi && Gbn.ui.panelApi.applyBlockStyles) {
-                 Gbn.ui.panelApi.applyBlockStyles(block);
-             }
+            // Verificar si tiene hijos GBN que no debemos sobrescribir
+            var hasNestedGbn = false;
+            var childElements = el.children;
+            for (var ci = 0; ci < childElements.length; ci++) {
+                var childEl = childElements[ci];
+                if (childEl.classList && childEl.classList.contains('gbn-controls-group')) {
+                    continue;
+                }
+                var childAttrs = childEl.attributes;
+                for (var ai = 0; ai < childAttrs.length; ai++) {
+                    var attrN = childAttrs[ai].name.toLowerCase();
+                    if (attrN.startsWith('glory') || attrN === 'data-gbn-id') {
+                        hasNestedGbn = true;
+                        break;
+                    }
+                }
+                if (hasNestedGbn) break;
+            }
+
+            // Solo aplicar innerHTML si NO tiene hijos GBN
+            if (!hasNestedGbn) {
+                // Only update if different to avoid unnecessary DOM touches,
+                // but we must trust config over initial HTML if config exists and we are in editor mode
+                var currentHTML = el.innerHTML;
+                if (block.config.texto !== currentHTML) {
+                    // Check for controls to preserve them
+                    var controls = el.querySelector('.gbn-controls-group');
+                    el.innerHTML = block.config.texto;
+                    if (controls) {
+                        el.appendChild(controls);
+                    }
+                }
+            }
+
+            // Also apply typography styles if present in config but not in inline styles
+            // This is a bit redundant if presets.styles handled it, but good for safety
+            if (block.config.typography && Gbn.ui && Gbn.ui.panelApi && Gbn.ui.panelApi.applyBlockStyles) {
+                Gbn.ui.panelApi.applyBlockStyles(block);
+            }
         }
 
         // Solo aplicar baseline si no hay presets
         if (!presets.styles || !presets.styles[block.id]) {
             styleManager.ensureBaseline(block);
         }
-        
+
         // Inicializar renderers que tengan lógica especial de arranque
         // PostRender necesita solicitar preview de posts via AJAX
         if (role === 'postRender' && Gbn.ui && Gbn.ui.renderers && Gbn.ui.renderers.postRender && Gbn.ui.renderers.postRender.init) {
             // Diferir la inicialización para asegurar que el DOM esté listo
-            setTimeout(function() {
+            setTimeout(function () {
                 Gbn.ui.renderers.postRender.init(block);
             }, 50);
         }
@@ -213,5 +260,4 @@
     Gbn.content.builder = {
         buildBlock: buildBlock
     };
-
 })(window);

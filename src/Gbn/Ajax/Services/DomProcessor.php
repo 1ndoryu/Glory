@@ -18,21 +18,83 @@ class DomProcessor
         // Hack for UTF-8. Wrap in data-gbn-root to ensure consistent ID generation.
         $dom->loadHTML('<?xml encoding="utf-8" ?><body><div data-gbn-root>' . $html . '</div></body>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
         libxml_clear_errors();
-        
+
         // Logger::log('HTML Start: ' . substr($html, 0, 100));
 
         $xpath = new \DOMXPath($dom);
-        // Find all elements that might be blocks.
+        // Find all elements that might be GBN blocks.
         // Note: loadHTML lowercases attributes, so we must query for lowercase versions.
-        $query = "//*[@glorydiv] | //*[@glorydivsecundario] | //*[@glorycontentrender] | //*[@glorytermrender] | //*[@gloryimage] | //*[@data-gbnprincipal] | //*[@data-gbnsecundario] | //*[@data-gbncontent] | //*[@data-gbn-term-list] | //*[@data-gbn-image]";
+        // Lista completa de componentes GBN (atributos glory* y data-gbn-*)
+        $queryParts = [
+            // Principal/Secundario
+            '//*[@glorydiv]',
+            '//*[@glorydivsecundario]',
+            '//*[@data-gbnprincipal]',
+            '//*[@data-gbnsecundario]',
+            // Text
+            '//*[@glorytexto]',
+            '//*[@data-gbn-text]',
+            // Button
+            '//*[@glorybutton]',
+            '//*[@data-gbn-button]',
+            // Image (ambas variantes)
+            '//*[@gloryimage]',
+            '//*[@gloryimagen]',
+            '//*[@data-gbn-image]',
+            // PostRender/PostItem/PostField
+            '//*[@glorypostrender]',
+            '//*[@glorypostitem]',
+            '//*[@glorypostfield]',
+            '//*[@data-gbn-post-render]',
+            '//*[@data-gbn-post-item]',
+            '//*[@data-gbn-post-field]',
+            // Tarjeta
+            '//*[@glorytarjeta]',
+            '//*[@data-gbn-tarjeta]',
+            // Form components
+            '//*[@gloryform]',
+            '//*[@gloryinput]',
+            '//*[@gloryselect]',
+            '//*[@glorytextarea]',
+            '//*[@glorysubmit]',
+            '//*[@data-gbn-form]',
+            '//*[@data-gbn-input]',
+            '//*[@data-gbn-select]',
+            '//*[@data-gbn-textarea]',
+            '//*[@data-gbn-submit]',
+            // Menu components
+            '//*[@glorymenu]',
+            '//*[@glorymenuitem]',
+            '//*[@data-gbn-menu]',
+            '//*[@data-gbn-menu-item]',
+            // Header/Footer/Logo
+            '//*[@gloryheader]',
+            '//*[@gloryfooter]',
+            '//*[@glorylogo]',
+            '//*[@data-gbn-header]',
+            '//*[@data-gbn-footer]',
+            '//*[@data-gbn-logo]',
+            // ContentRender/TermRender (legacy)
+            '//*[@glorycontentrender]',
+            '//*[@glorytermrender]',
+            '//*[@data-gbncontent]',
+            '//*[@data-gbn-term-list]',
+            // Cualquier elemento con data-gbn-id (catch-all para bloques registrados)
+            '//*[@data-gbn-id]'
+        ];
+        $query = implode(' | ', $queryParts);
 
         $nodes = $xpath->query($query);
         $toRemove = [];
-        $nodesByParent = [];
-        
+
         Logger::log('Nodes found: ' . $nodes->length);
 
         foreach ($nodes as $node) {
+            // Verificar que es un DOMElement (para satisfacer Intelephense y type safety)
+            if (!$node instanceof \DOMElement) {
+                continue;
+            }
+
             // Generate ID
             $id = $node->getAttribute('data-gbn-id');
             if (!$id) {
@@ -41,22 +103,12 @@ class DomProcessor
                 $node->setAttribute('data-gbn-id', $id);
                 Logger::log("Generated ID: $id | Path: $path");
             }
-            
+
             // Check if valid
             if (!isset($configById[$id])) {
                 $toRemove[] = $node;
                 Logger::log("Marked for removal: $id");
             } else {
-                // Store for reordering
-                $parentId = spl_object_hash($node->parentNode);
-                if (!isset($nodesByParent[$parentId])) {
-                    $nodesByParent[$parentId] = ['parent' => $node->parentNode, 'children' => []];
-                }
-                $nodesByParent[$parentId]['children'][] = [
-                    'node' => $node,
-                    'order' => isset($configById[$id]['order']) ? (int) $configById[$id]['order'] : 9999
-                ];
-
                 // Inject default classes for persistence
                 // This ensures styles work even if GBN JS is disabled
                 if ($node->hasAttribute('glorydiv') || $node->hasAttribute('data-gbnprincipal')) {
@@ -86,29 +138,41 @@ class DomProcessor
                 // Cleanup editor-only attributes
                 $node->removeAttribute('draggable');
                 $node->removeAttribute('data-gbn-ready');
+
+                // Cleanup editor-only classes (gbn-block, gbn-node, gbn-block-active)
+                // Estas clases son inyectadas por el inspector y no deben persistirse
+                $classes = $node->getAttribute('class');
+                if ($classes !== '') {
+                    $editorClasses = ['gbn-block', 'gbn-node', 'gbn-block-active', 'gbn-show-controls'];
+                    $classArray = preg_split('/\s+/', $classes);
+                    $cleanedClasses = array_filter($classArray, function ($c) use ($editorClasses) {
+                        return !in_array($c, $editorClasses);
+                    });
+                    $newClasses = implode(' ', $cleanedClasses);
+                    if ($newClasses !== $classes) {
+                        if ($newClasses === '') {
+                            $node->removeAttribute('class');
+                        } else {
+                            $node->setAttribute('class', $newClasses);
+                        }
+                    }
+                }
             }
         }
-        
-        // Reorder nodes
-        foreach ($nodesByParent as $parentId => $group) {
-            $parent = $group['parent'];
-            $children = $group['children'];
-            
-            // Sort by order
-            usort($children, function($a, $b) {
-                return $a['order'] - $b['order'];
-            });
-            
-            // Re-append in correct order
-            foreach ($children as $child) {
-                $parent->appendChild($child['node']);
-            }
-        }
-        
+
+        // BUG-018 FIX: NO reordenar nodos DOM aqui.
+        // El HTML viene del cliente via innerHTML en el orden visual correcto (WYSIWYG).
+        // El reordenamiento anterior usaba appendChild solo en nodos GBN, lo cual
+        // los movia al final del padre y rompia la estructura con elementos no-GBN.
+        // El orden se preserva naturalmente desde el HTML serializado del cliente.
+
         Logger::log('Nodes to remove: ' . count($toRemove));
 
         foreach ($toRemove as $node) {
-            $node->parentNode->removeChild($node);
+            // Verificar que el nodo tiene padre antes de intentar removerlo
+            if ($node->parentNode !== null) {
+                $node->parentNode->removeChild($node);
+            }
         }
 
         // Return HTML of body content
@@ -131,14 +195,20 @@ class DomProcessor
     private static function computeDomPath(\DOMElement $node): string
     {
         $segments = [];
+        /** @var \DOMNode|null $curr */
         $curr = $node;
-        while ($curr && $curr->nodeType === XML_ELEMENT_NODE && $curr->nodeName !== 'body') {
+        while ($curr !== null && $curr->nodeType === XML_ELEMENT_NODE && $curr->nodeName !== 'body') {
+            // Verificar que es DOMElement para acceder a hasAttribute
+            if (!$curr instanceof \DOMElement) {
+                break;
+            }
+
             // Stop at data-gbn-root
             if ($curr->hasAttribute('data-gbn-root')) {
                 break;
             }
             $tag = strtolower($curr->nodeName);
-            
+
             // Ignore 'main' tag to fix inconsistency between client (with main) and server (without main)
             if ($tag === 'main') {
                 $curr = $curr->parentNode;
@@ -146,11 +216,12 @@ class DomProcessor
             }
 
             $index = 0;
-            $sibling = $curr;
-            while ($sibling = $sibling->previousSibling) {
+            $sibling = $curr->previousSibling;
+            while ($sibling !== null) {
                 if ($sibling->nodeType === XML_ELEMENT_NODE && $sibling->nodeName === $curr->nodeName) {
                     $index++;
                 }
+                $sibling = $sibling->previousSibling;
             }
             array_unshift($segments, $tag . ':' . $index);
             $curr = $curr->parentNode;
@@ -167,12 +238,12 @@ class DomProcessor
             $hash = (($hash << 5) - $hash) + $char;
             $hash = $hash & 0xFFFFFFFF; // Keep 32 bits (unsigned)
         }
-        
+
         // Convert unsigned 32-bit to signed 32-bit to match JS bitwise operations
         if ($hash & 0x80000000) {
-            $hash = -((~$hash & 0xFFFFFFFF) + 1);
+            $hash = - ((~$hash & 0xFFFFFFFF) + 1);
         }
-        
+
         return abs($hash);
     }
 

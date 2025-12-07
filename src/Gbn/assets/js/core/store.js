@@ -1,15 +1,15 @@
-;(function (global) {
+(function (global) {
     'use strict';
 
-    var Gbn = global.Gbn = global.Gbn || {};
+    var Gbn = (global.Gbn = global.Gbn || {});
     Gbn.core = Gbn.core || {};
 
     // Initial State
     var initialState = {
-        blocks: {},      // Map of ID -> Block Config
+        blocks: {}, // Map of ID -> Block Config
         selection: null, // Current selected block ID
         mode: 'desktop', // Current responsive mode
-        isDirty: false   // Unsaved changes flag
+        isDirty: false // Unsaved changes flag
     };
 
     var state = JSON.parse(JSON.stringify(initialState));
@@ -51,18 +51,18 @@
                         block.config = JSON.parse(JSON.stringify(block.config));
                     }
                     nextState.blocks[blockId] = block;
-                    
+
                     // If updating specific breakpoint that is NOT desktop/base
                     if (breakpoint !== 'desktop') {
                         if (!block.config._responsive) block.config._responsive = {};
                         if (!block.config._responsive[breakpoint]) block.config._responsive[breakpoint] = {};
-                        
+
                         Object.assign(block.config._responsive[breakpoint], updates);
                     } else {
                         // Base update
                         Object.assign(block.config, updates);
                     }
-                    
+
                     nextState.isDirty = true;
                 }
                 break;
@@ -73,7 +73,7 @@
                     // [FIX BUG-011] Deep clone the block to prevent shared references
                     // Especially critical for nested objects like padding, margin, typography
                     var clonedBlock = Object.assign({}, newBlock);
-                    
+
                     // Deep clone config (serializable data)
                     if (clonedBlock.config) {
                         try {
@@ -83,7 +83,7 @@
                             clonedBlock.config = Object.assign({}, clonedBlock.config);
                         }
                     }
-                    
+
                     // Deep clone styles if present
                     if (clonedBlock.styles) {
                         clonedBlock.styles = Object.assign({}, clonedBlock.styles);
@@ -94,15 +94,15 @@
                             clonedBlock.styles.current = Object.assign({}, clonedBlock.styles.current);
                         }
                     }
-                    
+
                     // Shallow clone meta (usually contains simple values)
                     if (clonedBlock.meta) {
                         clonedBlock.meta = Object.assign({}, clonedBlock.meta);
                     }
-                    
+
                     // Keep element reference (DOM element, should not be cloned)
                     // Keep schema array reference (read-only data from PHP)
-                    
+
                     nextState.blocks[newBlock.id] = clonedBlock;
                     nextState.isDirty = true;
                 }
@@ -135,7 +135,7 @@
 
     // Store API
     var Store = {
-        getState: function() {
+        getState: function () {
             // Shallow clone to preserve DOM references
             var copy = Object.assign({}, state);
             if (copy.blocks) {
@@ -144,7 +144,7 @@
             return copy;
         },
 
-        dispatch: function(action) {
+        dispatch: function (action) {
             // Validation
             if (Gbn.core.validator && !Gbn.core.validator.validateAction(action)) {
                 if (Gbn.log) Gbn.log.error('Invalid Action Rejected', action);
@@ -153,19 +153,19 @@
 
             // if (Gbn.log) Gbn.log.info('Action Dispatched', { type: action.type, id: action.id });
             if (Gbn.log && (action.type === 'UPDATE_BLOCK' || action.type === 'UPDATE_THEME')) {
-                 Gbn.log.info('Store Action', { type: action.type, id: action.id, breakpoint: action.breakpoint });
+                Gbn.log.info('Store Action', {type: action.type, id: action.id, breakpoint: action.breakpoint});
             }
-            
+
             var prevState = state;
             state = reducer(state, action);
 
             // Notify listeners
-            listeners.forEach(function(listener) {
+            listeners.forEach(function (listener) {
                 listener(state, prevState, action);
             });
         },
 
-        subscribe: function(listener) {
+        subscribe: function (listener) {
             listeners.push(listener);
             return function unsubscribe() {
                 var index = listeners.indexOf(listener);
@@ -174,12 +174,11 @@
                 }
             };
         },
-        
+
         Actions: Actions
     };
 
     Gbn.core.store = Store;
     // Alias for ease of use
     Gbn.store = Store;
-
 })(typeof window !== 'undefined' ? window : this);

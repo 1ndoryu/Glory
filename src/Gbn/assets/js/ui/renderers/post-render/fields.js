@@ -96,6 +96,11 @@
                 field.setAttribute('data-gbn-original-content', field.innerHTML);
             }
 
+            // BUG-019 FIX: Guardar style original tambien (para featuredImage con asBackground)
+            if (!field.hasAttribute('data-gbn-original-style')) {
+                field.setAttribute('data-gbn-original-style', field.getAttribute('style') || '');
+            }
+
             // Marcar como campo con preview
             field.setAttribute('data-gbn-preview-field', 'true');
 

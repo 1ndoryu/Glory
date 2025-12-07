@@ -69,6 +69,8 @@
 | 🛡️ 19 | Elementos AJAX no interactivos          | Re-escanear elementos cargados por AJAX con `Gbn.content.scan()` | `post-render.js`                        |
 | 🛡️ 20 | Badges cortados por overflow            | `overflow: visible` en contenedores con badges absolutos         | `interactive.css`                       |
 | 🛡️ 21 | Scope Global (Shared References)        | Deep clone en `getRoleDefaults()` Y en `ADD_BLOCK` action        | `roles.js`, `store.js`                  |
+| 🛡️ 22 | Imagenes PostRender perdidas al guardar | Guardar/restaurar style original en campos preview               | `persistence.js`, `fields.js`           |
+| 🛡️ 23 | Hijos GBN anidados perdidos al editar   | Detectar hijos GBN antes de sobrescribir innerHTML               | `text.js`                               |
 
 **Checklist Obligatorio (Pre-Código):**
 - [ ] No defaults duros en JS
@@ -92,6 +94,7 @@
 - [ ] **Re-escanear elementos cargados por AJAX**
 - [ ] **`overflow: visible` en contenedores con badges**
 - [ ] **Deep clone completo en ADD_BLOCK (store): config, styles, meta**
+- [ ] **Verificar hijos GBN antes de sobrescribir innerHTML en componentes de texto**
 
 ---
 
@@ -354,7 +357,140 @@ GET /wp-admin/admin-ajax.php?action=gbn_diagnostics_validate
 
 ---
 
-##  BUGS CRÍTICOS (Prioridad Alta)
+##  BUGS CRITICOS (Prioridad Alta)
+
+### BUG-020: gloryTexto con Hijos Anidados Pierde Estructura al Editar
+**Estado:** RESUELTO | **Prioridad:** CRITICA | **Fecha:** 7 Diciembre 2025
+
+**Descripcion del Problema:**
+Cuando un elemento `gloryTexto` contiene hijos que tambien son `gloryTexto`, al editar el texto del elemento padre se borra toda la estructura interna.
+
+**Estructura original:**
+```html
+<div gloryTexto class="section-header">
+    <h2 gloryTexto class="section-title">Casos de exito</h2>
+    <p gloryTexto class="section-subtitle">Descubre el impacto real...</p>
+</div>
+```
+
+**Estructura despues de editar y guardar:**
+```html
+<div glorytexto="" class="section-header" data-gbn-id="...">Nuevo texto</div>
+```
+
+Los hijos (`h2` y `p`) desaparecen completamente.
+
+**Causa raiz identificada:**
+
+El problema tenia **multiples puntos de fallo**:
+
+1. **En `builder.js` (inferencia de texto):** Al construir bloques de texto, se leia todo el `innerHTML` como `config.texto`, incluyendo los hijos GBN completos.
+
+2. **En `builder.js` (aplicacion de presets):** Al aplicar presets, si existia `config.texto`, se hacia `innerHTML = config.texto` sin verificar si habia hijos GBN.
+
+3. **En `text.js` (handleUpdate):** Cuando el usuario editaba el texto en el panel, se hacia `innerHTML = value` sin verificar hijos.
+
+**Solucion aplicada (3 puntos de proteccion):**
+
+1. **En `builder.js` - Inferencia de texto (lineas 54-97):**
+   - Verificar si el elemento tiene hijos GBN ANTES de inferir texto desde innerHTML
+   - Si tiene hijos GBN, NO capturar innerHTML como `config.texto`
+   - Marcar `meta.isContainer = true` para que el panel sepa que es un contenedor
+
+2. **En `builder.js` - Aplicacion de config (lineas 199-241):**
+   - Verificar si el elemento tiene hijos GBN ANTES de aplicar `config.texto` al innerHTML
+   - Si tiene hijos GBN, NO sobrescribir innerHTML
+
+3. **En `text.js` - handleUpdate (lineas 113-133):**
+   - Nueva funcion `hasNestedGbnElements(element)` para detectar hijos GBN
+   - Si tiene hijos GBN, mostrar advertencia en consola y retornar `false`
+   - El usuario debe editar los elementos hijos directamente
+
+**Archivos modificados:**
+- `Glory/src/Gbn/assets/js/services/content/builder.js` - Proteccion en inferencia y aplicacion de texto
+- `Glory/src/Gbn/assets/js/ui/renderers/text.js` - Proteccion en handleUpdate
+
+**Impacto:** Los contenedores de texto con estructura interna ya no pierden sus hijos. El editor detecta correctamente los contenedores y protege su estructura.
+
+---
+
+### BUG-019: Imagenes de gloryPostRender se Borran al Guardar
+**Estado:** RESUELTO | **Prioridad:** CRITICA | **Fecha:** 7 Diciembre 2025
+
+**Descripcion del Problema:**
+Las imagenes renderizadas dentro de componentes `gloryPostRender` desaparecian despues de guardar cambios en el editor GBN. Especificamente, los elementos con `gloryPostField="featuredImage"` que usan `opciones="asBackground: true"` perdian su `background-image` al persistir.
+
+**Causa raiz identificada:**
+En `cleanPostRenderClones()` de `persistence.js`, cuando se restauraba el contenido original de los campos de preview:
+1. Solo se guardaba y restauraba `innerHTML` (via `data-gbn-original-content`)
+2. El atributo `style` (que contenia el `background-image` agregado dinamicamente) NO se guardaba ni restauraba
+3. Al guardar, el template quedaba con el `style` del preview (URL de un post especifico)
+4. Al recargar, el template ya no era limpio y el procesamiento PHP fallaba
+
+**Solucion aplicada:**
+
+1. **En `fields.js` (`populateTemplateWithPreview`):**
+   - Agregar guardado del `style` original en `data-gbn-original-style` antes de modificar `background-image`
+
+2. **En `persistence.js` (`cleanPostRenderClones`):**
+   - Restaurar el `style` original desde `data-gbn-original-style` antes de persistir
+   - Si el style original era vacio, remover el atributo `style` completamente
+   - Limpiar el atributo `data-gbn-original-style` despues de restaurar
+
+**Archivos modificados:**
+- `Glory/src/Gbn/assets/js/services/persistence.js` - Restauracion de style original
+- `Glory/src/Gbn/assets/js/ui/renderers/post-render/fields.js` - Guardado de style original
+
+**Impacto:** Las imagenes de casos de exito y portfolios ahora se muestran correctamente en el frontend
+
+---
+
+### BUG-018: Serializacion DOM Corrompe Estructura HTML al Guardar
+**Estado:** RESUELTO | **Prioridad:** MAXIMA | **Fecha:** 7 Diciembre 2025
+
+**Descripcion del Problema:**
+Al guardar cambios en el editor GBN, la estructura HTML resultante diferia significativamente del HTML original, causando:
+
+1. **Secciones reubicadas** - La seccion de contacto se movia debajo del hero
+2. **Marquees desplazados** - Los elementos `.marquee` se movian fuera de sus secciones padre
+3. **Imagenes perdidas** - Las imagenes de fondo en `.case-image` y `.about-image` desaparecian
+4. **Elementos extraidos de su contenedor** - Divs secundarios se extraian y reposicionaban incorrectamente
+5. **Textos no seleccionables** - Problema de atributos del editor
+
+**Causa raiz identificada:**
+
+El problema estaba en `DomProcessor.php` lineas 92-106. El codigo de reordenamiento:
+
+```php
+// CODIGO PROBLEMATICO (ELIMINADO)
+foreach ($nodesByParent as $parentId => $group) {
+    $parent = $group['parent'];
+    $children = $group['children'];
+    usort($children, function($a, $b) {
+        return $a['order'] - $b['order'];
+    });
+    foreach ($children as $child) {
+        $parent->appendChild($child['node']); // BUG: Solo movia nodos GBN
+    }
+}
+```
+
+El problema:
+1. El query XPath solo seleccionaba elementos con atributos `glory*` (nodos GBN)
+2. El codigo agrupaba estos nodos por padre y hacia `appendChild()` de cada uno
+3. `appendChild()` mueve el nodo al final del padre
+4. Los nodos NO-GBN (marquees, contact-section sin glory*, overlays) permanecian en su posicion original
+5. Esto causaba que los nodos GBN se movieran al final, alterando el orden relativo
+
+**Solucion aplicada:**
+
+Eliminar completamente la logica de reordenamiento. El HTML viene del cliente via `innerHTML` ya en el orden visual correcto (WYSIWYG), por lo que no es necesario reordenar en el servidor.
+
+**Archivo modificado:** `Glory/src/Gbn/Ajax/Services/DomProcessor.php`
+
+**Impacto:** El contenido guardado ahora preserva la estructura exacta del HTML original
+
+---
 
 ### BUG-001: ImageComponent No Detectado por Inspector
 **Estado:** ✅ RESUELTO | **Fecha:** Diciembre 2025
