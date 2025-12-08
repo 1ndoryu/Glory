@@ -225,6 +225,25 @@ class GbnManager
             }
         }
 
+        // Datos de debug para diagnostico de sincronizacion
+        $debugData = [];
+        if ($pageId && current_user_can('edit_posts')) {
+            $postContent = get_post_field('post_content', $pageId);
+            $debugData = [
+                'metas' => [
+                    'gbn_config' => get_post_meta($pageId, 'gbn_config', true) ? 'EXISTS' : 'EMPTY',
+                    'gbn_styles' => get_post_meta($pageId, 'gbn_styles', true) ? 'EXISTS' : 'EMPTY',
+                    'gbn_responsive_css' => get_post_meta($pageId, 'gbn_responsive_css', true) ? 'EXISTS' : 'EMPTY',
+                    'gbn_page_settings' => get_post_meta($pageId, 'gbn_page_settings', true) ? 'EXISTS' : 'EMPTY',
+                    '_glory_content_mode' => get_post_meta($pageId, '_glory_content_mode', true) ?: 'NOT_SET',
+                    '_glory_content_hash' => get_post_meta($pageId, '_glory_content_hash', true) ? 'EXISTS' : 'EMPTY',
+                ],
+                'postContentLength' => strlen($postContent),
+                'postContentPreview' => substr(strip_tags($postContent), 0, 200),
+                'postContentHash' => $postContent ? hash('sha256', preg_replace('/\s+/', ' ', trim($postContent))) : 'EMPTY',
+            ];
+        }
+
         $localizedData = [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce'   => wp_create_nonce('glory_gbn_nonce'),
@@ -244,6 +263,7 @@ class GbnManager
                 : 'code',
             'themeSettings' => get_option('gbn_theme_settings', []),
             'pageSettings' => $pageId ? get_post_meta($pageId, 'gbn_page_settings', true) : [],
+            '_debug' => $debugData,
         ];
         // Asegurar que la config esté disponible antes de cualquier script consumidor
         wp_localize_script('glory-gbn-core', 'gloryGbnCfg', $localizedData);

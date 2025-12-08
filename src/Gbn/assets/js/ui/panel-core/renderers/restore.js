@@ -97,6 +97,7 @@
     /**
      * Crea el indicador visual del modo de contenido actual.
      * Muestra claramente si la pagina carga desde el codigo o desde la DB.
+     * Incluye boton para copiar diagnostico para debug.
      *
      * @returns {HTMLElement} El elemento indicador
      */
@@ -111,9 +112,34 @@
         var hasStyles = presets.styles && Object.keys(presets.styles).length > 0;
         var hasDbData = hasConfig || hasStyles;
         var configCount = hasConfig ? Object.keys(presets.config).length : 0;
+        var stylesCount = hasStyles ? Object.keys(presets.styles).length : 0;
 
         // Detectar inconsistencia: modo 'code' pero hay datos en DB
         var hasInconsistency = isFromCode && hasDbData;
+
+        // Preparar objeto de diagnostico
+        var diagnosticData = {
+            timestamp: new Date().toISOString(),
+            url: window.location.href,
+            pageId: cfg.pageId || null,
+            userId: cfg.userId || null,
+            contentMode: contentMode,
+            isEditor: cfg.isEditor || false,
+            devMode: cfg.devMode || false,
+            presets: {
+                hasConfig: hasConfig,
+                hasStyles: hasStyles,
+                configCount: configCount,
+                stylesCount: stylesCount,
+                configIds: hasConfig ? Object.keys(presets.config).slice(0, 10) : [],
+                stylesIds: hasStyles ? Object.keys(presets.styles).slice(0, 10) : []
+            },
+            themeSettingsKeys: cfg.themeSettings ? Object.keys(cfg.themeSettings) : [],
+            pageSettingsKeys: cfg.pageSettings ? Object.keys(cfg.pageSettings) : [],
+            inconsistencyDetected: hasInconsistency,
+            dbDebug: cfg._debug || null,
+            userAgent: navigator.userAgent
+        };
 
         var indicator = document.createElement('div');
         indicator.className = 'gbn-content-mode-indicator';
@@ -136,6 +162,10 @@
             indicator.style.border = '1px solid rgba(59, 130, 246, 0.4)';
             indicator.style.color = '#3b82f6';
         }
+
+        // Fila superior con icono, texto y badge
+        var headerRow = document.createElement('div');
+        headerRow.style.cssText = 'display: flex; align-items: center; gap: 10px; width: 100%';
 
         // Icono SVG
         var iconSvg = hasInconsistency ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' : isFromCode ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>' : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>';
@@ -164,11 +194,11 @@
         desc.style.fontWeight = '400';
 
         if (hasInconsistency) {
-            desc.textContent = 'Modo "code" pero hay ' + configCount + ' bloques en DB. La pagina deberia mostrar el codigo, no la DB.';
+            desc.textContent = 'Modo "code" pero hay ' + configCount + ' bloques en DB.';
         } else if (isFromCode) {
-            desc.textContent = 'Esta pagina muestra el contenido original del codigo PHP.';
+            desc.textContent = 'Contenido original del codigo PHP.';
         } else {
-            desc.textContent = 'Esta pagina tiene ' + configCount + ' bloques guardados en la DB.';
+            desc.textContent = configCount + ' bloques guardados en DB.';
         }
 
         textContainer.appendChild(title);
@@ -179,9 +209,47 @@
         badge.textContent = contentMode.toUpperCase();
         badge.style.cssText = ['padding: 2px 8px', 'border-radius: 4px', 'font-size: 10px', 'font-weight: 700', 'letter-spacing: 0.5px', 'background: currentColor', 'color: ' + (hasInconsistency ? 'rgba(234, 179, 8, 0.15)' : isFromCode ? 'rgba(34, 197, 94, 0.15)' : 'rgba(59, 130, 246, 0.15)')].join(';');
 
-        indicator.appendChild(icon);
-        indicator.appendChild(textContainer);
-        indicator.appendChild(badge);
+        headerRow.appendChild(icon);
+        headerRow.appendChild(textContainer);
+        headerRow.appendChild(badge);
+
+        // Boton de descargar diagnostico
+        var downloadBtn = document.createElement('button');
+        downloadBtn.type = 'button';
+        downloadBtn.textContent = 'Descargar diagnostico';
+        downloadBtn.style.cssText = ['padding: 6px 12px', 'font-size: 11px', 'border: 1px solid currentColor', 'border-radius: 4px', 'background: transparent', 'color: inherit', 'cursor: pointer', 'opacity: 0.8', 'transition: opacity 0.2s'].join(';');
+
+        downloadBtn.addEventListener('mouseenter', function () {
+            downloadBtn.style.opacity = '1';
+        });
+        downloadBtn.addEventListener('mouseleave', function () {
+            downloadBtn.style.opacity = '0.8';
+        });
+
+        downloadBtn.addEventListener('click', function () {
+            var jsonStr = JSON.stringify(diagnosticData, null, 2);
+            console.log('=== GBN DIAGNOSTICO ===');
+            console.log(diagnosticData);
+
+            // Crear y descargar archivo
+            var blob = new Blob([jsonStr], {type: 'application/json'});
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'gbn-diagnostico-' + (cfg.pageId || 'unknown') + '-' + Date.now() + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            downloadBtn.textContent = 'Descargado!';
+            setTimeout(function () {
+                downloadBtn.textContent = 'Descargar diagnostico';
+            }, 2000);
+        });
+
+        indicator.appendChild(headerRow);
+        indicator.appendChild(downloadBtn);
 
         return indicator;
     }
