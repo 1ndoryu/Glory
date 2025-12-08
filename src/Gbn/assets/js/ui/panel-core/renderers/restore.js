@@ -117,7 +117,7 @@
 
         var indicator = document.createElement('div');
         indicator.className = 'gbn-content-mode-indicator';
-        indicator.style.cssText = ['padding: 12px 16px', 'margin-bottom: 20px', 'border-radius: 8px', 'display: flex', 'align-items: center', 'gap: 10px', 'font-size: 13px', 'font-weight: 500'].join(';');
+        indicator.style.cssText = ['padding: 12px 16px', 'margin-top: 20px', 'border-radius: 8px', 'display: flex', 'flex-direction: column', 'align-items: flex-start', 'gap: 8px', 'font-size: 13px', 'font-weight: 500'].join(';');
 
         // Estilos condicionales segun el modo
         if (hasInconsistency) {
@@ -204,10 +204,6 @@
         container.className = 'gbn-panel-restore';
         container.style.padding = '20px';
 
-        // Indicador de modo de contenido actual (diagnostico visual)
-        var modeIndicator = createContentModeIndicator();
-        container.appendChild(modeIndicator);
-
         // --- Restore Page Section ---
         var pageSection = createRestoreSection({
             title: 'Restaurar Página Actual',
@@ -268,6 +264,10 @@
             }
         });
         container.appendChild(allSection);
+
+        // Indicador de modo de contenido actual (diagnostico visual) - al final
+        var modeIndicator = createContentModeIndicator();
+        container.appendChild(modeIndicator);
 
         state.body.appendChild(container);
 
