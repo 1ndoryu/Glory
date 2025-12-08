@@ -878,12 +878,13 @@
 .gbn-btn-danger-dark:hover { background-color: #843534; }
 
 
-/* Component Menu List */
+/* Component Menu List
 .gbn-menu-list {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
+
 
 .gbn-menu-item {
     display: flex;
@@ -916,7 +917,7 @@
 .gbn-menu-item:hover svg {
     color: #1d8ff1;
 }
-
+ */
 /* Sync Indicator Layout Fix */
 .gbn-has-sync-indicator .gbn-field-header,
 .gbn-has-sync-indicator legend {
