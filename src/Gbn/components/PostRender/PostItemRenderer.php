@@ -70,13 +70,13 @@ class PostItemRenderer
         // Obtener categorías del post
         $postType = $this->config['postType'] ?? 'post';
         $taxonomy = $postType === 'post' ? 'category' : ($postType . '_category');
-        
+
         // Buscar taxonomía válida
         if (!taxonomy_exists($taxonomy)) {
             $taxonomies = get_object_taxonomies($postType);
             $taxonomy = !empty($taxonomies) ? $taxonomies[0] : 'category';
         }
-        
+
         $terms = get_the_terms($post->ID, $taxonomy);
         $catSlugs = '';
         if ($terms && !is_wp_error($terms)) {
@@ -85,12 +85,16 @@ class PostItemRenderer
 
         // Agregar data-post-id y data-categories al primer elemento con gloryPostItem
         $pattern = '/(<[^>]+)\s*(gloryPostItem)([^>]*>)/i';
-        
-        return preg_replace_callback($pattern, function ($matches) use ($post, $catSlugs) {
+
+        // Obtener permalink del post para hacer clickeable la tarjeta
+        $permalink = get_permalink($post);
+
+        return preg_replace_callback($pattern, function ($matches) use ($post, $catSlugs, $permalink) {
             $dataAttrs = sprintf(
-                ' data-post-id="%d" data-categories="%s"',
+                ' data-post-id="%d" data-categories="%s" data-permalink="%s"',
                 $post->ID,
-                esc_attr($catSlugs)
+                esc_attr($catSlugs),
+                esc_url($permalink)
             );
             return $matches[1] . $dataAttrs . ' ' . $matches[2] . $matches[3];
         }, $html, 1);
@@ -105,12 +109,12 @@ class PostItemRenderer
     public static function getTaxonomyForPostType(string $postType): string
     {
         $taxonomy = $postType === 'post' ? 'category' : ($postType . '_category');
-        
+
         if (!taxonomy_exists($taxonomy)) {
             $taxonomies = get_object_taxonomies($postType);
             $taxonomy = !empty($taxonomies) ? $taxonomies[0] : 'category';
         }
-        
+
         return $taxonomy;
     }
 }
