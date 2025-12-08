@@ -79,7 +79,11 @@
                 if (res && res.success) {
                     statusModule.set(successMessage + ' Recargando...');
                     setTimeout(function () {
-                        window.location.reload();
+                        // Forzar reload sin cache agregando timestamp a la URL
+                        var nocache = res.data && res.data.nocache ? res.data.nocache : Date.now();
+                        var url = new URL(window.location.href);
+                        url.searchParams.set('nocache', nocache);
+                        window.location.href = url.toString();
                     }, 500);
                 } else {
                     statusModule.set(errorMessage);
@@ -88,7 +92,7 @@
                 }
             })
             .catch(function () {
-                statusModule.set('Error de conexión');
+                statusModule.set('Error de conexion');
                 btn.disabled = false;
                 btn.textContent = originalText;
             });
@@ -318,14 +322,18 @@
                 var p2 = Gbn.persistence && typeof Gbn.persistence.saveThemeSettings === 'function' ? Gbn.persistence.saveThemeSettings({}) : Promise.resolve({success: false});
 
                 Promise.all([p1, p2])
-                    .then(function () {
-                        statusModule.set('Restauración completa. Recargando...');
+                    .then(function (results) {
+                        statusModule.set('Restauracion completa. Recargando...');
                         setTimeout(function () {
-                            window.location.reload();
+                            // Forzar reload sin cache
+                            var nocache = (results[0] && results[0].data && results[0].data.nocache) || Date.now();
+                            var url = new URL(window.location.href);
+                            url.searchParams.set('nocache', nocache);
+                            window.location.href = url.toString();
                         }, 500);
                     })
                     .catch(function () {
-                        statusModule.set('Error durante la restauración');
+                        statusModule.set('Error durante la restauracion');
                         btn.disabled = false;
                         btn.textContent = 'Restaurar TODO';
                     });

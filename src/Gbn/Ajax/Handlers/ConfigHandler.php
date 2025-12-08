@@ -198,7 +198,28 @@ class ConfigHandler
             }
         }
 
-        wp_send_json_success(['ok' => true, 'mode' => 'code', 'contentUpdated' => $updatedContent]);
+        // 4. Limpiar caches agresivamente
+        // OPcache (si existe)
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
+        }
+        // WordPress object cache
+        if (function_exists('wp_cache_flush')) {
+            wp_cache_flush();
+        }
+        // Limpiar post cache especifico
+        clean_post_cache($pageId);
+
+        // Timestamp para forzar reload sin cache en navegador
+        $nocache = time();
+
+        wp_send_json_success([
+            'ok' => true,
+            'mode' => 'code',
+            'contentUpdated' => $updatedContent,
+            'nocache' => $nocache,
+            'cacheCleared' => true
+        ]);
     }
 
     private static function sanitizeMixedArray(array $input): array
