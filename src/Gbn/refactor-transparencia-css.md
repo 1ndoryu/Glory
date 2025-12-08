@@ -247,6 +247,64 @@ entonces GBN esta haciendo algo mal.
 
 ---
 
+### Fase 1.6: Solucion Temporal - Container Queries
+**Estado:** COMPLETADA
+**Fecha:** 7 Diciembre 2025
+**Prioridad:** Temporal (hasta implementar Fase 2)
+
+> [!NOTE]
+> Esta es una solucion temporal mientras se implementa la arquitectura Iframe-First (Fase 2).
+> Container Queries permiten que los estilos responsive respondan al ancho del contenedor,
+> no al viewport del navegador. Esto hace que el preview de GBN funcione cuando se cambia
+> el ancho del contenedor root.
+
+#### 1.6.1 Cambios Realizados
+
+**Archivo:** `App/Assets/css/init.css`
+- Agregado `container-type: inline-size` a `[data-gbn-root]`, `.landing-container`, `main`
+- Definido `container-name: gbn-root` para referenciar en las queries
+
+**Archivos convertidos de `@media` a `@container gbn-root`:**
+
+| Archivo                | Media Queries Convertidas        |
+| ---------------------- | -------------------------------- |
+| `landing.css`          | 4 queries (768px, 1024px, 600px) |
+| `header.css`           | 2 queries (768px, 1024px)        |
+| `casos.css`            | 4 queries (768px, 1024px)        |
+| `about.css`            | 2 queries (768px, 1024px)        |
+| `servicios.css`        | 3 queries (768px, 1024px)        |
+| `marquee.css`          | 1 query (1024px)                 |
+| `single-portfolio.css` | 2 queries (768px, 900px)         |
+
+**Archivo NO convertido:**
+- `init.css` - La media query de scrollbar (640px) permanece como `@media` ya que afecta el viewport real, no el contenedor
+
+#### 1.6.2 Como Funciona
+
+```css
+/* Antes: respondia al viewport del navegador */
+@media (max-width: 768px) { ... }
+
+/* Ahora: responde al ancho del contenedor [data-gbn-root] */
+@container gbn-root (max-width: 768px) { ... }
+```
+
+Cuando GBN cambia `max-width` del contenedor root a 768px (modo tablet) o 375px (modo mobile),
+las container queries se activan automaticamente.
+
+#### 1.6.3 Limitaciones
+
+- Solo funciona para elementos DENTRO del container (no para el body, html o elementos fixed)
+- El header fixed puede no responder correctamente (ya se maneja con JS en `responsive.js`)
+- Requiere navegadores modernos (Chrome 105+, Firefox 110+, Safari 16+)
+
+#### 1.6.4 Fallback
+
+Para navegadores antiguos, los estilos base (desktop) se aplicaran siempre.
+Considerar agregar `@supports` check si es necesario.
+
+---
+
 ### Fase 2: Arquitectura Iframe-First (Opcion G)
 **Estado:** EN PLANIFICACION
 **Dependencia:** Fase 1 completada
@@ -863,13 +921,14 @@ Negativas:
 
 ## 7. Historial de Cambios
 
-| Fecha      | Cambio                                                     | Autor |
-| ---------- | ---------------------------------------------------------- | ----- |
-| 2025-12-07 | Creacion del documento                                     | IA    |
-| 2025-12-07 | Fase 0 y 1 completadas, ADR-001 documentada                | IA    |
-| 2025-12-07 | Agregada Fase 1.5 para Theme Settings                      | IA    |
-| 2025-12-07 | Fase 1.5.1 (PHP) y 1.5.2 parcial completadas               | IA    |
-| 2025-12-07 | **Fase 1.5 COMPLETADA** - Filtros inteligentes de defaults | IA    |
-| 2025-12-07 | **Fase 2 REPLANIFICADA** - Arquitectura Iframe-First (Opcion G) con plan exhaustivo para resolver problemas de inspector, duplicacion header/footer, sincronizacion de estado | IA    |
+| Fecha      | Cambio                                                                                                                                                                             | Autor |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| 2025-12-07 | Creacion del documento                                                                                                                                                             | IA    |
+| 2025-12-07 | Fase 0 y 1 completadas, ADR-001 documentada                                                                                                                                        | IA    |
+| 2025-12-07 | Agregada Fase 1.5 para Theme Settings                                                                                                                                              | IA    |
+| 2025-12-07 | Fase 1.5.1 (PHP) y 1.5.2 parcial completadas                                                                                                                                       | IA    |
+| 2025-12-07 | **Fase 1.5 COMPLETADA** - Filtros inteligentes de defaults                                                                                                                         | IA    |
+| 2025-12-07 | **Fase 2 REPLANIFICADA** - Arquitectura Iframe-First (Opcion G) con plan exhaustivo para resolver problemas de inspector, duplicacion header/footer, sincronizacion de estado      | IA    |
+| 2025-12-07 | **Fase 1.6 COMPLETADA** - Container Queries implementadas como solucion temporal. Convertidos 18 @media queries a @container en 7 archivos CSS. Fase 2 (Iframe) queda para futuro. | IA    |
 
 

@@ -159,9 +159,20 @@ class ConfigHandler
             wp_send_json_error(['message' => 'Sin permisos']);
         }
 
-        // 1. Limpiar metadatos de GBN
+        // 1. Limpiar metadatos de GBN (todos los metas relacionados)
         delete_post_meta($pageId, 'gbn_config');
         delete_post_meta($pageId, 'gbn_styles');
+        delete_post_meta($pageId, 'gbn_responsive_css');
+        delete_post_meta($pageId, 'gbn_page_settings');
+
+        // Limpiar metas dinamicos (gbn_order_* y gbn_opts_*)
+        global $wpdb;
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$wpdb->postmeta} WHERE post_id = %d AND (meta_key LIKE %s OR meta_key LIKE %s)",
+            $pageId,
+            'gbn_order_%',
+            'gbn_opts_%'
+        ));
 
         // 2. Resetear modo a 'code'
         update_post_meta($pageId, '_glory_content_mode', 'code');
