@@ -222,8 +222,15 @@ class PostRenderHandler
                 esc_attr(implode(',', $catSlugs))
             );
 
-            // Imagen destacada
+            // Imagen destacada - optimizada via Jetpack Photon CDN en produccion
             if ($thumbnailUrl) {
+                // Optimizar URL de imagen si ImageUtility esta disponible
+                if (class_exists(\Glory\Utility\ImageUtility::class)) {
+                    $thumbnailUrl = \Glory\Utility\ImageUtility::jetpack_photon_url($thumbnailUrl, [
+                        'quality' => 60,
+                        'strip' => 'all'
+                    ]);
+                }
                 $html .= sprintf(
                     '<div gloryPostField="featuredImage" class="gbn-post-image"><img src="%s" alt="%s" loading="lazy" /></div>',
                     esc_url($thumbnailUrl),

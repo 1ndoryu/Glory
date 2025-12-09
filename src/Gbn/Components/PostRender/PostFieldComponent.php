@@ -105,7 +105,7 @@ class PostFieldComponent extends AbstractComponent
             'avatarSize' => 48,  // Para tipo 'authorAvatar'
             'separator' => ', ',  // Para tipos 'categories' y 'tags'
             'showLinks' => true,  // Para taxonomías
-            
+
             // Meta y ACF
             'metaKey' => '',  // Para tipo 'meta:xxx'
             'acfField' => '',  // Para tipo 'acf:xxx'
@@ -129,7 +129,7 @@ class PostFieldComponent extends AbstractComponent
         );
 
         // Opciones específicas por tipo de campo
-        
+
         // Para 'link'
         $schema->addOption(
             Option::text('linkText', 'Texto del Enlace')
@@ -249,7 +249,7 @@ class PostFieldComponent extends AbstractComponent
     private function getFieldTypeOptions(): array
     {
         $options = [];
-        
+
         foreach (self::FIELD_TYPES as $type => $config) {
             $options[] = [
                 'valor' => $type,
@@ -275,13 +275,13 @@ class PostFieldComponent extends AbstractComponent
     public static function renderField(WP_Post $post, array $config): string
     {
         $fieldType = $config['fieldType'] ?? 'title';
-        
+
         // Detectar tipos dinámicos (meta:xxx, acf:xxx, taxonomy:xxx)
         if (strpos($fieldType, 'meta:') === 0) {
             $key = substr($fieldType, 5);
             return esc_html(get_post_meta($post->ID, $key, true));
         }
-        
+
         if (strpos($fieldType, 'acf:') === 0) {
             if (function_exists('get_field')) {
                 $key = substr($fieldType, 4);
@@ -289,7 +289,7 @@ class PostFieldComponent extends AbstractComponent
             }
             return '';
         }
-        
+
         if (strpos($fieldType, 'taxonomy:') === 0) {
             $taxonomy = substr($fieldType, 9);
             return self::renderTaxonomy($post, $taxonomy, $config);
@@ -328,8 +328,16 @@ class PostFieldComponent extends AbstractComponent
         if (!has_post_thumbnail($post)) {
             return '';
         }
-        
+
         $size = $config['imageSize'] ?? 'medium';
+
+        // Usar ImageUtility para optimizar via Jetpack Photon CDN en produccion
+        // En LOCAL devuelve el thumbnail sin optimizar
+        if (class_exists(\Glory\Utility\ImageUtility::class)) {
+            return \Glory\Utility\ImageUtility::optimizar($post, $size, 60);
+        }
+
+        // Fallback si ImageUtility no esta disponible
         return get_the_post_thumbnail($post, $size, ['loading' => 'lazy']);
     }
 
@@ -337,14 +345,14 @@ class PostFieldComponent extends AbstractComponent
     {
         $excerpt = get_the_excerpt($post);
         $wordLimit = (int) ($config['wordLimit'] ?? 20);
-        
+
         if ($wordLimit > 0) {
             $words = explode(' ', $excerpt);
             if (count($words) > $wordLimit) {
                 $excerpt = implode(' ', array_slice($words, 0, $wordLimit)) . '...';
             }
         }
-        
+
         return esc_html($excerpt);
     }
 
@@ -443,19 +451,19 @@ class PostFieldComponent extends AbstractComponent
         if (!function_exists('get_field')) {
             return '';
         }
-        
+
         $fieldName = $config['acfField'] ?? '';
         if (empty($fieldName)) {
             return '';
         }
-        
+
         $value = get_field($fieldName, $post->ID);
-        
+
         // Si es array (ej: gallery, repeater), devolver JSON para JS
         if (is_array($value)) {
             return wp_json_encode($value);
         }
-        
+
         return esc_html((string) $value);
     }
 
