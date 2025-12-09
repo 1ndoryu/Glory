@@ -24,11 +24,12 @@ class AdminController
     public function renderSettingsPage(): void
     {
         $active_tab = isset($_GET['tab']) ? $_GET['tab'] : 'import';
-        ?>
+?>
         <div class="wrap">
             <h1>Amazon Product Integration</h1>
             <h2 class="nav-tab-wrapper">
                 <a href="?post_type=amazon_product&page=amazon-product-settings&tab=import" class="nav-tab <?php echo $active_tab == 'import' ? 'nav-tab-active' : ''; ?>">Import Products</a>
+                <a href="?post_type=amazon_product&page=amazon-product-settings&tab=deals" class="nav-tab <?php echo $active_tab == 'deals' ? 'nav-tab-active' : ''; ?>">Import Deals</a>
                 <a href="?post_type=amazon_product&page=amazon-product-settings&tab=settings" class="nav-tab <?php echo $active_tab == 'settings' ? 'nav-tab-active' : ''; ?>">API Settings</a>
                 <a href="?post_type=amazon_product&page=amazon-product-settings&tab=design" class="nav-tab <?php echo $active_tab == 'design' ? 'nav-tab-active' : ''; ?>">Design</a>
                 <a href="?post_type=amazon_product&page=amazon-product-settings&tab=updates" class="nav-tab <?php echo $active_tab == 'updates' ? 'nav-tab-active' : ''; ?>">Updates</a>
@@ -39,6 +40,9 @@ class AdminController
                 switch ($active_tab) {
                     case 'import':
                         $this->renderImportTab();
+                        break;
+                    case 'deals':
+                        $this->renderDealsTab();
                         break;
                     case 'settings':
                         $this->renderConfigTab();
@@ -56,7 +60,7 @@ class AdminController
                 ?>
             </div>
         </div>
-        <?php
+    <?php
     }
 
     private function renderImportTab(): void
@@ -73,7 +77,7 @@ class AdminController
         if (isset($_POST['amazon_import']) && check_admin_referer('amazon_import_action', 'amazon_import_nonce')) {
             $asin = sanitize_text_field($_POST['asin']);
             $productData = $service->getProductByAsin($asin);
-            
+
             if (!empty($productData)) {
                 $this->importProduct($productData);
                 $message = '<div class="notice notice-success inline"><p>Product imported successfully!</p></div>';
@@ -131,7 +135,7 @@ class AdminController
         $affiliateTag = get_option('amazon_affiliate_tag', '');
         $syncFreq = get_option('amazon_sync_frequency', 'off');
         $lang = get_option('amazon_plugin_lang', 'default');
-        ?>
+    ?>
         <h3>API Configuration</h3>
         <form method="post">
             <?php wp_nonce_field('amazon_settings_action', 'amazon_settings_nonce'); ?>
@@ -192,7 +196,7 @@ class AdminController
             </table>
             <?php submit_button('Save Settings', 'primary', 'save_settings'); ?>
         </form>
-        <?php
+    <?php
     }
 
     private function renderDesignTab(): void
@@ -209,7 +213,7 @@ class AdminController
         $btnBg = get_option('amazon_btn_bg', '#FFD814');
         $btnColor = get_option('amazon_btn_color', '#111111');
         $priceColor = get_option('amazon_price_color', '#B12704');
-        ?>
+    ?>
         <h3>Design Customization</h3>
         <form method="post">
             <?php wp_nonce_field('amazon_design_action', 'amazon_design_nonce'); ?>
@@ -241,7 +245,7 @@ class AdminController
             </table>
             <?php submit_button('Save Design', 'primary', 'save_design'); ?>
         </form>
-        <?php
+    <?php
     }
 
     private function renderUpdatesTab(): void
@@ -251,22 +255,22 @@ class AdminController
             // For now, we'll just show a message or sync a few items
             echo '<div class="notice notice-info inline"><p>Sync process started (simulated for now).</p></div>';
         }
-        ?>
+    ?>
         <h3>Product Updates</h3>
         <p>Manually trigger an update for all Amazon products in your database.</p>
         <form method="post">
             <?php wp_nonce_field('amazon_sync_action', 'amazon_sync_nonce'); ?>
             <?php submit_button('Sync All Products Now', 'secondary', 'sync_now'); ?>
         </form>
-        <?php
+    <?php
     }
 
     private function renderHelpTab(): void
     {
-        ?>
+    ?>
         <h3>How to use</h3>
         <p>Use the shortcode <code>[amazon_products]</code> to display products on any page.</p>
-        
+
         <h4>Available Attributes:</h4>
         <ul style="list-style: disc; margin-left: 20px;">
             <li><code>limit</code>: Number of products to show (default: 12).</li>
@@ -280,14 +284,16 @@ class AdminController
         <h4>Examples:</h4>
         <p><code>[amazon_products limit="8" orderby="rating"]</code></p>
         <p><code>[amazon_products min_price="50" only_prime="1"]</code></p>
-        <?php
+        <p><code>[amazon_products orderby="discount" only_deals="1"]</code> - Show products with discounts first</p>
+        <p><code>[amazon_deals limit="12"]</code> - Show live deals from Amazon API</p>
+    <?php
     }
 
     private function importProduct(array $data): void
     {
         $region = get_option('amazon_api_region', 'us');
         $domain = \Glory\Plugins\AmazonProduct\Service\AmazonApiService::getDomain($region);
-        
+
         // Check for existing product with same ASIN
         $existing = new \WP_Query([
             'post_type' => 'amazon_product',
@@ -305,6 +311,7 @@ class AdminController
             'meta_input'   => [
                 'asin'    => $data['asin'],
                 'price'   => $data['asin_price'],
+                'original_price' => $data['asin_original_price'] ?? $data['asin_list_price'] ?? '',
                 'rating'  => $data['total_start'] ?? 0,
                 'reviews' => $data['total_review'] ?? 0,
                 'prime'   => $data['is_prime'] ? '1' : '0',
@@ -357,6 +364,171 @@ class AdminController
 
         if (!empty($termIds)) {
             wp_set_object_terms($postId, $termIds, 'amazon_category');
+        }
+    }
+
+    /**
+     * Pestana para importar ofertas (deals) con precio original y descuento
+     */
+    private function renderDealsTab(): void
+    {
+        $service = new \Glory\Plugins\AmazonProduct\Service\AmazonApiService();
+        $deals = [];
+        $message = '';
+        $page = isset($_GET['deals_page']) ? max(1, intval($_GET['deals_page'])) : 1;
+
+        // Cargar ofertas
+        if (isset($_POST['load_deals']) && check_admin_referer('amazon_deals_action', 'amazon_deals_nonce')) {
+            $page = 1;
+        }
+
+        $deals = $service->getDeals($page);
+
+        // Importar oferta individual
+        if (isset($_POST['import_deal']) && check_admin_referer('amazon_import_deal_action', 'amazon_import_deal_nonce')) {
+            $dealData = json_decode(stripslashes($_POST['deal_data']), true);
+            if (!empty($dealData)) {
+                $this->importDeal($dealData);
+                $message = '<div class="notice notice-success inline"><p>Deal imported successfully with original price!</p></div>';
+            }
+        }
+
+        // Importar todas las ofertas visibles
+        if (isset($_POST['import_all_deals']) && check_admin_referer('amazon_import_all_deals_action', 'amazon_import_all_deals_nonce')) {
+            $count = 0;
+            foreach ($deals as $deal) {
+                $this->importDeal($deal);
+                $count++;
+            }
+            $message = '<div class="notice notice-success inline"><p>' . $count . ' deals imported successfully!</p></div>';
+        }
+
+        echo $message;
+    ?>
+        <h3>Import Deals (Offers with Discounts)</h3>
+        <p>These products include original price and discount percentage from Amazon's deals endpoint.</p>
+
+        <form method="post" style="margin-bottom: 20px;">
+            <?php wp_nonce_field('amazon_deals_action', 'amazon_deals_nonce'); ?>
+            <input type="submit" name="load_deals" class="button button-primary" value="Load Current Deals">
+        </form>
+
+        <?php if (!empty($deals)): ?>
+            <form method="post" style="margin-bottom: 20px;">
+                <?php wp_nonce_field('amazon_import_all_deals_action', 'amazon_import_all_deals_nonce'); ?>
+                <input type="submit" name="import_all_deals" class="button button-secondary" value="Import All Deals (<?php echo count($deals); ?>)">
+            </form>
+
+            <table class="wp-list-table widefat fixed striped">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Image</th>
+                        <th>Title</th>
+                        <th>ASIN</th>
+                        <th>Original</th>
+                        <th>Price</th>
+                        <th>Discount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($deals as $deal): ?>
+                        <tr>
+                            <td>
+                                <img src="<?php echo esc_url($deal['asin_image'] ?? ''); ?>" width="50" style="border-radius: 4px;">
+                            </td>
+                            <td>
+                                <strong><?php echo esc_html($deal['deal_title'] ?? 'N/A'); ?></strong>
+                            </td>
+                            <td><?php echo esc_html($deal['asin'] ?? 'N/A'); ?></td>
+                            <td style="text-decoration: line-through; color: #999;">
+                                <?php echo esc_html($deal['deal_min_list_price'] ?? 'N/A'); ?> <?php echo esc_html($deal['deal_currency'] ?? ''); ?>
+                            </td>
+                            <td style="color: #B12704; font-weight: bold;">
+                                <?php echo esc_html($deal['deal_min_price'] ?? 'N/A'); ?> <?php echo esc_html($deal['deal_currency'] ?? ''); ?>
+                            </td>
+                            <td>
+                                <span style="background: #cc0c39; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px;">
+                                    -<?php echo esc_html($deal['deal_min_percent_off'] ?? 0); ?>%
+                                </span>
+                            </td>
+                            <td>
+                                <form method="post">
+                                    <?php wp_nonce_field('amazon_import_deal_action', 'amazon_import_deal_nonce'); ?>
+                                    <input type="hidden" name="deal_data" value="<?php echo esc_attr(json_encode($deal)); ?>">
+                                    <input type="submit" name="import_deal" class="button button-secondary" value="Import">
+                                </form>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <div style="margin-top: 20px;">
+                <?php if ($page > 1): ?>
+                    <a href="<?php echo add_query_arg('deals_page', $page - 1); ?>" class="button">Previous Page</a>
+                <?php endif; ?>
+                <a href="<?php echo add_query_arg('deals_page', $page + 1); ?>" class="button">Next Page</a>
+                <span style="margin-left: 10px;">Page <?php echo $page; ?></span>
+            </div>
+        <?php else: ?>
+            <p>No deals found. Click "Load Current Deals" to fetch offers from Amazon.</p>
+<?php endif;
+    }
+
+    /**
+     * Importa un deal con su precio original y descuento
+     */
+    private function importDeal(array $deal): void
+    {
+        $region = get_option('amazon_api_region', 'us');
+        $domain = \Glory\Plugins\AmazonProduct\Service\AmazonApiService::getDomain($region);
+        $asin = $deal['asin'] ?? '';
+
+        if (empty($asin)) return;
+
+        // Verificar si ya existe
+        $existing = new \WP_Query([
+            'post_type' => 'amazon_product',
+            'meta_key' => 'asin',
+            'meta_value' => $asin,
+            'posts_per_page' => 1,
+            'fields' => 'ids'
+        ]);
+
+        $postData = [
+            'post_title'   => $deal['deal_title'] ?? 'Amazon Deal ' . $asin,
+            'post_content' => $deal['deal_description'] ?? '',
+            'post_status'  => 'publish',
+            'post_type'    => 'amazon_product',
+            'meta_input'   => [
+                'asin'           => $asin,
+                'price'          => $deal['deal_min_price'] ?? 0,
+                'original_price' => $deal['deal_min_list_price'] ?? 0,
+                'rating'         => $deal['asin_rating_star'] ?? 0,
+                'reviews'        => $deal['asin_total_review'] ?? 0,
+                'prime'          => '1',
+                'image_url'      => $deal['asin_image'] ?? '',
+                'product_url'    => 'https://www.' . $domain . '/dp/' . $asin,
+            ]
+        ];
+
+        if ($existing->have_posts()) {
+            $postData['ID'] = $existing->posts[0];
+            wp_update_post($postData);
+        } else {
+            $postId = wp_insert_post($postData);
+
+            // Asignar categoria "Ofertas"
+            if ($postId) {
+                $term = term_exists('Ofertas', 'amazon_category');
+                if (!$term) {
+                    $term = wp_insert_term('Ofertas', 'amazon_category');
+                }
+                if (!is_wp_error($term)) {
+                    wp_set_object_terms($postId, (int)$term['term_id'], 'amazon_category');
+                }
+            }
         }
     }
 }

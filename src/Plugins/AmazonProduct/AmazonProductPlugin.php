@@ -54,6 +54,7 @@ class AmazonProductPlugin
             [
                 'asin'  => '',
                 'price' => '',
+                'original_price' => '',
                 'rating' => '',
                 'reviews' => '',
                 'prime' => '0',
@@ -116,14 +117,14 @@ class AmazonProductPlugin
         // Placeholder for sync logic
         // This would iterate over products and call AmazonApiService
         \Glory\Core\GloryLogger::info('Amazon Product Sync Started');
-        
+
         $args = [
             'post_type' => 'amazon_product',
             'posts_per_page' => -1,
             'fields' => 'ids',
         ];
         $query = new \WP_Query($args);
-        
+
         if ($query->have_posts()) {
             $service = new \Glory\Plugins\AmazonProduct\Service\AmazonApiService();
             foreach ($query->posts as $postId) {

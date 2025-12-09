@@ -3,18 +3,18 @@
 :root {
     --amazon-bg: #ffffff;
     --amazon-text: #171717;
-    --amazon-accent: #FFD814;
-    --amazon-accent-hover: #F7CA00;
+    --amazon-accent: #ffd814;
+    --amazon-accent-hover: #f7ca00;
     --amazon-border: #e5e5e5;
-    --amazon-price: #B12704;
-    --amazon-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    --amazon-price: #b12704;
+    --amazon-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
     --amazon-bg: #1e1e1e;
     --amazon-text: #e0e0e0;
     --amazon-border: #333;
-    --amazon-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    --amazon-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 .amazon-product-wrapper {
@@ -59,7 +59,7 @@
 
 .amazon-search-container input:focus {
     border-color: #d4d4d4;
-    box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
 }
 
 .amazon-icon-search {
@@ -151,7 +151,7 @@
     padding: 8px 4px;
 }
 
-.amazon-range-wrapper input[type=range] {
+.amazon-range-wrapper input[type='range'] {
     width: 100%;
     height: 6px;
     background: var(--amazon-border);
@@ -160,7 +160,7 @@
     -webkit-appearance: none;
 }
 
-.amazon-range-wrapper input[type=range]::-webkit-slider-thumb {
+.amazon-range-wrapper input[type='range']::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 18px;
     height: 18px;
@@ -168,7 +168,7 @@
     border-radius: 50%;
     cursor: pointer;
     border: 2px solid #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .amazon-range-labels {
@@ -218,7 +218,7 @@
 }
 
 .amazon-category-btn.active .count {
-    color: rgba(255,255,255,0.6);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .amazon-no-cats {
@@ -417,7 +417,7 @@
 
 .amazon-product-card:hover {
     border-color: var(--amazon-border);
-    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
 }
 
@@ -433,7 +433,7 @@
     position: absolute;
     top: 12px;
     left: 12px;
-    background: #00A8E1;
+    background: #00a8e1;
     color: #fff;
     font-size: 10px;
     font-weight: 700;
@@ -457,7 +457,7 @@
 .amazon-card-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0,0,0,0.03);
+    background: rgba(0, 0, 0, 0.03);
     opacity: 0;
     transition: opacity 0.3s;
     pointer-events: none;
@@ -525,6 +525,7 @@
 .amazon-price-block {
     display: flex;
     flex-direction: column;
+    gap: 4px;
 }
 
 .price-label {
@@ -534,10 +535,77 @@
     text-transform: uppercase;
 }
 
+/* Contenedor de precios con original y actual */
+.amazon-price-block:has(.price-original) {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.price-original {
+    font-size: 13px;
+    font-weight: 500;
+    color: #999;
+    text-decoration: line-through;
+    text-decoration-color: #cc0c39;
+    text-decoration-thickness: 2px;
+}
+
 .price-value {
-    font-size: 18px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 800;
     color: var(--amazon-text);
+    letter-spacing: -0.5px;
+}
+
+/* Cuando hay descuento, el precio actual se muestra en rojo vibrante */
+.amazon-price-block:has(.price-original) .price-value {
+    color: #cc0c39;
+    font-size: 22px;
+}
+
+/* Badge de descuento - Diseno premium */
+.amazon-discount-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background: linear-gradient(135deg, #ff416c 0%, #cc0c39 100%);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 10px;
+    border-radius: 6px;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(204, 12, 57, 0.4);
+    letter-spacing: 0.5px;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+/* Badge Prime cuando hay descuento, mover a la derecha */
+.amazon-card-image-wrapper:has(.amazon-discount-badge) .amazon-prime-badge {
+    left: auto;
+    right: 12px;
+}
+
+/* Indicador de ahorro opcional */
+.price-savings {
+    font-size: 11px;
+    font-weight: 600;
+    color: #16a34a;
+    background: rgba(22, 163, 74, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: auto;
 }
 
 .amazon-buy-btn-icon {
@@ -550,7 +618,7 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .amazon-buy-btn-icon:hover {
@@ -606,7 +674,7 @@
 .amazon-loader {
     position: absolute;
     inset: 0;
-    background: rgba(255,255,255,0.8);
+    background: rgba(255, 255, 255, 0.8);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -624,8 +692,12 @@
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
 .amazon-product-grid-container {
