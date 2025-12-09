@@ -23,6 +23,7 @@ final class AssetManager
     private static array $deferredScripts = [];
     private static ?string $cssCritico = null;
     private static array $handlesEstilosAsincronos = [];
+    private static bool $asyncStylesEnabled = false; // Flag para CSS asincrono global
 
     private static string $cacheDir = GLORY_FRAMEWORK_PATH . '/cache';
 
@@ -170,13 +171,41 @@ final class AssetManager
         }
     }
 
+    /**
+     * Activa la carga asincrona de CSS globalmente.
+     * Llamar desde control.php o functions.php del tema.
+     * 
+     * Ejemplo: AssetManager::enableAsyncStyles();
+     */
+    public static function enableAsyncStyles(): void
+    {
+        self::$asyncStylesEnabled = true;
+    }
+
+    /**
+     * Verifica si CSS asincrono esta habilitado
+     */
+    public static function isAsyncStylesEnabled(): bool
+    {
+        return self::$asyncStylesEnabled;
+    }
+
     public static function hacerEstilosAsincronos(string $tag, string $handle): string
     {
-        if (!in_array($handle, self::$handlesEstilosAsincronos, true)) {
+        // Si asyncStylesEnabled esta activo, aplicar a TODOS los estilos
+        // Si no, solo aplicar a los handles en $handlesEstilosAsincronos
+        $shouldMakeAsync = self::$asyncStylesEnabled
+            || in_array($handle, self::$handlesEstilosAsincronos, true);
+
+        if (!$shouldMakeAsync) {
             return $tag;
         }
 
-        GloryLogger::info('AssetManager: marcando estilo async', ['handle' => $handle]);
+        // Evitar doble procesamiento
+        if (strpos($tag, 'onload=') !== false) {
+            return $tag;
+        }
+
         $fallback = '<noscript>' . $tag . '</noscript>';
         $tag = str_replace("media='all'", "media='print' onload=\"this.media='all'; this.onload=null;\"", $tag);
 
@@ -193,20 +222,27 @@ final class AssetManager
             self::$cssCritico = GestorCssCritico::getParaPaginaActual();
         }
 
+        // Determinar si activar CSS asincrono:
+        // 1. Si asyncStylesEnabled esta activo (via enableAsyncStyles())
+        // 2. Si cssCritico esta activo y tiene CSS generado
+        // 3. Si la opcion glory_css_async_global esta activa en BD
+        $globalAsyncOption = OpcionManager::get('glory_css_async_global');
+        $shouldUseAsync = self::$asyncStylesEnabled
+            || ($globalAsyncOption === true)
+            || (self::$cssCritico !== null);
+
         if (self::$cssCritico) {
             add_action('wp_head', [self::class, 'imprimirCssCritico'], 1);
-            // Controlar si el resto de CSS debe ir asíncrono cuando hay crítico
-            // Activado por defecto si la opción no existe; si existe y es false, se desactiva
+        }
+
+        // Aplicar CSS asincrono si corresponde
+        if ($shouldUseAsync) {
+            // Controlar si el resto de CSS debe ir asincrono
             $optAsync = OpcionManager::get('glory_css_critico_async_resto');
             $asyncResto = ($optAsync === null) ? true : (bool) $optAsync;
             if ($asyncResto) {
                 add_filter('style_loader_tag', [self::class, 'hacerEstilosAsincronos'], 999, 2);
-                //GloryLogger::info('AssetManager: CSS crítico activo; estilos pasarán a async');
-            } else {
-                //GloryLogger::info('AssetManager: CSS crítico activo; estilos se mantienen síncronos (compatibilidad)');
             }
-        } else {
-            // GloryLogger::info('AssetManager: sin CSS crítico para esta vista');
         }
 
         self::enqueueForArea('frontend');

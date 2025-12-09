@@ -156,7 +156,7 @@ class GestorCssCritico
         if (is_wp_error($response)) {
             GloryLogger::error('Fallo en la petición a la API de CSS crítico.', [
                 'error'   => $response->get_error_message(),
-                'endpoint'=> $apiUrl,
+                'endpoint' => $apiUrl,
             ]);
             $backup = OpcionManager::get('glory_critical_css_api_backup_url');
             if ($backup && filter_var($backup, FILTER_VALIDATE_URL)) {
@@ -164,7 +164,7 @@ class GestorCssCritico
                 if (is_wp_error($response)) {
                     GloryLogger::error('Fallo también en el endpoint de respaldo de CSS crítico.', [
                         'error'   => $response->get_error_message(),
-                        'endpoint'=> $backup,
+                        'endpoint' => $backup,
                     ]);
                     return null;
                 }
@@ -247,54 +247,92 @@ class GestorCssCritico
     public static function imprimirScriptsAdminBar(): void
     {
         if (!current_user_can('manage_options')) return;
-        ?>
+?>
         <script>
-        (function(w){
-            var AU = <?php echo json_encode(admin_url('admin-ajax.php')); ?>;
-            function postAjax(payload){
-                try {
-                    if (w.fetch) {
-                        var params = new URLSearchParams();
-                        for (var k in payload) { if (Object.prototype.hasOwnProperty.call(payload, k)) params.append(k, payload[k]); }
-                        return fetch(AU, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params })
-                            .then(function(r){ return r.text(); })
-                            .then(function(t){ try { return JSON.parse(t); } catch(_){ return { success: false, data: t }; } });
+            (function(w) {
+                var AU = <?php echo json_encode(admin_url('admin-ajax.php')); ?>;
+
+                function postAjax(payload) {
+                    try {
+                        if (w.fetch) {
+                            var params = new URLSearchParams();
+                            for (var k in payload) {
+                                if (Object.prototype.hasOwnProperty.call(payload, k)) params.append(k, payload[k]);
+                            }
+                            return fetch(AU, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/x-www-form-urlencoded'
+                                    },
+                                    body: params
+                                })
+                                .then(function(r) {
+                                    return r.text();
+                                })
+                                .then(function(t) {
+                                    try {
+                                        return JSON.parse(t);
+                                    } catch (_) {
+                                        return {
+                                            success: false,
+                                            data: t
+                                        };
+                                    }
+                                });
+                        }
+                    } catch (_e) {}
+                    if (w.jQuery && w.jQuery.post) {
+                        return new Promise(function(resolve) {
+                            w.jQuery.post(AU, payload, function(resp) {
+                                resolve(resp);
+                            });
+                        });
                     }
-                } catch(_e) {}
-                if (w.jQuery && w.jQuery.post) {
-                    return new Promise(function(resolve){ w.jQuery.post(AU, payload, function(resp){ resolve(resp); }); });
+                    alert('AJAX no disponible en este contexto.');
+                    return Promise.resolve({
+                        success: false,
+                        message: 'AJAX no disponible'
+                    });
                 }
-                alert('AJAX no disponible en este contexto.');
-                return Promise.resolve({ success: false, message: 'AJAX no disponible' });
-            }
-            w.gloryLimpiarCssCritico = function(event){
-                event && event.preventDefault && event.preventDefault();
-                if (!confirm('<?php _e("¿Estás seguro de que quieres limpiar toda la caché de CSS crítico?", "glory"); ?>')) { return; }
-                postAjax({ action: 'glory_limpiar_css_critico' }).then(function(response){
+                w.gloryLimpiarCssCritico = function(event) {
+                    event && event.preventDefault && event.preventDefault();
+                    if (!confirm('<?php _e("¿Estás seguro de que quieres limpiar toda la caché de CSS crítico?", "glory"); ?>')) {
+                        return;
+                    }
+                    postAjax({
+                        action: 'glory_limpiar_css_critico'
+                    }).then(function(response) {
                         alert(response && response.data ? response.data : 'Listo');
                     });
-            };
-            w.gloryGenerarCssCritico = function(event){
-                event && event.preventDefault && event.preventDefault();
-                var url = w.location && w.location.href ? w.location.href : '';
-                postAjax({ action: 'glory_generar_css_critico', url: url }).then(function(response){
+                };
+                w.gloryGenerarCssCritico = function(event) {
+                    event && event.preventDefault && event.preventDefault();
+                    var url = w.location && w.location.href ? w.location.href : '';
+                    postAjax({
+                        action: 'glory_generar_css_critico',
+                        url: url
+                    }).then(function(response) {
                         if (response && response.success) {
                             alert('CSS crítico generado (' + (response.data && response.data.bytes ? response.data.bytes : 0) + ' bytes).');
                         } else {
                             alert('No se pudo generar CSS crítico.');
                         }
                     });
-            };
-            w.gloryGenerarCssCriticoAll = function(event){
-                event && event.preventDefault && event.preventDefault();
-                if (!confirm('<?php _e("¿Programar generación para todas las páginas? Se ejecutará en background.", "glory"); ?>')) { return; }
-                postAjax({ action: 'glory_generar_css_critico_all' }).then(function(response){
+                };
+                w.gloryGenerarCssCriticoAll = function(event) {
+                    event && event.preventDefault && event.preventDefault();
+                    if (!confirm('<?php _e("¿Programar generación para todas las páginas? Se ejecutará en background.", "glory"); ?>')) {
+                        return;
+                    }
+                    postAjax({
+                        action: 'glory_generar_css_critico_all'
+                    }).then(function(response) {
                         alert(response && response.success ? 'Programado en background' : 'No se pudo programar');
                     });
-            };
-        })(window);
+                };
+            })(window);
         </script>
-        <?php
+    <?php
     }
 
     public static function manejarAjaxLimpiarCache(): void
@@ -339,14 +377,16 @@ class GestorCssCritico
         }
         $urls = [home_url('/')];
         $q = new \WP_Query([
-            'post_type'      => ['page','post'],
+            'post_type'      => ['page', 'post'],
             'post_status'    => 'publish',
             'posts_per_page' => 200,
             'fields'         => 'ids',
             'orderby'        => 'date',
             'order'          => 'DESC',
         ]);
-        foreach ($q->posts as $pid) { $urls[] = get_permalink($pid); }
+        foreach ($q->posts as $pid) {
+            $urls[] = get_permalink($pid);
+        }
         $when = time() + 5;
         foreach (array_unique($urls) as $u) {
             if (!wp_next_scheduled('glory_generate_critical_css_event', [$u])) {
@@ -415,8 +455,62 @@ class GestorCssCritico
         foreach ($q->posts as $pid) {
             $items[] = ['tipo' => 'post', 'id' => $pid, 'label' => get_the_title($pid), 'url' => get_permalink($pid)];
         }
-        echo '<table class="widefat"><thead><tr><th>Página</th><th>Estado</th><th>Tamaño</th></tr></thead><tbody>';
-        foreach ($items as $it) {
+
+        // Estilos para los botones de la tabla
+    ?>
+        <style>
+            .glory-critical-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+
+            .glory-critical-table th,
+            .glory-critical-table td {
+                padding: 8px 12px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+
+            .glory-critical-table th {
+                background: #f5f5f5;
+                font-weight: 600;
+            }
+
+            .glory-critical-btn {
+                padding: 4px 10px;
+                font-size: 12px;
+                cursor: pointer;
+                border: 1px solid #0073aa;
+                background: #0073aa;
+                color: #fff;
+                border-radius: 3px;
+                transition: background 0.2s;
+            }
+
+            .glory-critical-btn:hover {
+                background: #005a87;
+            }
+
+            .glory-critical-btn:disabled {
+                background: #ccc;
+                border-color: #ccc;
+                cursor: not-allowed;
+            }
+
+            .glory-critical-status-ok {
+                color: #46b450;
+                font-weight: 500;
+            }
+
+            .glory-critical-status-pending {
+                color: #dc3232;
+                font-weight: 500;
+            }
+        </style>
+        <?php
+
+        echo '<table class="widefat glory-critical-table"><thead><tr><th>Pagina</th><th>Estado</th><th>Tamano</th><th>Accion</th></tr></thead><tbody>';
+        foreach ($items as $index => $it) {
             if ($it['tipo'] === 'url') {
                 $css = get_transient(self::getClaveCacheParaUrl($it['url']));
             } else {
@@ -424,9 +518,92 @@ class GestorCssCritico
             }
             $ok = is_string($css) && $css !== '';
             $size = $ok ? strlen($css) : 0;
-            printf('<tr><td><a href="%s" target="_blank">%s</a></td><td>%s</td><td>%s</td></tr>', esc_url($it['url']), esc_html($it['label']), $ok ? 'Generado' : 'Pendiente', $ok ? $size . ' bytes' : '-');
+            $statusClass = $ok ? 'glory-critical-status-ok' : 'glory-critical-status-pending';
+            $statusText = $ok ? 'Generado' : 'Pendiente';
+            $sizeText = $ok ? $size . ' bytes' : '-';
+            $rowId = 'glory-critical-row-' . $index;
+            $urlEncoded = esc_attr($it['url']);
+
+            printf(
+                '<tr id="%s" data-url="%s"><td><a href="%s" target="_blank">%s</a></td><td class="glory-critical-status-cell"><span class="%s">%s</span></td><td class="glory-critical-size-cell">%s</td><td><button type="button" class="glory-critical-btn glory-generate-single-btn" data-row="%s">Generar</button></td></tr>',
+                esc_attr($rowId),
+                $urlEncoded,
+                esc_url($it['url']),
+                esc_html($it['label']),
+                $statusClass,
+                $statusText,
+                $sizeText,
+                esc_attr($rowId)
+            );
         }
         echo '</tbody></table>';
+
+        // Script para manejar la generacion individual
+        ?>
+        <script>
+            (function() {
+                var ajaxUrl = <?php echo json_encode(admin_url('admin-ajax.php')); ?>;
+
+                function generateCriticalCss(button, rowId) {
+                    var row = document.getElementById(rowId);
+                    if (!row) return;
+
+                    var url = row.getAttribute('data-url');
+                    if (!url) return;
+
+                    // Deshabilitar boton y mostrar estado de carga
+                    button.disabled = true;
+                    button.textContent = 'Generando...';
+
+                    var params = new URLSearchParams();
+                    params.append('action', 'glory_generar_css_critico');
+                    params.append('url', url);
+
+                    fetch(ajaxUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: params
+                        })
+                        .then(function(response) {
+                            return response.json();
+                        })
+                        .then(function(data) {
+                            if (data.success) {
+                                var bytes = data.data && data.data.bytes ? data.data.bytes : 0;
+                                // Actualizar estado en la fila
+                                var statusCell = row.querySelector('.glory-critical-status-cell');
+                                var sizeCell = row.querySelector('.glory-critical-size-cell');
+                                if (statusCell) {
+                                    statusCell.innerHTML = '<span class="glory-critical-status-ok">Generado</span>';
+                                }
+                                if (sizeCell) {
+                                    sizeCell.textContent = bytes + ' bytes';
+                                }
+                                button.textContent = 'Regenerar';
+                            } else {
+                                button.textContent = 'Error - Reintentar';
+                            }
+                        })
+                        .catch(function() {
+                            button.textContent = 'Error - Reintentar';
+                        })
+                        .finally(function() {
+                            button.disabled = false;
+                        });
+                }
+
+                // Delegacion de eventos para los botones
+                document.addEventListener('click', function(e) {
+                    if (e.target && e.target.classList.contains('glory-generate-single-btn')) {
+                        var rowId = e.target.getAttribute('data-row');
+                        generateCriticalCss(e.target, rowId);
+                    }
+                });
+            })();
+        </script>
+    <?php
     }
 
     public static function imprimirBanderaNoAjax(): void
@@ -434,20 +611,24 @@ class GestorCssCritico
         if (is_admin()) return;
         $noAjax = isset($_GET['noAjax']) && (string) $_GET['noAjax'] === '1';
         if (!$noAjax) return;
-        ?>
+    ?>
         <script>
-        (function(w){
-            // Bandera global para cualquier script que necesite detectar modo congelado
-            w.__GLORY_NO_AJAX__ = true;
-            // Config de navegación AJAX de Glory: abortar e inhabilitar
-            var cfg = w.gloryNavConfig || {};
-            cfg.enabled = false;
-            cfg.shouldAbortInit = function(){ return true; };
-            cfg.shouldSkipAjax = function(){ return true; };
-            w.gloryNavConfig = cfg;
-        })(window);
+            (function(w) {
+                // Bandera global para cualquier script que necesite detectar modo congelado
+                w.__GLORY_NO_AJAX__ = true;
+                // Config de navegación AJAX de Glory: abortar e inhabilitar
+                var cfg = w.gloryNavConfig || {};
+                cfg.enabled = false;
+                cfg.shouldAbortInit = function() {
+                    return true;
+                };
+                cfg.shouldSkipAjax = function() {
+                    return true;
+                };
+                w.gloryNavConfig = cfg;
+            })(window);
         </script>
-        <?php
+<?php
     }
 
     private static function getClaveCache(int $postId): string
