@@ -363,6 +363,20 @@ final class AssetManager
 
     public static function addDeferAttribute(string $tag, string $handle): string
     {
+        // Si asyncStylesEnabled esta activo, aplicar defer a TODOS los scripts del frontend
+        // excepto scripts inline o que ya tienen defer
+        if (self::$asyncStylesEnabled) {
+            // No aplicar a scripts inline o que ya tienen defer/async
+            if (strpos($tag, ' defer') !== false || strpos($tag, ' async') !== false) {
+                return $tag;
+            }
+            // Solo aplicar a scripts con src (no inline)
+            if (strpos($tag, ' src=') !== false) {
+                return str_replace(' src=', ' defer src=', $tag);
+            }
+        }
+
+        // Fallback: aplicar solo a scripts en $deferredScripts
         if (in_array($handle, self::$deferredScripts, true)) {
             if (strpos($tag, ' defer') === false) {
                 return str_replace(' src=', ' defer src=', $tag);
