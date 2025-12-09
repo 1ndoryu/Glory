@@ -152,6 +152,15 @@ class PostFieldProcessor
         $size = $config['imageSize'] ?? 'large';
         $imgUrl = get_the_post_thumbnail_url($post, $size);
 
+        // Optimizar URL de imagen usando ImageUtility si está disponible
+        if (class_exists(\Glory\Utility\ImageUtility::class)) {
+            $current_quality = $config['quality'] ?? 80;
+            $imgUrl = \Glory\Utility\ImageUtility::jetpack_photon_url($imgUrl, [
+                'quality' => $current_quality,
+                'strip' => 'all'
+            ]);
+        }
+
         // Si asBackground es true, aplicar como background-image en lugar de crear img
         $asBackground = isset($config['asBackground']) && ($config['asBackground'] === 'true' || $config['asBackground'] === true);
 
