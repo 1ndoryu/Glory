@@ -221,7 +221,8 @@
 
     /**
      * Maneja el click en una tarjeta de post.
-     * Navega al permalink, excepto si el click fue en un enlace interno.
+     * Navega al permalink usando gloryAjaxNav si esta disponible.
+     * Crea un enlace temporal y simula click para que gloryAjaxNav lo intercepte.
      *
      * @param {Event} event Evento de click
      * @param {HTMLElement} item Elemento del post item
@@ -238,8 +239,22 @@
         var permalink = item.dataset.permalink;
         if (!permalink) return;
 
-        // Navegar al single page del post
-        window.location.href = permalink;
+        // Crear un enlace temporal para que gloryAjaxNav lo intercepte
+        // Esto permite la navegacion AJAX sin recarga completa
+        var tempLink = document.createElement('a');
+        tempLink.href = permalink;
+        tempLink.style.display = 'none';
+        document.body.appendChild(tempLink);
+
+        // Simular click para que gloryAjaxNav lo intercepte
+        tempLink.click();
+
+        // Limpiar el enlace temporal despues de un pequeño delay
+        setTimeout(function () {
+            if (tempLink.parentNode) {
+                tempLink.parentNode.removeChild(tempLink);
+            }
+        }, 100);
     }
 
     /**
