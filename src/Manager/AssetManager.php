@@ -154,6 +154,13 @@ final class AssetManager
             add_action('wp_enqueue_scripts', [self::class, 'enqueueFrontendAssets'], 20);
             add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminAssets'], 20);
             add_filter('script_loader_tag', [self::class, 'addDeferAttribute'], 10, 2);
+
+            // CSS Critico: registrar hook wp_head con prioridad 1 (antes de otros CSS)
+            // El metodo imprimirCssCritico tiene inicializacion perezosa, solo imprime si hay CSS
+            if (!is_admin()) {
+                add_action('wp_head', [self::class, 'imprimirCssCritico'], 1);
+            }
+
             self::$hooksRegistrados = true;
         }
     }
@@ -231,9 +238,7 @@ final class AssetManager
             || ($globalAsyncOption === true)
             || (self::$cssCritico !== null);
 
-        if (self::$cssCritico) {
-            add_action('wp_head', [self::class, 'imprimirCssCritico'], 1);
-        }
+        // Nota: el hook wp_head para CSS critico ya se registra en register() con prioridad 1
 
         // Aplicar CSS asincrono si corresponde
         if ($shouldUseAsync) {
