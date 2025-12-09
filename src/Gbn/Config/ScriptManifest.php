@@ -18,9 +18,34 @@ namespace Glory\Gbn\Config;
 class ScriptManifest
 {
     /**
-     * Scripts que se cargan SIEMPRE (frontend público)
+     * Scripts que se cargan SIEMPRE para TODOS los usuarios (frontend publico)
+     * 
+     * OPTIMIZACION DIC 2025: Solo se cargan los scripts estrictamente necesarios
+     * para usuarios deslogueados. Los scripts del builder (core, state, store, etc.)
+     * se movieron a getCoreScripts() que solo carga para editores.
      */
     public static function getFrontendScripts(): array
+    {
+        return [
+            // Solo scripts necesarios para funcionalidad publica
+            'glory-gbn-post-render-frontend' => [
+                'file' => '/js/frontend/post-render-frontend.js',
+                'deps' => [],
+            ],
+            'glory-gbn-form-submit' => [
+                'file' => '/js/frontend/form-submit.js',
+                'deps' => [],
+            ],
+        ];
+    }
+
+    /**
+     * Scripts core del sistema GBN (solo para editores)
+     * 
+     * Estos scripts son necesarios para la funcionalidad del builder
+     * pero no para usuarios deslogueados navegando el sitio.
+     */
+    public static function getCoreScripts(): array
     {
         return [
             'glory-gbn-core' => [
@@ -87,14 +112,6 @@ class ScriptManifest
             'glory-gbn-front' => [
                 'file' => '/js/gbn-front.js',
                 'deps' => ['glory-gbn-services'],
-            ],
-            'glory-gbn-post-render-frontend' => [
-                'file' => '/js/frontend/post-render-frontend.js',
-                'deps' => [],
-            ],
-            'glory-gbn-form-submit' => [
-                'file' => '/js/frontend/form-submit.js',
-                'deps' => [],
             ],
         ];
     }
@@ -329,10 +346,12 @@ class ScriptManifest
 
     /**
      * Obtiene TODOS los scripts del builder (para editores)
+     * Incluye los scripts core que antes estaban en getFrontendScripts
      */
     public static function getBuilderScripts(): array
     {
         return array_merge(
+            self::getCoreScripts(), // Scripts core movidos aqui (antes en getFrontendScripts)
             self::getIconScripts(),
             self::getServiceScripts(),
             self::getPanelFieldScripts(),
