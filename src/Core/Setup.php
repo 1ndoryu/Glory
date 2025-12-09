@@ -31,6 +31,7 @@ use Glory\Services\GestorCssCritico;
 use Glory\Handler\ContentActionAjaxHandler;
 use Glory\Admin\PageContentModeMetabox;
 use Glory\Admin\SeoMetabox;
+use Glory\Seo\SeoFrontendRenderer;
 use Glory\Plugins\AmazonProduct\AmazonProductPlugin;
 
 /**
@@ -176,6 +177,14 @@ class Setup
                 'SeoMetabox.registerHooks',
                 'admin'
             );
+            // Registrar renderizado SEO en frontend (title, meta, JSON-LD)
+            if (GloryFeatures::isActive('seoFrontend') !== false) {
+                PerformanceProfiler::medirFuncion(
+                    fn() => SeoFrontendRenderer::register(),
+                    'SeoFrontendRenderer.register',
+                    'seo'
+                );
+            }
         }
 
         if (GloryFeatures::isActive('menu') !== false) {
