@@ -6,6 +6,7 @@ use Glory\Manager\PostTypeManager;
 use Glory\Core\GloryFeatures;
 use Glory\Plugins\AmazonProduct\Controller\AdminController;
 use Glory\Plugins\AmazonProduct\Renderer\ProductRenderer;
+use Glory\Plugins\AmazonProduct\Service\ProductSyncService;
 
 /**
  * Amazon Product Plugin for Glory Framework.
@@ -33,13 +34,29 @@ class AmazonProductPlugin
         add_action('wp_ajax_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
         add_action('wp_ajax_nopriv_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
 
-        // Cron Hooks
+        // AJAX Hooks para importacion manual
+        if (is_admin()) {
+            $this->registerManualImportAjax();
+        }
+
+        // Cron Hooks - FEAT-07: Usar ProductSyncService
         add_action('init', [$this, 'handleCronSchedule']);
-        add_action('amazon_product_sync_event', [$this, 'syncProducts']);
+        ProductSyncService::init();
+    }
+
+    /**
+     * Registra los handlers AJAX para importacion manual de productos.
+     */
+    private function registerManualImportAjax(): void
+    {
+        $manualImportTab = new \Glory\Plugins\AmazonProduct\Admin\Tabs\ManualImportTab();
+        add_action('wp_ajax_amazon_parse_html', [$manualImportTab, 'ajaxParseHtml']);
+        add_action('wp_ajax_amazon_import_product', [$manualImportTab, 'ajaxImportProduct']);
     }
 
     private function registerPostType(): void
     {
+        // DATA-01: Meta fields documentados en API_DATA_STRUCTURE.md
         PostTypeManager::define(
             'amazon_product',
             [
@@ -52,14 +69,21 @@ class AmazonProductPlugin
             'Producto Amazon',
             'Productos Amazon',
             [
-                'asin'  => '',
-                'price' => '',
-                'original_price' => '',
-                'rating' => '',
-                'reviews' => '',
-                'prime' => '0',
-                'image_url' => '',
-                'product_url' => '',
+                // Campos basicos (todos los endpoints)
+                'asin'             => '',
+                'price'            => '',
+                'original_price'   => '',
+                'rating'           => '',
+                'reviews'          => '',
+                'prime'            => '0',
+                'image_url'        => '',
+                'product_url'      => '',
+                // Campos adicionales (deal.php)
+                'discount_percent' => '',
+                'currency'         => '',
+                'deal_ends_at'     => '',
+                // Campos de sincronizacion
+                'last_synced'      => '',
             ]
         );
 
@@ -112,31 +136,12 @@ class AmazonProductPlugin
         }
     }
 
+    /**
+     * Sincroniza productos usando ProductSyncService.
+     * FEAT-07/FEAT-08: Delegamos la logica al servicio especializado.
+     */
     public function syncProducts(): void
     {
-        // Placeholder for sync logic
-        // This would iterate over products and call AmazonApiService
-        \Glory\Core\GloryLogger::info('Amazon Product Sync Started');
-
-        $args = [
-            'post_type' => 'amazon_product',
-            'posts_per_page' => -1,
-            'fields' => 'ids',
-        ];
-        $query = new \WP_Query($args);
-
-        if ($query->have_posts()) {
-            $service = new \Glory\Plugins\AmazonProduct\Service\AmazonApiService();
-            foreach ($query->posts as $postId) {
-                $asin = get_post_meta($postId, 'asin', true);
-                if ($asin) {
-                    // Force update (bypass cache)
-                    // $data = $service->getProductByAsin($asin);
-                    // Update meta...
-                    // For now just log
-                    \Glory\Core\GloryLogger::info("Syncing Product ID: $postId, ASIN: $asin");
-                }
-            }
-        }
+        ProductSyncService::runScheduledSync();
     }
 }

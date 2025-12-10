@@ -129,9 +129,17 @@
     box-shadow: var(--amazon-shadow);
 }
 
+/* Tablet: 2 columnas */
 @media (min-width: 768px) {
     .amazon-filter-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Desktop: 4 columnas */
+@media (min-width: 1024px) {
+    .amazon-filter-grid {
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 

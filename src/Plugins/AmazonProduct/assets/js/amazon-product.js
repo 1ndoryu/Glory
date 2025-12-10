@@ -29,10 +29,10 @@
         order: wrapper.dataset.order || 'DESC'
     };
 
-    // Inicializar contador
-    const initialCards = wrapper.querySelectorAll('.amazon-product-card');
-    if (totalCount) {
-        totalCount.textContent = initialCards.length;
+    // Inicializar contador con el total real desde PHP (BUG-03 fix)
+    // Usamos data-total-count que contiene found_posts, no el conteo de cards visibles
+    if (totalCount && wrapper.dataset.totalCount) {
+        totalCount.textContent = wrapper.dataset.totalCount;
     }
 
     /**

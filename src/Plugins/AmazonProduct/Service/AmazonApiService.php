@@ -4,19 +4,127 @@ namespace Glory\Plugins\AmazonProduct\Service;
 
 use Glory\Core\GloryLogger;
 
+/**
+ * Amazon API Service - Fachada para acceder a la API de Amazon.
+ * 
+ * ARCH-01: Esta clase ahora actua como Factory/Fachada.
+ * Selecciona automaticamente el provider correcto segun la configuracion.
+ * 
+ * Providers disponibles:
+ * - RapidApiProvider: amazon-data.p.rapidapi.com (default)
+ * - AmazonPaApiProvider: Amazon Product Advertising API 5.0
+ * 
+ * El provider se selecciona desde ConfigTab con la opcion 'amazon_api_provider'.
+ * 
+ * Mantiene compatibilidad hacia atras: el resto del plugin usa esta clase
+ * sin saber que provider esta activo internamente.
+ */
 class AmazonApiService
 {
-    private const API_HOST = 'amazon-data.p.rapidapi.com';
-    private const API_URL = 'https://amazon-data.p.rapidapi.com';
-    private string $apiKey;
-    private string $region;
+    private const PROVIDER_RAPIDAPI = 'rapidapi';
+    private const PROVIDER_PAAPI = 'paapi';
+
+    private ApiProviderInterface $provider;
+    private string $providerType;
 
     public function __construct()
     {
-        $this->apiKey = get_option('amazon_api_key', '');
-        $this->region = get_option('amazon_api_region', 'us');
+        $this->providerType = get_option('amazon_api_provider', self::PROVIDER_RAPIDAPI);
+        $this->provider = $this->createProvider();
     }
 
+    /**
+     * Factory method: crea el provider segun la configuracion.
+     * 
+     * @return ApiProviderInterface Provider configurado
+     */
+    private function createProvider(): ApiProviderInterface
+    {
+        switch ($this->providerType) {
+            case self::PROVIDER_PAAPI:
+                GloryLogger::info('AmazonApiService: Usando PA-API provider');
+                return new AmazonPaApiProvider();
+
+            case self::PROVIDER_RAPIDAPI:
+            default:
+                return new RapidApiProvider();
+        }
+    }
+
+    /**
+     * Obtiene el provider activo.
+     * 
+     * @return ApiProviderInterface
+     */
+    public function getProvider(): ApiProviderInterface
+    {
+        return $this->provider;
+    }
+
+    /**
+     * Obtiene el tipo de provider activo.
+     * 
+     * @return string 'rapidapi' o 'paapi'
+     */
+    public function getProviderType(): string
+    {
+        return $this->providerType;
+    }
+
+    /**
+     * Verifica si el provider esta configurado correctamente.
+     * 
+     * @return bool
+     */
+    public function isConfigured(): bool
+    {
+        return $this->provider->isConfigured();
+    }
+
+    /**
+     * Busca productos por palabra clave.
+     * Delega al provider activo.
+     * 
+     * @param string $keyword Palabra clave
+     * @param int $page Numero de pagina
+     * @return array Lista de productos
+     */
+    public function searchProducts(string $keyword, int $page = 1): array
+    {
+        return $this->provider->searchProducts($keyword, $page);
+    }
+
+    /**
+     * Obtiene un producto por ASIN.
+     * Delega al provider activo.
+     * 
+     * @param string $asin ASIN del producto
+     * @return array Datos del producto
+     */
+    public function getProductByAsin(string $asin): array
+    {
+        return $this->provider->getProductByAsin($asin);
+    }
+
+    /**
+     * Obtiene ofertas actuales.
+     * Delega al provider activo.
+     * 
+     * @param int $page Numero de pagina
+     * @return array Lista de ofertas
+     */
+    public function getDeals(int $page = 1): array
+    {
+        return $this->provider->getDeals($page);
+    }
+
+    /**
+     * Obtiene el dominio de Amazon para una region.
+     * Metodo estatico para compatibilidad hacia atras.
+     * 
+     * @param string $region Codigo de region (us, es, uk, etc.)
+     * @return string Dominio de Amazon
+     */
     public static function getDomain(string $region): string
     {
         $domains = [
@@ -36,98 +144,49 @@ class AmazonApiService
         return $domains[$region] ?? 'amazon.com';
     }
 
-    public function getProductByAsin(string $asin): array
+    /**
+     * Obtiene los providers disponibles para mostrar en admin.
+     * 
+     * @return array [slug => nombre]
+     */
+    public static function getAvailableProviders(): array
     {
-        $cacheKey = 'amazon_product_' . $asin;
-        $cached = get_transient($cacheKey);
-
-        if ($cached !== false) {
-            return $cached;
-        }
-
-        $response = $this->makeRequest('asin.php', ['asin' => $asin, 'region' => $this->region]);
-
-        if (empty($response)) {
-            return [];
-        }
-
-        set_transient($cacheKey, $response, DAY_IN_SECONDS);
-
-        return $response;
+        return [
+            self::PROVIDER_RAPIDAPI => 'RapidAPI (amazon-data)',
+            self::PROVIDER_PAAPI => 'Amazon PA-API 5.0 (oficial)',
+        ];
     }
 
-    public function searchProducts(string $keyword, int $page = 1): array
+    /**
+     * Verifica si un provider especifico esta disponible y configurado.
+     * 
+     * @param string $providerType Tipo de provider
+     * @return array [available => bool, configured => bool, name => string]
+     */
+    public static function checkProviderStatus(string $providerType): array
     {
-        $cacheKey = 'amazon_search_' . md5($keyword . $page);
-        $cached = get_transient($cacheKey);
+        $providers = self::getAvailableProviders();
+        $name = $providers[$providerType] ?? 'Desconocido';
 
-        if ($cached !== false) {
-            return $cached;
+        switch ($providerType) {
+            case self::PROVIDER_RAPIDAPI:
+                $configured = !empty(get_option('amazon_api_key', ''));
+                break;
+
+            case self::PROVIDER_PAAPI:
+                $configured = !empty(get_option('amazon_paapi_access_key', ''))
+                    && !empty(get_option('amazon_paapi_secret_key', ''))
+                    && !empty(get_option('amazon_affiliate_tag', ''));
+                break;
+
+            default:
+                $configured = false;
         }
 
-        $response = $this->makeRequest('search.php', ['keyword' => $keyword, 'region' => $this->region, 'page' => $page]);
-
-        if (empty($response)) {
-            return [];
-        }
-
-        set_transient($cacheKey, $response, HOUR_IN_SECONDS);
-
-        return $response;
-    }
-
-    public function getDeals(int $page = 1): array
-    {
-        $cacheKey = 'amazon_deals_' . $this->region . '_' . $page;
-        $cached = get_transient($cacheKey);
-
-        if ($cached !== false) {
-            return $cached;
-        }
-
-        $response = $this->makeRequest('deal.php', ['region' => $this->region, 'page' => $page]);
-
-        if (empty($response)) {
-            return [];
-        }
-
-        // Cache deals for 2 hours to save API calls
-        set_transient($cacheKey, $response, 2 * HOUR_IN_SECONDS);
-
-        return $response;
-    }
-
-    private function makeRequest(string $endpoint, array $params): array
-    {
-        $url = self::API_URL . '/' . $endpoint . '?' . http_build_query($params);
-
-        $curl = curl_init();
-
-        curl_setopt_array($curl, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_ENCODING => "",
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => "GET",
-            CURLOPT_HTTPHEADER => [
-                "x-rapidapi-host: " . get_option('amazon_api_host', self::API_HOST),
-                "x-rapidapi-key: " . $this->apiKey
-            ],
-        ]);
-
-        $response = curl_exec($curl);
-        $err = curl_error($curl);
-
-        curl_close($curl);
-
-        if ($err) {
-            GloryLogger::error("AmazonApiService Error: " . $err);
-            return [];
-        }
-
-        return json_decode($response, true) ?: [];
+        return [
+            'available' => true,
+            'configured' => $configured,
+            'name' => $name
+        ];
     }
 }
