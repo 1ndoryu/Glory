@@ -31,13 +31,15 @@ class HtmlParserService
     {
         $price = $this->extractPrice($html);
         $originalPrice = $this->extractOriginalPrice($html);
+        $asin = $this->extractAsin($html);
+        $domain = $this->extractAmazonDomain($html);
 
         $data = [
-            'asin' => $this->extractAsin($html),
+            'asin' => $asin,
             'title' => $this->extractTitle($html),
             'price' => $price,
             'original_price' => $originalPrice > $price ? $originalPrice : 0,
-            'currency' => 'USD',
+            'currency' => $this->extractCurrency($html),
             'image' => $this->extractImage($html),
             'rating' => $this->extractRating($html),
             'reviews' => $this->extractReviews($html),
@@ -46,9 +48,9 @@ class HtmlParserService
             'url' => ''
         ];
 
-        // Construir URL si tenemos ASIN
-        if (!empty($data['asin'])) {
-            $data['url'] = 'https://www.amazon.com/dp/' . $data['asin'];
+        // Construir URL con el dominio correcto (amazon.es, amazon.com, etc.)
+        if (!empty($asin)) {
+            $data['url'] = 'https://www.' . $domain . '/dp/' . $asin;
         }
 
         return $data;
@@ -95,8 +97,10 @@ class HtmlParserService
     private function extractPrice(string $html): float
     {
         // Intento 1: Price whole + fraction (estructura moderna)
-        if (preg_match('/<span class="a-price-whole">([0-9,]+)/', $html, $whole)) {
-            $priceWhole = str_replace(',', '', $whole[1]);
+        // Nota: En Amazon.es el separador decimal es coma, en Amazon.com es punto
+        if (preg_match('/<span class="a-price-whole">([0-9.,]+)/', $html, $whole)) {
+            // Limpiar el numero: remover separadores de miles y dejar solo digitos
+            $priceWhole = preg_replace('/[^0-9]/', '', $whole[1]);
             $priceFraction = '00';
             if (preg_match('/<span class="a-price-fraction">([0-9]+)/', $html, $fraction)) {
                 $priceFraction = $fraction[1];
@@ -104,7 +108,14 @@ class HtmlParserService
             return floatval($priceWhole . '.' . $priceFraction);
         }
 
-        // Intento 2: Busqueda general de precio con simbolo US$99.95 o $99.95
+        // Intento 2: Busqueda de precio en euros (64,98 o 1.234,56)
+        if (preg_match('/([0-9.]+(?:,[0-9]{2}))\s*\x{20AC}/u', $html, $matches)) {
+            $price = str_replace('.', '', $matches[1]); // Quitar separador miles
+            $price = str_replace(',', '.', $price); // Convertir coma decimal a punto
+            return floatval($price);
+        }
+
+        // Intento 3: Busqueda general de precio con simbolo US$99.95 o $99.95
         if (preg_match('/(?:US)?\$\s*([0-9,]+(?:\.[0-9]{2})?)/', $html, $matches)) {
             return floatval(str_replace(',', '', $matches[1]));
         }
@@ -112,34 +123,97 @@ class HtmlParserService
         return 0.00;
     }
 
+    /**
+     * Detecta el dominio de Amazon desde el HTML (amazon.es, amazon.com, etc.)
+     */
+    private function extractAmazonDomain(string $html): string
+    {
+        // Buscar en canonical URL
+        if (preg_match('/href="https?:\/\/(?:www\.)?(amazon\.[a-z.]+)\//', $html, $matches)) {
+            return $matches[1];
+        }
+
+        // Buscar en og:url
+        if (preg_match('/property="og:url"\s+content="https?:\/\/(?:www\.)?(amazon\.[a-z.]+)/', $html, $matches)) {
+            return $matches[1];
+        }
+
+        // Buscar en cualquier enlace de Amazon
+        if (preg_match('/https?:\/\/(?:www\.)?(amazon\.(?:es|com|co\.uk|de|fr|it|ca|com\.mx|com\.br|co\.jp|in|com\.au))\//', $html, $matches)) {
+            return $matches[1];
+        }
+
+        // Default: amazon.com
+        return 'amazon.com';
+    }
+
+    /**
+     * Detecta la moneda desde el HTML
+     */
+    private function extractCurrency(string $html): string
+    {
+        // Buscar simbolo de euro
+        if (preg_match('/\x{20AC}|EUR|&euro;|€/u', $html)) {
+            return 'EUR';
+        }
+
+        // Libra esterlina
+        if (preg_match('/\x{00A3}|GBP|&pound;|£/u', $html)) {
+            return 'GBP';
+        }
+
+        // Detectar por dominio de Amazon
+        $domain = $this->extractAmazonDomain($html);
+        $currencyMap = [
+            'amazon.es' => 'EUR',
+            'amazon.de' => 'EUR',
+            'amazon.fr' => 'EUR',
+            'amazon.it' => 'EUR',
+            'amazon.co.uk' => 'GBP',
+            'amazon.ca' => 'CAD',
+            'amazon.com.mx' => 'MXN',
+            'amazon.com.br' => 'BRL',
+            'amazon.co.jp' => 'JPY',
+            'amazon.in' => 'INR',
+            'amazon.com.au' => 'AUD',
+            'amazon.com' => 'USD',
+        ];
+
+        return $currencyMap[$domain] ?? 'USD';
+    }
+
     private function extractOriginalPrice(string $html): float
     {
-        // Intento 1: Precio tachado con clase a-text-strike
+        // Intento 1: Buscar "Precio recomendado:" seguido de precio en euros (ej: 100,00€)
+        // Este es el patron mas comun en Amazon.es
+        if (preg_match('/Precio recomendado[:\s]*([0-9.]+,[0-9]{2})\s*\x{20AC}/u', $html, $matches)) {
+            $price = str_replace('.', '', $matches[1]); // Quitar separador miles
+            $price = str_replace(',', '.', $price); // Convertir coma decimal a punto
+            return floatval($price);
+        }
+
+        // Intento 2: Buscar en basisPrice con formato europeo (span class="a-offscreen">100,00€)
+        if (preg_match('/basisPrice.*?<span[^>]*class="a-offscreen"[^>]*>([0-9.]+,[0-9]{2})\s*\x{20AC}/su', $html, $matches)) {
+            $price = str_replace('.', '', $matches[1]);
+            $price = str_replace(',', '.', $price);
+            return floatval($price);
+        }
+
+        // Intento 3: Buscar precio tachado (a-text-strike) con formato europeo
+        if (preg_match('/<span[^>]*data-a-strike="true"[^>]*>.*?([0-9.]+,[0-9]{2})\s*\x{20AC}/su', $html, $matches)) {
+            $price = str_replace('.', '', $matches[1]);
+            $price = str_replace(',', '.', $price);
+            return floatval($price);
+        }
+
+        // Intento 4: Precio tachado con clase a-text-strike formato USD
         if (preg_match('/<span[^>]*class="[^"]*a-text-strike[^"]*"[^>]*>\s*\$?\s*([0-9,]+(?:\.[0-9]{2})?)/s', $html, $matches)) {
             return floatval(str_replace(',', '', $matches[1]));
         }
 
-        // Intento 2: Precio en basisPrice (precio base/lista)
-        if (preg_match('/basisPrice[^>]*>\s*[^<]*<span[^>]*>\s*\$?\s*([0-9,]+(?:\.[0-9]{2})?)/s', $html, $matches)) {
+        // Intento 5: Buscar "Was:" o "List Price:" formato USD
+        if (preg_match('/(?:Was|List Price)[:\s]*\$?\s*([0-9,]+\.[0-9]{2})/i', $html, $matches)) {
             return floatval(str_replace(',', '', $matches[1]));
-        }
-
-        // Intento 3: Precio "Was:" o "Precio anterior:"
-        if (preg_match('/(?:Was|Precio anterior|List Price)[:\s]*\$?\s*([0-9,]+(?:\.[0-9]{2})?)/i', $html, $matches)) {
-            return floatval(str_replace(',', '', $matches[1]));
-        }
-
-        // Intento 4: Segundo precio encontrado (suele ser el original)
-        if (preg_match_all('/\$\s*([0-9,]+\.[0-9]{2})/', $html, $matches)) {
-            $prices = array_map(function ($p) {
-                return floatval(str_replace(',', '', $p));
-            }, $matches[1]);
-            $prices = array_unique($prices);
-            sort($prices);
-            // Si hay mas de un precio, el mayor suele ser el original
-            if (count($prices) > 1) {
-                return end($prices);
-            }
         }
 
         return 0.00;
@@ -200,13 +274,24 @@ class HtmlParserService
 
     private function extractReviews(string $html): int
     {
-        // Buscar numero seguido de "calificaciones", "ratings", etc.
-        if (preg_match('/([0-9,.]+)\s*(?:calificaciones|ratings|valoraciones|reviews|customer reviews)/i', $html, $matches)) {
-            return intval(str_replace([',', '.', ' '], '', $matches[1]));
+        // Intento 1: Buscar en aria-label del acrCustomerReviewText (ej: aria-label="115 Resenas")
+        if (preg_match('/aria-label="([0-9.,]+)\s*(?:Resenas|Reviews|valoraciones|ratings)"/i', $html, $matches)) {
+            return intval(preg_replace('/[^0-9]/', '', $matches[1]));
         }
-        // Buscar en acrCustomerReviewText
-        if (preg_match('/id="acrCustomerReviewText"[^>]*>([0-9,.]+)/', $html, $matches)) {
-            return intval(str_replace([',', '.'], '', $matches[1]));
+
+        // Intento 2: Buscar numero entre parentesis cerca de acrCustomerReviewText (ej: "(115)")
+        if (preg_match('/id="acrCustomerReviewText"[^>]*>\s*\(?([0-9.,]+)\)?/i', $html, $matches)) {
+            return intval(preg_replace('/[^0-9]/', '', $matches[1]));
+        }
+
+        // Intento 3: Buscar el span con clase a-size-small que contiene (numero)
+        if (preg_match('/<span[^>]*class="[^"]*a-size-small[^"]*"[^>]*>\s*\(([0-9.,]+)\)\s*<\/span>/i', $html, $matches)) {
+            return intval(preg_replace('/[^0-9]/', '', $matches[1]));
+        }
+
+        // Intento 4: Buscar numero seguido de "calificaciones", "ratings", etc.
+        if (preg_match('/([0-9,.]+)\s*(?:calificaciones|ratings|valoraciones|reviews|customer reviews|Resenas)/i', $html, $matches)) {
+            return intval(preg_replace('/[^0-9]/', '', $matches[1]));
         }
 
         return 0;

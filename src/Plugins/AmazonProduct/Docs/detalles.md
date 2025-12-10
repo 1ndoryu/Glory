@@ -348,6 +348,41 @@ Estado: [ ] = Pendiente, [x] = Completado
     - Util para debugging y optimizacion
     - COMPLETADO: El historial se guarda, pendiente agregar UI para visualizarlo (opcional)
 
+11.11 CORRECCIONES EN IMPORTADOR MANUAL HTML (10/12/2024)
+
+[x] HTML-BUG-01: URL se guardaba siempre como amazon.com
+    - Problema: La URL se construia hardcodeada como amazon.com/dp/ASIN
+    - Solucion: Detectar dominio desde el HTML (amazon.es, amazon.de, etc.)
+    - Nuevo metodo extractAmazonDomain() busca en canonical URL, og:url y enlaces
+    - Archivo: Service/HtmlParserService.php
+
+[x] HTML-BUG-02: Currency siempre era USD
+    - Problema: La moneda se hardcodeaba como 'USD' sin importar el HTML
+    - Solucion: Nuevo metodo extractCurrency() que detecta simbolos de moneda
+    - Detecta EUR (simbolo € o dominio .es/.de/.fr/.it), GBP, CAD, MXN, etc.
+    - Mapa de monedas por dominio de Amazon como fallback
+    - Archivo: Service/HtmlParserService.php
+
+[x] HTML-BUG-03: Numero de reviews incorrecto
+    - Problema: Extraia "2" en vez de "115" porque el regex no capturaba bien
+    - Solucion: Nuevos patrones de busqueda:
+      1. aria-label="115 Resenas"
+      2. id="acrCustomerReviewText">(115)
+      3. <span class="a-size-small">(115)</span>
+      4. Fallback: numero seguido de "calificaciones/reviews/etc."
+    - Archivo: Service/HtmlParserService.php
+
+[x] HTML-BUG-04: Precio original extraia valores absurdos (ej: 10000 en vez de 100,00)
+    - Problema: El metodo extractOriginalPrice no manejaba formato europeo
+    - Causa: Buscaba patrones con $ y no con €, y el intento 4 capturaba cualquier numero
+    - Solucion: Reescribir completamente el metodo para:
+      1. Buscar "Precio recomendado:" + precio en formato 100,00€
+      2. Buscar en basisPrice con span.a-offscreen
+      3. Buscar precio tachado (data-a-strike="true")
+      4. Fallback para formato USD
+    - Se elimino el intento problematico que buscaba "todos los precios" y tomaba el mayor
+    - Archivo: Service/HtmlParserService.php
+
 RESUMEN DE PROGRESO (10/12/2024):
 - Completados: 21 items (TODAS las tareas de mejoras pendientes)
 - Pendientes: 0 items

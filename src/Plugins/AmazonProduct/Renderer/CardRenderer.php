@@ -101,10 +101,14 @@ class CardRenderer
     private static function renderCardHtml(array $data): void
     {
         $hasDiscount = $data['discount'] > 0;
-        $showCurrency = $data['show_currency'] ?? false;
-        $currencySymbol = $showCurrency ? '&euro;' : '';
+        // Siempre mostrar simbolo de moneda (euro por defecto para region ES)
+        $showCurrency = $data['show_currency'] ?? true;
+        $currencySymbol = $showCurrency ? ' &euro;' : '';
 ?>
-        <div class="amazon-product-card group">
+        <a href="<?php echo esc_url($data['product_url']); ?>"
+            target="_blank"
+            rel="noopener noreferrer nofollow sponsored"
+            class="amazon-product-card group">
             <div class="amazon-card-image-wrapper">
                 <?php if ($hasDiscount): ?>
                     <span class="amazon-discount-badge">-<?php echo (int) $data['discount']; ?>%</span>
@@ -132,15 +136,12 @@ class CardRenderer
                         <?php endif; ?>
                         <span class="price-value"><?php echo esc_html($data['price']); ?><?php echo $currencySymbol; ?></span>
                     </div>
-                    <a href="<?php echo esc_url($data['product_url']); ?>"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="amazon-buy-btn-icon">
+                    <span class="amazon-buy-btn-icon">
                         <?php echo self::getExternalLinkIcon(); ?>
-                    </a>
+                    </span>
                 </div>
             </div>
-        </div>
+        </a>
     <?php
     }
 

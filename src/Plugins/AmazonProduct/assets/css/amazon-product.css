@@ -20,9 +20,10 @@
 .amazon-product-wrapper {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color: var(--amazon-text);
-    max-width: 1200px;
+    /* max-width: 1200px; */
     margin: 0 auto;
-    padding: 20px;
+    /* padding: 20px; */
+    width: 100%;
 }
 
 /* Header & Controls */
@@ -412,7 +413,13 @@
     gap: 24px;
 }
 
-/* Card */
+/* Card - Ahora es un enlace clickeable */
+a.amazon-product-card {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
 .amazon-product-card {
     background: var(--amazon-bg);
     border: 1px solid #f5f5f5;

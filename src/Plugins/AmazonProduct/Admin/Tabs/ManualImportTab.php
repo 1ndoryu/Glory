@@ -37,6 +37,8 @@ class ManualImportTab implements TabInterface
         // Registrar AJAX handlers
         add_action('wp_ajax_amazon_parse_html', [$this, 'ajaxParseHtml']);
         add_action('wp_ajax_amazon_import_product', [$this, 'ajaxImportProduct']);
+        add_action('wp_ajax_amazon_load_initial_products', [$this, 'ajaxLoadInitialProducts']);
+        add_action('wp_ajax_amazon_get_initial_products_count', [$this, 'ajaxGetInitialProductsCount']);
 
         $this->renderInterface();
         $this->renderStyles();
@@ -62,6 +64,9 @@ class ManualImportTab implements TabInterface
                     <input type="file" id="file-input" multiple accept=".html,.htm" style="display: none;">
                 </div>
             </div>
+
+            <!-- Seccion Productos Iniciales -->
+            <?php $this->renderInitialProductsSection(); ?>
 
             <!-- Barra de progreso -->
             <div id="progress-container" style="display: none;">
@@ -532,10 +537,10 @@ class ManualImportTab implements TabInterface
 
                                     if (response.success) {
                                         statusSpan.html('<span class="badge badge-success">Importado</span>');
-                                        logContent.append(`<div class="log-item log-success">✓ ${product.title}</div>`);
+                                        logContent.append(`<div class="log-item log-success">OK ${product.title}</div>`);
                                     } else {
                                         statusSpan.html('<span class="badge badge-error">Error</span>');
-                                        logContent.append(`<div class="log-item log-error">✗ ${product.title}: ${response.data || 'Error desconocido'}</div>`);
+                                        logContent.append(`<div class="log-item log-error">X ${product.title}: ${response.data || 'Error desconocido'}</div>`);
                                     }
 
                                     if (imported === total) {
@@ -547,12 +552,68 @@ class ManualImportTab implements TabInterface
                                     $(`.status-badge[data-index="${index}"]`).html('<span class="badge badge-error">Error</span>');
                                 }
                             });
-                        }, i * 500); // Espaciar peticiones para evitar sobrecarga
+                        }, i * 500);
                     });
                 }
+
+                // Cargar productos iniciales desde ZIP
+                $('#load-initial-products').on('click', function() {
+                    const btn = $(this);
+                    const statusSpan = $('#initial-products-status');
+
+                    btn.prop('disabled', true);
+                    statusSpan.text('Cargando archivos desde ZIP...');
+                    products = [];
+                    productsTbody.empty();
+
+                    function loadBatch(offset) {
+                        $.ajax({
+                            url: ajaxurl,
+                            type: 'POST',
+                            data: {
+                                action: 'amazon_load_initial_products',
+                                nonce: nonce,
+                                offset: offset
+                            },
+                            success: function(response) {
+                                if (response.success) {
+                                    // Agregar productos al array
+                                    response.data.products.forEach(p => products.push(p));
+
+                                    statusSpan.text(`Procesando ${response.data.processed} de ${response.data.total} archivos...`);
+
+                                    if (response.data.hasMore) {
+                                        // Cargar siguiente lote
+                                        loadBatch(response.data.nextOffset);
+                                    } else {
+                                        // Finalizado - mostrar tabla
+                                        btn.prop('disabled', false);
+                                        statusSpan.text(`${products.length} productos cargados`);
+
+                                        if (products.length > 0) {
+                                            renderProductsTable();
+                                            productsContainer.show();
+                                        } else {
+                                            alert('No se encontraron productos validos en los archivos.');
+                                        }
+                                    }
+                                } else {
+                                    btn.prop('disabled', false);
+                                    statusSpan.text('Error: ' + response.data);
+                                }
+                            },
+                            error: function() {
+                                btn.prop('disabled', false);
+                                statusSpan.text('Error de conexion');
+                            }
+                        });
+                    }
+
+                    loadBatch(0);
+                });
             });
         </script>
-<?php
+    <?php
     }
 
     /**
@@ -680,5 +741,152 @@ class ManualImportTab implements TabInterface
 
             return ['success' => true, 'post_id' => $postId, 'updated' => false];
         }
+    }
+
+    /**
+     * Ruta al archivo ZIP de productos iniciales
+     */
+    private function getInitialProductsPath(): string
+    {
+        return get_template_directory() . '/App/Content/amazon.zip';
+    }
+
+    /**
+     * Verifica si existe el archivo de productos iniciales
+     */
+    private function hasInitialProducts(): bool
+    {
+        return file_exists($this->getInitialProductsPath());
+    }
+
+    /**
+     * Cuenta los archivos HTML dentro del ZIP
+     */
+    private function countInitialProducts(): int
+    {
+        $zipPath = $this->getInitialProductsPath();
+        if (!file_exists($zipPath)) {
+            return 0;
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath) !== true) {
+            return 0;
+        }
+
+        $count = 0;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $filename = $zip->getNameIndex($i);
+            if (preg_match('/\.html?$/i', $filename)) {
+                $count++;
+            }
+        }
+        $zip->close();
+
+        return $count;
+    }
+
+    /**
+     * Renderiza la seccion de productos iniciales
+     */
+    private function renderInitialProductsSection(): void
+    {
+        $hasProducts = $this->hasInitialProducts();
+        $count = $hasProducts ? $this->countInitialProducts() : 0;
+    ?>
+        <div class="initial-products-section" style="margin: 20px 0; padding: 20px; background: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 8px;">
+            <h3 style="margin-top: 0;">
+                <span class="dashicons dashicons-database-import" style="color: #2271b1;"></span>
+                Productos Iniciales
+            </h3>
+            <?php if ($hasProducts): ?>
+                <p>Se encontraron <strong><?php echo $count; ?></strong> archivos HTML en el paquete de productos iniciales.</p>
+                <p style="color: #666; font-size: 13px;">Usa este boton para importar los productos predefinidos cuando configures el sitio en un nuevo servidor.</p>
+                <button type="button" id="load-initial-products" class="button button-primary" style="margin-right: 10px;">
+                    <span class="dashicons dashicons-download" style="vertical-align: middle;"></span>
+                    Cargar Productos Iniciales (<?php echo $count; ?>)
+                </button>
+                <span id="initial-products-status" style="color: #666;"></span>
+            <?php else: ?>
+                <p style="color: #666;">
+                    No se encontro el archivo <code>amazon.zip</code> en <code>App/Content/</code>.
+                    <br>Para usar esta funcion, coloca un archivo ZIP con los HTML de productos en esa ubicacion.
+                </p>
+            <?php endif; ?>
+        </div>
+<?php
+    }
+
+    /**
+     * AJAX: Obtener conteo de productos iniciales
+     */
+    public function ajaxGetInitialProductsCount(): void
+    {
+        check_ajax_referer('amazon_manual_import_ajax', 'nonce');
+
+        $count = $this->countInitialProducts();
+        wp_send_json_success(['count' => $count]);
+    }
+
+    /**
+     * AJAX: Cargar productos iniciales desde el ZIP
+     * Retorna un lote de productos parseados para importar
+     */
+    public function ajaxLoadInitialProducts(): void
+    {
+        check_ajax_referer('amazon_manual_import_ajax', 'nonce');
+
+        $offset = intval($_POST['offset'] ?? 0);
+        $batchSize = 10; // Procesar 10 archivos por llamada
+
+        $zipPath = $this->getInitialProductsPath();
+        if (!file_exists($zipPath)) {
+            wp_send_json_error('No se encontro el archivo de productos iniciales');
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath) !== true) {
+            wp_send_json_error('No se pudo abrir el archivo ZIP');
+        }
+
+        // Recopilar todos los archivos HTML
+        $htmlFiles = [];
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $filename = $zip->getNameIndex($i);
+            if (preg_match('/\.html?$/i', $filename)) {
+                $htmlFiles[] = $filename;
+            }
+        }
+
+        $total = count($htmlFiles);
+        $products = [];
+
+        // Procesar el lote actual
+        $batch = array_slice($htmlFiles, $offset, $batchSize);
+        foreach ($batch as $filename) {
+            $html = $zip->getFromName($filename);
+            if ($html === false) {
+                continue;
+            }
+
+            $data = $this->parserService->parseHtml($html);
+            if (!empty($data['asin'])) {
+                $data['filename'] = basename($filename);
+                $data['exists'] = ProductImporter::findByAsin($data['asin']) !== null;
+                $products[] = $data;
+            }
+        }
+
+        $zip->close();
+
+        $hasMore = ($offset + $batchSize) < $total;
+
+        wp_send_json_success([
+            'products' => $products,
+            'total' => $total,
+            'processed' => min($offset + $batchSize, $total),
+            'hasMore' => $hasMore,
+            'nextOffset' => $offset + $batchSize
+        ]);
     }
 }

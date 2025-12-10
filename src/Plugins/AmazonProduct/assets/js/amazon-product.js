@@ -18,11 +18,11 @@
     const state = {
         limit: wrapper.dataset.limit || 12,
         paged: 1,
-        search: '',
+        search: wrapper.dataset.search || '',
         category: wrapper.dataset.category || '',
         minPrice: wrapper.dataset.minPrice || '',
         maxPrice: wrapper.dataset.maxPrice || '',
-        minRating: '',
+        minRating: wrapper.dataset.minRating || '',
         onlyPrime: wrapper.dataset.onlyPrime || '',
         onlyDeals: wrapper.dataset.onlyDeals || '',
         orderby: wrapper.dataset.orderby || 'date',

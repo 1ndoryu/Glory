@@ -25,7 +25,7 @@ class ApiUsageTracker
 
     // Valores por defecto
     private const DEFAULT_CYCLE_START_DAY = 1;
-    private const DEFAULT_MONTHLY_LIMIT = 500;
+    private const DEFAULT_MONTHLY_LIMIT = 10000;
     private const MAX_LOG_ENTRIES = 100;
 
     /**

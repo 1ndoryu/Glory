@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Renderizador de Contenido
  *
@@ -14,8 +15,6 @@ namespace Glory\Components;
 use WP_Query;
 use Glory\Components\PaginationRenderer;
 use Glory\Utility\ImageUtility;
-use Glory\Core\GloryFeatures;
-use Glory\Support\CSS\ContentRenderCss;
 use Glory\Utility\TemplateRegistry;
 
 /**
@@ -32,259 +31,7 @@ class ContentRender
     /** @var bool Indica si los hooks de limpieza de caché ya fueron registrados. */
     private static $hooksRegistered = false;
 
-    /**
-     * Devuelve la configuración predeterminada y el esquema para GBN (Glory Builder Native).
-     *
-     * @return array{config:array<string,mixed>,schema:array<int,array<string,mixed>>}
-     */
-    public static function gbnDefaults(): array
-    {
-        return [
-            'config' => [
-                'publicacionesPorPagina' => 6,
-                'claseContenedor'        => 'gbn-content-grid',
-                'claseItem'              => 'gbn-content-card',
-                'argumentosConsulta'     => [],
-                'forzarSinCache'         => false,
-                'paginacion'             => false,
-                'gap'                    => '20px',
-                'display_mode'           => 'flex',
-                'img_show'               => true,
-                'title_show'             => true,
-                'title_position'         => 'top',
-                'title_show_on_hover'    => false,
-                'content_opacity'        => 0.9,
-            ],
-            'schema' => [
-                [
-                    'id'       => 'postType',
-                    'tipo'     => 'select',
-                    'etiqueta' => 'Tipo de contenido',
-                    'opciones' => [
-                        ['valor' => 'post', 'etiqueta' => 'Entradas'],
-                        ['valor' => 'page', 'etiqueta' => 'Páginas'],
-                        ['valor' => 'libro', 'etiqueta' => 'Libros'],
-                        ['valor' => 'servicio', 'etiqueta' => 'Servicios'],
-                        ['valor' => 'portfolio', 'etiqueta' => 'Portafolio'],
-                    ],
-                ],
-                [
-                    'id'       => 'plantilla',
-                    'tipo'     => 'select',
-                    'etiqueta' => 'Plantilla (ID)',
-                    'opciones' => self::getTemplateOptions(),
-                    'descripcion' => 'Selecciona la plantilla de renderizado.',
-                ],
-                [
-                    'id'       => 'publicacionesPorPagina',
-                    'tipo'     => 'slider',
-                    'etiqueta' => 'Publicaciones por página',
-                    'min'      => 1,
-                    'max'      => 50,
-                    'paso'     => 1,
-                ],
-                [
-                    'id'       => 'paginacion',
-                    'tipo'     => 'toggle',
-                    'etiqueta' => 'Activar paginación AJAX',
-                ],
-                // --- Layout Options ---
-                [
-                    'id'       => 'display_mode',
-                    'tipo'     => 'icon_group',
-                    'etiqueta' => 'Modo de Visualización',
-                    'opciones' => [
-                        ['valor' => 'block', 'etiqueta' => 'Bloque', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>'],
-                        ['valor' => 'flex', 'etiqueta' => 'Flexbox', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>'],
-                        ['valor' => 'grid', 'etiqueta' => 'Grid', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>'],
-                    ],
-                    'default'  => 'flex',
-                ],
-                [
-                    'id'       => 'gap',
-                    'tipo'     => 'dimension',
-                    'etiqueta' => 'Espaciado (Gap)',
-                    'default'  => '20px',
-                    'condicion' => ['display_mode', 'in', ['flex', 'grid']],
-                ],
-                // Flex Options
-                [
-                    'id'       => 'flex_direction',
-                    'tipo'     => 'icon_group',
-                    'etiqueta' => 'Dirección Flex',
-                    'opciones' => [
-                        ['valor' => 'row', 'etiqueta' => 'Horizontal', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><path d="M16 8l4 4-4 4"/></svg>'],
-                        ['valor' => 'column', 'etiqueta' => 'Vertical', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16"/><path d="M8 16l4 4 4-4"/></svg>'],
-                    ],
-                    'condicion' => ['display_mode', '==', 'flex'],
-                ],
-                [
-                    'id'       => 'flex_wrap',
-                    'tipo'     => 'icon_group',
-                    'etiqueta' => 'Envolver (Wrap)',
-                    'opciones' => [
-                        ['valor' => 'nowrap', 'etiqueta' => 'No envolver', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/></svg>'],
-                        ['valor' => 'wrap', 'etiqueta' => 'Envolver', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H4"/><path d="M8 12l-4 4 4 4"/></svg>'],
-                    ],
-                    'condicion' => ['display_mode', '==', 'flex'],
-                ],
-                [
-                    'id'       => 'justify_content',
-                    'tipo'     => 'icon_group',
-                    'etiqueta' => 'Justificar Contenido',
-                    'opciones' => [
-                        ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="18" rx="1"/></svg>'],
-                        ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="18" rx="1"/></svg>'],
-                        ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="15" y="3" width="6" height="18" rx="1"/></svg>'],
-                        ['valor' => 'space-between', 'etiqueta' => 'Espacio entre', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="4" height="18" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>'],
-                        ['valor' => 'space-around', 'etiqueta' => 'Espacio alrededor', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="4" height="18" rx="1"/><rect x="15" y="3" width="4" height="18" rx="1"/></svg>'],
-                    ],
-                    'condicion' => ['display_mode', '==', 'flex'],
-                ],
-                [
-                    'id'       => 'align_items',
-                    'tipo'     => 'icon_group',
-                    'etiqueta' => 'Alinear Items',
-                    'opciones' => [
-                        ['valor' => 'stretch', 'etiqueta' => 'Estirar', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3v18"/><path d="M20 3v18"/><rect x="8" y="6" width="8" height="12" rx="1"/></svg>'],
-                        ['valor' => 'flex-start', 'etiqueta' => 'Inicio', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 3h16"/><rect x="8" y="7" width="8" height="8" rx="1"/></svg>'],
-                        ['valor' => 'center', 'etiqueta' => 'Centro', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg>'],
-                        ['valor' => 'flex-end', 'etiqueta' => 'Fin', 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 21h16"/><rect x="8" y="9" width="8" height="8" rx="1"/></svg>'],
-                    ],
-                    'condicion' => ['display_mode', '==', 'flex'],
-                ],
-                // Grid Options
-                [
-                    'id'       => 'grid_columns',
-                    'tipo'     => 'slider',
-                    'etiqueta' => 'Columnas (Grid)',
-                    'min'      => 1,
-                    'max'      => 12,
-                    'condicion' => ['display_mode', '==', 'grid'],
-                ],
-                [
-                    'id'       => 'grid_min_width',
-                    'tipo'     => 'dimension',
-                    'etiqueta' => 'Ancho Mínimo (Grid)',
-                    'default'  => '250px',
-                    'condicion' => ['display_mode', '==', 'grid'],
-                ],
-                // --- Image Options ---
-                [
-                    'id'       => 'img_show',
-                    'tipo'     => 'toggle',
-                    'etiqueta' => 'Mostrar Imagen',
-                    'default'  => true,
-                ],
-                [
-                    'id'       => 'img_size',
-                    'tipo'     => 'select',
-                    'etiqueta' => 'Tamaño de Imagen',
-                    'opciones' => [
-                        ['valor' => 'thumbnail', 'etiqueta' => 'Miniatura'],
-                        ['valor' => 'medium', 'etiqueta' => 'Medio'],
-                        ['valor' => 'large', 'etiqueta' => 'Grande'],
-                        ['valor' => 'full', 'etiqueta' => 'Completo'],
-                    ],
-                    'condicion' => ['img_show', '==', true],
-                ],
-                [
-                    'id'       => 'img_aspect_ratio',
-                    'tipo'     => 'text',
-                    'etiqueta' => 'Aspect Ratio',
-                    'descripcion' => 'Ej: 16/9, 4/3, 1/1',
-                    'condicion' => ['img_show', '==', true],
-                ],
-                [
-                    'id'       => 'img_object_fit',
-                    'tipo'     => 'select',
-                    'etiqueta' => 'Ajuste de Imagen',
-                    'opciones' => [
-                        ['valor' => 'cover', 'etiqueta' => 'Cover'],
-                        ['valor' => 'contain', 'etiqueta' => 'Contain'],
-                    ],
-                    'condicion' => ['img_show', '==', true],
-                ],
-                // --- Typography Options ---
-                [
-                    'id'       => 'title_show',
-                    'tipo'     => 'toggle',
-                    'etiqueta' => 'Mostrar Título',
-                    'default'  => true,
-                ],
-                [
-                    'id'       => 'title_font_size',
-                    'tipo'     => 'dimension',
-                    'etiqueta' => 'Tamaño Fuente Título',
-                    'condicion' => ['title_show', '==', true],
-                ],
-                [
-                    'id'       => 'title_color',
-                    'tipo'     => 'color',
-                    'etiqueta' => 'Color Título',
-                    'condicion' => ['title_show', '==', true],
-                ],
-                [
-                    'id'       => 'title_position',
-                    'tipo'     => 'select',
-                    'etiqueta' => 'Posición Título',
-                    'opciones' => [
-                        ['valor' => 'top', 'etiqueta' => 'Arriba'],
-                        ['valor' => 'bottom', 'etiqueta' => 'Abajo'],
-                    ],
-                    'condicion' => ['title_show', '==', true],
-                ],
-                [
-                    'id'       => 'title_show_on_hover',
-                    'tipo'     => 'toggle',
-                    'etiqueta' => 'Mostrar al pasar el mouse',
-                    'condicion' => ['title_show', '==', true],
-                ],
-                // --- Interaction Options ---
-                [
-                    'id'       => 'interaccion_modo',
-                    'tipo'     => 'select',
-                    'etiqueta' => 'Modo Interacción',
-                    'opciones' => [
-                        ['valor' => 'normal', 'etiqueta' => 'Normal'],
-                        ['valor' => 'carousel', 'etiqueta' => 'Carrusel'],
-                        ['valor' => 'toggle', 'etiqueta' => 'Acordeón (Toggle)'],
-                    ],
-                    'default'  => 'normal',
-                ],
-                [
-                    'id'       => 'claseContenedor',
-                    'tipo'     => 'text',
-                    'etiqueta' => 'Clase del contenedor',
-                ],
-                [
-                    'id'       => 'claseItem',
-                    'tipo'     => 'text',
-                    'etiqueta' => 'Clase de cada item',
-                ],
-                [
-                    'id'       => 'forzarSinCache',
-                    'tipo'     => 'toggle',
-                    'etiqueta' => 'Ignorar caché',
-                ],
-            ],
-        ];
-    }
 
-    /**
-     * Helper to get template options for the select field.
-     */
-    private static function getTemplateOptions(): array
-    {
-        $options = [];
-        if (class_exists(TemplateRegistry::class)) {
-            $templates = TemplateRegistry::options();
-            foreach ($templates as $id => $label) {
-                $options[] = ['valor' => $id, 'etiqueta' => $label . ' (' . $id . ')'];
-            }
-        }
-        return $options;
-    }
 
     /**
      * Inicializa los hooks para limpieza de caché.
@@ -415,12 +162,12 @@ class ContentRender
         // Resolve template ID to callback if provided
         if (!empty($config['plantilla'])) {
             $callback = null;
-            
+
             // 1. Try TemplateRegistry (registered via code)
             if (class_exists(TemplateRegistry::class)) {
                 $callback = TemplateRegistry::get($config['plantilla']);
             }
-            
+
             // 2. Try TemplateManager (scans files)
             if (!$callback && class_exists(\Glory\Manager\TemplateManager::class)) {
                 $callback = \Glory\Manager\TemplateManager::getTemplateCallback($config['plantilla']);
@@ -430,7 +177,7 @@ class ContentRender
             if (!$callback && is_callable($config['plantilla'])) {
                 $callback = $config['plantilla'];
             }
-            
+
             if ($callback) {
                 $config['plantillaCallback'] = $callback;
             }
@@ -564,34 +311,22 @@ class ContentRender
 
             // Generate instance class for CSS scoping
             $instanceClass = $config['instanceClass'] ?? 'glory-cr-' . substr(md5(uniqid('', true)), 0, 8);
-            
+
             $contenedorClass  = trim($config['claseContenedor'] . ' ' . sanitize_html_class($postType) . ' ' . $instanceClass);
             $itemClass        = trim($config['claseItem'] . ' ' . sanitize_html_class($postType) . '-item' . ' ' . $instanceClass . '__item');
             $isAjaxPagination = $config['paginacion'];
 
-            // Generate CSS
-            if (class_exists(ContentRenderCss::class)) {
-                $css = ContentRenderCss::build(
-                    $instanceClass, 
-                    $config, 
-                    $config, 
-                    $config['interaccion_modo'] ?? 'normal', 
-                    false 
-                );
-                if (!empty($css)) {
-                    echo '<style>' . $css . '</style>';
-                }
-            }
 
-            if ( ! isset( $config['categoryFilter'] ) || ! is_array( $config['categoryFilter'] ) ) {
+
+            if (! isset($config['categoryFilter']) || ! is_array($config['categoryFilter'])) {
                 $config['categoryFilter'] = [
                     'enabled'  => false,
-                    'allLabel' => __( 'All', 'glory-ab' ),
+                    'allLabel' => __('All', 'glory-ab'),
                 ];
             }
             $categoryFilterConfig  = $config['categoryFilter'];
-            $categoryFilterRuntime = self::prepareCategoryFilterRuntime( $postType, $categoryFilterConfig, $instanceClass, $query->posts );
-            if ( $categoryFilterRuntime['enabled'] && '' !== $categoryFilterRuntime['markup'] ) {
+            $categoryFilterRuntime = self::prepareCategoryFilterRuntime($postType, $categoryFilterConfig, $instanceClass, $query->posts);
+            if ($categoryFilterRuntime['enabled'] && '' !== $categoryFilterRuntime['markup']) {
                 echo $categoryFilterRuntime['markup']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
             }
 
@@ -676,27 +411,7 @@ class ContentRender
                 }
             }
 
-            $gbnAttrs = '';
-            if (class_exists(GloryFeatures::class) && GloryFeatures::isActive('gbn', 'glory_gbn_activado') !== false) {
-                $gbnRole    = self::gbnDefaults();
-                // Merge defaults with current config to ensure all keys exist
-                $finalConfig = wp_parse_args($config, $gbnRole['config'] ?? []);
-                
-                // Ensure post_type is set in finalConfig so frontend picks it up
-                if (empty($finalConfig['post_type'])) {
-                    $finalConfig['post_type'] = $postType;
-                }
-                // Maintain backward compatibility for config key 'postType' if needed by PHP logic
-                if (empty($finalConfig['postType'])) {
-                    $finalConfig['postType'] = $postType;
-                }
 
-                $configAttr = esc_attr(wp_json_encode($finalConfig));
-                $schemaAttr = esc_attr(wp_json_encode($gbnRole['schema'] ?? []));
-                $gbnAttrs   = ' data-gbn-content="1" data-gbn-role="content"'
-                    . ' data-gbn-config="' . $configAttr . '"'
-                    . ' data-gbn-schema="' . $schemaAttr . '"';
-            }
 
             $layoutPatternAttrs = '';
             if (!empty($config['layoutPattern']) && is_array($config['layoutPattern'])) {
@@ -709,7 +424,6 @@ class ContentRender
             }
 
             echo '<div class="' . esc_attr($contenedorClass) . '"'
-                . $gbnAttrs
                 . ' data-post-type="' . esc_attr($postType) . '"'
                 . (!empty($acciones) ? ' data-content-actions="' . esc_attr($acciones) . '"' : '')
                 . ' data-submenu-enabled="' . ($submenuEnabled ? '1' : '0') . '"'
@@ -732,17 +446,17 @@ class ContentRender
                 $clasesExtras    .= ($indiceGlobal % 2 === 0) ? ' par' : ' impar';
                 $currentItemClass = trim($itemClass . $clasesExtras);
                 self::setCurrentOption('indiceItem', $indiceGlobal);
-                if ( $categoryFilterRuntime['enabled'] ) {
-                    $currentCategories = $categoryFilterRuntime['map'][ get_the_ID() ] ?? [];
-                    self::setCurrentOption( 'currentCategories', $currentCategories );
+                if ($categoryFilterRuntime['enabled']) {
+                    $currentCategories = $categoryFilterRuntime['map'][get_the_ID()] ?? [];
+                    self::setCurrentOption('currentCategories', $currentCategories);
                 } else {
-                    self::setCurrentOption( 'currentCategories', null );
+                    self::setCurrentOption('currentCategories', null);
                 }
                 call_user_func($config['plantillaCallback'], get_post(), $currentItemClass);
             }
             self::setCurrentOption('indiceItem', null);
-            if ( $categoryFilterRuntime['enabled'] ) {
-                self::setCurrentOption( 'currentCategories', null );
+            if ($categoryFilterRuntime['enabled']) {
+                self::setCurrentOption('currentCategories', null);
             }
             echo '</div>';
 
@@ -785,13 +499,12 @@ class ContentRender
      */
     public static function defaultTemplate(\WP_Post $post, string $itemClass): void
     {
-        ?>
+?>
         <div id="post-<?php echo $post->ID; ?>" class="<?php echo esc_attr($itemClass); ?>">
             <a class="glory-cr__link" href="<?php echo esc_url(get_permalink($post)); ?>">
                 <div class="glory-cr__stack">
                     <h2 class="glory-cr__title"
-                        <?php if (isset(self::$currentConfig['title_show']) && !self::$currentConfig['title_show']) echo ' style="display:none;"'; ?>
-                    ><?php echo esc_html(get_the_title($post)); ?></h2>
+                        <?php if (isset(self::$currentConfig['title_show']) && !self::$currentConfig['title_show']) echo ' style="display:none;"'; ?>><?php echo esc_html(get_the_title($post)); ?></h2>
                     <?php
                     $showImg = isset(self::$currentConfig['img_show']) ? (bool) self::$currentConfig['img_show'] : true;
                     if ($showImg && has_post_thumbnail($post)) :
@@ -806,9 +519,9 @@ class ContentRender
                                 echo $imgHtml; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                             }
                         } else {
-                            ?>
+                    ?>
                             <img class="glory-cr__image" src="<?php echo esc_url(get_the_post_thumbnail_url($post, $size)); ?>" alt="<?php echo esc_attr(get_the_title($post)); ?>">
-                            <?php
+                    <?php
                         }
                     endif;
                     ?>
@@ -816,7 +529,7 @@ class ContentRender
             </a>
             <div class="entry-content"><?php the_excerpt(); ?></div>
         </div>
-        <?php
+    <?php
     }
 
     /**
@@ -856,13 +569,14 @@ class ContentRender
      */
     public static function fullContentTemplate(\WP_Post $post, string $itemClass): void
     {
-        ?>
+    ?>
         <div id="post-<?php echo $post->ID; ?>" class="<?php echo esc_attr($itemClass); ?>">
             <div class="entry-content">
-                <?php echo apply_filters('the_content', get_post_field('post_content', $post)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+                <?php echo apply_filters('the_content', get_post_field('post_content', $post)); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped 
+                ?>
             </div>
         </div>
-        <?php
+<?php
     }
 
     /**

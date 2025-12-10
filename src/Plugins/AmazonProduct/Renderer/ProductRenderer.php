@@ -73,7 +73,7 @@ class ProductRenderer
             'only_deals' => '',
             'orderby' => 'date',
             'order' => 'DESC',
-            'hide_filters' => '',
+            'hide_filters' => '1',
             'ids' => '',
             'search' => '',
             'pagination' => '1',
