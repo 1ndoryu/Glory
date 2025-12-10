@@ -1,0 +1,7 @@
+@import 'tailwindcss';
+
+/* Escanear archivos de Glory/assets/react/src */
+@source "../src/**/*.{js,ts,jsx,tsx}";
+
+/* Escanear archivos de App/React (componentes especificos del proyecto) */
+@source "../../../../App/React/**/*.{js,ts,jsx,tsx}";
