@@ -320,6 +320,58 @@ Si agregas una nueva carpeta con componentes, actualiza `src/index.css`:
 @source "../../../../MiOtraCarpeta/**/*.{js,ts,jsx,tsx}";  /* Nueva */
 ```
 
+## Sistema de CSS Variables
+
+El proyecto usa un sistema de tokens de diseno centralizado en `App/Assets/css/init.css`.
+Esto permite cambiar colores globalmente desde un solo archivo.
+
+### Variables Disponibles
+
+**Colores de Texto:**
+- `--color-text-primary`: Texto principal (#292524)
+- `--color-text-secondary`: Texto secundario (#57534e)
+- `--color-text-muted`: Texto discreto (#79716b)
+- `--color-text-subtle`: Texto muy suave (#a8a29e)
+
+**Colores de Fondo:**
+- `--color-bg-primary`: Fondo principal (#f8f8f6)
+- `--color-bg-secondary`: Fondo alterno (#f0efeb)
+- `--color-bg-tertiary`: Fondo de UI (#f5f5f4)
+- `--color-bg-surface`: Cards y contenedores (#ffffff)
+- `--color-bg-elevated`: Ligeramente elevado (#fcfcfc)
+
+**Colores de Borde:**
+- `--color-border-primary`: Bordes principales (#e5e5e0)
+- `--color-border-secondary`: Bordes secundarios (#e7e5e4)
+- `--color-border-subtle`: Bordes sutiles (#f5f5f4)
+
+**Colores de Acento:**
+- `--color-accent-primary`: Botones primarios (#292524)
+- `--color-accent-hover`: Hover de botones (#1c1917)
+
+### Uso en Componentes
+
+```tsx
+// Usando style prop (recomendado para variables)
+<div style={{
+    backgroundColor: 'var(--color-bg-surface)',
+    color: 'var(--color-text-primary)',
+    borderColor: 'var(--color-border-primary)'
+}}>
+    Contenido
+</div>
+```
+
+### Cambiar Tema Global
+
+Para cambiar un color en todo el proyecto, edita `App/Assets/css/init.css`:
+
+```css
+:root {
+    --color-accent-primary: #3b82f6;  /* Cambiar de gris a azul */
+}
+```
+
 ## Desarrollo vs Produccion
 
 | Aspecto      | Desarrollo     | Produccion                |

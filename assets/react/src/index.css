@@ -1,3 +1,14 @@
+/* ==============================================
+   INDEX.CSS - Punto de entrada de estilos
+   ==============================================
+   Este archivo carga Tailwind y las CSS Variables
+   del proyecto definidas en App/Assets/css/init.css
+   ============================================== */
+
+/* Sistema de diseno del proyecto (CSS Variables) */
+@import '../../../../App/Assets/css/init.css';
+
+/* Tailwind CSS */
 @import 'tailwindcss';
 
 /* Escanear archivos de Glory/assets/react/src */
@@ -5,3 +16,35 @@
 
 /* Escanear archivos de App/React (componentes especificos del proyecto) */
 @source "../../../../App/React/**/*.{js,ts,jsx,tsx}";
+
+/* ==============================================
+   EXTENSION DEL TEMA TAILWIND
+   ==============================================
+   Usamos @theme para exponer las CSS Variables
+   como clases de Tailwind personalizadas.
+   Esto permite usar text-primary, bg-surface, etc.
+   ============================================== */
+
+@theme {
+    /* Colores de texto */
+    --color-text-primary: var(--color-text-primary);
+    --color-text-secondary: var(--color-text-secondary);
+    --color-text-muted: var(--color-text-muted);
+    --color-text-subtle: var(--color-text-subtle);
+
+    /* Colores de fondo */
+    --color-bg-primary: var(--color-bg-primary);
+    --color-bg-secondary: var(--color-bg-secondary);
+    --color-bg-tertiary: var(--color-bg-tertiary);
+    --color-bg-surface: var(--color-bg-surface);
+    --color-bg-elevated: var(--color-bg-elevated);
+
+    /* Colores de borde */
+    --color-border-primary: var(--color-border-primary);
+    --color-border-secondary: var(--color-border-secondary);
+    --color-border-subtle: var(--color-border-subtle);
+
+    /* Colores de acento */
+    --color-accent-primary: var(--color-accent-primary);
+    --color-accent-hover: var(--color-accent-hover);
+}
