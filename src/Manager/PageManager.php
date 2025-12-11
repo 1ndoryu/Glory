@@ -15,6 +15,17 @@ class PageManager
     private static string $modoPorDefecto = 'code'; // 'code' | 'editor'
     private static array $defaultSeoMap = [];
 
+    // Paginas que renderizan su propio layout completo (sin header/footer de WP)
+    private const PAGINAS_REACT_FULLPAGE = ['home', 'servicios', 'planes', 'demos', 'sobre-mi'];
+
+    /**
+     * Verifica si un slug corresponde a una página React Fullpage.
+     */
+    public static function isReactFullPage(string $slug): bool
+    {
+        return in_array($slug, self::PAGINAS_REACT_FULLPAGE, true);
+    }
+
     /**
      * Define una página gestionada.
      *
@@ -502,7 +513,9 @@ class PageManager
         }
         if ($canonical !== '' && get_post_meta($postId, '_glory_seo_canonical', true) === '') {
             // Normalizar con barra final
-            if (substr($canonical, -1) !== '/') { $canonical .= '/'; }
+            if (substr($canonical, -1) !== '/') {
+                $canonical .= '/';
+            }
             update_post_meta($postId, '_glory_seo_canonical', $canonical);
         }
         if (!empty($faq) && get_post_meta($postId, '_glory_seo_faq', true) === '') {

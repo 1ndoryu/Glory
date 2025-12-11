@@ -28,6 +28,8 @@ import {ExampleIsland} from './islands/ExampleIsland';
 import {HomeIsland} from '@app/islands/HomeIsland';
 import {ServicesIsland} from '@app/islands/ServicesIsland';
 import {PricingIsland} from '@app/islands/PricingIsland';
+import {DemosIsland} from '@app/islands/DemosIsland';
+import {AboutIsland} from '@app/islands/AboutIsland';
 
 // Mapa de componentes disponibles
 // La clave es el valor de data-island, el valor es el componente React
@@ -38,7 +40,9 @@ const islandComponents: Record<string, React.ComponentType<Record<string, unknow
     // Componentes App (especificos del proyecto)
     HomeIsland: HomeIsland,
     ServicesIsland: ServicesIsland,
-    PricingIsland: PricingIsland
+    PricingIsland: PricingIsland,
+    DemosIsland: DemosIsland,
+    AboutIsland: AboutIsland
 
     // Agregar nuevas islas aqui
 };
