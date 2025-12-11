@@ -409,3 +409,219 @@ Solucion: Verifica que `ReactIslands.php` incluye el script de React Refresh pre
 1. Verifica los logs de PHP (wp-content/debug.log)
 2. Activa WP_DEBUG en wp-config.php
 3. Revisa si hay errores de sintaxis en los archivos PHP
+
+---
+
+## Router SPA (AppRouter)
+
+El proyecto incluye un router SPA que permite navegacion sin recarga entre paginas React.
+
+### Estructura
+
+```
+App/React/components/router/
+  AppRouter.tsx      <- Router principal
+  index.ts           <- Barrel export
+```
+
+### Funcionamiento
+
+1. `MainAppIsland` contiene el `AppRouter`
+2. El router intercepta clics en enlaces internos
+3. Cambia el contenido sin recargar la pagina
+4. Actualiza el historial del navegador
+
+### Agregar una nueva ruta estatica
+
+```tsx
+// AppRouter.tsx
+const STATIC_ROUTES: Record<string, React.ComponentType> = {
+    '/': HomeIsland,
+    '/servicios': ServicesIsland,
+    '/mi-nueva-pagina': MiNuevaPaginaIsland,  // <- Agregar aqui
+};
+```
+
+### Agregar una ruta dinamica
+
+```tsx
+// AppRouter.tsx
+const DYNAMIC_ROUTES: DynamicRoute[] = [
+    {
+        pattern: /^\/blog\/([^\/]+)\/?$/,  // Regex con grupos de captura
+        getComponent: (matches) => <SinglePostIsland slug={matches[1]} />
+    },
+    // Agregar mas rutas dinamicas aqui
+];
+```
+
+### Hook useRouter
+
+```tsx
+import { useRouter } from '../components/router';
+
+function MiComponente() {
+    const { currentPath, navigateTo, isNavigating } = useRouter();
+    
+    return (
+        <button onClick={() => navigateTo('/otra-pagina')}>
+            Ir a otra pagina
+        </button>
+    );
+}
+```
+
+---
+
+## Sistema de Contenido React
+
+El proyecto incluye un sistema para pasar contenido de WordPress a React.
+
+### Estructura
+
+```
+Glory/src/Services/
+  ReactContentProvider.php    <- Servicio PHP (agnostico)
+
+App/Content/
+  reactContent.php            <- Configuracion de contenido
+  defaultContent.php          <- Definiciones de posts
+
+App/React/hooks/
+  useContent.ts               <- Hook para consumir contenido
+
+App/React/components/content/
+  ContentRenderer.tsx         <- Componente para renderizar posts
+```
+
+### Flujo
+
+1. **PHP**: Registrar contenido en `App/Content/reactContent.php`
+2. **PHP**: `ReactContentProvider::injectGlobal()` inyecta en `window.__GLORY_CONTENT__`
+3. **React**: `useContent('clave')` obtiene los datos
+4. **React**: `ContentRenderer` renderiza los posts
+
+### Registrar contenido (PHP)
+
+```php
+// App/Content/reactContent.php
+use Glory\Services\ReactContentProvider;
+
+// Registrar query de posts
+ReactContentProvider::register('blogPosts', 'post', [
+    'posts_per_page' => -1,
+    'orderby' => 'date',
+    'order' => 'DESC',
+]);
+
+// Registrar datos estaticos
+ReactContentProvider::registerStatic('siteInfo', [
+    'name' => 'Mi Sitio',
+    'tagline' => 'Slogan aqui',
+]);
+
+// Inyectar todo como variable global
+ReactContentProvider::injectGlobal();
+```
+
+### Consumir contenido (React)
+
+```tsx
+import { useContent } from '../hooks/useContent';
+import { ContentRenderer } from '../components/content';
+import type { WordPressPost } from '../components/content';
+
+function BlogPage() {
+    const posts = useContent<WordPressPost[]>('blogPosts', []);
+    
+    return (
+        <ContentRenderer 
+            content={posts}
+            layout="grid"
+            columns={3}
+            showImage={true}
+            showExcerpt={true}
+        />
+    );
+}
+```
+
+### Layouts de ContentRenderer
+
+- `card`: Tarjeta individual
+- `grid`: Rejilla de tarjetas (usa prop `columns`)
+- `list`: Lista vertical
+- `featured`: Primer post grande, resto en grid
+- `minimal`: Solo titulo y fecha
+
+### Single Posts
+
+Para renderizar un post individual por slug:
+
+```tsx
+// AppRouter.tsx - Ruta dinamica
+{
+    pattern: /^\/blog\/([^\/]+)\/?$/,
+    getComponent: (matches) => <SinglePostIsland slug={matches[1]} />
+}
+
+// SinglePostIsland.tsx
+function SinglePostIsland({ slug }: { slug: string }) {
+    const allPosts = useContent<WordPressPost[]>('blogPosts', []);
+    const post = allPosts.find(p => p.slug === slug);
+    
+    if (!post) return <NotFound />;
+    
+    return (
+        <article>
+            <h1>{post.title}</h1>
+            <div dangerouslySetInnerHTML={{ __html: post.content }} />
+        </article>
+    );
+}
+```
+
+### Template single.php
+
+Para que WordPress use React en single posts:
+
+```php
+// single.php
+<?php
+use Glory\Services\ReactIslands;
+?>
+<!doctype html>
+<html <?php language_attributes(); ?>>
+<head>
+    <?php wp_head(); ?>
+</head>
+<body <?php body_class('glory-react-fullpage'); ?>>
+    <?php wp_body_open(); ?>
+    <?php echo ReactIslands::render('MainAppIsland'); ?>
+    <?php wp_footer(); ?>
+</body>
+</html>
+```
+
+---
+
+## Arquitectura Glory vs App
+
+El proyecto separa claramente:
+
+- **Glory/**: Framework agnostico (sin dependencias de proyectos especificos)
+- **App/**: Codigo especifico del proyecto actual
+
+### Regla de oro
+
+Nunca agregar slugs, textos o configuraciones especificas en `/Glory`.
+Todo lo especifico va en `/App/Config/` o `/App/Content/`.
+
+```php
+// MAL - en Glory/src/Manager/PageManager.php
+private const PAGINAS = ['home', 'servicios', 'planes'];
+
+// BIEN - en App/Config/pages.php
+PageManager::registerReactFullPages(['home', 'servicios', 'planes']);
+```
+
