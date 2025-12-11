@@ -30,6 +30,7 @@ import {ServicesIsland} from '@app/islands/ServicesIsland';
 import {PricingIsland} from '@app/islands/PricingIsland';
 import {DemosIsland} from '@app/islands/DemosIsland';
 import {AboutIsland} from '@app/islands/AboutIsland';
+import {MainAppIsland} from '@app/islands/MainAppIsland';
 
 // Mapa de componentes disponibles
 // La clave es el valor de data-island, el valor es el componente React
@@ -42,7 +43,10 @@ const islandComponents: Record<string, React.ComponentType<Record<string, unknow
     ServicesIsland: ServicesIsland,
     PricingIsland: PricingIsland,
     DemosIsland: DemosIsland,
-    AboutIsland: AboutIsland
+    AboutIsland: AboutIsland,
+
+    // SPA Router - Usar esto para navegacion sin recarga
+    MainAppIsland: MainAppIsland
 
     // Agregar nuevas islas aqui
 };
