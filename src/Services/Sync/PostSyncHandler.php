@@ -111,18 +111,42 @@ class PostSyncHandler
             }
         }
 
-        // Verifica si la imagen destacada está asignada.
+        // Verifica si la imagen destacada cambio (no solo si falta).
         if (!empty($definition['imagenDestacadaAsset'])) {
             $currentThumbId = get_post_thumbnail_id($postDb->ID);
+            $definedAsset = (string) $definition['imagenDestacadaAsset'];
+
             if (empty($currentThumbId)) {
-                // Solo marcar que necesita update si existe un adjunto válido para el asset
-                $aid = \Glory\Utility\AssetsUtility::findExistingAttachmentIdForAsset((string) $definition['imagenDestacadaAsset']);
+                // No hay imagen - necesita update si el asset existe
+                $aid = \Glory\Utility\AssetsUtility::findExistingAttachmentIdForAsset($definedAsset);
                 if ($aid) {
                     \Glory\Core\GloryLogger::info('NeedsUpdate: falta imagen destacada asignada', [
                         'ID' => (int) $postDb->ID,
-                        'asset' => (string) $definition['imagenDestacadaAsset'],
+                        'asset' => $definedAsset,
                     ]);
                     return true;
+                }
+            } else {
+                // Hay imagen - verificar si coincide con la definicion
+                // Obtener el asset guardado en el attachment actual
+                $currentAssetRequested = get_post_meta($currentThumbId, '_glory_asset_requested', true);
+                $currentAssetSource = get_post_meta($currentThumbId, '_glory_asset_source', true);
+                $currentAsset = is_string($currentAssetRequested) && $currentAssetRequested !== ''
+                    ? $currentAssetRequested
+                    : (is_string($currentAssetSource) && $currentAssetSource !== '' ? $currentAssetSource : '');
+
+                // Comparar assets (normalizando el formato)
+                if ($currentAsset !== $definedAsset) {
+                    // El asset cambio en la definicion - forzar actualizacion
+                    // Solo si el nuevo asset existe o puede importarse
+                    if (\Glory\Utility\AssetsUtility::assetExists($definedAsset)) {
+                        \Glory\Core\GloryLogger::info('NeedsUpdate: imagen destacada cambio en definicion', [
+                            'ID' => (int) $postDb->ID,
+                            'asset_actual' => $currentAsset,
+                            'asset_definido' => $definedAsset,
+                        ]);
+                        return true;
+                    }
                 }
             }
         }

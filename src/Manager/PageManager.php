@@ -16,14 +16,32 @@ class PageManager
     private static array $defaultSeoMap = [];
 
     // Paginas que renderizan su propio layout completo (sin header/footer de WP)
-    private const PAGINAS_REACT_FULLPAGE = ['home', 'servicios', 'planes', 'demos', 'sobre-mi'];
+    // Lista base hardcodeada para retrocompatibilidad
+    private const PAGINAS_REACT_FULLPAGE_BASE = ['home', 'servicios', 'planes', 'demos', 'sobre-mi'];
+
+    // Paginas React adicionales registradas dinamicamente
+    private static array $paginasReactAdicionales = [];
+
+    /**
+     * Registra slugs adicionales como paginas React Fullpage.
+     * Esto permite agregar paginas React sin modificar el core de Glory.
+     * 
+     * @param array $slugs Array de slugs a registrar como React Fullpage
+     */
+    public static function registerReactFullPages(array $slugs): void
+    {
+        self::$paginasReactAdicionales = array_unique(
+            array_merge(self::$paginasReactAdicionales, $slugs)
+        );
+    }
 
     /**
      * Verifica si un slug corresponde a una página React Fullpage.
      */
     public static function isReactFullPage(string $slug): bool
     {
-        return in_array($slug, self::PAGINAS_REACT_FULLPAGE, true);
+        return in_array($slug, self::PAGINAS_REACT_FULLPAGE_BASE, true)
+            || in_array($slug, self::$paginasReactAdicionales, true);
     }
 
     /**
