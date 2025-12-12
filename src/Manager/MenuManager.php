@@ -27,6 +27,34 @@ class MenuManager
         add_action('wp_update_nav_menu', [self::class, 'onMenuUpdated'], 10, 1);
         add_action('wp_delete_nav_menu', [self::class, 'onMenuDeleted'], 10, 1);
         add_action('wp_update_nav_menu_item', [self::class, 'onMenuItemUpdated'], 10, 3);
+
+        // Limpiar duplicados y restablecer menu al activar/reinstalar el tema
+        add_action('after_switch_theme', [self::class, 'onThemeActivation']);
+    }
+
+    /**
+     * Se ejecuta cuando el tema es activado (instalado o reinstalado).
+     * Limpia duplicados y restablece el menu desde el codigo.
+     */
+    public static function onThemeActivation(): void
+    {
+        // Limpiar cache para asegurar datos frescos
+        wp_cache_flush();
+
+        // Limpiar flags de asegurado para forzar reconstruccion
+        self::$asegurado = false;
+
+        // Limpiar meta datos del menu para forzar sincronizacion desde codigo
+        $locations = get_nav_menu_locations();
+        foreach ($locations as $location => $menuId) {
+            if ($menuId) {
+                delete_term_meta($menuId, 'glory_code_hash');
+                delete_term_meta($menuId, 'glory_seeded_from_code');
+            }
+        }
+
+        // Restablecer todos los menus desde el codigo
+        self::restablecerMenusDesdeCodigo();
     }
 
 
@@ -121,11 +149,11 @@ class MenuManager
     private static function obtenerSeedPorDefecto(): array
     {
         return [
-            [ 'title' => 'Inicio',  'url' => home_url('/') ],
-            [ 'title' => 'example', 'url' => '#' ],
-            [ 'title' => 'example', 'url' => '#' ],
-            [ 'title' => 'example', 'url' => '#' ],
-            [ 'title' => 'example', 'url' => '#' ],
+            ['title' => 'Inicio',  'url' => home_url('/')],
+            ['title' => 'example', 'url' => '#'],
+            ['title' => 'example', 'url' => '#'],
+            ['title' => 'example', 'url' => '#'],
+            ['title' => 'example', 'url' => '#'],
         ];
     }
 
@@ -140,7 +168,7 @@ class MenuManager
         }
 
         $menuId = wp_create_nav_menu($menuName);
-            if (is_wp_error($menuId)) {
+        if (is_wp_error($menuId)) {
             return null;
         }
         return (int) $menuId;
@@ -238,7 +266,7 @@ class MenuManager
                     'menu-item-type'      => 'custom',
                     'menu-item-object'    => 'custom',
                     'menu-item-title'     => $title,
-                    'menu-item-attr-title'=> $title,
+                    'menu-item-attr-title' => $title,
                     'menu-item-url'       => $url,
                     'menu-item-status'    => 'publish',
                 ]);
@@ -436,7 +464,7 @@ class MenuManager
         $isNumeric = array_keys($menu) === range(0, count($menu) - 1);
         if ($isNumeric) {
             $items = self::normalizarListaItems($menu);
-            $map = [ self::UBICACION_MENU_PRINCIPAL => $items ];
+            $map = [self::UBICACION_MENU_PRINCIPAL => $items];
         } else {
             $map = [];
             foreach ($menu as $location => $items) {
@@ -496,7 +524,7 @@ class MenuManager
                         $ct = (string) ($child['title'] ?? '');
                         $cu = (string) ($child['url'] ?? '#');
                         if ($ct !== '') {
-                            $salida[] = [ 'title' => $ct, 'url' => $cu, 'children' => [] ];
+                            $salida[] = ['title' => $ct, 'url' => $cu, 'children' => []];
                         }
                     }
                 }
@@ -524,7 +552,7 @@ class MenuManager
     {
         $map = self::cargarDefinicionMenusDesdeCodigo();
         if (!is_array($map) || empty($map)) {
-            $map = [ self::UBICACION_MENU_PRINCIPAL => self::obtenerSeedPorDefecto() ];
+            $map = [self::UBICACION_MENU_PRINCIPAL => self::obtenerSeedPorDefecto()];
         }
 
         foreach ($map as $location => $items) {
@@ -584,6 +612,15 @@ class MenuManager
                 self::asignarUbicacion($location, $menuId);
                 return;
             }
+
+            // Verificar si los items actuales ya coinciden con la definicion (evita duplicados)
+            $itemsActuales = wp_get_nav_menu_items($menuId);
+            if (self::itemsCoinciden($itemsActuales, $definicion)) {
+                // El menu ya tiene los items correctos, solo asignar ubicacion
+                self::asignarUbicacion($location, $menuId);
+                return;
+            }
+
             $hashActual = self::hashDefinicion($definicion);
             $hashPrevio = (string) get_term_meta($menuId, 'glory_code_hash', true);
             if ($hashActual !== '' && $hashActual !== $hashPrevio) {
@@ -595,6 +632,63 @@ class MenuManager
         } finally {
             delete_transient($lockKey);
         }
+    }
+
+    /**
+     * Verifica si los items actuales del menu coinciden con la definicion del codigo.
+     * Evita reconstruir el menu si ya tiene los items correctos.
+     */
+    private static function itemsCoinciden(?array $itemsActuales, array $definicion): bool
+    {
+        if (!is_array($itemsActuales)) {
+            $itemsActuales = [];
+        }
+
+        // Filtrar solo items de nivel superior (sin padre)
+        $itemsRaiz = array_filter($itemsActuales, function ($item) {
+            return empty($item->menu_item_parent) || (int) $item->menu_item_parent === 0;
+        });
+
+        // Si la cantidad de items raiz no coincide, necesitamos reconstruir
+        if (count($itemsRaiz) !== count($definicion)) {
+            return false;
+        }
+
+        // Crear un mapa de items actuales por titulo normalizado
+        $mapaActual = [];
+        foreach ($itemsRaiz as $item) {
+            $titulo = strtolower(trim((string) ($item->title ?? $item->post_title ?? '')));
+            if (!isset($mapaActual[$titulo])) {
+                $mapaActual[$titulo] = 0;
+            }
+            $mapaActual[$titulo]++;
+        }
+
+        // Crear un mapa de items esperados por titulo normalizado
+        $mapaEsperado = [];
+        foreach ($definicion as $def) {
+            $titulo = strtolower(trim((string) ($def['title'] ?? '')));
+            if ($titulo === '') {
+                continue;
+            }
+            if (!isset($mapaEsperado[$titulo])) {
+                $mapaEsperado[$titulo] = 0;
+            }
+            $mapaEsperado[$titulo]++;
+        }
+
+        // Comparar mapas
+        if (count($mapaActual) !== count($mapaEsperado)) {
+            return false;
+        }
+
+        foreach ($mapaEsperado as $titulo => $cantidad) {
+            if (!isset($mapaActual[$titulo]) || $mapaActual[$titulo] !== $cantidad) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static function normalizarChildren(array $children): array
@@ -624,17 +718,26 @@ class MenuManager
      */
     private static function reconstruirMenuDesdeCodigo(int $menuId, array $definicion): void
     {
-        // Eliminar todos los ítems actuales del menú
-        $existentes = wp_get_nav_menu_items($menuId);
-        if (is_array($existentes)) {
-            foreach ($existentes as $item) {
-                wp_delete_post((int) $item->ID, true);
+        // Limpiar cache de WordPress para asegurar datos frescos
+        wp_cache_flush();
+
+        // Eliminar todos los ítems actuales del menú (hacer 2 pasadas para asegurar limpieza)
+        for ($pasada = 0; $pasada < 2; $pasada++) {
+            $existentes = wp_get_nav_menu_items($menuId);
+            if (is_array($existentes) && count($existentes) > 0) {
+                foreach ($existentes as $item) {
+                    wp_delete_post((int) $item->ID, true);
+                }
+            } else {
+                break; // No hay mas items, salir del loop
             }
         }
 
         // Crear recursivamente los ítems
+        $posicion = 1;
         foreach ($definicion as $item) {
-            $parentId = self::crearItemMenu($menuId, 0, $item['title'], $item['url']);
+            $parentId = self::crearItemMenu($menuId, 0, $item['title'], $item['url'], $posicion);
+            $posicion++;
             if ($parentId && !empty($item['children'])) {
                 self::crearHijosRecursivo($menuId, $parentId, $item['children']);
             }
@@ -654,7 +757,7 @@ class MenuManager
     /**
      * Crea un ítem en el menú y devuelve el ID del post creado (item de menú).
      */
-    private static function crearItemMenu(int $menuId, int $parentItemId, string $title, string $url): ?int
+    private static function crearItemMenu(int $menuId, int $parentItemId, string $title, string $url, int $position = 0): ?int
     {
         $args = [
             'menu-item-type'        => 'custom',
@@ -666,6 +769,9 @@ class MenuManager
         ];
         if ($parentItemId > 0) {
             $args['menu-item-parent-id'] = $parentItemId;
+        }
+        if ($position > 0) {
+            $args['menu-item-position'] = $position;
         }
         $itemId = wp_update_nav_menu_item($menuId, 0, $args);
         if (is_wp_error($itemId)) {

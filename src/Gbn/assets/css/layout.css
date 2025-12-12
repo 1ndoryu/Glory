@@ -293,8 +293,8 @@ main {
 }
 
 .gbn-dock:not(.is-active) {
-    padding: 5px; /* Smaller padding when only one button */
-    border-radius: 50%; /* Circle shape */
+    padding: 5px;
+    border-radius: 400px;
 }
 
 /* Breakpoint Selector */
