@@ -265,13 +265,19 @@ class ReactIslands
             return;
         }
 
-        // Cargar CSS si existe
+        // Cargar CSS si existe - NO BLOQUEANTE usando preload + onload
         if (!empty($mainEntry['css'])) {
             foreach ($mainEntry['css'] as $cssFile) {
+                $cssUrl = esc_url($assetsUrl) . '/' . esc_attr($cssFile);
+                // Preload como stylesheet, aplicar cuando cargue (no bloquea render)
                 printf(
-                    '<link rel="stylesheet" href="%s/%s">' . PHP_EOL,
-                    esc_url($assetsUrl),
-                    esc_attr($cssFile)
+                    '<link rel="preload" href="%s" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">' . PHP_EOL,
+                    $cssUrl
+                );
+                // Fallback para navegadores sin JS
+                printf(
+                    '<noscript><link rel="stylesheet" href="%s"></noscript>' . PHP_EOL,
+                    $cssUrl
                 );
             }
         }
