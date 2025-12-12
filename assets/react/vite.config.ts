@@ -1,4 +1,4 @@
-import {defineConfig} from 'vite';
+import {defineConfig, searchForWorkspaceRoot} from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import {resolve} from 'path';
@@ -53,6 +53,15 @@ export default defineConfig(({mode}) => {
             // Escucha en todas las interfaces de red
             host: true,
 
+            // Permitir servir archivos fuera de la raiz del proyecto (para App/React)
+            fs: {
+                allow: [
+                    // Busca en el directorio actual y arriba hasta la raiz del tema
+                    searchForWorkspaceRoot(process.cwd()),
+                    '../../../App/React'
+                ]
+            },
+
             // Configuracion de HMR para funcionar con dominios .local
             hmr: {
                 // El host sera localhost porque Vite corre en tu maquina
@@ -70,7 +79,7 @@ export default defineConfig(({mode}) => {
             },
             // Asegurar que los modulos se resuelvan desde node_modules de Glory
             // Esto permite que App/React use las dependencias instaladas aqui
-            dedupe: ['react', 'react-dom', 'lucide-react']
+            dedupe: ['react', 'react-dom', 'lucide-react', 'framer-motion']
         }
     };
 });
