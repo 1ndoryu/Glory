@@ -114,6 +114,14 @@ class GloryFeatures
     public static function isActive(string $feature, ?string $optionKey = null, bool $defaultOption = true): bool
     {
         $normalized = self::normalizeKey($feature);
+
+        // Si el modo React esta activo y la feature esta excluida, forzar desactivacion
+        // independientemente de lo que diga la base de datos o el modo desarrollo.
+        // Evitamos recursion infinita no comprobando reactMode aqui dentro.
+        if ($normalized !== 'reactMode' && self::isReactMode() && in_array($normalized, self::$reactExcludedFeatures, true)) {
+            return false;
+        }
+
         $overridden = self::isEnabled($normalized);
 
         // Verificar modo desarrollo
