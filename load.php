@@ -26,7 +26,24 @@ if (is_readable($archivoOpciones)) {
     require_once $archivoOpciones;
 }
 
-// Carga de configuración de scripts (después de registrar opciones)
+// ============================================================================
+// IMPORTANTE: control.php debe cargarse ANTES de scriptSetup.php
+// ============================================================================
+// Esto permite que GloryFeatures::applyReactMode() desactive features
+// antes de que scriptSetup.php defina los scripts con sus condicionales.
+// ============================================================================
+$archivoControlTema = get_template_directory() . '/App/Config/control.php';
+if (is_readable($archivoControlTema)) {
+    require_once $archivoControlTema;
+}
+
+// Cargar opciones del tema (antes de scriptSetup para que pueda usarlas)
+$archivoOpcionesTema = get_template_directory() . '/App/Config/opcionesTema.php';
+if (is_readable($archivoOpcionesTema)) {
+    require_once $archivoOpcionesTema;
+}
+
+// Carga de configuración de scripts (después de control.php y opciones)
 $archivoConfiguracionScripts = GLORY_CONFIG_PATH . '/scriptSetup.php';
 if (is_readable($archivoConfiguracionScripts)) {
     require_once $archivoConfiguracionScripts;
@@ -40,18 +57,6 @@ if (is_readable($archivoFunciones)) {
     require_once $archivoFunciones;
 } else {
     error_log("Glory Framework: No se pudo leer el archivo de funciones: {$archivoFunciones}");
-}
-
-// Cargar configuración de control del tema ANTES de instanciar Setup para que los flags apliquen temprano
-$archivoControlTema = get_template_directory() . '/App/Config/control.php';
-if (is_readable($archivoControlTema)) {
-    require_once $archivoControlTema;
-}
-
-// Intentamos cargar las definiciones de opciones del tema (si existen) antes de instanciar Setup
-$archivoOpcionesTema = get_template_directory() . '/App/Config/opcionesTema.php';
-if (is_readable($archivoOpcionesTema)) {
-    require_once $archivoOpcionesTema;
 }
 
 // Evitar doble arranque del framework

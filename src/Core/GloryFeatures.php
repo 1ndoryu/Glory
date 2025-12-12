@@ -157,4 +157,119 @@ class GloryFeatures
         // Si ninguna clave está definida, usar el valor por defecto.
         return (bool) $defaultOption;
     }
+
+    /**
+     * Features que se desactivan cuando React esta activo.
+     * 
+     * IMPORTANTE: En Modo React, Glory NO carga NINGUN script nativo.
+     * React maneja TODO de forma independiente:
+     * - UI (modales, tabs, navegacion, etc.)
+     * - Servicios (AJAX via fetch, formularios via React)
+     * - Renderers (todo es componente React)
+     * 
+     * Solo se mantienen activos algunos managers de backend necesarios para
+     * que WordPress funcione correctamente (pageManager, postTypeManager, etc.)
+     * 
+     * El panel glory-opciones NO se usa con React. Las opciones de React
+     * se configuran via ReactContentProvider y un panel dedicado.
+     * 
+     * @var array
+     */
+    private static array $reactExcludedFeatures = [
+        // =====================================================================
+        // UI COMPONENTS - React tiene sus propios componentes
+        // =====================================================================
+        'modales',
+        'submenus',
+        'pestanas',
+        'scheduler',
+        'headerAdaptativo',
+        'themeToggle',
+        'alertas',
+        'gestionarPreviews',
+        'paginacion',
+        'gloryFilters',
+        'calendario',
+        'badgeList',
+        'highlight',
+        'gsap',
+        'menu',
+        'contentActions',
+
+        // =====================================================================
+        // SERVICES - React usa fetch/axios y sus propios servicios
+        // =====================================================================
+        'navegacionAjax',
+        'gloryAjax',
+        'gloryForm',
+        'gloryBusqueda',
+        'gloryRealtime',
+        'cssCritico',
+
+        // =====================================================================
+        // RENDERERS - Todo es componente React
+        // =====================================================================
+        'logoRenderer',
+        'contentRender',
+        'termRender',
+
+        // =====================================================================
+        // PLUGINS/FEATURES ESPECIFICOS - No aplican a este proyecto React
+        // =====================================================================
+        'task',
+        'amazonProduct',
+        'gbn',
+        'gbnSplitContent',
+        'gloryLinkCpt',
+
+        // =====================================================================
+        // INTEGRACIONES - No se usan con React
+        // =====================================================================
+        'avadaIntegration',
+    ];
+
+    /**
+     * Verifica si el Modo React esta activo.
+     * 
+     * Se controla exclusivamente via control.php con:
+     * GloryFeatures::enable('reactMode') o GloryFeatures::disable('reactMode')
+     * 
+     * El panel glory-opciones NO se usa con React.
+     * 
+     * @return bool True si reactMode esta habilitado.
+     */
+    public static function isReactMode(): bool
+    {
+        return self::isActive('reactMode', null, false);
+    }
+
+    /**
+     * Aplica el Modo React desactivando todas las features que React reemplaza.
+     * 
+     * Este metodo debe llamarse DESPUES de definir reactMode en control.php
+     * y ANTES de que se carguen los assets (idealmente al final de control.php).
+     * 
+     * Nota: Solo afecta al frontend. Las features de admin no se tocan.
+     */
+    public static function applyReactMode(): void
+    {
+        if (!self::isReactMode()) {
+            return;
+        }
+
+        foreach (self::$reactExcludedFeatures as $feature) {
+            self::disable($feature);
+        }
+    }
+
+    /**
+     * Obtiene la lista de features excluidas por React Mode.
+     * Util para el panel de opciones (ocultar secciones innecesarias).
+     * 
+     * @return array Lista de nombres de features.
+     */
+    public static function getReactExcludedFeatures(): array
+    {
+        return self::$reactExcludedFeatures;
+    }
 }

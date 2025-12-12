@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Configuración de Scripts y Assets
  *
@@ -104,7 +105,7 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
     // Hook agnóstico para Fusion Builder: configurar hooks después de localizar datos
     if (Compatibility::avadaActivo()) {
         add_action('wp_footer', function () {
-            ?>
+?>
             <script>
                 (function() {
                     // Extender configuración de Glory Nav con hooks específicos de Fusion Builder
@@ -135,7 +136,7 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
                     }
                 })();
             </script>
-            <?php
+<?php
         }, 5); // Prioridad 5 para que se ejecute antes que el script principal
     }
 
@@ -153,52 +154,62 @@ if (GloryFeatures::isActive('navegacionAjax', 'glory_componente_navegacion_ajax_
     }
 }
 
-AssetManager::defineFolder(
-    'script',
-    '/Glory/assets/js/',
-    [
-        'deps'      => ['jquery'],
-        'in_footer' => true,
-    ],
-    'glory-',
-    [
-        // Exclusiones de utilidad
-        'adminPanel.js',
-        'gloryLogs.js',
-        'options-panel.js',
-        'disableMenuClicksInFusionBuilder.js',
-        'fusionBuilderDetect.js',
-        'gloryAjaxNav.js',
-        // Mover assets de integración de Avada a carpeta específica y cargarlos solo cuando la integración esté activada
-        'avada-form-bridge.js',
-        'glory-carousel.js',
-        'glory-horizontal-drag.js',
-        'glory-toggle.js',
-        'gloryForm.js',
-        'gloryBusqueda.js',
-        'gloryAjax.js',
-        'adaptiveHeader.js',
-        'alertas.js',
-        'crearfondo.js',
-        'formModal.js',
-        'gloryModal.js',
-        'pestanas.js',
-        'submenus.js',
-        'gestionarPreviews.js',
-        'gloryPagination.js',
-        'gloryFilters.js',
-        'gloryScheduler.js',
-        'menu.js',
-        'gloryDateRange.js',
-        'gloryThemeToggle.js',
-        'gloryContentActions.js',
-        // Excluir componentes que deben respetar sus features
-        'gloryCalendario.js',
-        'masonryRowMajor.js',
-        // Excluir el perfilador para definirlo de forma controlada abajo
-        'query-profiler.js',
-    ]
-);
+// ============================================================================
+// CARGA DE SCRIPTS GENERICOS DE LA CARPETA /assets/js/
+// ============================================================================
+// Este bloque SOLO se ejecuta cuando NO estamos en Modo React.
+// En Modo React, todos los scripts nativos se omiten porque React los reemplaza.
+// ============================================================================
+if (!GloryFeatures::isReactMode()) {
+    AssetManager::defineFolder(
+        'script',
+        '/Glory/assets/js/',
+        [
+            'deps'      => ['jquery'],
+            'in_footer' => true,
+        ],
+        'glory-',
+        [
+            // Exclusiones de utilidad
+            'adminPanel.js',
+            'gloryLogs.js',
+            'options-panel.js',
+            'disableMenuClicksInFusionBuilder.js',
+            'fusionBuilderDetect.js',
+            'gloryAjaxNav.js',
+            // Mover assets de integración de Avada a carpeta específica y cargarlos solo cuando la integración esté activada
+            'avada-form-bridge.js',
+            'glory-carousel.js',
+            'glory-horizontal-drag.js',
+            'glory-toggle.js',
+            'gloryForm.js',
+            'gloryBusqueda.js',
+            'gloryAjax.js',
+            'adaptiveHeader.js',
+            'alertas.js',
+            'crearfondo.js',
+            'formModal.js',
+            'gloryModal.js',
+            'pestanas.js',
+            'submenus.js',
+            'gestionarPreviews.js',
+            'gloryPagination.js',
+            'gloryFilters.js',
+            'gloryScheduler.js',
+            'menu.js',
+            'gloryDateRange.js',
+            'gloryThemeToggle.js',
+            'gloryContentActions.js',
+            // Excluir componentes que deben respetar sus features
+            'gloryCalendario.js',
+            'masonryRowMajor.js',
+            // Excluir el perfilador para definirlo de forma controlada abajo
+            'query-profiler.js',
+            // Highlight controller: se define abajo con feature 'highlight'
+            'highlightThemeController.js',
+        ]
+    );
+}
 
 // Estos scripts pertenecen a la integración con Avada y se registran solo si la integración está activa.
 if (GloryFeatures::isActive('avadaIntegration') !== false) {

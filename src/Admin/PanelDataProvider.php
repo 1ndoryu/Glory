@@ -1,4 +1,5 @@
 <?
+
 namespace Glory\Admin;
 
 use Glory\Core\OpcionRegistry;
@@ -47,7 +48,7 @@ class PanelDataProvider
 
             // Exponer también el default efectivo por si la vista desea indicarlo
             $config['valorDefaultEfectivo'] = $defaultEfectivo;
-            
+
             $datosPanel[$key] = $config;
         }
 
