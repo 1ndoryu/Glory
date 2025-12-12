@@ -8,6 +8,9 @@
 /* Sistema de diseno del proyecto (CSS Variables) */
 @import '../../../../App/Assets/css/init.css';
 
+/* Panel de configuracion del tema (TAREA-004) */
+@import '../../css/settings-panel.css';
+
 /* Tailwind CSS */
 @import 'tailwindcss';
 

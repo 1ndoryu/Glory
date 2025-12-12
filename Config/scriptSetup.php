@@ -516,6 +516,8 @@ AssetManager::defineFolder(
         'dateRange.css',
         // Excluir el perfilador para definirlo de forma controlada abajo
         'query-profiler.css',
+        // Panel de configuracion React (se carga via bundle de Vite)
+        'settings-panel.css',
     ]
 );
 
