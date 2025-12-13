@@ -396,7 +396,7 @@ class ApiSetupWizardTab implements TabInterface
                         <p><strong>Sin API (manual):</strong></p>
                         <ul>
                             <li><strong>Como post type:</strong> Ve a "Productos Amazon" en el menu lateral de WordPress y crea un nuevo producto manualmente, igual que crearias una pagina o entrada.</li>
-                            <li><strong>Importar HTML:</strong> Copia el HTML de la pagina del producto en Amazon (Ctrl+U), ve a "Manual Import" y pegalo. El sistema extraera los datos automaticamente.</li>
+                            <li><strong>Importar HTML:</strong> Descarga el HTML de la pagina del producto en Amazon (Ctrl+G), ve a "Manual Import" y arrastralo. Puedes arrastrar varios al mismo tiempo para acelerar. El sistema extraera los datos automaticamente, ahorrandote el trabajo de poner datos 1 por 1. Esto es legal y no implica ningun riesgo.</li>
                         </ul>
 
                         <p><strong>Con API (automatico):</strong></p>
@@ -421,6 +421,46 @@ class ApiSetupWizardTab implements TabInterface
                             <strong>"Amazon Affiliate Tag"</strong>. Introduce tu tag (ej: <code>mitag-21</code>) y guarda.
                         </p>
                         <p>Este tag se anadira automaticamente a todos los enlaces de productos.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span class="dashicons dashicons-arrow-right-alt2"></span>
+                        <strong>Por que los precios se ven diferentes a los de Amazon?</strong>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Amazon personaliza los precios segun varios factores:</p>
+                        <ul>
+                            <li><strong>Ubicacion geografica:</strong> Los precios varian segun el pais desde donde accedes.</li>
+                            <li><strong>Historial de busqueda:</strong> Amazon ajusta precios basandose en tu comportamiento.</li>
+                            <li><strong>Disponibilidad regional:</strong> Algunos productos tienen precios distintos por zona.</li>
+                        </ul>
+                        <p><strong>Como soluciona esto la API?</strong></p>
+                        <ul>
+                            <li>La API obtiene precios configurando una zona especifica (ej: Espana) para que todos vean el precio promedio de esa region.</li>
+                            <li>El sistema actualiza automaticamente los productos si cambian de precio.</li>
+                            <li>Puedes configurar sincronizaciones periodicas para mantener precios actualizados.</li>
+                        </ul>
+                        <p><em>Nota:</em> Si los precios actuales parecen diferentes, pueden haberse importado desde otra ubicacion.
+                            Al configurar la API y ejecutar una actualizacion, los precios se normalizaran.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <span class="dashicons dashicons-arrow-right-alt2"></span>
+                        <strong>Por que algunas paginas no muestran productos?</strong>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Actualmente hay aproximadamente 100 productos importados. Esto significa que:</p>
+                        <ul>
+                            <li>Algunas categorias especificas pueden no tener productos asignados todavia.</li>
+                            <li>Ciertas marcas o tipos de productos necesitan mas ejemplares.</li>
+                            <li>Es necesario importar mas productos para cubrir todas las secciones.</li>
+                        </ul>
+                        <p><strong>Solucion:</strong> Importa mas productos usando las herramientas del panel
+                            (busqueda por API, importacion manual, o por HTML).</p>
                     </div>
                 </div>
             </div>
