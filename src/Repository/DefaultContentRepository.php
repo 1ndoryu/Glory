@@ -1,4 +1,5 @@
-<?
+<?php 
+
 namespace Glory\Repository;
 
 use WP_Query;
