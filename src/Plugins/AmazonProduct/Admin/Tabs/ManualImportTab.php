@@ -549,7 +549,7 @@ class ManualImportTab implements TabInterface
                                     });
                                 }, i * 500);
                             });
-                        });
+                        }
         </script>
 <?php
     }
@@ -676,6 +676,8 @@ class ManualImportTab implements TabInterface
             if (!empty($category)) {
                 ProductImporter::syncCategories($postId, $category);
             }
+
+            return ['success' => true, 'post_id' => $postId, 'updated' => false];
         }
     }
 }
