@@ -136,14 +136,20 @@ class PostSyncHandler
                     : (is_string($currentAssetSource) && $currentAssetSource !== '' ? $currentAssetSource : '');
 
                 // Comparar assets (normalizando el formato)
-                if ($currentAsset !== $definedAsset) {
+                // Normalizar ambos assets al formato de ruta expandida para comparacion consistente
+                // El asset actual viene como ruta (ej: Glory/assets/images/elements/libros/48leyesdelpoder.png)
+                // El asset definido viene como alias::nombre (ej: elements::libros/48leyesdelpoder.png)
+                $definedAssetExpanded = $this->expandAssetReference($definedAsset);
+
+                if ($currentAsset !== $definedAssetExpanded) {
                     // El asset cambio en la definicion - forzar actualizacion
                     // Solo si el nuevo asset existe o puede importarse
                     if (\Glory\Utility\AssetsUtility::assetExists($definedAsset)) {
                         \Glory\Core\GloryLogger::info('NeedsUpdate: imagen destacada cambio en definicion', [
                             'ID' => (int) $postDb->ID,
                             'asset_actual' => $currentAsset,
-                            'asset_definido' => $definedAsset,
+                            'asset_definido' => $definedAssetExpanded,
+                            'asset_definido_original' => $definedAsset,
                         ]);
                         return true;
                     }
@@ -189,5 +195,41 @@ class PostSyncHandler
             }
             delete_post_meta($postId, $existingKey);
         }
+    }
+
+    /**
+     * Expande una referencia de asset al formato de ruta completa.
+     * Convierte "alias::archivo" a "ruta/completa/archivo".
+     */
+    private function expandAssetReference(string $assetReference): string
+    {
+        // Si no tiene el separador ::, ya esta en formato expandido
+        if (strpos($assetReference, '::') === false) {
+            return $assetReference;
+        }
+
+        // Usar AssetsUtility para parsear la referencia y obtener la ruta
+        $parsed = \Glory\Utility\AssetsUtility::parseAssetReference($assetReference);
+        if (!is_array($parsed) || count($parsed) !== 2) {
+            return $assetReference;
+        }
+
+        list($alias, $nombreArchivo) = $parsed;
+
+        // Mapa de alias a rutas (debe coincidir con AssetsUtility::init)
+        $aliasMap = [
+            'glory' => 'Glory/assets/images',
+            'elements' => 'Glory/assets/images/elements',
+            'colors' => 'Glory/assets/images/colors',
+            'logos' => 'Glory/assets/images/logos',
+            'tema' => 'App/Assets/images',
+        ];
+
+        $basePath = $aliasMap[$alias] ?? null;
+        if ($basePath === null) {
+            return $assetReference;
+        }
+
+        return $basePath . '/' . ltrim($nombreArchivo, '/\\');
     }
 }

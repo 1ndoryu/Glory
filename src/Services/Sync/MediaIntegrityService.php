@@ -22,34 +22,148 @@ class MediaIntegrityService
         $this->sanitizeContentAndMetaUploads($postId);
     }
 
-    private function repairFeaturedImage(int $postId, ?string $fallbackAssetRef): void
+    private function repairFeaturedImage(int $postId, ?string $definedAssetRef): void
     {
         $thumbId = (int) get_post_thumbnail_id($postId);
+
+        // CASO 1: No hay thumbnail - intentar asignar desde definicion o fallback
         if ($thumbId <= 0) {
-            if (is_string($fallbackAssetRef) && $fallbackAssetRef !== '') {
-                if (AssetsUtility::assetExists($fallbackAssetRef)) {
-                    // Importar o reutilizar el adjunto para el asset definido (incluye SVG)
-                    $aid = AssetsUtility::get_attachment_id_from_asset($fallbackAssetRef);
+            GloryLogger::info("MediaIntegrity: Post {$postId} sin thumbnail, intentando asignar.", [
+                'definedAsset' => $definedAssetRef ?? 'ninguno',
+            ]);
+
+            if (is_string($definedAssetRef) && $definedAssetRef !== '') {
+                if (AssetsUtility::assetExists($definedAssetRef)) {
+                    $aid = AssetsUtility::get_attachment_id_from_asset($definedAssetRef);
                     if ($aid) {
                         set_post_thumbnail($postId, $aid);
+                        GloryLogger::info("MediaIntegrity: Thumbnail asignado desde definicion.", [
+                            'postId' => $postId,
+                            'attachmentId' => $aid,
+                            'asset' => $definedAssetRef,
+                        ]);
                         return;
                     }
                 }
             }
-            // Intentar asignar un fallback determinístico (preferir el alias original) con ventana anti-reintento
+            // Intentar asignar un fallback determinístico
             $preferredAlias = null;
-            if (is_string($fallbackAssetRef) && $fallbackAssetRef !== '') {
-                $parts = AssetsUtility::parseAssetReference($fallbackAssetRef);
+            if (is_string($definedAssetRef) && $definedAssetRef !== '') {
+                $parts = AssetsUtility::parseAssetReference($definedAssetRef);
                 $preferredAlias = $parts[0] ?? null;
             }
             $this->assignFallbackFeaturedImageIfAllowed($postId, $preferredAlias);
             return;
         }
 
+        // CASO 2: Hay thumbnail - verificar si coincide con la definicion
+        if (is_string($definedAssetRef) && $definedAssetRef !== '') {
+            $currentAssetRequested = get_post_meta($thumbId, '_glory_asset_requested', true);
+            $currentAssetSource = get_post_meta($thumbId, '_glory_asset_source', true);
+            $currentAsset = is_string($currentAssetRequested) && $currentAssetRequested !== ''
+                ? $currentAssetRequested
+                : (is_string($currentAssetSource) && $currentAssetSource !== '' ? $currentAssetSource : '');
+
+            // Expandir el asset definido para comparar en el mismo formato
+            $definedExpanded = $this->expandAssetReferenceLocal($definedAssetRef);
+
+            // Si el asset actual es diferente al definido, forzar cambio
+            if ($currentAsset !== $definedExpanded) {
+                GloryLogger::info("MediaIntegrity: Thumbnail difiere de definicion, forzando cambio.", [
+                    'postId' => $postId,
+                    'thumbId' => $thumbId,
+                    'currentAsset' => $currentAsset,
+                    'definedAsset' => $definedExpanded,
+                    'definedOriginal' => $definedAssetRef,
+                ]);
+
+                if (AssetsUtility::assetExists($definedAssetRef)) {
+                    // PASO 1: Buscar un attachment EXISTENTE que coincida EXACTAMENTE con el asset definido
+                    // Usamos findExistingAttachmentIdForAsset que hace busqueda estricta por meta
+                    $existingAid = AssetsUtility::findExistingAttachmentIdForAsset($definedAssetRef);
+
+                    GloryLogger::info("MediaIntegrity: Busqueda de attachment existente.", [
+                        'postId' => $postId,
+                        'definedAsset' => $definedAssetRef,
+                        'existingAid' => $existingAid ?: 'ninguno',
+                        'currentThumbId' => $thumbId,
+                    ]);
+
+                    if ($existingAid && $existingAid !== $thumbId) {
+                        // Encontramos un attachment diferente para el asset definido - usarlo
+                        set_post_thumbnail($postId, $existingAid);
+                        GloryLogger::info("MediaIntegrity: Thumbnail cambiado a attachment existente.", [
+                            'postId' => $postId,
+                            'oldThumbId' => $thumbId,
+                            'newThumbId' => $existingAid,
+                            'asset' => $definedAssetRef,
+                        ]);
+                        return;
+                    }
+
+                    // PASO 2: No hay attachment existente o es el mismo - FORZAR importacion nueva
+                    // get_attachment_id_from_asset importara el archivo si no existe un attachment valido
+                    GloryLogger::info("MediaIntegrity: Forzando importacion de nuevo attachment.", [
+                        'postId' => $postId,
+                        'definedAsset' => $definedAssetRef,
+                    ]);
+
+                    $newAid = AssetsUtility::get_attachment_id_from_asset($definedAssetRef, false);
+
+                    GloryLogger::info("MediaIntegrity: Resultado de importacion.", [
+                        'postId' => $postId,
+                        'newAid' => $newAid ?: 'fallo',
+                        'currentThumbId' => $thumbId,
+                    ]);
+
+                    if ($newAid && $newAid !== $thumbId) {
+                        set_post_thumbnail($postId, $newAid);
+                        GloryLogger::info("MediaIntegrity: Thumbnail cambiado a nuevo attachment importado.", [
+                            'postId' => $postId,
+                            'oldThumbId' => $thumbId,
+                            'newThumbId' => $newAid,
+                            'asset' => $definedAssetRef,
+                        ]);
+                        return;
+                    } elseif ($newAid === $thumbId) {
+                        // El sistema devolvio el mismo attachment - actualizar metas para evitar loop
+                        // PERO esto no deberia pasar si el archivo es realmente diferente
+                        GloryLogger::warning("MediaIntegrity: Importacion devolvio mismo attachment. Posible problema de cache o busqueda.", [
+                            'postId' => $postId,
+                            'thumbId' => $thumbId,
+                            'definedAsset' => $definedAssetRef,
+                        ]);
+                        // Actualizar metas para marcar como "resuelto" y evitar loops infinitos
+                        update_post_meta($thumbId, '_glory_asset_requested', $definedExpanded);
+                        update_post_meta($thumbId, '_glory_asset_source', $definedExpanded);
+                        return;
+                    } else {
+                        GloryLogger::warning("MediaIntegrity: No se pudo importar attachment para asset definido.", [
+                            'postId' => $postId,
+                            'asset' => $definedAssetRef,
+                        ]);
+                    }
+                } else {
+                    GloryLogger::warning("MediaIntegrity: Asset definido no existe fisicamente.", [
+                        'postId' => $postId,
+                        'asset' => $definedAssetRef,
+                    ]);
+                }
+            }
+        }
+
+        // CASO 3: Verificar que el archivo fisico del thumbnail exista
         $attached = get_attached_file($thumbId);
         if ($attached && file_exists($attached)) {
-            return;
+            return; // Todo bien, archivo existe
         }
+
+        // Archivo fisico no existe - intentar reparar
+        GloryLogger::info("MediaIntegrity: Archivo fisico de thumbnail no existe, reparando.", [
+            'postId' => $postId,
+            'thumbId' => $thumbId,
+            'attached' => $attached,
+        ]);
 
         $requested = get_post_meta($thumbId, '_glory_asset_requested', true);
         $source    = get_post_meta($thumbId, '_glory_asset_source', true);
@@ -61,8 +175,8 @@ class MediaIntegrityService
         }
 
         if (!$assetRef) {
-            if (is_string($fallbackAssetRef) && $fallbackAssetRef !== '') {
-                $assetRef = $fallbackAssetRef;
+            if (is_string($definedAssetRef) && $definedAssetRef !== '') {
+                $assetRef = $definedAssetRef;
             } else {
                 $assetRef = $this->chooseFallbackAssetForPost($postId);
             }
@@ -70,10 +184,8 @@ class MediaIntegrityService
 
         if ($assetRef) {
             if (AssetsUtility::assetExists($assetRef)) {
-                // Intentar obtener (o importar) el adjunto para el asset original
                 $aid = AssetsUtility::get_attachment_id_from_asset($assetRef);
                 if ($aid) {
-                    // Asegurar que GUID apunte a URL válida (por si el adjunto existía con GUID roto)
                     $file = get_attached_file($aid);
                     if ($file && file_exists($file)) {
                         $uploads = wp_get_upload_dir();
@@ -100,9 +212,41 @@ class MediaIntegrityService
                 }
             }
 
-        // Agotar opciones: intentar fallback con ventana anti-reintento (sin alias preferido)
-        $this->assignFallbackFeaturedImageIfAllowed($postId, null);
+            // Agotar opciones: intentar fallback con ventana anti-reintento (sin alias preferido)
+            $this->assignFallbackFeaturedImageIfAllowed($postId, null);
         }
+    }
+
+    /**
+     * Expande una referencia de asset al formato de ruta completa (local a esta clase).
+     */
+    private function expandAssetReferenceLocal(string $assetReference): string
+    {
+        if (strpos($assetReference, '::') === false) {
+            return $assetReference;
+        }
+
+        $parsed = AssetsUtility::parseAssetReference($assetReference);
+        if (!is_array($parsed) || count($parsed) !== 2) {
+            return $assetReference;
+        }
+
+        list($alias, $nombreArchivo) = $parsed;
+
+        $aliasMap = [
+            'glory' => 'Glory/assets/images',
+            'elements' => 'Glory/assets/images/elements',
+            'colors' => 'Glory/assets/images/colors',
+            'logos' => 'Glory/assets/images/logos',
+            'tema' => 'App/Assets/images',
+        ];
+
+        $basePath = $aliasMap[$alias] ?? null;
+        if ($basePath === null) {
+            return $assetReference;
+        }
+
+        return $basePath . '/' . ltrim($nombreArchivo, '/\\');
     }
 
     private function repairGallery(int $postId, array $fallbackAssets): void
@@ -114,7 +258,9 @@ class MediaIntegrityService
                 $newIds = [];
                 foreach ($fallbackAssets as $asset) {
                     $aid = AssetsUtility::get_attachment_id_from_asset((string) $asset);
-                    if ($aid) { $newIds[] = (int) $aid; }
+                    if ($aid) {
+                        $newIds[] = (int) $aid;
+                    }
                 }
                 if (!empty($newIds)) {
                     update_post_meta($postId, $metaKey, $newIds);
@@ -129,7 +275,9 @@ class MediaIntegrityService
                     $newIds = [];
                     foreach ($fallbacks as $asset) {
                         $aid = AssetsUtility::get_attachment_id_from_asset((string) $asset);
-                        if ($aid) { $newIds[] = (int) $aid; }
+                        if ($aid) {
+                            $newIds[] = (int) $aid;
+                        }
                     }
                     if (!empty($newIds)) {
                         update_post_meta($postId, $metaKey, $newIds);
@@ -146,7 +294,9 @@ class MediaIntegrityService
         $repaired = [];
         foreach ($ids as $aid) {
             $aid = (int) $aid;
-            if ($aid <= 0) { continue; }
+            if ($aid <= 0) {
+                continue;
+            }
             $attached = get_attached_file($aid);
             if ($attached && file_exists($attached)) {
                 $repaired[] = $aid;
@@ -232,11 +382,13 @@ class MediaIntegrityService
         }
 
         // 3) Intentar defaults de 'glory'
-        $candidates = ['default.jpg','default1.jpg','default2.jpg','default3.jpg','default4.jpg'];
+        $candidates = ['default.jpg', 'default1.jpg', 'default2.jpg', 'default3.jpg', 'default4.jpg'];
         $pool = [];
         foreach ($candidates as $name) {
             $ref = 'glory::' . $name;
-            if (AssetsUtility::assetExists($ref)) { $pool[] = $ref; }
+            if (AssetsUtility::assetExists($ref)) {
+                $pool[] = $ref;
+            }
         }
         if (!empty($pool)) {
             $idx = abs(crc32((string) $postId)) % count($pool);
@@ -281,7 +433,9 @@ class MediaIntegrityService
     private function chooseFallbackGalleryForPost(int $postId, int $count): array
     {
         $colorList = \Glory\Utility\AssetsUtility::listImagesForAlias('colors');
-        if (!is_array($colorList) || empty($colorList)) { return []; }
+        if (!is_array($colorList) || empty($colorList)) {
+            return [];
+        }
         $result = [];
         $total = count($colorList);
         $seed = abs(crc32('gallery|' . (string) $postId));
@@ -298,7 +452,9 @@ class MediaIntegrityService
         $aid = AssetsUtility::get_attachment_id_from_asset($ref);
         if ($aid) {
             $url = wp_get_attachment_url($aid);
-            if (is_string($url) && $url !== '') { return $url; }
+            if (is_string($url) && $url !== '') {
+                return $url;
+            }
         }
         return null;
     }
@@ -308,15 +464,21 @@ class MediaIntegrityService
         $uploads = wp_get_upload_dir();
         $baseUrl = isset($uploads['baseurl']) ? (string) $uploads['baseurl'] : '';
         $baseDir = isset($uploads['basedir']) ? (string) $uploads['basedir'] : '';
-        if ($baseUrl === '' || $baseDir === '') { return; }
+        if ($baseUrl === '' || $baseDir === '') {
+            return;
+        }
 
         // 1) Sanitizar metadatos que contengan URLs a uploads rotas
         $allMeta = get_post_meta($postId);
         if (is_array($allMeta)) {
             foreach ($allMeta as $key => $values) {
                 // No tocar claves técnicas
-                if (is_string($key) && strpos($key, '_edit') === 0) { continue; }
-                if (!is_array($values)) { $values = [$values]; }
+                if (is_string($key) && strpos($key, '_edit') === 0) {
+                    continue;
+                }
+                if (!is_array($values)) {
+                    $values = [$values];
+                }
                 $changed = false;
                 $newValues = [];
                 foreach ($values as $val) {
@@ -336,7 +498,9 @@ class MediaIntegrityService
                 }
                 if ($changed) {
                     delete_post_meta($postId, $key);
-                    foreach ($newValues as $nv) { add_post_meta($postId, $key, $nv); }
+                    foreach ($newValues as $nv) {
+                        add_post_meta($postId, $key, $nv);
+                    }
                 }
             }
         }
@@ -345,7 +509,7 @@ class MediaIntegrityService
         $post = get_post($postId);
         if ($post && isset($post->post_content) && is_string($post->post_content) && $post->post_content !== '') {
             $content = $post->post_content;
-            $pattern = '#'.preg_quote($baseUrl, '#').'/[^"\s\)]+#i';
+            $pattern = '#' . preg_quote($baseUrl, '#') . '/[^"\s\)]+#i';
             $replaced = $content;
             if (preg_match_all($pattern, $content, $m)) {
                 $urls = array_unique($m[0]);
@@ -364,5 +528,3 @@ class MediaIntegrityService
         }
     }
 }
-
- 

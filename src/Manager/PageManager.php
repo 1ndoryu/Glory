@@ -312,28 +312,36 @@ class PageManager
                 }
             }
         } else {
-            // Si el modo ya existe, permitir migrar automáticamente a 'editor' cuando es el default
-            // sin romper ediciones manuales: sólo si el contenido está vacío o no ha sido editado (hash coincide)
+            // Si el modo ya existe, permitir migrar automaticamente a 'editor' cuando es el default
+            // sin romper ediciones manuales: solo si el contenido esta vacio o no ha sido editado (hash coincide)
             $modoActual = get_post_meta($idPaginaActual, self::CLAVE_MODO_CONTENIDO, true);
             if (self::$modoPorDefecto === 'editor' && $modoActual !== 'editor' && !empty($defPagina['funcion'])) {
-                $contenidoActual = (string) get_post_field('post_content', $idPaginaActual);
-                $hashGuardado = (string) get_post_meta($idPaginaActual, self::CLAVE_META_HASH, true);
-                $hashActual = $contenidoActual !== '' ? self::hashContenido($contenidoActual) : '';
-                $noEditado = ($hashGuardado !== '' && $hashGuardado === $hashActual) || ($contenidoActual === '');
-                if ($noEditado) {
-                    update_post_meta($idPaginaActual, self::CLAVE_MODO_CONTENIDO, 'editor');
-                    if ($contenidoActual === '') {
-                        $contenido = self::renderHandlerParaCopiar($defPagina['funcion']);
-                        if ($contenido !== '') {
-                            wp_update_post([
-                                'ID' => $idPaginaActual,
-                                'post_content' => $contenido,
-                            ]);
-                            update_post_meta($idPaginaActual, self::CLAVE_META_HASH, self::hashContenido($contenido));
+                // PROTECCION GBN: Si hay datos de GBN, no migrar automaticamente
+                $gbnConfig = get_post_meta($idPaginaActual, 'gbn_config', true);
+                $gbnStyles = get_post_meta($idPaginaActual, 'gbn_styles', true);
+                $hasGbnData = (is_string($gbnConfig) && $gbnConfig !== '')
+                    || (is_string($gbnStyles) && $gbnStyles !== '');
+
+                if (!$hasGbnData) {
+                    $contenidoActual = (string) get_post_field('post_content', $idPaginaActual);
+                    $hashGuardado = (string) get_post_meta($idPaginaActual, self::CLAVE_META_HASH, true);
+                    $hashActual = $contenidoActual !== '' ? self::hashContenido($contenidoActual) : '';
+                    $noEditado = ($hashGuardado !== '' && $hashGuardado === $hashActual) || ($contenidoActual === '');
+                    if ($noEditado) {
+                        update_post_meta($idPaginaActual, self::CLAVE_MODO_CONTENIDO, 'editor');
+                        if ($contenidoActual === '') {
+                            $contenido = self::renderHandlerParaCopiar($defPagina['funcion']);
+                            if ($contenido !== '') {
+                                wp_update_post([
+                                    'ID' => $idPaginaActual,
+                                    'post_content' => $contenido,
+                                ]);
+                                update_post_meta($idPaginaActual, self::CLAVE_META_HASH, self::hashContenido($contenido));
+                            }
+                        } else {
+                            // Mantener contenido actual y establecer hash para futuras sincronizaciones inteligentes
+                            update_post_meta($idPaginaActual, self::CLAVE_META_HASH, $hashActual);
                         }
-                    } else {
-                        // Mantener contenido actual y establecer hash para futuras sincronizaciones inteligentes
-                        update_post_meta($idPaginaActual, self::CLAVE_META_HASH, $hashActual);
                     }
                 }
             }
@@ -387,6 +395,24 @@ class PageManager
         if ($modo !== 'editor') {
             return;
         }
+
+        // IMPORTANTE: Si la pagina tiene datos de GBN guardados, NO sincronizar.
+        // GBN edita estilos CSS en gbn_config/gbn_styles, no el HTML directamente.
+        // Por lo tanto el hash HTML siempre coincidira aunque haya ediciones en GBN.
+        // Verificamos si existe el meta (incluso si esta vacio) porque eso indica
+        // que el usuario guardo algo desde GBN.
+        $gbnConfig = get_post_meta($postId, 'gbn_config', true);
+        $gbnStyles = get_post_meta($postId, 'gbn_styles', true);
+
+        // Si hay algun dato de GBN (no vacio), la pagina fue editada en GBN
+        $hasGbnData = (is_string($gbnConfig) && $gbnConfig !== '')
+            || (is_string($gbnStyles) && $gbnStyles !== '');
+
+        if ($hasGbnData) {
+            // Pagina editada en GBN - no sobrescribir
+            return;
+        }
+
         $contenidoActual = get_post_field('post_content', $postId);
         $hashGuardado = (string) get_post_meta($postId, self::CLAVE_META_HASH, true);
         $hashActual = $contenidoActual !== '' ? self::hashContenido($contenidoActual) : '';

@@ -88,7 +88,6 @@ class OpcionManager
         $config = OpcionRegistry::getDefinicion($key);
 
         if (!$config) {
-            GloryLogger::warning("OpcionManager: Se intentó obtener la opción no definida '{$key}'. Es necesario definirla con OpcionManager::register().");
             return $valorPorDefecto;
         }
 
