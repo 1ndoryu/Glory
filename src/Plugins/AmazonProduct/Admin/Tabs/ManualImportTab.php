@@ -37,8 +37,6 @@ class ManualImportTab implements TabInterface
         // Registrar AJAX handlers
         add_action('wp_ajax_amazon_parse_html', [$this, 'ajaxParseHtml']);
         add_action('wp_ajax_amazon_import_product', [$this, 'ajaxImportProduct']);
-        add_action('wp_ajax_amazon_load_initial_products', [$this, 'ajaxLoadInitialProducts']);
-        add_action('wp_ajax_amazon_get_initial_products_count', [$this, 'ajaxGetInitialProductsCount']);
 
         $this->renderInterface();
         $this->renderStyles();
@@ -64,9 +62,6 @@ class ManualImportTab implements TabInterface
                     <input type="file" id="file-input" multiple accept=".html,.htm" style="display: none;">
                 </div>
             </div>
-
-            <!-- Seccion Productos Iniciales -->
-            <?php $this->renderInitialProductsSection(); ?>
 
             <!-- Barra de progreso -->
             <div id="progress-container" style="display: none;">
@@ -292,136 +287,136 @@ class ManualImportTab implements TabInterface
     ?>
         <script>
             jQuery(document).ready(function($) {
-                const dropZone = $('#drop-zone');
-                const fileInput = $('#file-input');
-                const productsContainer = $('#products-container');
-                const productsTbody = $('#products-tbody');
-                const progressContainer = $('#progress-container');
-                const progressFill = $('#progress-fill');
-                const progressText = $('#progress-text');
-                const nonce = $('#amazon_import_nonce').val();
+                        const dropZone = $('#drop-zone');
+                        const fileInput = $('#file-input');
+                        const productsContainer = $('#products-container');
+                        const productsTbody = $('#products-tbody');
+                        const progressContainer = $('#progress-container');
+                        const progressFill = $('#progress-fill');
+                        const progressText = $('#progress-text');
+                        const nonce = $('#amazon_import_nonce').val();
 
-                let products = [];
+                        let products = [];
 
-                // Click en zona para abrir selector de archivos
-                dropZone.on('click', function() {
-                    fileInput.click();
-                });
+                        // Click en zona para abrir selector de archivos
+                        dropZone.on('click', function() {
+                            fileInput.click();
+                        });
 
-                // Eventos de drag & drop
-                dropZone.on('dragover dragenter', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    $(this).addClass('dragover');
-                });
+                        // Eventos de drag & drop
+                        dropZone.on('dragover dragenter', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            $(this).addClass('dragover');
+                        });
 
-                dropZone.on('dragleave dragend drop', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    $(this).removeClass('dragover');
-                });
+                        dropZone.on('dragleave dragend drop', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            $(this).removeClass('dragover');
+                        });
 
-                dropZone.on('drop', function(e) {
-                    const files = e.originalEvent.dataTransfer.files;
-                    processFiles(files);
-                });
+                        dropZone.on('drop', function(e) {
+                            const files = e.originalEvent.dataTransfer.files;
+                            processFiles(files);
+                        });
 
-                fileInput.on('change', function() {
-                    processFiles(this.files);
-                });
+                        fileInput.on('change', function() {
+                            processFiles(this.files);
+                        });
 
-                // Procesar archivos HTML
-                function processFiles(files) {
-                    const htmlFiles = Array.from(files).filter(f => f.name.match(/\.html?$/i));
+                        // Procesar archivos HTML
+                        function processFiles(files) {
+                            const htmlFiles = Array.from(files).filter(f => f.name.match(/\.html?$/i));
 
-                    if (htmlFiles.length === 0) {
-                        alert('Por favor selecciona archivos HTML validos.');
-                        return;
-                    }
+                            if (htmlFiles.length === 0) {
+                                alert('Por favor selecciona archivos HTML validos.');
+                                return;
+                            }
 
-                    progressContainer.show();
-                    productsContainer.hide();
+                            progressContainer.show();
+                            productsContainer.hide();
 
-                    let processed = 0;
-                    const total = htmlFiles.length;
+                            let processed = 0;
+                            const total = htmlFiles.length;
 
-                    htmlFiles.forEach((file, index) => {
-                        const reader = new FileReader();
+                            htmlFiles.forEach((file, index) => {
+                                const reader = new FileReader();
 
-                        reader.onload = function(e) {
-                            const html = e.target.result;
+                                reader.onload = function(e) {
+                                    const html = e.target.result;
 
-                            // Enviar HTML al servidor para parsear
-                            $.ajax({
-                                url: ajaxurl,
-                                type: 'POST',
-                                data: {
-                                    action: 'amazon_parse_html',
-                                    nonce: nonce,
-                                    html: html,
-                                    filename: file.name
-                                },
-                                success: function(response) {
-                                    if (response.success && response.data) {
-                                        response.data.filename = file.name;
-                                        products.push(response.data);
-                                    }
-                                    processed++;
-                                    updateProgress(processed, total);
+                                    // Enviar HTML al servidor para parsear
+                                    $.ajax({
+                                        url: ajaxurl,
+                                        type: 'POST',
+                                        data: {
+                                            action: 'amazon_parse_html',
+                                            nonce: nonce,
+                                            html: html,
+                                            filename: file.name
+                                        },
+                                        success: function(response) {
+                                            if (response.success && response.data) {
+                                                response.data.filename = file.name;
+                                                products.push(response.data);
+                                            }
+                                            processed++;
+                                            updateProgress(processed, total);
 
-                                    if (processed === total) {
-                                        finishProcessing();
-                                    }
-                                },
-                                error: function() {
-                                    processed++;
-                                    updateProgress(processed, total);
-                                    if (processed === total) {
-                                        finishProcessing();
-                                    }
-                                }
+                                            if (processed === total) {
+                                                finishProcessing();
+                                            }
+                                        },
+                                        error: function() {
+                                            processed++;
+                                            updateProgress(processed, total);
+                                            if (processed === total) {
+                                                finishProcessing();
+                                            }
+                                        }
+                                    });
+                                };
+
+                                reader.readAsText(file);
                             });
-                        };
+                        }
 
-                        reader.readAsText(file);
-                    });
-                }
+                        function updateProgress(current, total) {
+                            const percent = Math.round((current / total) * 100);
+                            progressFill.css('width', percent + '%');
+                            progressText.text(`Procesando ${current} de ${total} archivos...`);
+                        }
 
-                function updateProgress(current, total) {
-                    const percent = Math.round((current / total) * 100);
-                    progressFill.css('width', percent + '%');
-                    progressText.text(`Procesando ${current} de ${total} archivos...`);
-                }
+                        function finishProcessing() {
+                            progressContainer.hide();
 
-                function finishProcessing() {
-                    progressContainer.hide();
+                            if (products.length === 0) {
+                                alert('No se encontraron productos validos en los archivos.');
+                                return;
+                            }
 
-                    if (products.length === 0) {
-                        alert('No se encontraron productos validos en los archivos.');
-                        return;
-                    }
+                            renderProductsTable();
+                            productsContainer.show();
+                        }
 
-                    renderProductsTable();
-                    productsContainer.show();
-                }
+                        function renderProductsTable() {
+                            productsTbody.empty();
 
-                function renderProductsTable() {
-                    productsTbody.empty();
+                            products.forEach((product, index) => {
+                                const discount = product.original_price > product.price ?
+                                    Math.round(((product.original_price - product.price) / product.original_price) * 100) :
+                                    0;
 
-                    products.forEach((product, index) => {
-                        const discount = product.original_price > product.price ?
-                            Math.round(((product.original_price - product.price) / product.original_price) * 100) :
-                            0;
+                                const statusBadge = product.exists ?
+                                    '<span class="badge badge-exists">Existente</span>' :
+                                    '<span class="badge badge-pending">Pendiente</span>';
 
-                        const statusBadge = product.exists ?
-                            '<span class="badge badge-exists">Existente</span>' :
-                            '<span class="badge badge-pending">Pendiente</span>';
+                                const primeBadge = product.prime ?
+                                    '<span class="badge badge-prime">Prime</span>' :
+                                    '';
 
-                        const primeBadge = product.prime ?
-                            '<span class="badge badge-prime">Prime</span>' :
-                            '';
-
-                        const row = `
+                                const row = `
                         <tr data-index="${index}">
                             <th class="check-column">
                                 <input type="checkbox" class="product-checkbox" data-index="${index}">
@@ -452,168 +447,111 @@ class ManualImportTab implements TabInterface
                             </td>
                         </tr>
                     `;
-                        productsTbody.append(row);
-                    });
-
-                    updateSelectedCount();
-                }
-
-                function escapeHtml(text) {
-                    const div = document.createElement('div');
-                    div.textContent = text;
-                    return div.innerHTML;
-                }
-
-                function truncate(str, max) {
-                    return str.length > max ? str.substr(0, max) + '...' : str;
-                }
-
-                // Seleccionar todos
-                $('#select-all').on('change', function() {
-                    $('.product-checkbox').prop('checked', $(this).is(':checked'));
-                    updateSelectedCount();
-                });
-
-                $(document).on('change', '.product-checkbox', function() {
-                    updateSelectedCount();
-                });
-
-                function updateSelectedCount() {
-                    const count = $('.product-checkbox:checked').length;
-                    $('#import-selected').text(`Importar Seleccionados (${count})`);
-                    $('#import-selected').prop('disabled', count === 0);
-                }
-
-                // Importar seleccionados
-                $('#import-selected').on('click', function() {
-                    const indices = [];
-                    $('.product-checkbox:checked').each(function() {
-                        indices.push($(this).data('index'));
-                    });
-                    importProducts(indices);
-                });
-
-                // Importar todos
-                $('#import-all').on('click', function() {
-                    const indices = products.map((_, i) => i);
-                    importProducts(indices);
-                });
-
-                // Limpiar
-                $('#clear-all').on('click', function() {
-                    products = [];
-                    productsTbody.empty();
-                    productsContainer.hide();
-                    $('#import-log').hide();
-                });
-
-                function importProducts(indices) {
-                    const downloadImages = $('#download-images-global').is(':checked');
-                    const logContainer = $('#import-log');
-                    const logContent = $('#log-content');
-
-                    logContainer.show();
-                    logContent.empty();
-
-                    let imported = 0;
-                    const total = indices.length;
-
-                    indices.forEach((index, i) => {
-                        const product = products[index];
-
-                        setTimeout(() => {
-                            $.ajax({
-                                url: ajaxurl,
-                                type: 'POST',
-                                data: {
-                                    action: 'amazon_import_product',
-                                    nonce: nonce,
-                                    product: JSON.stringify(product),
-                                    download_image: downloadImages ? 1 : 0
-                                },
-                                success: function(response) {
-                                    imported++;
-                                    const statusSpan = $(`.status-badge[data-index="${index}"]`);
-
-                                    if (response.success) {
-                                        statusSpan.html('<span class="badge badge-success">Importado</span>');
-                                        logContent.append(`<div class="log-item log-success">OK ${product.title}</div>`);
-                                    } else {
-                                        statusSpan.html('<span class="badge badge-error">Error</span>');
-                                        logContent.append(`<div class="log-item log-error">X ${product.title}: ${response.data || 'Error desconocido'}</div>`);
-                                    }
-
-                                    if (imported === total) {
-                                        logContent.append(`<div class="log-item" style="font-weight:bold;margin-top:10px;">Completado: ${imported} productos procesados</div>`);
-                                    }
-                                },
-                                error: function() {
-                                    imported++;
-                                    $(`.status-badge[data-index="${index}"]`).html('<span class="badge badge-error">Error</span>');
-                                }
+                                productsTbody.append(row);
                             });
-                        }, i * 500);
-                    });
-                }
 
-                // Cargar productos iniciales desde ZIP
-                $('#load-initial-products').on('click', function() {
-                    const btn = $(this);
-                    const statusSpan = $('#initial-products-status');
+                            updateSelectedCount();
+                        }
 
-                    btn.prop('disabled', true);
-                    statusSpan.text('Cargando archivos desde ZIP...');
-                    products = [];
-                    productsTbody.empty();
+                        function escapeHtml(text) {
+                            const div = document.createElement('div');
+                            div.textContent = text;
+                            return div.innerHTML;
+                        }
 
-                    function loadBatch(offset) {
-                        $.ajax({
-                            url: ajaxurl,
-                            type: 'POST',
-                            data: {
-                                action: 'amazon_load_initial_products',
-                                nonce: nonce,
-                                offset: offset
-                            },
-                            success: function(response) {
-                                if (response.success) {
-                                    // Agregar productos al array
-                                    response.data.products.forEach(p => products.push(p));
+                        function truncate(str, max) {
+                            return str.length > max ? str.substr(0, max) + '...' : str;
+                        }
 
-                                    statusSpan.text(`Procesando ${response.data.processed} de ${response.data.total} archivos...`);
-
-                                    if (response.data.hasMore) {
-                                        // Cargar siguiente lote
-                                        loadBatch(response.data.nextOffset);
-                                    } else {
-                                        // Finalizado - mostrar tabla
-                                        btn.prop('disabled', false);
-                                        statusSpan.text(`${products.length} productos cargados`);
-
-                                        if (products.length > 0) {
-                                            renderProductsTable();
-                                            productsContainer.show();
-                                        } else {
-                                            alert('No se encontraron productos validos en los archivos.');
-                                        }
-                                    }
-                                } else {
-                                    btn.prop('disabled', false);
-                                    statusSpan.text('Error: ' + response.data);
-                                }
-                            },
-                            error: function() {
-                                btn.prop('disabled', false);
-                                statusSpan.text('Error de conexion');
-                            }
+                        // Seleccionar todos
+                        $('#select-all').on('change', function() {
+                            $('.product-checkbox').prop('checked', $(this).is(':checked'));
+                            updateSelectedCount();
                         });
-                    }
 
-                    loadBatch(0);
-                });
-            });
+                        $(document).on('change', '.product-checkbox', function() {
+                            updateSelectedCount();
+                        });
+
+                        function updateSelectedCount() {
+                            const count = $('.product-checkbox:checked').length;
+                            $('#import-selected').text(`Importar Seleccionados (${count})`);
+                            $('#import-selected').prop('disabled', count === 0);
+                        }
+
+                        // Importar seleccionados
+                        $('#import-selected').on('click', function() {
+                            const indices = [];
+                            $('.product-checkbox:checked').each(function() {
+                                indices.push($(this).data('index'));
+                            });
+                            importProducts(indices);
+                        });
+
+                        // Importar todos
+                        $('#import-all').on('click', function() {
+                            const indices = products.map((_, i) => i);
+                            importProducts(indices);
+                        });
+
+                        // Limpiar
+                        $('#clear-all').on('click', function() {
+                            products = [];
+                            productsTbody.empty();
+                            productsContainer.hide();
+                            $('#import-log').hide();
+                        });
+
+                        function importProducts(indices) {
+                            const downloadImages = $('#download-images-global').is(':checked');
+                            const logContainer = $('#import-log');
+                            const logContent = $('#log-content');
+
+                            logContainer.show();
+                            logContent.empty();
+
+                            let imported = 0;
+                            const total = indices.length;
+
+                            indices.forEach((index, i) => {
+                                const product = products[index];
+
+                                setTimeout(() => {
+                                    $.ajax({
+                                        url: ajaxurl,
+                                        type: 'POST',
+                                        data: {
+                                            action: 'amazon_import_product',
+                                            nonce: nonce,
+                                            product: JSON.stringify(product),
+                                            download_image: downloadImages ? 1 : 0
+                                        },
+                                        success: function(response) {
+                                            imported++;
+                                            const statusSpan = $(`.status-badge[data-index="${index}"]`);
+
+                                            if (response.success) {
+                                                statusSpan.html('<span class="badge badge-success">Importado</span>');
+                                                logContent.append(`<div class="log-item log-success">OK ${product.title}</div>`);
+                                            } else {
+                                                statusSpan.html('<span class="badge badge-error">Error</span>');
+                                                logContent.append(`<div class="log-item log-error">X ${product.title}: ${response.data || 'Error desconocido'}</div>`);
+                                            }
+
+                                            if (imported === total) {
+                                                logContent.append(`<div class="log-item" style="font-weight:bold;margin-top:10px;">Completado: ${imported} productos procesados</div>`);
+                                            }
+                                        },
+                                        error: function() {
+                                            imported++;
+                                            $(`.status-badge[data-index="${index}"]`).html('<span class="badge badge-error">Error</span>');
+                                        }
+                                    });
+                                }, i * 500);
+                            });
+                        });
         </script>
-    <?php
+<?php
     }
 
     /**
@@ -738,155 +676,6 @@ class ManualImportTab implements TabInterface
             if (!empty($category)) {
                 ProductImporter::syncCategories($postId, $category);
             }
-
-            return ['success' => true, 'post_id' => $postId, 'updated' => false];
         }
-    }
-
-    /**
-     * Ruta al archivo ZIP de productos iniciales
-     */
-    private function getInitialProductsPath(): string
-    {
-        return get_template_directory() . '/App/Content/amazon.zip';
-    }
-
-    /**
-     * Verifica si existe el archivo de productos iniciales
-     */
-    private function hasInitialProducts(): bool
-    {
-        return file_exists($this->getInitialProductsPath());
-    }
-
-    /**
-     * Cuenta los archivos HTML dentro del ZIP
-     */
-    private function countInitialProducts(): int
-    {
-        $zipPath = $this->getInitialProductsPath();
-        if (!file_exists($zipPath)) {
-            return 0;
-        }
-
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath) !== true) {
-            return 0;
-        }
-
-        $count = 0;
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $filename = $zip->getNameIndex($i);
-            if (preg_match('/\.html?$/i', $filename)) {
-                $count++;
-            }
-        }
-        $zip->close();
-
-        return $count;
-    }
-
-    /**
-     * Renderiza la seccion de productos iniciales
-     */
-    private function renderInitialProductsSection(): void
-    {
-        $hasProducts = $this->hasInitialProducts();
-        $count = $hasProducts ? $this->countInitialProducts() : 0;
-    ?>
-        <div class="initial-products-section" style="margin: 20px 0; padding: 20px; background: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 8px;">
-            <h3 style="margin-top: 0;">
-                <span class="dashicons dashicons-database-import" style="color: #2271b1;"></span>
-                Productos Iniciales
-            </h3>
-            <?php if ($hasProducts): ?>
-                <p>Se encontraron <strong><?php echo $count; ?></strong> archivos HTML en el paquete de productos iniciales.</p>
-                <p style="color: #666; font-size: 13px;">Usa este boton para importar los productos predefinidos cuando configures el sitio en un nuevo servidor.</p>
-                <button type="button" id="load-initial-products" class="button button-primary" style="margin-right: 10px;">
-                    <span class="dashicons dashicons-download" style="vertical-align: middle;"></span>
-                    Cargar Productos Iniciales (<?php echo $count; ?>)
-                </button>
-                <span id="initial-products-status" style="color: #666;"></span>
-            <?php else: ?>
-                <p style="color: #666;">
-                    No se encontro el archivo <code>amazon.zip</code> en <code>App/Content/</code>.
-                    <br>Para usar esta funcion, coloca un archivo ZIP con los HTML de productos en esa ubicacion.
-                </p>
-            <?php endif; ?>
-        </div>
-<?php
-    }
-
-    /**
-     * AJAX: Obtener conteo de productos iniciales
-     */
-    public function ajaxGetInitialProductsCount(): void
-    {
-        check_ajax_referer('amazon_manual_import_ajax', 'nonce');
-
-        $count = $this->countInitialProducts();
-        wp_send_json_success(['count' => $count]);
-    }
-
-    /**
-     * AJAX: Cargar productos iniciales desde el ZIP
-     * Retorna un lote de productos parseados para importar
-     */
-    public function ajaxLoadInitialProducts(): void
-    {
-        check_ajax_referer('amazon_manual_import_ajax', 'nonce');
-
-        $offset = intval($_POST['offset'] ?? 0);
-        $batchSize = 10; // Procesar 10 archivos por llamada
-
-        $zipPath = $this->getInitialProductsPath();
-        if (!file_exists($zipPath)) {
-            wp_send_json_error('No se encontro el archivo de productos iniciales');
-        }
-
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath) !== true) {
-            wp_send_json_error('No se pudo abrir el archivo ZIP');
-        }
-
-        // Recopilar todos los archivos HTML
-        $htmlFiles = [];
-        for ($i = 0; $i < $zip->numFiles; $i++) {
-            $filename = $zip->getNameIndex($i);
-            if (preg_match('/\.html?$/i', $filename)) {
-                $htmlFiles[] = $filename;
-            }
-        }
-
-        $total = count($htmlFiles);
-        $products = [];
-
-        // Procesar el lote actual
-        $batch = array_slice($htmlFiles, $offset, $batchSize);
-        foreach ($batch as $filename) {
-            $html = $zip->getFromName($filename);
-            if ($html === false) {
-                continue;
-            }
-
-            $data = $this->parserService->parseHtml($html);
-            if (!empty($data['asin'])) {
-                $data['filename'] = basename($filename);
-                $data['exists'] = ProductImporter::findByAsin($data['asin']) !== null;
-                $products[] = $data;
-            }
-        }
-
-        $zip->close();
-
-        $hasMore = ($offset + $batchSize) < $total;
-
-        wp_send_json_success([
-            'products' => $products,
-            'total' => $total,
-            'processed' => min($offset + $batchSize, $total),
-            'hasMore' => $hasMore,
-            'nextOffset' => $offset + $batchSize
-        ]);
     }
 }

@@ -7,6 +7,7 @@ use Glory\Core\GloryFeatures;
 use Glory\Plugins\AmazonProduct\Controller\AdminController;
 use Glory\Plugins\AmazonProduct\Renderer\ProductRenderer;
 use Glory\Plugins\AmazonProduct\Service\ProductSyncService;
+use Glory\Plugins\AmazonProduct\Admin\ApiWizardAjaxHandler;
 
 /**
  * Amazon Product Plugin for Glory Framework.
@@ -34,9 +35,10 @@ class AmazonProductPlugin
         add_action('wp_ajax_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
         add_action('wp_ajax_nopriv_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
 
-        // AJAX Hooks para importacion manual
+        // AJAX Hooks para importacion manual y wizard de API
         if (is_admin()) {
             $this->registerManualImportAjax();
+            ApiWizardAjaxHandler::init();
         }
 
         // Cron Hooks - FEAT-07: Usar ProductSyncService

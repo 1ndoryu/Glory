@@ -26,7 +26,8 @@
         onlyPrime: wrapper.dataset.onlyPrime || '',
         onlyDeals: wrapper.dataset.onlyDeals || '',
         orderby: wrapper.dataset.orderby || 'date',
-        order: wrapper.dataset.order || 'DESC'
+        order: wrapper.dataset.order || 'DESC',
+        exclude: wrapper.dataset.exclude || ''
     };
 
     // Inicializar contador con el total real desde PHP (BUG-03 fix)
@@ -69,6 +70,7 @@
         formData.append('only_deals', state.onlyDeals);
         formData.append('orderby', state.orderby);
         formData.append('order', state.order);
+        formData.append('exclude', state.exclude);
 
         fetch(amazonProductAjax.ajax_url, {
             method: 'POST',
@@ -82,8 +84,6 @@
                     if (totalCount && data.data.count !== undefined) {
                         totalCount.textContent = data.data.count;
                     }
-                    // Re-bind pagination after content update
-                    bindPaginationEvents();
                 }
             })
             .catch(error => {
@@ -266,22 +266,30 @@
     });
 
     /**
-     * Eventos de paginacion (se re-bindean tras cada fetch)
+     * Paginacion con Event Delegation
+     * Esto es mas robusto que hacer binding directo porque funciona
+     * tanto en la carga inicial como despues de actualizaciones AJAX
      */
-    function bindPaginationEvents() {
-        const pageLinks = document.querySelectorAll('.amazon-pagination .page-numbers');
-        pageLinks.forEach(link => {
-            link.addEventListener('click', function (e) {
-                e.preventDefault();
-                state.paged = parseInt(this.dataset.page, 10);
-                fetchProducts();
+    wrapper.addEventListener('click', function (e) {
+        // Buscar si el click fue en un link de paginacion o su ancestro
+        const pageLink = e.target.closest('.amazon-pagination .page-numbers');
 
-                // Scroll suave hacia el wrapper
-                wrapper.scrollIntoView({behavior: 'smooth', block: 'start'});
-            });
-        });
-    }
+        if (pageLink) {
+            e.preventDefault();
+            e.stopPropagation();
 
-    // Bind inicial
-    bindPaginationEvents();
+            const page = parseInt(pageLink.dataset.page, 10);
+
+            // No hacer nada si se hace click en la pagina actual
+            if (pageLink.classList.contains('current') || isNaN(page)) {
+                return;
+            }
+
+            state.paged = page;
+            fetchProducts();
+
+            // Scroll suave hacia el wrapper
+            wrapper.scrollIntoView({behavior: 'smooth', block: 'start'});
+        }
+    });
 })();

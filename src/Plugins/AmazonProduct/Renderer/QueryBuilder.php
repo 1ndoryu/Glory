@@ -21,6 +21,7 @@ class QueryBuilder
         $args = $this->getBaseArgs($params);
         $args = $this->applyIdFilter($args, $params);
         $args = $this->applySearchFilter($args, $params);
+        $args = $this->applyExcludeFilter($args, $params);
         $args = $this->applyCategoryFilter($args, $params);
         $args = $this->applyPriceFilters($args, $params);
         $args = $this->applyRatingFilter($args, $params);
@@ -75,6 +76,71 @@ class QueryBuilder
         }
 
         return $args;
+    }
+
+    /**
+     * Filtro de exclusion por palabras en el titulo.
+     * Excluye productos cuyo titulo contenga cualquiera de las palabras especificadas.
+     * 
+     * Uso: exclude="paletero,bolsa,funda" excluira productos que contengan esas palabras.
+     */
+    private function applyExcludeFilter(array $args, array $params): array
+    {
+        if (empty($params['exclude'])) {
+            return $args;
+        }
+
+        // Separar palabras a excluir
+        $excludeWords = array_map('trim', explode(',', $params['exclude']));
+        $excludeWords = array_filter($excludeWords);
+
+        if (empty($excludeWords)) {
+            return $args;
+        }
+
+        // Guardar palabras de exclusión para filtrar después de la query
+        // WordPress no tiene forma nativa de excluir por palabras en título
+        $args['exclude_words'] = $excludeWords;
+
+        return $args;
+    }
+
+    /**
+     * Filtra los resultados de una query excluyendo posts por palabras en título.
+     * Se debe llamar después de obtener los resultados de WP_Query.
+     * 
+     * @param array $posts Array de posts
+     * @param array $excludeWords Palabras a excluir
+     * @return array Posts filtrados
+     */
+    public static function filterExcludedPosts(array $posts, array $excludeWords): array
+    {
+        if (empty($excludeWords)) {
+            return $posts;
+        }
+
+        return array_filter($posts, function ($post) use ($excludeWords) {
+            $title = strtolower($post->post_title);
+            foreach ($excludeWords as $word) {
+                if (stripos($title, strtolower($word)) !== false) {
+                    return false; // Excluir este post
+                }
+            }
+            return true; // Mantener este post
+        });
+    }
+
+    /**
+     * Obtiene las palabras de exclusión de los argumentos de la query.
+     */
+    public function getExcludeWords(array $params): array
+    {
+        if (empty($params['exclude'])) {
+            return [];
+        }
+
+        $excludeWords = array_map('trim', explode(',', $params['exclude']));
+        return array_filter($excludeWords);
     }
 
     /**

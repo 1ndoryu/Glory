@@ -27,10 +27,33 @@ class ImportTab implements TabInterface
         $results = [];
         $message = '';
 
+        // Verificar si la API está configurada
+        if (!$service->isConfigured()) {
+            echo '<div class="notice notice-warning inline"><p><strong>API no configurada.</strong> Ve a la pestaña "Configuracion Guiada" para configurar tu API Key de RapidAPI.</p></div>';
+        }
+
         // Handle search
         if (isset($_POST['amazon_search']) && check_admin_referer('amazon_search_action', 'amazon_search_nonce')) {
-            $keyword = sanitize_text_field($_POST['keyword']);
-            $results = $service->searchProducts($keyword);
+            if (!$service->isConfigured()) {
+                $message = '<div class="notice notice-error inline"><p>No puedes buscar productos sin configurar la API primero. Ve a la pestaña "Configuracion Guiada".</p></div>';
+            } else {
+                $keyword = sanitize_text_field($_POST['keyword']);
+                $apiResults = $service->searchProducts($keyword);
+
+                // Validar que los resultados sean un array de productos válido
+                if (is_array($apiResults) && !empty($apiResults)) {
+                    // Verificar que el primer elemento sea un array (producto válido)
+                    $firstItem = reset($apiResults);
+                    if (is_array($firstItem) && isset($firstItem['asin'])) {
+                        $results = $apiResults;
+                    } else {
+                        // La API devolvió algo pero no es la estructura esperada
+                        $message = '<div class="notice notice-warning inline"><p>La API devolvio una respuesta inesperada. Verifica tu configuracion de API.</p></div>';
+                    }
+                } else {
+                    $message = '<div class="notice notice-info inline"><p>No se encontraron productos para: <strong>' . esc_html($keyword) . '</strong></p></div>';
+                }
+            }
         }
 
         // Handle import
@@ -46,7 +69,7 @@ class ImportTab implements TabInterface
 
             $productData = $service->getProductByAsin($asin);
 
-            if (!empty($productData)) {
+            if (!empty($productData) && is_array($productData)) {
                 $postId = ProductImporter::importProduct($productData);
                 if ($postId) {
                     $action = $existingId ? 'actualizado' : 'importado';

@@ -29,8 +29,8 @@ class GridRenderer
     public function render(array $params): int
     {
         $query = $this->queryBuilder->build($params);
-        $totalPosts = $query->found_posts;
         $showPagination = $params['show_pagination'] ?? true;
+        $excludeWords = $this->queryBuilder->getExcludeWords($params);
 
         // Ordenamiento por descuento requiere procesamiento PHP
         if ($this->queryBuilder->isDiscountSorting($params) && $query->have_posts()) {
@@ -42,15 +42,46 @@ class GridRenderer
             return 0;
         }
 
-        echo '<div class="amazon-product-grid">';
+        // Recolectar posts y aplicar filtro de exclusión si es necesario
+        $posts = [];
         while ($query->have_posts()) {
             $query->the_post();
-            CardRenderer::renderProduct(get_post());
+            $posts[] = get_post();
+        }
+
+        // Aplicar filtro de exclusión por palabras en título
+        if (!empty($excludeWords)) {
+            $posts = QueryBuilder::filterExcludedPosts($posts, $excludeWords);
+        }
+
+        $totalPosts = count($posts);
+
+        if (empty($posts)) {
+            $this->renderEmptyState();
+            wp_reset_postdata();
+            return 0;
+        }
+
+        // Aplicar paginación manual si hay exclusiones (porque el conteo cambió)
+        if (!empty($excludeWords)) {
+            $limit = (int) ($params['limit'] ?? 12);
+            $paged = (int) ($params['paged'] ?? 1);
+            $offset = ($paged - 1) * $limit;
+            $pagedPosts = array_slice($posts, $offset, $limit);
+            $totalPages = ceil($totalPosts / $limit);
+        } else {
+            $pagedPosts = $posts;
+            $totalPages = $query->max_num_pages;
+        }
+
+        echo '<div class="amazon-product-grid">';
+        foreach ($pagedPosts as $post) {
+            CardRenderer::renderProduct($post);
         }
         echo '</div>';
 
         if ($showPagination) {
-            $this->renderPagination($query->max_num_pages, $params['paged'] ?? 1);
+            $this->renderPagination($totalPages, $params['paged'] ?? 1);
         }
 
         wp_reset_postdata();
@@ -143,7 +174,7 @@ class GridRenderer
     ?>
         <div class="amazon-pagination">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <?php $class = ($i == $currentPage) ? 'page-numbers current noAjax' : 'page-numbers noAjax'; ?>
+                <?php $class = ($i == $currentPage) ? 'page-numbers current' : 'page-numbers'; ?>
                 <a href="#" class="<?php echo $class; ?>" data-page="<?php echo $i; ?>"><?php echo $i; ?></a>
             <?php endfor; ?>
         </div>

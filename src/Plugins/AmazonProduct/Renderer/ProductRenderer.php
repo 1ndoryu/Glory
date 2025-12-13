@@ -61,6 +61,7 @@ class ProductRenderer
      * - search: Palabra clave para filtrar productos guardados
      * - pagination: "0" para desactivar paginacion
      * - min_rating: Rating minimo (1-5)
+     * - exclude: Palabras a excluir separadas por coma (ej: "paletero,bolsa,funda")
      */
     public function renderShortcode($atts): string
     {
@@ -78,6 +79,7 @@ class ProductRenderer
             'search' => '',
             'pagination' => '1',
             'min_rating' => '',
+            'exclude' => '',
         ], $atts);
 
         $hideFilters = ($atts['hide_filters'] === '1');
@@ -102,6 +104,7 @@ class ProductRenderer
             data-search="<?php echo esc_attr($atts['search']); ?>"
             data-pagination="<?php echo esc_attr($atts['pagination']); ?>"
             data-min-rating="<?php echo esc_attr($atts['min_rating']); ?>"
+            data-exclude="<?php echo esc_attr($atts['exclude']); ?>"
             data-total-count="<?php echo esc_attr($totalCount); ?>">
 
             <?php if (!$hideFilters): ?>
@@ -171,6 +174,7 @@ class ProductRenderer
             'only_deals' => sanitize_text_field($_POST['only_deals'] ?? ''),
             'orderby' => sanitize_text_field($_POST['orderby'] ?? 'date'),
             'order' => sanitize_text_field($_POST['order'] ?? 'DESC'),
+            'exclude' => sanitize_text_field($_POST['exclude'] ?? ''),
             'show_pagination' => true,
         ];
 

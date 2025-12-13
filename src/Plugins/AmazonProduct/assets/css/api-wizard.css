@@ -1,0 +1,653 @@
+/**
+ * API Setup Wizard Styles
+ * Estilos para la configuracion guiada de la API de RapidAPI
+ */
+
+/* Contenedor principal */
+.api-wizard-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header del Wizard */
+.wizard-header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e2e4e7;
+}
+
+.wizard-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 24px;
+    color: #1e1e1e;
+}
+
+.wizard-subtitle {
+    color: #646970;
+    font-size: 14px;
+    margin: 0 0 20px 0;
+}
+
+/* Status badges */
+.wizard-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 500;
+}
+
+.wizard-status .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+.wizard-status-success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.wizard-status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+/* Barra de progreso */
+.wizard-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 40px;
+    padding: 20px;
+}
+
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e2e4e7;
+    color: #646970;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.progress-step.active .step-number,
+.progress-step.completed .step-number {
+    background: #2271b1;
+    color: white;
+}
+
+.progress-step.completed .step-number {
+    background: #00a32a;
+}
+
+.step-label {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #646970;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.progress-step.active .step-label {
+    color: #2271b1;
+    font-weight: 600;
+}
+
+.progress-line {
+    width: 60px;
+    height: 3px;
+    background: #e2e4e7;
+    margin: 0 10px;
+    margin-bottom: 20px;
+}
+
+/* Contenedor de pasos */
+.wizard-steps {
+    background: #f9f9f9;
+    border-radius: 8px;
+    padding: 30px;
+    margin-bottom: 30px;
+}
+
+.wizard-step {
+    display: none;
+}
+
+.wizard-step.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Contenido del paso */
+.step-content {
+    text-align: center;
+}
+
+.step-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #2271b1, #135e96);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px auto;
+}
+
+.step-icon .dashicons {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: white;
+}
+
+.step-content h3 {
+    margin: 0 0 15px 0;
+    font-size: 22px;
+    color: #1e1e1e;
+}
+
+.step-description {
+    color: #646970;
+    font-size: 15px;
+    margin-bottom: 25px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Instrucciones */
+.step-instructions {
+    background: white;
+    border-radius: 8px;
+    padding: 20px 30px;
+    margin: 25px 0;
+    text-align: left;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.step-instructions ol {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.step-instructions li {
+    padding: 8px 0;
+    color: #1e1e1e;
+}
+
+/* Botones de accion */
+.step-action {
+    margin: 25px 0;
+}
+
+.wizard-external-link {
+    display: flex !important;
+    gap: 20px;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+    width: max-content;
+    margin: auto !important;
+    font-size: 16px;
+    padding: 12px 30px;
+    height: auto;
+}
+
+.wizard-external-link .dashicons {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+}
+
+/* Tips */
+.step-tip {
+    background: #e7f3ff;
+    border-left: 4px solid #2271b1;
+    padding: 15px 20px;
+    margin-top: 20px;
+    text-align: left;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 0 4px 4px 0;
+}
+
+.step-tip .dashicons {
+    color: #2271b1;
+    margin-top: 2px;
+}
+
+.step-tip.success-tip {
+    background: #d4edda;
+    border-left-color: #00a32a;
+}
+
+.step-tip.success-tip .dashicons {
+    color: #00a32a;
+}
+
+/* Comparacion de planes */
+.plan-comparison {
+    display: flex;
+    justify-content: center;
+    margin: 25px 0;
+}
+
+.plan-card {
+    background: white;
+    border-radius: 12px;
+    padding: 25px;
+    min-width: 280px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.plan-card.recommended {
+    border: 2px solid #2271b1;
+}
+
+.plan-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #2271b1;
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.plan-card h4 {
+    margin: 10px 0;
+    font-size: 20px;
+}
+
+.plan-price {
+    font-size: 36px;
+    font-weight: 700;
+    color: #2271b1;
+    margin: 10px 0 20px 0;
+}
+
+.plan-price span {
+    font-size: 14px;
+    font-weight: 400;
+    color: #646970;
+}
+
+.plan-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: left;
+}
+
+.plan-features li {
+    padding: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.plan-features .dashicons-yes {
+    color: #00a32a;
+}
+
+/* Visual mockup de API Key */
+.api-key-visual {
+    background: #2d2d2d;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 25px auto;
+    max-width: 400px;
+    text-align: left;
+}
+
+.visual-header {
+    color: #a0a0a0;
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+.visual-mockup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mockup-label {
+    color: #9cdcfe;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.mockup-value {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1e1e1e;
+    padding: 10px 15px;
+    border-radius: 4px;
+}
+
+.key-placeholder {
+    color: #ce9178;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+.mockup-value .dashicons {
+    color: #2271b1;
+    cursor: pointer;
+}
+
+/* Formulario de API Key */
+.api-key-form {
+    max-width: 500px;
+    margin: 25px auto;
+    text-align: left;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #1e1e1e;
+}
+
+.wizard-api-key-input {
+    width: 100%;
+    padding: 12px 15px;
+    font-size: 15px;
+    border: 2px solid #e2e4e7;
+    border-radius: 6px;
+    transition: border-color 0.3s ease;
+}
+
+.wizard-api-key-input:focus {
+    border-color: #2271b1;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 113, 177, 0.15);
+}
+
+.field-description {
+    color: #646970;
+    font-size: 13px;
+    margin-top: 8px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 25px;
+}
+
+.form-actions .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Resultado de API */
+.api-result {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.api-result.hidden {
+    display: none;
+}
+
+.api-result.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.api-result.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.api-result.loading {
+    background: #e7f3ff;
+    color: #2271b1;
+}
+
+/* Navegacion del Wizard */
+.wizard-navigation {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px 0;
+    border-top: 1px solid #e2e4e7;
+}
+
+.wizard-navigation .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    height: auto;
+}
+
+.wizard-navigation .button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Seccion de ayuda */
+.wizard-help {
+    background: #f6f7f7;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 30px;
+}
+
+.wizard-help h4 {
+    margin: 0 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wizard-help p {
+    margin: 0 0 10px 0;
+    color: #646970;
+}
+
+.wizard-help ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.wizard-help li {
+    padding: 5px 0;
+}
+
+.wizard-help a {
+    color: #2271b1;
+    text-decoration: none;
+}
+
+.wizard-help a:hover {
+    text-decoration: underline;
+}
+
+/* Utilidades */
+.hidden {
+    display: none !important;
+}
+
+/* FAQ Section */
+.wizard-faq {
+    margin-top: 40px;
+    padding: 30px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.wizard-faq h3 {
+    margin: 0 0 25px 0;
+    font-size: 20px;
+    color: #1e1e1e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f1;
+}
+
+.wizard-faq h3 .dashicons {
+    color: #2271b1;
+}
+
+.faq-item {
+    border-bottom: 1px solid #f0f0f1;
+    padding: 20px 0;
+}
+
+.faq-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.faq-question {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    color: #1e1e1e;
+    font-size: 15px;
+}
+
+.faq-question .dashicons {
+    color: #2271b1;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.faq-question strong {
+    line-height: 1.4;
+}
+
+.faq-answer {
+    margin-top: 15px;
+    padding-left: 30px;
+    color: #50575e;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.faq-answer p {
+    margin: 0 0 12px 0;
+}
+
+.faq-answer p:last-child {
+    margin-bottom: 0;
+}
+
+.faq-answer ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.faq-answer ul li {
+    padding: 5px 0;
+}
+
+.faq-answer strong {
+    color: #1e1e1e;
+}
+
+.faq-answer code {
+    background: #f0f0f1;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 13px;
+    color: #2271b1;
+}
+
+.faq-answer em {
+    color: #d63638;
+    font-style: normal;
+    font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .wizard-progress {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .progress-line {
+        display: none;
+    }
+
+    .plan-card {
+        min-width: 100%;
+    }
+
+    .wizard-navigation {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .wizard-navigation .button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .wizard-faq {
+        padding: 20px;
+    }
+
+    .faq-answer {
+        padding-left: 20px;
+    }
+}

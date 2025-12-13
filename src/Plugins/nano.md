@@ -1,24 +1,42 @@
-Por el momento tengo varias dudas
+# Tareas Pendientes - Amazon Product Plugin
 
-primero, Amazon Data de Mage Data es la Api que esa de rapidapi, pero, ¿y si mañana quiero poner la api de amazon? Debería poder 
+## Prioridad Alta
 
-Si ya tengo determinados productos guardados, y quiero especificarlos en una pagina ¿eso esta explicado en el menu de ayuda?
+### 1. Loader de Paginación Mal Posicionado
+**Problema:** Cuando se cambia de página, el loader (`.amazon-loader`) aparece arriba en la página en lugar de quedarse fijo sobre la sección de productos.
 
-¿si quiero ocultar los filtros? se puede, tambien debería poder especificarse 
+**Solución propuesta:** 
+- Hacer el loader `position: fixed` o `position: sticky`
+- Centrar visualmente sobre el grid de productos
+- O hacer el loader relativo al contenedor `.amazon-product-wrapper`
 
-si quiero por ejemplo que muestre los productos aleatoreos que tengan determinada palabra 
+**Archivos a modificar:**
+- `assets/css/amazon-product.css` - Estilos del loader
 
-o si quiero que nada mas muestre los que estan en oferta
+---
 
-o indicar filtros determinados, etc
+## Prioridad Media
 
-que es la pagina "Import Deals (Offers with Discounts)", tienes que saber que hay que ahorrar las solicitudes a las api, o sea que ofertas importa esto, de donde?
+### 2. Verificar Paginación
+- Confirmar que la paginación ahora funciona correctamente después del fix de event delegation
+- Probar en todas las secciones: Palas, Zapatillas, Ropa, Accesorios
 
-Por el momento eso
+### 3. Precios no coinciden con Amazon
+- Investigar si es problema de caché o de la API
+- Considerar agregar fecha de última actualización visible
 
-tambien en la pagina de amazon-demo veo que dice 12 resultados pero hay mas resultados en las otras paginas, es incoherente, ¿y si quiero desactivar la paginación? 
+---
 
-mejoras visuales, en la parte de filtros hay 3 columnas, creo que si son 4 sería mejor, en tablet 2 y en telefono 1, el icono de filtrar esta mal
+## Completado
 
-
-
+- [x] Pestaña de Configuración Guiada de API (wizard paso a paso)
+- [x] Fix de paginación con event delegation
+- [x] Manejo de errores cuando API no está configurada
+- [x] Estilos del botón "Ir al panel de RapidAPI"
+- [x] **Filtros de exclusión por palabras** - Nuevo atributo `exclude` implementado
+  - Palas: excluye paletero, bolsa, funda, protector, etc.
+  - Ropa: excluye zapatilla, pala, etc.
+  - Accesorios: excluye pala, paletero, bolsa, etc.
+  - Zapatillas: excluye pala, paletero, etc.
+  - Pelotas: excluye pala, paletero, etc.
+  - Bolsas/Paleteros: excluye pala, zapatilla, etc.

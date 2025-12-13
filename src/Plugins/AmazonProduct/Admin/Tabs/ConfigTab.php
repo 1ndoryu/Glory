@@ -239,7 +239,7 @@ class ConfigTab implements TabInterface
                         <input type="number" name="amazon_api_monthly_limit" id="amazon_api_monthly_limit"
                             value="<?php echo esc_attr($apiConfig['monthlyLimit']); ?>"
                             min="0" class="small-text">
-                        <p class="description">Numero maximo de llamadas por ciclo. Por defecto: 500 (plan Basic de RapidAPI).</p>
+                        <p class="description">Numero maximo de llamadas por ciclo. Ajusta segun tu plan de RapidAPI (ej: 10,000 para plan Pro).</p>
                     </td>
                 </tr>
             </table>

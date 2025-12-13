@@ -10,6 +10,7 @@ use Glory\Plugins\AmazonProduct\Admin\Tabs\DesignTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\UpdatesTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\HelpTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\ManualImportTab;
+use Glory\Plugins\AmazonProduct\Admin\Tabs\ApiSetupWizardTab;
 
 /**
  * Admin Controller for Amazon Product Plugin.
@@ -35,6 +36,7 @@ class AdminController
     private function registerTabs(): void
     {
         $this->tabs = [
+            new ApiSetupWizardTab(),
             new ImportTab(),
             new DealsTab(),
             new ConfigTab(),
@@ -59,8 +61,12 @@ class AdminController
 
     public function renderSettingsPage(): void
     {
+        // Determinar tab por defecto: si no hay API Key, mostrar wizard
+        $apiKey = get_option('amazon_api_key', '');
+        $defaultTab = empty($apiKey) ? 'api-setup-wizard' : 'import';
+
         // Sanitizar y validar el tab activo
-        $activeTabSlug = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : 'import';
+        $activeTabSlug = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : $defaultTab;
         $activeTab = $this->findTab($activeTabSlug);
 
         // Si no se encuentra el tab, usar el primero
