@@ -75,12 +75,30 @@ class PageManager
         }
 
         self::$paginasDefinidas[$slug] = [
-            'titulo'    => $titulo,
-            'plantilla' => $nombrePlantilla,
-            'funcion'   => $nombreFuncion,
-            'slug'      => $slug,
-            'roles'     => $roles,
+            'titulo'      => $titulo,
+            'plantilla'   => $nombrePlantilla,
+            'funcion'     => $nombreFuncion,
+            'slug'        => $slug,
+            'roles'       => $roles,
+            'parentSlug'  => null,
         ];
+    }
+
+    /**
+     * Define una pagina gestionada como hija de otra pagina.
+     * La URL resultante sera /padre/hijo/.
+     *
+     * @param string $parentSlug Slug de la pagina padre.
+     * @param string $slug Slug de la pagina hija.
+     * @param string|null $handler Funcion de renderizado o nombre de plantilla.
+     * @param array $roles Roles requeridos para ver la pagina.
+     */
+    public static function defineWithParent(string $parentSlug, string $slug, ?string $handler = null, array $roles = []): void
+    {
+        self::define($slug, $handler, null, $roles);
+        if (isset(self::$paginasDefinidas[$slug])) {
+            self::$paginasDefinidas[$slug]['parentSlug'] = $parentSlug;
+        }
     }
 
     public static function register(): void
@@ -172,7 +190,12 @@ class PageManager
         }
 
         foreach (self::$paginasDefinidas as $slug => $defPagina) {
-            $paginaExistente = get_page_by_path($defPagina['slug'], OBJECT, 'page');
+            // Si tiene padre, buscar por path completo: padre/hijo
+            $pathBusqueda = $defPagina['slug'];
+            if (!empty($defPagina['parentSlug'])) {
+                $pathBusqueda = $defPagina['parentSlug'] . '/' . $defPagina['slug'];
+            }
+            $paginaExistente = get_page_by_path($pathBusqueda, OBJECT, 'page');
             $idPaginaActual = null;
 
             if (!$paginaExistente) {
@@ -204,12 +227,24 @@ class PageManager
             $hashContenido = $contenidoInicial !== '' ? self::hashContenido($contenidoInicial) : '';
         }
 
+        // Resolver ID del padre si existe
+        $parentId = 0;
+        if (!empty($defPagina['parentSlug'])) {
+            $paginaPadre = get_page_by_path($defPagina['parentSlug'], OBJECT, 'page');
+            if ($paginaPadre) {
+                $parentId = $paginaPadre->ID;
+            } else {
+                GloryLogger::warning("PageManager: Pagina padre '{$defPagina['parentSlug']}' no encontrada para '{$defPagina['slug']}'.");
+            }
+        }
+
         $datosPagina = [
-            'post_title'   => $defPagina['titulo'],
-            'post_content' => $contenidoInicial,
-            'post_status'  => 'publish',
-            'post_type'    => 'page',
-            'post_name'    => $defPagina['slug'],
+            'post_title'    => $defPagina['titulo'],
+            'post_content'  => $contenidoInicial,
+            'post_status'   => 'publish',
+            'post_type'     => 'page',
+            'post_name'     => $defPagina['slug'],
+            'post_parent'   => $parentId,
             'page_template' => $defPagina['plantilla'] ?: '',
         ];
         $idInsertado = wp_insert_post($datosPagina, true);
@@ -246,6 +281,21 @@ class PageManager
 
         if ($plantillaActual !== $nuevaValorPlantilla) {
             update_post_meta($idPaginaActual, '_wp_page_template', $nuevaValorPlantilla);
+        }
+
+        // Actualizar padre si es necesario
+        $parentIdEsperado = 0;
+        if (!empty($defPagina['parentSlug'])) {
+            $paginaPadre = get_page_by_path($defPagina['parentSlug'], OBJECT, 'page');
+            if ($paginaPadre) {
+                $parentIdEsperado = $paginaPadre->ID;
+            }
+        }
+        if ((int) $paginaExistente->post_parent !== $parentIdEsperado) {
+            wp_update_post([
+                'ID'          => $idPaginaActual,
+                'post_parent' => $parentIdEsperado,
+            ]);
         }
         // Asegurar que exista el modo por defecto sin sobrescribir elecciones del usuario
         if (!metadata_exists('post', $idPaginaActual, self::CLAVE_MODO_CONTENIDO)) {
