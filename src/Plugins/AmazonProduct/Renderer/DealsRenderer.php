@@ -36,14 +36,15 @@ class DealsRenderer
 
         $deals = $this->collectAndSortDeals($query, $atts);
         $limitedDeals = array_slice($deals, 0, (int) $atts['limit']);
-        $totalDeals = count($deals);
+        // Mostrar cuantos productos son visibles, no el total
+        $visibleCount = count($limitedDeals);
 
         ob_start();
 ?>
         <div class="amazon-deals-wrapper">
             <div class="amazon-results-header">
                 <h2><?php echo esc_html(Labels::get('daily_deals')); ?></h2>
-                <span class="amazon-count-badge"><?php echo $totalDeals; ?> <?php echo esc_html(Labels::get('results')); ?></span>
+                <span class="amazon-count-badge"><?php echo $visibleCount; ?> <?php echo esc_html(Labels::get('results')); ?></span>
             </div>
 
             <div class="amazon-product-grid">

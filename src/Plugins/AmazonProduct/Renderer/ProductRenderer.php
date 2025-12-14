@@ -134,15 +134,18 @@ class ProductRenderer
      * Obtiene el total de productos que coinciden con los filtros.
      * Se usa para mostrar el contador correcto en la carga inicial.
      * 
-     * Corregido: Ahora aplica el filtro de exclusion de palabras para
-     * obtener el conteo real de productos visibles.
+     * Corregido: 
+     * - Aplica el filtro de exclusion de palabras para obtener el conteo real.
+     * - Cuando pagination=0, muestra cuantos productos son visibles (respetando limit).
      * 
      * @param array $atts Atributos del shortcode
-     * @return int Total de productos encontrados
+     * @return int Total de productos encontrados o visibles
      */
     private function getTotalProductCount(array $atts): int
     {
         $params = array_merge($atts, ['paged' => 1]);
+        $showPagination = ($atts['pagination'] ?? '1') !== '0';
+        $limit = (int) ($atts['limit'] ?? 12);
 
         // Obtener palabras de exclusion
         $excludeWords = $this->queryBuilder->getExcludeWords($params);
@@ -161,13 +164,27 @@ class ProductRenderer
 
             // Aplicar filtro de exclusion
             $filteredPosts = QueryBuilder::filterExcludedPosts($posts, $excludeWords);
-            return count($filteredPosts);
+            $totalFiltered = count($filteredPosts);
+
+            // Si no hay paginacion, mostrar solo los visibles (limitados)
+            if (!$showPagination) {
+                return min($totalFiltered, $limit);
+            }
+
+            return $totalFiltered;
         }
 
         // Sin exclusiones, usar el conteo nativo de WordPress
         $query = $this->queryBuilder->build($params);
+        $foundPosts = $query->found_posts;
         wp_reset_postdata();
-        return $query->found_posts;
+
+        // Si no hay paginacion, mostrar solo los visibles (limitados)
+        if (!$showPagination) {
+            return min($foundPosts, $limit);
+        }
+
+        return $foundPosts;
     }
 
     /**
