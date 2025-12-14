@@ -28,9 +28,22 @@ class GridRenderer
      */
     public function render(array $params): int
     {
-        $query = $this->queryBuilder->build($params);
         $showPagination = $params['show_pagination'] ?? true;
         $excludeWords = $this->queryBuilder->getExcludeWords($params);
+        $limit = (int) ($params['limit'] ?? 12);
+        $paged = (int) ($params['paged'] ?? 1);
+
+        /*
+         * Si hay palabras de exclusion, necesitamos traer TODOS los productos
+         * primero, aplicar el filtro, y luego paginar manualmente.
+         * Esto es necesario porque WordPress no puede excluir por palabras en titulo.
+         */
+        if (!empty($excludeWords)) {
+            return $this->renderWithExclusions($params, $excludeWords, $limit, $paged, $showPagination);
+        }
+
+        // Sin exclusiones: usar query normal con paginacion nativa
+        $query = $this->queryBuilder->build($params);
 
         // Ordenamiento por descuento requiere procesamiento PHP
         if ($this->queryBuilder->isDiscountSorting($params) && $query->have_posts()) {
@@ -42,37 +55,64 @@ class GridRenderer
             return 0;
         }
 
-        // Recolectar posts y aplicar filtro de exclusión si es necesario
-        $posts = [];
+        // Renderizar productos de la pagina actual
+        echo '<div class="amazon-product-grid">';
         while ($query->have_posts()) {
             $query->the_post();
-            $posts[] = get_post();
+            CardRenderer::renderProduct(get_post());
+        }
+        echo '</div>';
+
+        if ($showPagination) {
+            $this->renderPagination($query->max_num_pages, $paged);
         }
 
-        // Aplicar filtro de exclusión por palabras en título
-        if (!empty($excludeWords)) {
-            $posts = QueryBuilder::filterExcludedPosts($posts, $excludeWords);
+        $totalPosts = $query->found_posts;
+        wp_reset_postdata();
+        return $totalPosts;
+    }
+
+    /**
+     * Renderiza el grid cuando hay palabras de exclusion.
+     * Trae todos los productos, aplica filtro, y pagina manualmente.
+     */
+    private function renderWithExclusions(
+        array $params,
+        array $excludeWords,
+        int $limit,
+        int $paged,
+        bool $showPagination
+    ): int {
+        // Traer TODOS los productos (sin paginacion)
+        $allParams = array_merge($params, ['limit' => -1, 'paged' => 1]);
+        $query = $this->queryBuilder->build($allParams);
+
+        if (!$query->have_posts()) {
+            $this->renderEmptyState();
+            return 0;
         }
 
-        $totalPosts = count($posts);
+        // Recolectar todos los posts
+        $allPosts = [];
+        while ($query->have_posts()) {
+            $query->the_post();
+            $allPosts[] = get_post();
+        }
 
-        if (empty($posts)) {
+        // Aplicar filtro de exclusion
+        $filteredPosts = QueryBuilder::filterExcludedPosts($allPosts, $excludeWords);
+        $totalPosts = count($filteredPosts);
+
+        if (empty($filteredPosts)) {
             $this->renderEmptyState();
             wp_reset_postdata();
             return 0;
         }
 
-        // Aplicar paginación manual si hay exclusiones (porque el conteo cambió)
-        if (!empty($excludeWords)) {
-            $limit = (int) ($params['limit'] ?? 12);
-            $paged = (int) ($params['paged'] ?? 1);
-            $offset = ($paged - 1) * $limit;
-            $pagedPosts = array_slice($posts, $offset, $limit);
-            $totalPages = ceil($totalPosts / $limit);
-        } else {
-            $pagedPosts = $posts;
-            $totalPages = $query->max_num_pages;
-        }
+        // Aplicar paginacion manual
+        $offset = ($paged - 1) * $limit;
+        $pagedPosts = array_slice($filteredPosts, $offset, $limit);
+        $totalPages = (int) ceil($totalPosts / $limit);
 
         echo '<div class="amazon-product-grid">';
         foreach ($pagedPosts as $post) {
@@ -81,7 +121,7 @@ class GridRenderer
         echo '</div>';
 
         if ($showPagination) {
-            $this->renderPagination($totalPages, $params['paged'] ?? 1);
+            $this->renderPagination($totalPages, $paged);
         }
 
         wp_reset_postdata();

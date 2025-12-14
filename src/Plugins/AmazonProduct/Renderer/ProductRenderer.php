@@ -134,12 +134,37 @@ class ProductRenderer
      * Obtiene el total de productos que coinciden con los filtros.
      * Se usa para mostrar el contador correcto en la carga inicial.
      * 
+     * Corregido: Ahora aplica el filtro de exclusion de palabras para
+     * obtener el conteo real de productos visibles.
+     * 
      * @param array $atts Atributos del shortcode
      * @return int Total de productos encontrados
      */
     private function getTotalProductCount(array $atts): int
     {
         $params = array_merge($atts, ['paged' => 1]);
+
+        // Obtener palabras de exclusion
+        $excludeWords = $this->queryBuilder->getExcludeWords($params);
+
+        // Si hay palabras de exclusion, necesitamos traer todos los posts y filtrar
+        if (!empty($excludeWords)) {
+            $countParams = array_merge($params, ['limit' => -1]);
+            $query = $this->queryBuilder->build($countParams);
+
+            $posts = [];
+            while ($query->have_posts()) {
+                $query->the_post();
+                $posts[] = get_post();
+            }
+            wp_reset_postdata();
+
+            // Aplicar filtro de exclusion
+            $filteredPosts = QueryBuilder::filterExcludedPosts($posts, $excludeWords);
+            return count($filteredPosts);
+        }
+
+        // Sin exclusiones, usar el conteo nativo de WordPress
         $query = $this->queryBuilder->build($params);
         wp_reset_postdata();
         return $query->found_posts;
