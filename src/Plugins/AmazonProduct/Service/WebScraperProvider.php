@@ -121,6 +121,26 @@ class WebScraperProvider implements ApiProviderInterface
     }
 
     /**
+     * Obtiene el codigo de pais ISO para el proxy basado en la region de Amazon.
+     * 
+     * Es importante que la IP del proxy sea del mismo pais que el dominio de Amazon
+     * para evitar deteccion y bloqueos.
+     */
+    private function getProxyCountryCode(): string
+    {
+        $countryCodes = [
+            'us' => 'us',
+            'es' => 'es',
+            'uk' => 'gb',
+            'de' => 'de',
+            'fr' => 'fr',
+            'it' => 'it',
+        ];
+
+        return $countryCodes[$this->region] ?? 'es';
+    }
+
+    /**
      * Numero maximo de reintentos para requests fallidos
      */
     private const MAX_RETRIES = 5;
@@ -171,18 +191,22 @@ class WebScraperProvider implements ApiProviderInterface
             : get_option('amazon_scraper_proxy_auth', '');
 
         /*
-         * Generar session ID unico para forzar rotacion de IP en cada request.
-         * DataImpulse usa sticky sessions por defecto, asi que necesitamos
-         * generar un session ID diferente cada vez para obtener una IP nueva.
+         * Generar session ID unico y especificar pais para rotacion de IP.
          * 
-         * Formato segun docs: usuario__sessid.RANDOM:password
+         * DataImpulse parametros:
+         * - sessid.RANDOM: Fuerza una IP diferente por session
+         * - cr.XX: Especifica el pais de la IP (debe coincidir con Amazon region)
+         * 
+         * Formato: usuario__cr.XX;sessid.RANDOM:password
          * Ref: https://docs.dataimpulse.com/proxies/parameters/session-id
          */
         $sessionId = '';
+        $countryCode = $this->getProxyCountryCode();
+
         if (!empty($proxyAuth) && strpos($proxyAuth, ':') !== false) {
             [$proxyUser, $proxyPass] = explode(':', $proxyAuth, 2);
             $sessionId = bin2hex(random_bytes(8));
-            $proxyAuth = "{$proxyUser}__sessid.{$sessionId}:{$proxyPass}";
+            $proxyAuth = "{$proxyUser}__cr.{$countryCode};sessid.{$sessionId}:{$proxyPass}";
         }
 
         /*
@@ -190,8 +214,8 @@ class WebScraperProvider implements ApiProviderInterface
          */
         if (!empty($proxy)) {
             $proxyHost = preg_replace('/:[^:]+$/', ':***', $proxy);
-            $sessInfo = !empty($sessionId) ? " | sessid: {$sessionId}" : "";
-            GloryLogger::info("Scraper #{$attempt}: Proxy {$proxyHost}{$sessInfo}");
+            $sessInfo = !empty($sessionId) ? " | cr.{$countryCode};sessid.{$sessionId}" : "";
+            GloryLogger::info("Scraper #{$attempt}: Proxy{$sessInfo}");
         } elseif ($attempt === 1) {
             GloryLogger::warning("Scraper: Proxy NO configurado - Usando IP directa");
         }
