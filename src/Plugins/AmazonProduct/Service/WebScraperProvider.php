@@ -175,24 +175,25 @@ class WebScraperProvider implements ApiProviderInterface
          * DataImpulse usa sticky sessions por defecto, asi que necesitamos
          * generar un session ID diferente cada vez para obtener una IP nueva.
          * 
-         * Formato: usuario__session.RANDOM:password
+         * Formato segun docs: usuario__sessid.RANDOM:password
+         * Ref: https://docs.dataimpulse.com/proxies/parameters/session-id
          */
+        $sessionId = '';
         if (!empty($proxyAuth) && strpos($proxyAuth, ':') !== false) {
             [$proxyUser, $proxyPass] = explode(':', $proxyAuth, 2);
             $sessionId = bin2hex(random_bytes(8));
-            $proxyAuth = "{$proxyUser}__session.{$sessionId}:{$proxyPass}";
+            $proxyAuth = "{$proxyUser}__sessid.{$sessionId}:{$proxyPass}";
         }
 
         /*
-         * Log de configuracion de proxy (solo en primer intento)
+         * Log de configuracion de proxy
          */
-        if ($attempt === 1) {
-            if (!empty($proxy)) {
-                $proxyHost = preg_replace('/:[^:]+$/', ':***', $proxy);
-                GloryLogger::info("Scraper: Proxy ACTIVO - Host: {$proxyHost} (rotacion IP por session)");
-            } else {
-                GloryLogger::warning("Scraper: Proxy NO configurado - Usando IP directa");
-            }
+        if (!empty($proxy)) {
+            $proxyHost = preg_replace('/:[^:]+$/', ':***', $proxy);
+            $sessInfo = !empty($sessionId) ? " | sessid: {$sessionId}" : "";
+            GloryLogger::info("Scraper #{$attempt}: Proxy {$proxyHost}{$sessInfo}");
+        } elseif ($attempt === 1) {
+            GloryLogger::warning("Scraper: Proxy NO configurado - Usando IP directa");
         }
 
         $options = [
