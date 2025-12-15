@@ -6,11 +6,18 @@ use Glory\Plugins\AmazonProduct\Service\AmazonApiService;
 use Glory\Plugins\AmazonProduct\Service\ProductImporter;
 
 /**
- * Import Products Tab - Search and import products from Amazon API.
- * Detecta productos ya importados para evitar duplicados y ahorrar llamadas API.
+ * Import Products Tab - AJAX powered search and import.
  */
 class ImportTab implements TabInterface
 {
+    public function __construct()
+    {
+        // Register AJAX handlers
+        // Note: This relies on the Tab being instantiated during init/admin_init hooks.
+        add_action('wp_ajax_amazon_search_products', [$this, 'ajaxSearch']);
+        add_action('wp_ajax_amazon_import_single', [$this, 'ajaxImport']);
+    }
+
     public function getSlug(): string
     {
         return 'import';
@@ -24,69 +31,199 @@ class ImportTab implements TabInterface
     public function render(): void
     {
         $service = new AmazonApiService();
-        $results = [];
-        $message = '';
-
-        $page = isset($_POST['page']) ? max(1, intval($_POST['page'])) : 1;
-        $keyword = isset($_POST['keyword']) ? sanitize_text_field($_POST['keyword']) : '';
-
-        // Handle Pagination clicks
-        if (isset($_POST['next_page'])) {
-            $page++;
-        } elseif (isset($_POST['prev_page'])) {
-            $page = max(1, $page - 1);
-        } elseif (isset($_POST['amazon_search'])) {
-            $page = 1; // Reset to 1 on new search
-        }
-
-        // Verificar si la API está configurada
         if (!$service->isConfigured()) {
             echo '<div class="notice notice-warning inline"><p><strong>API no configurada.</strong> Ve a la pestaña "Configuracion Guiada" para configurar tu API Key de RapidAPI.</p></div>';
         }
+?>
+        <div class="wrap amazon-import-tab">
+            <h3>Buscar e Importar</h3>
+            <p style="color: #666;">Los productos ya importados se mostraran marcados. Puedes actualizarlos sin duplicar.</p>
 
-        // Handle Search and Refresh
-        if ((!empty($keyword) || isset($_POST['refresh_search'])) && check_admin_referer('amazon_search_action', 'amazon_search_nonce')) {
-            if (!$service->isConfigured()) {
-                $message = '<div class="notice notice-error inline"><p>No puedes buscar productos sin configurar la API primero. Ve a la pestaña "Configuracion Guiada".</p></div>';
-            } else {
-                $forceRefresh = isset($_POST['refresh_search']);
-                $apiResults = $service->searchProducts($keyword, $page, $forceRefresh);
+            <div class="search-box" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="amazon-search-keyword" placeholder="Buscar producto..." class="regular-text" style="min-width: 300px;">
+                <button type="button" id="amazon-search-btn" class="button button-primary">Buscar en Amazon</button>
+            </div>
 
-                $lastCache = $service->getLastCacheTime();
-                if ($lastCache && !$forceRefresh) {
-                    $timeAgo = human_time_diff($lastCache);
-                    $message = '<div class="notice notice-info inline" style="display:flex; align-items:center; justify-content:space-between;">';
-                    $message .= '<p>Resultados cacheados hace ' . $timeAgo . '.</p>';
-                    $message .= '<form method="post" style="margin:5px 0 0 10px;">';
-                    $message .= wp_nonce_field('amazon_search_action', 'amazon_search_nonce', true, false);
-                    $message .= '<input type="hidden" name="keyword" value="' . esc_attr($keyword) . '">';
-                    $message .= '<input type="hidden" name="page" value="' . $page . '">';
-                    $message .= '<input type="submit" name="refresh_search" class="button button-small" value="Forzar actualizacion">';
-                    $message .= '</form>';
-                    $message .= '</div>';
-                } elseif ($forceRefresh) {
-                    $message = '<div class="notice notice-success inline"><p>Cache limpiada. Resultados actualizados.</p></div>';
-                }
+            <div id="amazon-search-results"></div>
+        </div>
 
-                // Validar que los resultados sean un array de productos válido
-                if (is_array($apiResults) && !empty($apiResults)) {
-                    // Verificar que el primer elemento sea un array (producto válido)
-                    $firstItem = reset($apiResults);
-                    if (is_array($firstItem) && isset($firstItem['asin'])) {
-                        $results = $apiResults;
-                    } else {
-                        // La API devolvió algo pero no es la estructura esperada
-                        $message = '<div class="notice notice-warning inline"><p>La API devolvio una respuesta inesperada. Verifica tu configuracion de API.</p></div>';
+        <script type="text/javascript">
+            jQuery(document).ready(function($) {
+                // Search State
+                let currentKeyword = '';
+                let currentPage = 1;
+
+                // Bind Search
+                $('#amazon-search-btn').on('click', function() {
+                    currentKeyword = $('#amazon-search-keyword').val();
+                    currentPage = 1;
+                    performSearch(false);
+                });
+
+                // Bind Enter Key
+                $('#amazon-search-keyword').on('keypress', function(e) {
+                    if (e.which == 13) {
+                        currentKeyword = $(this).val();
+                        currentPage = 1;
+                        performSearch(false);
                     }
-                } else {
-                    $message = '<div class="notice notice-info inline"><p>No se encontraron productos para: <strong>' . esc_html($keyword) . '</strong> en la pagina ' . $page . '</p></div>';
+                });
+
+                // Bind Pagination
+                $(document).on('click', '.amazon-page-link', function(e) {
+                    e.preventDefault();
+                    if ($(this).attr('disabled')) return;
+
+                    if ($(this).data('page')) {
+                        currentPage = $(this).data('page');
+                        performSearch(false);
+                    }
+                });
+
+                // Bind Refresh Cache
+                $(document).on('click', '#amazon-force-refresh', function(e) {
+                    e.preventDefault();
+                    performSearch(true);
+                });
+
+                // Bind Import/Update
+                $(document).on('click', '.amazon-import-btn', function(e) {
+                    e.preventDefault();
+                    const btn = $(this);
+                    const asin = btn.data('asin');
+
+                    btn.prop('disabled', true).text('Procesando...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'amazon_import_single',
+                            asin: asin,
+                            nonce: '<?php echo wp_create_nonce('amazon_import_ajax'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                const data = response.data;
+                                // Change button to "Ver Producto"
+                                const viewBtn = `<a href="${data.edit_link}" target="_blank" class="button button-secondary">Ver Producto</a>`;
+                                btn.parent().html(viewBtn);
+
+                                // Update row status
+                                $(`#row-status-${asin}`).html(`
+                                    <span style="background: #46b450; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px;">
+                                        ${data.action === 'updated' ? 'Actualizado' : 'Importado'}
+                                    </span>
+                                    <br><small style="color: #666;">ID: ${data.id}</small>
+                                `);
+
+                                // Update row highlight
+                                btn.closest('tr').css('background', '#f0f8e8');
+
+                                // Update price status if available
+                                if (data.price_html) {
+                                    $(`#row-price-${asin}`).html(data.price_html);
+                                }
+                            } else {
+                                alert('Error: ' + (response.data || 'Unknown error'));
+                                btn.prop('disabled', false).text('Reintentar');
+                            }
+                        },
+                        error: function() {
+                            alert('Error de conexión');
+                            btn.prop('disabled', false).text('Reintentar');
+                        }
+                    });
+                });
+
+                function performSearch(forceRefresh) {
+                    if (!currentKeyword) return;
+
+                    $('#amazon-search-results').html('<p class="spinner is-active" style="float:none; display:inline-block;"></p> Buscando...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'amazon_search_products',
+                            keyword: currentKeyword,
+                            page: currentPage,
+                            force_refresh: forceRefresh ? 1 : 0,
+                            nonce: '<?php echo wp_create_nonce('amazon_search_ajax'); ?>'
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                $('#amazon-search-results').html(response.data);
+                            } else {
+                                $('#amazon-search-results').html('<div class="notice notice-error inline"><p>' + response.data + '</p></div>');
+                            }
+                        },
+                        error: function() {
+                            $('#amazon-search-results').html('<div class="notice notice-error inline"><p>Error de conexión</p></div>');
+                        }
+                    });
                 }
-            }
+            });
+        </script>
+    <?php
+    }
+
+    public function ajaxSearch(): void
+    {
+        check_ajax_referer('amazon_search_ajax', 'nonce');
+
+        $keyword = sanitize_text_field($_POST['keyword'] ?? '');
+        $page = intval($_POST['page'] ?? 1);
+        $forceRefresh = !empty($_POST['force_refresh']);
+
+        if (empty($keyword)) {
+            wp_send_json_error('Palabra clave vacia');
         }
 
-        // Handle import
-        if (isset($_POST['amazon_import']) && check_admin_referer('amazon_import_action', 'amazon_import_nonce')) {
-            $asin = sanitize_text_field($_POST['asin']);
+        $service = new AmazonApiService();
+        $results = $service->searchProducts($keyword, $page, $forceRefresh);
+
+        // Cache info
+        $cacheInfoHtml = '';
+        $lastCache = $service->getLastCacheTime();
+        if ($lastCache && !$forceRefresh) {
+            $timeAgo = human_time_diff($lastCache);
+            $cacheInfoHtml = '<div class="notice notice-info inline" style="margin-bottom:15px; display:flex; align-items:center; justify-content:space-between;">' .
+                '<p>Resultados cacheados hace ' . $timeAgo . '.</p>' .
+                '<button type="button" id="amazon-force-refresh" class="button button-small">Forzar actualizacion</button>' .
+                '</div>';
+        } elseif ($forceRefresh) {
+            $cacheInfoHtml = '<div class="notice notice-success inline" style="margin-bottom:15px;"><p>Cache limpiada. Resultados actualizados.</p></div>';
+        }
+
+        if (empty($results)) {
+            wp_send_json_error('No se encontraron productos');
+        }
+
+        ob_start();
+        echo $cacheInfoHtml;
+        $this->renderResultsTable($results, $page);
+        $html = ob_get_clean();
+
+        wp_send_json_success($html);
+    }
+
+    public function ajaxImport(): void
+    {
+        try {
+            check_ajax_referer('amazon_import_ajax', 'nonce');
+
+            $asin = sanitize_text_field($_POST['asin'] ?? '');
+            if (empty($asin)) {
+                wp_send_json_error('ASIN vacio');
+            }
+
+            // Log de inicio para depuracion
+            if (class_exists('\Glory\Core\GloryLogger')) {
+                \Glory\Core\GloryLogger::info("AjaxImport: Start for ASIN $asin");
+            }
+
+            $service = new AmazonApiService();
             $existingId = ProductImporter::findByAsin($asin);
 
             $productData = $service->getProductByAsin($asin);
@@ -94,41 +231,50 @@ class ImportTab implements TabInterface
             if (!empty($productData) && is_array($productData)) {
                 $postId = ProductImporter::importProduct($productData);
                 if ($postId) {
-                    $action = $existingId ? 'actualizado' : 'importado';
-                    $message = '<div class="notice notice-success inline"><p>Producto ' . $action . ' exitosamente! (ID: ' . $postId . ')</p></div>';
+                    // Get edit link
+                    $editLink = get_edit_post_link($postId, 'display');
+                    if (!$editLink) $editLink = admin_url('post.php?post=' . $postId . '&action=edit');
+
+                    $action = $existingId ? 'updated' : 'imported';
+
+                    // Construct price HTML for update
+                    $savedPrice = get_post_meta($postId, 'price', true);
+                    $fetchedPrice = $productData['asin_price'] ?? 0;
+
+                    // Fix potential wc_price crash
+                    $fetchedPriceFormatted = function_exists('wc_price') ? wc_price($fetchedPrice) : $fetchedPrice . ' €';
+                    $savedPriceFormatted = function_exists('wc_price') ? wc_price($savedPrice) : $savedPrice . ' €';
+
+                    $priceHtml = '<div><span style="color: #2271b1; font-weight: bold;">' . $fetchedPriceFormatted . '</span><br><small style="color: #666;">Detectado</small></div>';
+                    $priceHtml .= '<div style="margin-top: 5px; border-top: 1px dotted #ccc; padding-top: 2px;"><span style="color: #46b450; font-weight: bold;">' . $savedPriceFormatted . '</span><br><small style="color: #666;">Guardado</small></div>';
+
+                    if (class_exists('\Glory\Core\GloryLogger')) {
+                        \Glory\Core\GloryLogger::info("AjaxImport: Success. Post ID: $postId");
+                    }
+
+                    wp_send_json_success([
+                        'id' => $postId,
+                        'action' => $action,
+                        'edit_link' => $editLink,
+                        'title' => get_the_title($postId),
+                        'price_html' => $priceHtml
+                    ]);
                 } else {
-                    $message = '<div class="notice notice-error inline"><p>Error al importar el producto.</p></div>';
+                    wp_send_json_error('Error al importar en BD');
                 }
             } else {
-                $message = '<div class="notice notice-error inline"><p>Error al obtener datos del producto.</p></div>';
+                wp_send_json_error('Error al obtener datos de Amazon');
             }
+        } catch (\Throwable $e) {
+            if (class_exists('\Glory\Core\GloryLogger')) {
+                \Glory\Core\GloryLogger::error("AjaxImport Error: " . $e->getMessage());
+            }
+            wp_send_json_error('Error Fatal: ' . $e->getMessage());
         }
-
-        echo $message;
-        $this->renderSearchForm($keyword, $page);
-        $this->renderResultsTable($results, $page, $keyword);
     }
 
-    private function renderSearchForm(string $keyword, int $page): void
+    private function renderResultsTable(array $results, int $page): void
     {
-?>
-        <h3>Buscar e Importar</h3>
-        <p style="color: #666;">Los productos ya importados se mostraran marcados. Puedes actualizarlos sin duplicar.</p>
-        <form method="post" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
-            <?php wp_nonce_field('amazon_search_action', 'amazon_search_nonce'); ?>
-            <input type="text" name="keyword" value="<?php echo esc_attr($keyword); ?>" placeholder="Buscar producto..." required class="regular-text">
-            <input type="hidden" name="page" value="<?php echo $page; ?>">
-            <input type="submit" name="amazon_search" class="button button-primary" value="Buscar en Amazon">
-        </form>
-    <?php
-    }
-
-    private function renderResultsTable(array $results, int $page, string $keyword): void
-    {
-        if (empty($results)) {
-            return;
-        }
-
         // Pre-cargar ASINs ya importados para evitar multiples queries
         $importedAsins = $this->getImportedAsins($results);
     ?>
@@ -136,19 +282,8 @@ class ImportTab implements TabInterface
             <div class="tablenav-pages">
                 <span class="displaying-num">Pagina <?php echo $page; ?></span>
                 <span class="pagination-links">
-                    <form method="post" style="display:inline-block;">
-                        <?php wp_nonce_field('amazon_search_action', 'amazon_search_nonce'); ?>
-                        <input type="hidden" name="keyword" value="<?php echo esc_attr($keyword); ?>">
-                        <input type="hidden" name="page" value="<?php echo $page; ?>">
-                        <button type="submit" name="prev_page" class="button" <?php disabled($page, 1); ?>>&laquo; Anterior</button>
-                    </form>
-
-                    <form method="post" style="display:inline-block;">
-                        <?php wp_nonce_field('amazon_search_action', 'amazon_search_nonce'); ?>
-                        <input type="hidden" name="keyword" value="<?php echo esc_attr($keyword); ?>">
-                        <input type="hidden" name="page" value="<?php echo $page; ?>">
-                        <button type="submit" name="next_page" class="button">Siguiente &raquo;</button>
-                    </form>
+                    <button type="button" class="button amazon-page-link" data-page="<?php echo max(1, $page - 1); ?>" <?php echo $page <= 1 ? 'disabled' : ''; ?>>&laquo; Anterior</button>
+                    <button type="button" class="button amazon-page-link" data-page="<?php echo $page + 1; ?>">Siguiente &raquo;</button>
                 </span>
             </div>
         </div>
@@ -194,10 +329,10 @@ class ImportTab implements TabInterface
                                 <span style="color: #999; font-size: 11px;">(<?php echo number_format((int)$reviews); ?>)</span>
                             </div>
                         </td>
-                        <td>
+                        <td id="row-price-<?php echo esc_attr($asin); ?>">
                             <div>
                                 <span style="color: #2271b1; font-weight: bold;">
-                                    <?php echo $fetchedPrice . ' €'; ?>
+                                    <?php echo (function_exists('wc_price') ? wc_price($fetchedPrice) : $fetchedPrice . ' €'); ?>
                                 </span>
                                 <br>
                                 <small style="color: #666;">Detectado</small>
@@ -205,14 +340,14 @@ class ImportTab implements TabInterface
                             <?php if ($isImported && $savedPrice !== null): ?>
                                 <div style="margin-top: 5px; border-top: 1px dotted #ccc; padding-top: 2px;">
                                     <span style="color: #46b450; font-weight: bold;">
-                                        <?php echo $savedPrice . ' €'; ?>
+                                        <?php echo (function_exists('wc_price') ? wc_price($savedPrice) : $savedPrice . ' €'); ?>
                                     </span>
                                     <br>
                                     <small style="color: #666;">Guardado</small>
                                 </div>
                             <?php endif; ?>
                         </td>
-                        <td>
+                        <td id="row-status-<?php echo esc_attr($asin); ?>">
                             <?php if ($isImported): ?>
                                 <span style="background: #46b450; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px;">
                                     Ya importado
@@ -223,19 +358,11 @@ class ImportTab implements TabInterface
                             <?php endif; ?>
                         </td>
                         <td>
-                            <form method="post">
-                                <?php wp_nonce_field('amazon_import_action', 'amazon_import_nonce'); ?>
-                                <input type="hidden" name="asin" value="<?php echo esc_attr($asin); ?>">
-                                <!-- Preservation of state (page and keyword) for when the page reloads after action -->
-                                <input type="hidden" name="page" value="<?php echo $page; ?>">
-                                <input type="hidden" name="keyword" value="<?php echo esc_attr($keyword); ?>">
-
-                                <?php if ($isImported): ?>
-                                    <input type="submit" name="amazon_import" class="button" value="Actualizar">
-                                <?php else: ?>
-                                    <input type="submit" name="amazon_import" class="button button-primary" value="Importar">
-                                <?php endif; ?>
-                            </form>
+                            <?php if ($isImported): ?>
+                                <button type="button" class="button amazon-import-btn" data-asin="<?php echo esc_attr($asin); ?>">Actualizar</button>
+                            <?php else: ?>
+                                <button type="button" class="button button-primary amazon-import-btn" data-asin="<?php echo esc_attr($asin); ?>">Importar</button>
+                            <?php endif; ?>
                         </td>
                     </tr>
                 <?php endforeach; ?>
@@ -250,7 +377,6 @@ class ImportTab implements TabInterface
 
     /**
      * Obtiene un array de ASINs ya importados de los resultados de busqueda.
-     * Optimizado para hacer una sola query en lugar de N queries.
      */
     private function getImportedAsins(array $results): array
     {
