@@ -331,7 +331,10 @@ class StripeWebhookHandler
      */
     private function getCustomerEmail(string $customerId): ?string
     {
+        GloryLogger::info("getCustomerEmail: customerId = {$customerId}");
+
         if (empty($customerId)) {
+            GloryLogger::error("getCustomerEmail: customerId vacío");
             return null;
         }
 
@@ -339,7 +342,11 @@ class StripeWebhookHandler
             ? GLORY_STRIPE_SECRET_KEY
             : get_option('glory_stripe_secret_key', '');
 
+        GloryLogger::info("getCustomerEmail: GLORY_STRIPE_SECRET_KEY defined = " . (defined('GLORY_STRIPE_SECRET_KEY') ? 'true' : 'false'));
+        GloryLogger::info("getCustomerEmail: secretKey length = " . strlen($secretKey));
+
         if (empty($secretKey)) {
+            GloryLogger::error("getCustomerEmail: secretKey vacía");
             return null;
         }
 
@@ -353,10 +360,15 @@ class StripeWebhookHandler
         );
 
         if (is_wp_error($response)) {
+            GloryLogger::error("getCustomerEmail: wp_error = " . $response->get_error_message());
             return null;
         }
 
+        $responseCode = wp_remote_retrieve_response_code($response);
         $body = json_decode(wp_remote_retrieve_body($response), true);
+
+        GloryLogger::info("getCustomerEmail: Stripe response code = {$responseCode}");
+        GloryLogger::info("getCustomerEmail: email = " . ($body['email'] ?? 'NULL'));
 
         return $body['email'] ?? null;
     }
