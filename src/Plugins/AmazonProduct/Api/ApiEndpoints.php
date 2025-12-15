@@ -33,14 +33,17 @@ class ApiEndpoints
      */
     public static function register(): void
     {
-        error_log('[ApiEndpoints] register() llamado. isServer=' . (PluginMode::isServer() ? 'true' : 'false'));
+        GloryLogger::info('ApiEndpoints::register() llamado');
+        GloryLogger::info('PluginMode::getMode() = ' . PluginMode::getMode());
+        GloryLogger::info('PluginMode::isServer() = ' . (PluginMode::isServer() ? 'true' : 'false'));
+        GloryLogger::info('GLORY_AMAZON_MODE defined = ' . (defined('GLORY_AMAZON_MODE') ? 'true (' . GLORY_AMAZON_MODE . ')' : 'false'));
 
         if (!PluginMode::isServer()) {
-            error_log('[ApiEndpoints] No es modo servidor, saliendo sin registrar rutas');
+            GloryLogger::warning('ApiEndpoints: No es modo servidor, saltando registro de rutas');
             return;
         }
 
-        error_log('[ApiEndpoints] Registrando rutas REST API...');
+        GloryLogger::info('ApiEndpoints: Registrando rutas REST API...');
 
         /*
          * Buscar productos

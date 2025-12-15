@@ -310,28 +310,65 @@ Glory/src/Plugins/AmazonProduct/
 3. [x] Adaptar ImportTab para usar API externa
 4. [x] Mostrar GB usados/restantes
 
-### Fase 7: Testing y Deploy - PENDIENTE
-1. [ ] Testing en local
-2. [ ] Deploy servidor en VPS
-3. [ ] Configurar dominio y SSL
-4. [ ] Crear webhook en Stripe Dashboard
-5. [ ] Prueba con cliente real
+### Fase 7: Testing y Deploy - EN PROGRESO
+1. [x] Deploy servidor en VPS (api.wandori.us)
+2. [x] Configurar dominio y SSL
+3. [x] Configurar .env con GLORY_AMAZON_MODE=server
+4. [x] Verificar API REST funciona (endpoints registrados)
+5. [x] Crear licencia de prueba
+6. [x] Test endpoint `/license/status` - OK
+7. [x] Test endpoint `/search` - OK (devuelve productos de Amazon)
+8. [ ] Test desde cliente local con API Key
+9. [ ] Probar flujo completo de importacion
+
+### Fase 8: Stripe + Proxy - PENDIENTE
+1. [ ] Configurar webhook en Stripe Dashboard
+2. [ ] Probar flujo de compra completo (cliente compra suscripcion)
+3. [ ] Verificar que webhook crea licencia automaticamente
+4. [ ] Configurar proxy (DataImpulse) en el servidor
+5. [ ] Probar scraping con proxy activado
+6. [ ] Prueba con cliente real de pago
 
 ---
 
 ## Configuracion del Servidor
 
-### Variable de Entorno (wp-config.php)
-```php
-// En tu servidor central
-define('GLORY_AMAZON_MODE', 'server');
-define('GLORY_STRIPE_SECRET_KEY', 'sk_live_xxx');
-define('GLORY_STRIPE_WEBHOOK_SECRET', 'whsec_xxx');
+### Archivo .env (en raiz del tema)
+```env
+# Modo servidor para el VPS central
+GLORY_AMAZON_MODE=server
 
-// En los WordPress de clientes
-define('GLORY_AMAZON_MODE', 'client');
-define('GLORY_API_SERVER', 'https://api.tuservicio.com');
+# Stripe (reemplazar con keys reales)
+GLORY_STRIPE_SECRET_KEY=sk_live_xxx
+GLORY_STRIPE_WEBHOOK_SECRET=whsec_xxx
+
+# Proxy (opcional, para evitar bloqueos de Amazon)
+# GLORY_PROXY_URL=http://user:pass@proxy.dataimpulse.com:port
 ```
+
+### Para WordPress de clientes
+No necesitan .env, solo configurar la API Key desde el admin.
+La URL del servidor ya esta hardcodeada: `https://api.wandori.us`
 
 ---
 
+## URLs de la API (Produccion)
+
+| Endpoint                                                        | Metodo | Descripcion        |
+| --------------------------------------------------------------- | ------ | ------------------ |
+| `https://api.wandori.us/wp-json/glory/v1/amazon/license/status` | GET    | Estado de licencia |
+| `https://api.wandori.us/wp-json/glory/v1/amazon/search`         | POST   | Buscar productos   |
+| `https://api.wandori.us/wp-json/glory/v1/amazon/product/{asin}` | POST   | Obtener por ASIN   |
+| `https://api.wandori.us/wp-json/glory/v1/amazon/stripe-webhook` | POST   | Webhook de Stripe  |
+
+---
+
+## Licencia de Prueba Creada
+
+- **Email:** test@example.com
+- **API Key:** `0345cb1aec74ef685957b92a95dbf7ffb0a95df7686f098d00bef55dc118f0f9`
+- **GB Limit:** 4
+- **Expira:** 2026-01-14
+- **Status:** active
+
+---
