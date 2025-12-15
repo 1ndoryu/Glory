@@ -171,12 +171,25 @@ class WebScraperProvider implements ApiProviderInterface
             : get_option('amazon_scraper_proxy_auth', '');
 
         /*
+         * Generar session ID unico para forzar rotacion de IP en cada request.
+         * DataImpulse usa sticky sessions por defecto, asi que necesitamos
+         * generar un session ID diferente cada vez para obtener una IP nueva.
+         * 
+         * Formato: usuario__session.RANDOM:password
+         */
+        if (!empty($proxyAuth) && strpos($proxyAuth, ':') !== false) {
+            [$proxyUser, $proxyPass] = explode(':', $proxyAuth, 2);
+            $sessionId = bin2hex(random_bytes(8));
+            $proxyAuth = "{$proxyUser}__session.{$sessionId}:{$proxyPass}";
+        }
+
+        /*
          * Log de configuracion de proxy (solo en primer intento)
          */
         if ($attempt === 1) {
             if (!empty($proxy)) {
                 $proxyHost = preg_replace('/:[^:]+$/', ':***', $proxy);
-                GloryLogger::info("Scraper: Proxy ACTIVO - Host: {$proxyHost}");
+                GloryLogger::info("Scraper: Proxy ACTIVO - Host: {$proxyHost} (rotacion IP por session)");
             } else {
                 GloryLogger::warning("Scraper: Proxy NO configurado - Usando IP directa");
             }
