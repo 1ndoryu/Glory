@@ -102,35 +102,9 @@ class AmazonApiService
      * @param int $page Numero de pagina
      * @return array Lista de productos
      */
-    /**
-     * Busca productos por palabra clave con CACHE.
-     * 
-     * @param string $keyword Palabra clave
-     * @param int $page Numero de pagina
-     * @return array Lista de productos
-     */
     public function searchProducts(string $keyword, int $page = 1): array
     {
-        // Generar key unica para el cache
-        $region = get_option('amazon_api_region', 'es');
-        $cacheKey = 'amz_search_' . md5($keyword . '_' . $page . '_' . $region . '_' . $this->providerType);
-
-        // Intentar obtener del cache (1 hora de duracion)
-        $cached = get_transient($cacheKey);
-        if ($cached !== false && is_array($cached)) {
-            GloryLogger::info("AmazonApiService: Sirviendo busqueda desde cache ('$keyword', p$page)");
-            return $cached;
-        }
-
-        // Si no esta en cache, buscar
-        $results = $this->provider->searchProducts($keyword, $page);
-
-        // Guardar en cache si hay resultados
-        if (!empty($results)) {
-            set_transient($cacheKey, $results, HOUR_IN_SECONDS);
-        }
-
-        return $results;
+        return $this->provider->searchProducts($keyword, $page);
     }
 
     /**
