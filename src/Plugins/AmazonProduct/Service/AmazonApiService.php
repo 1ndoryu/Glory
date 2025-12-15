@@ -23,6 +23,7 @@ class AmazonApiService
 {
     private const PROVIDER_RAPIDAPI = 'rapidapi';
     private const PROVIDER_PAAPI = 'paapi';
+    private const PROVIDER_SCRAPER = 'scraper';
 
     private ApiProviderInterface $provider;
     private string $providerType;
@@ -30,6 +31,14 @@ class AmazonApiService
     public function __construct()
     {
         $this->providerType = get_option('amazon_api_provider', self::PROVIDER_RAPIDAPI);
+
+        // AUTO-FIX: Si el usuario tiene RapidAPI seleccionado (o default) pero no ha puesto API Key,
+        // forzamos el uso del Web Scraper automáticamente para que no vea errores.
+        if ($this->providerType === self::PROVIDER_RAPIDAPI && empty(get_option('amazon_api_key'))) {
+            GloryLogger::info('AmazonApiService: RapidAPI sin key detectada. Forzando Web Scraper.');
+            $this->providerType = self::PROVIDER_SCRAPER;
+        }
+
         $this->provider = $this->createProvider();
     }
 
@@ -46,8 +55,12 @@ class AmazonApiService
                 return new AmazonPaApiProvider();
 
             case self::PROVIDER_RAPIDAPI:
-            default:
                 return new RapidApiProvider();
+
+            case self::PROVIDER_SCRAPER:
+            default:
+                GloryLogger::info('AmazonApiService: Usando Web Scraper de Emergencia (Default)');
+                return new WebScraperProvider();
         }
     }
 
@@ -89,9 +102,35 @@ class AmazonApiService
      * @param int $page Numero de pagina
      * @return array Lista de productos
      */
+    /**
+     * Busca productos por palabra clave con CACHE.
+     * 
+     * @param string $keyword Palabra clave
+     * @param int $page Numero de pagina
+     * @return array Lista de productos
+     */
     public function searchProducts(string $keyword, int $page = 1): array
     {
-        return $this->provider->searchProducts($keyword, $page);
+        // Generar key unica para el cache
+        $region = get_option('amazon_api_region', 'es');
+        $cacheKey = 'amz_search_' . md5($keyword . '_' . $page . '_' . $region . '_' . $this->providerType);
+
+        // Intentar obtener del cache (1 hora de duracion)
+        $cached = get_transient($cacheKey);
+        if ($cached !== false && is_array($cached)) {
+            GloryLogger::info("AmazonApiService: Sirviendo busqueda desde cache ('$keyword', p$page)");
+            return $cached;
+        }
+
+        // Si no esta en cache, buscar
+        $results = $this->provider->searchProducts($keyword, $page);
+
+        // Guardar en cache si hay resultados
+        if (!empty($results)) {
+            set_transient($cacheKey, $results, HOUR_IN_SECONDS);
+        }
+
+        return $results;
     }
 
     /**
@@ -154,6 +193,7 @@ class AmazonApiService
         return [
             self::PROVIDER_RAPIDAPI => 'RapidAPI (amazon-data)',
             self::PROVIDER_PAAPI => 'Amazon PA-API 5.0 (oficial)',
+            self::PROVIDER_SCRAPER => 'Web Scraper (Emergency Mode)',
         ];
     }
 
@@ -177,6 +217,10 @@ class AmazonApiService
                 $configured = !empty(get_option('amazon_paapi_access_key', ''))
                     && !empty(get_option('amazon_paapi_secret_key', ''))
                     && !empty(get_option('amazon_affiliate_tag', ''));
+                break;
+
+            case self::PROVIDER_SCRAPER:
+                $configured = true; // Siempre disponible, no requiere key
                 break;
 
             default:

@@ -53,6 +53,10 @@ class ConfigTab implements TabInterface
         $monthlyLimit = (int) ($_POST['amazon_api_monthly_limit'] ?? 500);
         ApiUsageTracker::saveConfig($cycleDay, $monthlyLimit);
 
+        // Proxy Settings (Scraper)
+        update_option('amazon_scraper_proxy', sanitize_text_field($_POST['amazon_scraper_proxy']));
+        update_option('amazon_scraper_proxy_auth', sanitize_text_field($_POST['amazon_scraper_proxy_auth']));
+
         // Limpiar cache de idioma para que el cambio surta efecto inmediato
         Labels::resetCache();
     }
@@ -78,6 +82,10 @@ class ConfigTab implements TabInterface
         $apiStats = ApiUsageTracker::getStats();
         $apiConfig = ApiUsageTracker::getConfig();
 
+        // Proxy
+        $proxyHost = get_option('amazon_scraper_proxy', '');
+        $proxyAuth = get_option('amazon_scraper_proxy_auth', '');
+
         // ARCH-01: Estado de cada provider
         $rapidApiStatus = AmazonApiService::checkProviderStatus('rapidapi');
         $paApiStatus = AmazonApiService::checkProviderStatus('paapi');
@@ -99,10 +107,15 @@ class ConfigTab implements TabInterface
                             Amazon PA-API 5.0 (oficial)
                             <?php echo $paApiStatus['configured'] ? '- Configurado' : '- No configurado'; ?>
                         </option>
+                        <option value="scraper" <?php selected($provider, 'scraper'); ?>>
+                            Web Scraper de Emergencia (Sin API)
+                            - Beta
+                        </option>
                     </select>
                     <p class="description">
                         <strong>RapidAPI:</strong> Facil de configurar, requiere suscripcion a RapidAPI.<br>
-                        <strong>PA-API:</strong> API oficial de Amazon, requiere cuenta de Associates aprobada.
+                        <strong>PA-API:</strong> API oficial de Amazon, requiere cuenta de Associates aprobada.<br>
+                        <strong>Web Scraper:</strong> Usa scraping directo. Usar con precaucion (lento/inestable).
                     </p>
                 </td>
             </tr>
@@ -144,6 +157,26 @@ class ConfigTab implements TabInterface
                     <td>
                         <input type="password" name="amazon_paapi_secret_key" id="amazon_paapi_secret_key" value="<?php echo esc_attr($paApiSecretKey); ?>" class="regular-text">
                         <p class="description">Tu Secret Key de Amazon Product Advertising API.</p>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Scraper Proxy Configuration -->
+            <h3>Scraper Proxy Settings (Optional)</h3>
+            <p>Configura un proxy para evitar bloqueos de IP cuando uses el Web Scraper de Emergencia.</p>
+            <table class="form-table">
+                <tr>
+                    <th scope="row"><label for="amazon_scraper_proxy">Proxy Host:Port</label></th>
+                    <td>
+                        <input type="text" name="amazon_scraper_proxy" id="amazon_scraper_proxy" value="<?php echo esc_attr($proxyHost); ?>" class="regular-text" placeholder="ej: 192.168.1.1:8080 o socks5://...">
+                        <p class="description">Formato: <code>IP:PORT</code> o <code>socks5://IP:PORT</code></p>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="amazon_scraper_proxy_auth">Proxy Auth</label></th>
+                    <td>
+                        <input type="text" name="amazon_scraper_proxy_auth" id="amazon_scraper_proxy_auth" value="<?php echo esc_attr($proxyAuth); ?>" class="regular-text" placeholder="user:password">
+                        <p class="description">Formato: <code>user:password</code> (deja vacio si no requiere autenticacion)</p>
                     </td>
                 </tr>
             </table>
