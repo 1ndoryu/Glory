@@ -144,9 +144,13 @@ class StripeWebhookHandler
          */
         $customerEmail = $this->getCustomerEmail($customerId);
 
+        /*
+         * Si no hay email (cliente de prueba CLI), generar uno temporal
+         * En produccion los clientes de Stripe Checkout siempre tienen email
+         */
         if (empty($customerEmail)) {
-            GloryLogger::error('Stripe Webhook: No se pudo obtener email del cliente');
-            return new WP_REST_Response(['error' => 'Customer email not found'], 400);
+            $customerEmail = 'test_' . substr($customerId, 4, 8) . '@stripe-test.local';
+            GloryLogger::warning("Stripe Webhook: Cliente sin email, usando temporal: {$customerEmail}");
         }
 
         /*
