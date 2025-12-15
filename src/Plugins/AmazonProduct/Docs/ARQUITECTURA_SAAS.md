@@ -313,7 +313,7 @@ Glory/src/Plugins/AmazonProduct/
 ### Fase 7: Testing y Deploy - COMPLETADO
 1. [x] Deploy servidor en VPS (api.wandori.us)
 2. [x] Configurar dominio y SSL
-3. [x] Configurar .env con GLORY_AMAZON_MODE=server
+3. [x] Configurar wp-config.php con GLORY_AMAZON_MODE=server
 4. [x] Verificar API REST funciona (endpoints registrados)
 5. [x] Crear licencia de prueba
 6. [x] Test endpoint `/license/status` - OK
@@ -321,14 +321,14 @@ Glory/src/Plugins/AmazonProduct/
 8. [ ] Test desde cliente local con API Key
 9. [ ] Probar flujo completo de importacion
 
-### Fase 8: Stripe + Proxy - EN PROGRESO
+### Fase 8: Stripe + Proxy - COMPLETADO (2025-12-15)
 1. [x] Configurar webhook en Stripe Dashboard
 2. [x] Configurar constantes en wp-config.php (GLORY_STRIPE_SECRET_KEY, GLORY_STRIPE_WEBHOOK_SECRET)
 3. [x] Probar webhook con Stripe CLI (stripe trigger customer.subscription.created)
 4. [x] Verificar que webhook crea licencia automaticamente - OK
 5. [x] Email de bienvenida enviado automaticamente - OK
-6. [ ] Configurar proxy (DataImpulse) en el servidor
-7. [ ] Probar scraping con proxy activado
+6. [x] Configurar proxy (DataImpulse) - GLORY_PROXY_HOST y GLORY_PROXY_AUTH
+7. [x] Probar scraping con proxy activado - OK (devuelve 20+ productos)
 8. [ ] Prueba con cliente real de pago (Stripe Checkout)
 
 ---
@@ -400,6 +400,68 @@ stripe trigger customer.subscription.created
 ### Ver logs en VPS
 ```bash
 tail -50 /var/www/wandori/wp-content/themes/glory/logs/glory.log
+```
+
+---
+
+## Tareas Pendientes (Proxima Sesion)
+
+### 1. Flujo de Pago del Cliente
+- [ ] Añadir boton "Suscribirse" en el panel del cliente (ClientLicenseTab)
+- [ ] El boton debe redirigir a Stripe Checkout
+- [ ] El cliente introduce su email en Stripe Checkout al pagar
+
+### 2. Identificacion del WordPress del Cliente
+**Pregunta:** ¿Como identificamos el WordPress del cliente cuando paga?
+
+**Solucion propuesta:**
+- El cliente paga con su email en Stripe
+- Stripe envia webhook con el email
+- El servidor genera la API Key y la envia por email
+- El cliente copia la API Key en su panel de WordPress
+- No necesitamos identificar su WordPress directamente
+
+### 3. Verificacion de Emails
+- [ ] Configurar SMTP en el servidor VPS para enviar emails reales
+- [ ] Verificar que `wp_mail()` funciona correctamente
+- [ ] Probar envio de email de bienvenida
+- [ ] Alternativa: usar servicio como SendGrid, Mailgun o Amazon SES
+
+### 4. Limpieza de Codigo
+- [ ] Remover logs de diagnostico de `ApiEndpoints.php`
+- [ ] Remover logs de diagnostico de `StripeWebhookHandler.php`
+- [ ] Los logs actuales son utiles para debugging pero no para produccion
+
+### 5. Stripe Checkout
+- [ ] Crear producto en Stripe con precio recurrente ($20/mes)
+- [ ] Configurar periodo de prueba de 30 dias
+- [ ] Obtener URL de checkout o crear Payment Link
+- [ ] Añadir URL al boton del cliente
+
+---
+
+## Notas Tecnicas
+
+### Flujo Completo de Suscripcion
+```
+1. Cliente ve panel "Sin licencia activa" en su WP
+2. Hace clic en "Suscribirse" 
+3. Redirige a Stripe Checkout
+4. Introduce email y paga (o inicia trial)
+5. Stripe envia webhook customer.subscription.created
+6. Servidor crea licencia y genera API Key
+7. Servidor envia email con API Key al cliente
+8. Cliente copia API Key en su panel WP
+9. Plugin se activa y puede importar productos
+```
+
+### Verificar Envio de Emails en VPS
+```bash
+# Ver si hay errores de mail
+tail -100 /var/log/mail.log
+
+# Probar envio manual
+php -r "mail('tu@email.com', 'Test', 'Contenido');"
 ```
 
 ---

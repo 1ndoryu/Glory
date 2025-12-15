@@ -57,7 +57,7 @@ class LicenseService
      */
     public static function generateApiKey(): string
     {
-        return bin2hex(random_bytes(32));
+        return bin2hex(random_bytes(12));
     }
 
     /**

@@ -30,7 +30,7 @@ class ApiClient
      */
     public function searchProducts(string $keyword, int $page = 1): array
     {
-        $response = $this->request('POST', '/wp-json/glory/v1/search', [
+        $response = $this->request('POST', '/wp-json/glory/v1/amazon/search', [
             'keyword' => $keyword,
             'page' => $page,
             'region' => get_option('amazon_api_region', 'es')
@@ -44,11 +44,11 @@ class ApiClient
             ];
         }
 
-        $this->lastUsageInfo = $response['data']['usage'] ?? null;
+        $this->lastUsageInfo = $response['usage'] ?? null;
 
         return [
             'success' => true,
-            'products' => $response['data']['products'] ?? [],
+            'products' => $response['data'] ?? [],
             'usage' => $this->lastUsageInfo
         ];
     }
@@ -58,7 +58,7 @@ class ApiClient
      */
     public function getProductByAsin(string $asin): array
     {
-        $response = $this->request('POST', '/wp-json/glory/v1/product/' . $asin, [
+        $response = $this->request('POST', '/wp-json/glory/v1/amazon/product/' . $asin, [
             'region' => get_option('amazon_api_region', 'es')
         ]);
 
@@ -70,11 +70,11 @@ class ApiClient
             ];
         }
 
-        $this->lastUsageInfo = $response['data']['usage'] ?? null;
+        $this->lastUsageInfo = $response['usage'] ?? null;
 
         return [
             'success' => true,
-            'product' => $response['data']['product'] ?? null,
+            'product' => $response['data'] ?? null,
             'usage' => $this->lastUsageInfo
         ];
     }
@@ -84,7 +84,7 @@ class ApiClient
      */
     public function getLicenseStatus(): array
     {
-        $response = $this->request('GET', '/wp-json/glory/v1/license/status');
+        $response = $this->request('GET', '/wp-json/glory/v1/amazon/license/status');
 
         if (!$response['success']) {
             return [
@@ -202,7 +202,8 @@ class ApiClient
 
         return [
             'success' => true,
-            'data' => $data['data'] ?? $data
+            'data' => $data['data'] ?? $data,
+            'usage' => $data['usage'] ?? null
         ];
     }
 }
