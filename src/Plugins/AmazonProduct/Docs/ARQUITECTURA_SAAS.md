@@ -310,7 +310,7 @@ Glory/src/Plugins/AmazonProduct/
 3. [x] Adaptar ImportTab para usar API externa
 4. [x] Mostrar GB usados/restantes
 
-### Fase 7: Testing y Deploy - EN PROGRESO
+### Fase 7: Testing y Deploy - COMPLETADO
 1. [x] Deploy servidor en VPS (api.wandori.us)
 2. [x] Configurar dominio y SSL
 3. [x] Configurar .env con GLORY_AMAZON_MODE=server
@@ -321,33 +321,37 @@ Glory/src/Plugins/AmazonProduct/
 8. [ ] Test desde cliente local con API Key
 9. [ ] Probar flujo completo de importacion
 
-### Fase 8: Stripe + Proxy - PENDIENTE
-1. [ ] Configurar webhook en Stripe Dashboard
-2. [ ] Probar flujo de compra completo (cliente compra suscripcion)
-3. [ ] Verificar que webhook crea licencia automaticamente
-4. [ ] Configurar proxy (DataImpulse) en el servidor
-5. [ ] Probar scraping con proxy activado
-6. [ ] Prueba con cliente real de pago
+### Fase 8: Stripe + Proxy - EN PROGRESO
+1. [x] Configurar webhook en Stripe Dashboard
+2. [x] Configurar constantes en wp-config.php (GLORY_STRIPE_SECRET_KEY, GLORY_STRIPE_WEBHOOK_SECRET)
+3. [x] Probar webhook con Stripe CLI (stripe trigger customer.subscription.created)
+4. [x] Verificar que webhook crea licencia automaticamente - OK
+5. [x] Email de bienvenida enviado automaticamente - OK
+6. [ ] Configurar proxy (DataImpulse) en el servidor
+7. [ ] Probar scraping con proxy activado
+8. [ ] Prueba con cliente real de pago (Stripe Checkout)
 
 ---
 
 ## Configuracion del Servidor
 
-### Archivo .env (en raiz del tema)
-```env
-# Modo servidor para el VPS central
-GLORY_AMAZON_MODE=server
+### Archivo wp-config.php (en VPS)
 
-# Stripe (reemplazar con keys reales)
-GLORY_STRIPE_SECRET_KEY=sk_live_xxx
-GLORY_STRIPE_WEBHOOK_SECRET=whsec_xxx
+Las constantes deben ir en `wp-config.php` (antes de "That's all, stop editing!"):
 
-# Proxy (opcional, para evitar bloqueos de Amazon)
-# GLORY_PROXY_URL=http://user:pass@proxy.dataimpulse.com:port
+```php
+/* Glory SaaS Mode */
+define('GLORY_AMAZON_MODE', 'server');
+define('GLORY_STRIPE_SECRET_KEY', 'sk_test_xxxxxxxxxxxxx');
+define('GLORY_STRIPE_WEBHOOK_SECRET', 'whsec_xxxxxxxxxxxxx');
+
+/* Proxy DataImpulse */
+define('GLORY_PROXY_HOST', 'gw.dataimpulse.com:823');
+define('GLORY_PROXY_AUTH', 'usuario:contraseña');
 ```
 
 ### Para WordPress de clientes
-No necesitan .env, solo configurar la API Key desde el admin.
+No necesitan wp-config especial, solo configurar la API Key desde el admin.
 La URL del servidor ya esta hardcodeada: `https://api.wandori.us`
 
 ---
@@ -363,12 +367,39 @@ La URL del servidor ya esta hardcodeada: `https://api.wandori.us`
 
 ---
 
-## Licencia de Prueba Creada
+## Licencias de Prueba
 
+### Licencia Manual (creada para testing)
 - **Email:** test@example.com
 - **API Key:** `0345cb1aec74ef685957b92a95dbf7ffb0a95df7686f098d00bef55dc118f0f9`
 - **GB Limit:** 4
 - **Expira:** 2026-01-14
 - **Status:** active
+
+### Licencia via Stripe Webhook (2025-12-15)
+- **Email:** test_Tby4Jf1S@stripe-test.local (temporal, cliente CLI sin email)
+- **Status:** creada automaticamente via webhook
+- **Nota:** En produccion, los clientes de Stripe Checkout siempre tienen email real
+
+---
+
+## Comandos Utiles
+
+### Probar webhook con Stripe CLI
+```powershell
+# En Windows (primera vez, actualizar PATH)
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+
+# Login (una sola vez)
+stripe login
+
+# Disparar evento de prueba
+stripe trigger customer.subscription.created
+```
+
+### Ver logs en VPS
+```bash
+tail -50 /var/www/wandori/wp-content/themes/glory/logs/glory.log
+```
 
 ---

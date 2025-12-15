@@ -156,9 +156,17 @@ class WebScraperProvider implements ApiProviderInterface
         $ch = curl_init();
         $ua = $this->userAgents[array_rand($this->userAgents)];
 
-        // Proxy Configuration
-        $proxy = get_option('amazon_scraper_proxy', '');
-        $proxyAuth = get_option('amazon_scraper_proxy_auth', '');
+        /*
+         * Proxy Configuration
+         * Prioridad: constantes wp-config.php > get_option
+         */
+        $proxy = defined('GLORY_PROXY_HOST')
+            ? GLORY_PROXY_HOST
+            : get_option('amazon_scraper_proxy', '');
+
+        $proxyAuth = defined('GLORY_PROXY_AUTH')
+            ? GLORY_PROXY_AUTH
+            : get_option('amazon_scraper_proxy_auth', '');
 
         $options = [
             CURLOPT_URL => $url,
