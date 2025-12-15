@@ -9,8 +9,15 @@ namespace Glory\Plugins\AmazonProduct\Mode;
  * - 'server': Corre en el VPS central, tiene el scraper y API
  * - 'client': Corre en WordPress de clientes, se conecta a la API
  * 
- * El modo se define en wp-config.php:
- * define('GLORY_AMAZON_MODE', 'server');
+ * El modo se puede definir de dos formas (en orden de prioridad):
+ * 
+ * 1. Archivo .env en la raiz del tema:
+ *    GLORY_AMAZON_MODE=server
+ *    GLORY_STRIPE_SECRET_KEY=sk_live_xxx
+ *    GLORY_STRIPE_WEBHOOK_SECRET=whsec_xxx
+ * 
+ * 2. wp-config.php:
+ *    define('GLORY_AMAZON_MODE', 'server');
  * 
  * Si no esta definido, por defecto es 'client'.
  */
@@ -22,14 +29,33 @@ class PluginMode
     private static ?string $currentMode = null;
 
     /**
+     * Obtiene una variable de entorno (primero .env, luego constante).
+     */
+    private static function getEnvVar(string $name, string $default = ''): string
+    {
+        if (isset($_ENV[$name]) && $_ENV[$name] !== '') {
+            return $_ENV[$name];
+        }
+
+        $envValue = getenv($name);
+        if ($envValue !== false && $envValue !== '') {
+            return $envValue;
+        }
+
+        if (defined($name)) {
+            return constant($name);
+        }
+
+        return $default;
+    }
+
+    /**
      * Obtiene el modo actual del plugin.
      */
     public static function getMode(): string
     {
         if (self::$currentMode === null) {
-            self::$currentMode = defined('GLORY_AMAZON_MODE')
-                ? GLORY_AMAZON_MODE
-                : self::MODE_CLIENT;
+            self::$currentMode = self::getEnvVar('GLORY_AMAZON_MODE', self::MODE_CLIENT);
         }
         return self::$currentMode;
     }
@@ -56,10 +82,7 @@ class PluginMode
      */
     public static function getApiServerUrl(): string
     {
-        if (defined('GLORY_API_SERVER')) {
-            return rtrim(GLORY_API_SERVER, '/');
-        }
-        return 'https://api.wandori.us';
+        return self::getEnvVar('GLORY_API_SERVER', 'https://api.wandori.us');
     }
 
     /**
@@ -77,5 +100,21 @@ class PluginMode
     public static function setApiKey(string $apiKey): void
     {
         update_option('glory_amazon_api_key', sanitize_text_field($apiKey));
+    }
+
+    /**
+     * Obtiene la Stripe Secret Key (solo modo servidor).
+     */
+    public static function getStripeSecretKey(): string
+    {
+        return self::getEnvVar('GLORY_STRIPE_SECRET_KEY', '');
+    }
+
+    /**
+     * Obtiene el Stripe Webhook Secret (solo modo servidor).
+     */
+    public static function getStripeWebhookSecret(): string
+    {
+        return self::getEnvVar('GLORY_STRIPE_WEBHOOK_SECRET', '');
     }
 }
