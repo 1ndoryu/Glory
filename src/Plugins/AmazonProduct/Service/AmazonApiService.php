@@ -3,6 +3,7 @@
 namespace Glory\Plugins\AmazonProduct\Service;
 
 use Glory\Core\GloryLogger;
+use Glory\Plugins\AmazonProduct\Mode\PluginMode;
 
 /**
  * Amazon API Service - Fachada para acceder a la API de Amazon.
@@ -10,14 +11,19 @@ use Glory\Core\GloryLogger;
  * ARCH-01: Esta clase ahora actua como Factory/Fachada.
  * Selecciona automaticamente el provider correcto segun la configuracion.
  * 
- * Providers disponibles:
- * - RapidApiProvider: amazon-data.p.rapidapi.com (default)
+ * MODO CLIENTE vs SERVIDOR:
+ * - En modo SERVIDOR: Usa providers locales (scraper, RapidAPI, PA-API)
+ * - En modo CLIENTE: Delega a ApiClient para usar la API remota
+ * 
+ * Providers disponibles (modo servidor):
+ * - RapidApiProvider: amazon-data.p.rapidapi.com
  * - AmazonPaApiProvider: Amazon Product Advertising API 5.0
+ * - WebScraperProvider: Scraper directo (default)
  * 
  * El provider se selecciona desde ConfigTab con la opcion 'amazon_api_provider'.
  * 
  * Mantiene compatibilidad hacia atras: el resto del plugin usa esta clase
- * sin saber que provider esta activo internamente.
+ * sin saber que provider/modo esta activo internamente.
  */
 class AmazonApiService
 {
@@ -25,21 +31,22 @@ class AmazonApiService
     private const PROVIDER_PAAPI = 'paapi';
     private const PROVIDER_SCRAPER = 'scraper';
 
-    private ApiProviderInterface $provider;
+    private ?ApiProviderInterface $provider = null;
+    private ?ApiClient $apiClient = null;
     private string $providerType;
+    private bool $isClientMode;
 
     public function __construct()
     {
-        $this->providerType = get_option('amazon_api_provider', self::PROVIDER_RAPIDAPI);
+        $this->isClientMode = PluginMode::isClient();
 
-        // AUTO-FIX: Si el usuario tiene RapidAPI seleccionado (o default) pero no ha puesto API Key,
-        // forzamos el uso del Web Scraper automáticamente para que no vea errores.
-        if ($this->providerType === self::PROVIDER_RAPIDAPI && empty(get_option('amazon_api_key'))) {
-            GloryLogger::info('AmazonApiService: RapidAPI sin key detectada. Forzando Web Scraper.');
-            $this->providerType = self::PROVIDER_SCRAPER;
+        if ($this->isClientMode) {
+            $this->apiClient = new ApiClient();
+            $this->providerType = 'remote_api';
+        } else {
+            $this->providerType = get_option('amazon_api_provider', self::PROVIDER_SCRAPER);
+            $this->provider = $this->createProvider();
         }
-
-        $this->provider = $this->createProvider();
     }
 
     /**
@@ -91,12 +98,16 @@ class AmazonApiService
      */
     public function isConfigured(): bool
     {
+        if ($this->isClientMode) {
+            return $this->apiClient->hasApiKey();
+        }
         return $this->provider->isConfigured();
     }
 
     /**
      * Busca productos por palabra clave.
-     * Delega al provider activo.
+     * En modo cliente: delega a ApiClient.
+     * En modo servidor: delega al provider local.
      * 
      * @param string $keyword Palabra clave
      * @param int $page Numero de pagina
@@ -104,10 +115,16 @@ class AmazonApiService
      */
     public function searchProducts(string $keyword, int $page = 1, bool $forceRefresh = false): array
     {
+        if ($this->isClientMode) {
+            $result = $this->apiClient->searchProducts($keyword, $page);
+            if (!$result['success']) {
+                GloryLogger::error('ApiClient searchProducts error: ' . ($result['error'] ?? 'Unknown'));
+                return [];
+            }
+            return $result['products'] ?? [];
+        }
+
         if (method_exists($this->provider, 'searchProducts')) {
-            // Check if method accepts 3rd argument (reflection or try catch?)
-            // PHP allows passing extra args, but we should update interface optimally.
-            // For now, let's assume implementation.
             return $this->provider->searchProducts($keyword, $page, $forceRefresh);
         }
         return $this->provider->searchProducts($keyword, $page);
@@ -115,6 +132,9 @@ class AmazonApiService
 
     public function getLastCacheTime(): ?int
     {
+        if ($this->isClientMode) {
+            return null;
+        }
         if (method_exists($this->provider, 'getLastCacheTime')) {
             return $this->provider->getLastCacheTime();
         }
@@ -123,26 +143,50 @@ class AmazonApiService
 
     /**
      * Obtiene un producto por ASIN.
-     * Delega al provider activo.
+     * En modo cliente: delega a ApiClient.
+     * En modo servidor: delega al provider local.
      * 
      * @param string $asin ASIN del producto
      * @return array Datos del producto
      */
     public function getProductByAsin(string $asin): array
     {
+        if ($this->isClientMode) {
+            $result = $this->apiClient->getProductByAsin($asin);
+            if (!$result['success']) {
+                GloryLogger::error('ApiClient getProductByAsin error: ' . ($result['error'] ?? 'Unknown'));
+                return [];
+            }
+            return $result['product'] ?? [];
+        }
+
         return $this->provider->getProductByAsin($asin);
     }
 
     /**
      * Obtiene ofertas actuales.
-     * Delega al provider activo.
+     * Solo disponible en modo servidor.
      * 
      * @param int $page Numero de pagina
      * @return array Lista de ofertas
      */
     public function getDeals(int $page = 1): array
     {
+        if ($this->isClientMode) {
+            return [];
+        }
         return $this->provider->getDeals($page);
+    }
+
+    /**
+     * Obtiene la ultima informacion de uso (solo modo cliente).
+     */
+    public function getLastUsageInfo(): ?array
+    {
+        if ($this->isClientMode) {
+            return $this->apiClient->getLastUsageInfo();
+        }
+        return null;
     }
 
     /**

@@ -7,41 +7,112 @@ use Glory\Core\GloryFeatures;
 use Glory\Plugins\AmazonProduct\Controller\AdminController;
 use Glory\Plugins\AmazonProduct\Renderer\ProductRenderer;
 use Glory\Plugins\AmazonProduct\Service\ProductSyncService;
+use Glory\Plugins\AmazonProduct\Service\LicenseService;
 use Glory\Plugins\AmazonProduct\Admin\ApiWizardAjaxHandler;
+use Glory\Plugins\AmazonProduct\Mode\PluginMode;
+use Glory\Plugins\AmazonProduct\Api\ApiEndpoints;
 
 /**
  * Amazon Product Plugin for Glory Framework.
  * 
- * Handles Amazon product integration, CPT registration, and rendering.
+ * Soporta dos modos:
+ * - SERVER: Corre en VPS central, tiene scraper y API
+ * - CLIENT: Corre en WordPress de clientes, se conecta a API
+ * 
+ * El modo se define en wp-config.php:
+ * define('GLORY_AMAZON_MODE', 'server'); // o 'client'
  */
 class AmazonProductPlugin
 {
     public function init(): void
     {
-        // 1. Register Post Type
-        $this->registerPostType();
-
-        // 2. Initialize Admin Controller (if in admin)
-        if (is_admin()) {
-            $adminController = new AdminController();
-            $adminController->init();
+        /*
+         * Inicializar segun modo
+         */
+        if (PluginMode::isServer()) {
+            $this->initServerMode();
+        } else {
+            $this->initClientMode();
         }
 
-        // 3. Initialize Frontend Renderer
+        /*
+         * Componentes comunes a ambos modos
+         */
+        $this->registerPostType();
+
         $renderer = new ProductRenderer();
         $renderer->init();
 
-        // AJAX Hooks
         add_action('wp_ajax_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
         add_action('wp_ajax_nopriv_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
+    }
 
-        // AJAX Hooks para importacion manual y wizard de API
+    /**
+     * Inicializa modo SERVIDOR (VPS central).
+     * - Registra API REST
+     * - Crea tablas de licencias
+     * - Dashboard de administracion de licencias
+     */
+    private function initServerMode(): void
+    {
+        /*
+         * Crear tablas en activacion
+         */
+        add_action('after_switch_theme', [LicenseService::class, 'createTable']);
+
+        /*
+         * Verificar tablas existen
+         */
+        add_action('init', function () {
+            if (get_option('glory_amazon_tables_created') !== '1') {
+                LicenseService::createTable();
+                update_option('glory_amazon_tables_created', '1');
+            }
+        });
+
+        /*
+         * Registrar API REST endpoints
+         */
+        add_action('rest_api_init', [ApiEndpoints::class, 'register']);
+
+        /*
+         * Admin con tabs de servidor (licencias, estadisticas, logs)
+         */
         if (is_admin()) {
-            $this->registerManualImportAjax();
-            ApiWizardAjaxHandler::init();
+            $adminController = new \Glory\Plugins\AmazonProduct\Controller\ServerAdminController();
+            $adminController->init();
         }
 
-        // Cron Hooks - FEAT-07: Usar ProductSyncService
+        /*
+         * Cron para verificar licencias expiradas
+         */
+        add_action('init', [$this, 'handleCronSchedule']);
+        add_action('glory_check_expired_licenses', [LicenseService::class, 'checkExpiredLicenses']);
+
+        if (!wp_next_scheduled('glory_check_expired_licenses')) {
+            wp_schedule_event(time(), 'daily', 'glory_check_expired_licenses');
+        }
+
+        /*
+         * Sync local (el servidor tambien puede tener productos)
+         */
+        ProductSyncService::init();
+    }
+
+    /**
+     * Inicializa modo CLIENTE (WordPress de usuarios).
+     * - Se conecta a API externa en lugar de scraper local
+     * - UI de importacion
+     */
+    private function initClientMode(): void
+    {
+        if (is_admin()) {
+            $adminController = new AdminController();
+            $adminController->init();
+
+            $this->registerManualImportAjax();
+        }
+
         add_action('init', [$this, 'handleCronSchedule']);
         ProductSyncService::init();
     }

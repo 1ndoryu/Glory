@@ -120,8 +120,39 @@ class WebScraperProvider implements ApiProviderInterface
         return $domains[$this->region] ?? 'amazon.es';
     }
 
-    private function fetchUrl(string $url): string
+    /**
+     * Numero maximo de reintentos para requests fallidos
+     */
+    private const MAX_RETRIES = 3;
+
+    /**
+     * Delay base en milisegundos entre requests
+     */
+    private const BASE_DELAY_MS = 1500;
+
+    /**
+     * Realiza una peticion HTTP con reintentos y delays para evitar bloqueos.
+     * 
+     * Caracteristicas de resiliencia:
+     * - Delay aleatorio antes de cada request (1.5-4 segundos)
+     * - Retry automatico con backoff exponencial (hasta 3 intentos)
+     * - Deteccion de CAPTCHA y bloqueos
+     * - Rotacion de User-Agents
+     * - Logging detallado para diagnostico
+     * 
+     * @param string $url URL a obtener
+     * @param int $attempt Numero de intento actual (para recursion)
+     * @return string HTML de la pagina o vacio si falla
+     */
+    private function fetchUrl(string $url, int $attempt = 1): string
     {
+        /*
+         * Delay aleatorio antes del request para simular comportamiento humano.
+         * Rango: 1.5 a 4 segundos
+         */
+        $delayMs = self::BASE_DELAY_MS + random_int(0, 2500);
+        usleep($delayMs * 1000);
+
         $ch = curl_init();
         $ua = $this->userAgents[array_rand($this->userAgents)];
 
@@ -134,27 +165,34 @@ class WebScraperProvider implements ApiProviderInterface
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_ENCODING => '', // Soporta gzip, deflate automaticamente
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_ENCODING => '',
             CURLOPT_USERAGENT => $ua,
             CURLOPT_HTTPHEADER => [
                 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                 'Accept-Language: es-ES,es;q=0.9,en;q=0.8',
                 'Upgrade-Insecure-Requests: 1',
                 'Cache-Control: max-age=0',
-                'Referer: https://www.google.com/'
+                'Referer: https://www.google.es/',
+                'sec-ch-ua: "Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+                'sec-ch-ua-mobile: ?0',
+                'sec-ch-ua-platform: "Windows"',
+                'sec-fetch-dest: document',
+                'sec-fetch-mode: navigate',
+                'sec-fetch-site: none',
+                'sec-fetch-user: ?1'
             ],
             CURLOPT_COOKIEFILE => '',
+            CURLOPT_COOKIEJAR => '',
         ];
 
-        // Añadir Proxy si esta configurado
+        // Proxy si esta configurado
         if (!empty($proxy)) {
             $options[CURLOPT_PROXY] = $proxy;
-            // Detectar si es SOCKS5 (ej: socks5://...)
             if (strpos($proxy, 'socks5') !== false) {
                 $options[CURLOPT_PROXYTYPE] = CURLPROXY_SOCKS5;
             }
-
             if (!empty($proxyAuth)) {
                 $options[CURLOPT_PROXYUSERPWD] = $proxyAuth;
             }
@@ -164,14 +202,74 @@ class WebScraperProvider implements ApiProviderInterface
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
 
-        if (curl_errno($ch) || $httpCode != 200) {
-            GloryLogger::error("Scraper Error ({$httpCode}): " . curl_error($ch));
+        // Verificar si fue bloqueado o hay CAPTCHA
+        $blockStatus = $this->detectBlockOrCaptcha($response, $httpCode);
+
+        if ($blockStatus !== false) {
+            GloryLogger::warning("Scraper: Posible bloqueo detectado - {$blockStatus}");
+
+            // Retry con backoff exponencial
+            if ($attempt < self::MAX_RETRIES) {
+                $waitSeconds = pow(2, $attempt) + random_int(1, 5);
+                GloryLogger::info("Scraper: Reintento {$attempt}/" . self::MAX_RETRIES . " en {$waitSeconds}s");
+                sleep($waitSeconds);
+                return $this->fetchUrl($url, $attempt + 1);
+            }
+
+            GloryLogger::error("Scraper: Maximo de reintentos alcanzado para: {$url}");
             return '';
         }
 
-        curl_close($ch);
+        // Verificar errores de CURL o HTTP
+        if (!empty($curlError) || $httpCode !== 200) {
+            GloryLogger::error("Scraper Error (HTTP {$httpCode}): {$curlError} - URL: {$url}");
+
+            // Retry para errores de conexion
+            if ($attempt < self::MAX_RETRIES && ($httpCode >= 500 || $httpCode === 0)) {
+                $waitSeconds = pow(2, $attempt);
+                sleep($waitSeconds);
+                return $this->fetchUrl($url, $attempt + 1);
+            }
+
+            return '';
+        }
+
         return $response;
+    }
+
+    /**
+     * Detecta si Amazon ha bloqueado la peticion o mostrado CAPTCHA.
+     * 
+     * @param string $html Respuesta HTML
+     * @param int $httpCode Codigo HTTP
+     * @return string|false Tipo de bloqueo detectado o false si no hay bloqueo
+     */
+    private function detectBlockOrCaptcha(string $html, int $httpCode): string|false
+    {
+        // Codigos HTTP de bloqueo
+        if ($httpCode === 503 || $httpCode === 429) {
+            return "HTTP {$httpCode} - Rate Limited";
+        }
+
+        // CAPTCHA de Amazon
+        if (stripos($html, 'captcha') !== false || stripos($html, 'robot') !== false) {
+            if (preg_match('/captcha|robot check|automated access|unusual traffic/i', $html)) {
+                return 'CAPTCHA detectado';
+            }
+        }
+
+        // Pagina vacia o muy corta (menos de 5KB probablemente no es una pagina real)
+        if (strlen($html) < 5000 && $httpCode === 200) {
+            // Verificar si es una pagina de error de Amazon
+            if (stripos($html, 'something went wrong') !== false) {
+                return 'Pagina de error de Amazon';
+            }
+        }
+
+        return false;
     }
 
     private function parseSearchResults(string $html): array
@@ -278,33 +376,268 @@ class WebScraperProvider implements ApiProviderInterface
         $titleNode = $xpath->query('//span[@id="productTitle"]')->item(0);
         $title = $titleNode ? trim($titleNode->textContent) : '';
 
-        // Precio
-        $price = 0;
-        $priceNode = $xpath->query('//span[@class="a-price-whole"]')->item(0);
-        if ($priceNode) {
-            $pString = str_replace([',', '.'], '', $priceNode->textContent);
-            $fracNode = $xpath->query('//span[@class="a-price-fraction"]')->item(0);
-            $frac = $fracNode ? $fracNode->textContent : '00';
-            $price = floatval($pString . '.' . $frac);
+        // Precio actual - Usar metodo mejorado
+        $price = $this->extractPriceFromHtml($html);
+
+        // Precio original (tachado) - Para ofertas
+        $originalPrice = $this->extractOriginalPriceFromHtml($html);
+
+        // Calcular descuento si hay precio original
+        $discountPercent = 0;
+        if ($originalPrice > $price && $price > 0) {
+            $discountPercent = round((($originalPrice - $price) / $originalPrice) * 100);
         }
 
         // Imagen (LandingImage)
         $imgNode = $xpath->query('//img[@id="landingImage"]')->item(0);
         $image = $imgNode ? $imgNode->getAttribute('src') : '';
 
+        // Fallback: data-a-dynamic-image
+        if (empty($image) && preg_match('/data-a-dynamic-image="([^"]+)"/', $html, $imgMatches)) {
+            $jsonStr = html_entity_decode($imgMatches[1], ENT_QUOTES, 'UTF-8');
+            $imgData = json_decode($jsonStr, true);
+            if (is_array($imgData)) {
+                $image = array_key_first($imgData) ?? '';
+            }
+        }
+
         // Descripcion
         $descNode = $xpath->query('//div[@id="feature-bullets"]')->item(0);
         $description = $descNode ? trim($descNode->textContent) : '';
+
+        // Rating mejorado
+        $rating = $this->extractRatingFromHtml($html, $xpath);
+
+        // Reviews mejorado
+        $totalReview = $this->extractReviewsFromHtml($html, $xpath);
+
+        // Prime detection
+        $isPrime = $this->extractPrimeFromHtml($html);
+
+        // Categoria
+        $category = $this->extractCategoryFromHtml($html, $xpath);
 
         return [
             'asin' => $asin,
             'asin_name' => $title,
             'asin_price' => $price,
+            'asin_original_price' => $originalPrice,
+            'asin_list_price' => $originalPrice,
+            'discount_percent' => $discountPercent,
             'asin_currency' => 'EUR',
             'image_url' => $image,
             'asin_images' => [$image],
             'asin_informations' => $description,
+            'rating' => $rating,
+            'total_review' => $totalReview,
+            'reviews' => $totalReview,
+            'total_start' => $rating,
+            'is_prime' => $isPrime,
+            'category_path' => $category,
             'in_stock' => true
         ];
+    }
+
+    /**
+     * Extrae el precio actual del HTML usando multiples estrategias.
+     * Compatible con formato europeo (1.234,56) y americano (1,234.56)
+     */
+    private function extractPriceFromHtml(string $html): float
+    {
+        /*
+         * Estrategia 1: CorePrice (precio principal de Amazon)
+         * Buscar dentro del contenedor de precio principal
+         */
+        if (preg_match('/id="corePrice[^"]*"[^>]*>.*?<span class="a-price-whole">([^<]+)/s', $html, $matches)) {
+            return $this->parseEuropeanPrice($matches[1], $html);
+        }
+
+        /*
+         * Estrategia 2: a-price-whole + a-price-fraction (estructura estandar)
+         */
+        if (preg_match('/<span class="a-price-whole">([^<]+)/', $html, $whole)) {
+            $priceWhole = preg_replace('/[^0-9]/', '', $whole[1]);
+            $priceFraction = '00';
+            if (preg_match('/<span class="a-price-fraction">([0-9]+)/', $html, $fraction)) {
+                $priceFraction = $fraction[1];
+            }
+            return floatval($priceWhole . '.' . $priceFraction);
+        }
+
+        /*
+         * Estrategia 3: Precio en euros con formato europeo (64,99 o 1.234,56)
+         */
+        if (preg_match('/([0-9.]+,[0-9]{2})\s*\\x{20AC}/u', $html, $matches)) {
+            $price = str_replace('.', '', $matches[1]);
+            $price = str_replace(',', '.', $price);
+            return floatval($price);
+        }
+
+        /*
+         * Estrategia 4: Formato americano ($99.95)
+         */
+        if (preg_match('/(?:US)?\$\s*([0-9,]+(?:\.[0-9]{2})?)/', $html, $matches)) {
+            return floatval(str_replace(',', '', $matches[1]));
+        }
+
+        return 0.00;
+    }
+
+    /**
+     * Extrae precio original (tachado) para detectar ofertas.
+     */
+    private function extractOriginalPriceFromHtml(string $html): float
+    {
+        /*
+         * Estrategia 1: "Precio recomendado:" (Amazon.es)
+         */
+        if (preg_match('/Precio recomendado[:\s]*([0-9.]+,[0-9]{2})\s*\\x{20AC}/u', $html, $matches)) {
+            $price = str_replace('.', '', $matches[1]);
+            $price = str_replace(',', '.', $price);
+            return floatval($price);
+        }
+
+        /*
+         * Estrategia 2: basisPrice con a-offscreen (precio base)
+         */
+        if (preg_match('/basisPrice.*?<span[^>]*class="a-offscreen"[^>]*>([0-9.]+,[0-9]{2})\s*\\x{20AC}/su', $html, $matches)) {
+            $price = str_replace('.', '', $matches[1]);
+            $price = str_replace(',', '.', $price);
+            return floatval($price);
+        }
+
+        /*
+         * Estrategia 3: Precio tachado con data-a-strike
+         */
+        if (preg_match('/<span[^>]*data-a-strike="true"[^>]*>.*?([0-9.]+,[0-9]{2})\s*\\x{20AC}/su', $html, $matches)) {
+            $price = str_replace('.', '', $matches[1]);
+            $price = str_replace(',', '.', $price);
+            return floatval($price);
+        }
+
+        /*
+         * Estrategia 4: a-text-strike class (precio tachado generico)
+         */
+        if (preg_match('/<span[^>]*class="[^"]*a-text-strike[^"]*"[^>]*>\s*\$?\s*([0-9,]+(?:\.[0-9]{2})?)/s', $html, $matches)) {
+            return floatval(str_replace(',', '', $matches[1]));
+        }
+
+        /*
+         * Estrategia 5: "Was:" o "List Price:" (Amazon.com)
+         */
+        if (preg_match('/(?:Was|List Price)[:\s]*\$?\s*([0-9,]+\.[0-9]{2})/i', $html, $matches)) {
+            return floatval(str_replace(',', '', $matches[1]));
+        }
+
+        return 0.00;
+    }
+
+    /**
+     * Parsea un precio en formato europeo
+     */
+    private function parseEuropeanPrice(string $priceWhole, string $html): float
+    {
+        $priceWhole = preg_replace('/[^0-9]/', '', $priceWhole);
+        $priceFraction = '00';
+        if (preg_match('/<span class="a-price-fraction">([0-9]+)/', $html, $fraction)) {
+            $priceFraction = $fraction[1];
+        }
+        return floatval($priceWhole . '.' . $priceFraction);
+    }
+
+    /**
+     * Extrae rating mejorado
+     */
+    private function extractRatingFromHtml(string $html, \DOMXPath $xpath): float
+    {
+        // Intento 1: acrPopover title
+        $ratingNode = $xpath->query('//span[@id="acrPopover"]')->item(0);
+        if ($ratingNode) {
+            $ratingText = $ratingNode->getAttribute('title');
+            if (preg_match('/([0-9.,]+)/', $ratingText, $matches)) {
+                return floatval(str_replace(',', '.', $matches[1]));
+            }
+        }
+
+        // Intento 2: Patron espanol "4,6 de 5 estrellas"
+        if (preg_match('/([0-9]+[.,][0-9]+)\s*de\s*5\s*estrellas/i', $html, $matches)) {
+            return floatval(str_replace(',', '.', $matches[1]));
+        }
+
+        // Intento 3: Patron ingles
+        if (preg_match('/([0-9]+[.,][0-9]+)\s*out of\s*5\s*stars/i', $html, $matches)) {
+            return floatval(str_replace(',', '.', $matches[1]));
+        }
+
+        // Intento 4: a-icon-alt
+        if (preg_match('/<span class="a-icon-alt">([0-9]+[.,][0-9]+)/', $html, $matches)) {
+            return floatval(str_replace(',', '.', $matches[1]));
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * Extrae numero de reviews mejorado
+     */
+    private function extractReviewsFromHtml(string $html, \DOMXPath $xpath): int
+    {
+        // Intento 1: acrCustomerReviewText
+        $reviewNode = $xpath->query('//span[@id="acrCustomerReviewText"]')->item(0);
+        if ($reviewNode) {
+            return (int) preg_replace('/[^0-9]/', '', $reviewNode->textContent);
+        }
+
+        // Intento 2: aria-label con numero de reviews
+        if (preg_match('/aria-label="([0-9.,]+)\s*(?:Resenas|Reviews|valoraciones|ratings)"/i', $html, $matches)) {
+            return (int) preg_replace('/[^0-9]/', '', $matches[1]);
+        }
+
+        // Intento 3: Texto tipo "115 valoraciones"
+        if (preg_match('/([0-9,.]+)\s*(?:calificaciones|ratings|valoraciones|reviews|Resenas)/i', $html, $matches)) {
+            return (int) preg_replace('/[^0-9]/', '', $matches[1]);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Detecta si el producto es Prime
+     */
+    private function extractPrimeFromHtml(string $html): bool
+    {
+        if (preg_match('/i-prime|a-icon-prime|prime-icon|FREE.*delivery|Envio GRATIS/i', $html)) {
+            return true;
+        }
+        if (preg_match('/data-[^=]*prime[^=]*="true"/i', $html)) {
+            return true;
+        }
+        if (preg_match('/alt="[^"]*Prime[^"]*"/', $html)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Extrae la categoria del producto
+     */
+    private function extractCategoryFromHtml(string $html, \DOMXPath $xpath): string
+    {
+        // wayfinding-breadcrumbs
+        $breadcrumb = $xpath->query('//div[@id="wayfinding-breadcrumbs_feature_div"]//a')->item(0);
+        if ($breadcrumb) {
+            $categories = [];
+            $links = $xpath->query('//div[@id="wayfinding-breadcrumbs_feature_div"]//a');
+            foreach ($links as $link) {
+                $text = trim($link->textContent);
+                if (!empty($text) && strlen($text) > 1) {
+                    $categories[] = $text;
+                }
+            }
+            if (!empty($categories)) {
+                return implode(' > ', $categories);
+            }
+        }
+        return '';
     }
 }

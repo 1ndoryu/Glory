@@ -3,26 +3,19 @@
 namespace Glory\Plugins\AmazonProduct\Controller;
 
 use Glory\Plugins\AmazonProduct\Admin\Tabs\TabInterface;
+use Glory\Plugins\AmazonProduct\Admin\Tabs\LicensesTab;
+use Glory\Plugins\AmazonProduct\Admin\Tabs\ServerStatsTab;
+use Glory\Plugins\AmazonProduct\Admin\Tabs\ServerLogsTab;
+use Glory\Plugins\AmazonProduct\Admin\Tabs\ServerSettingsTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\ImportTab;
-use Glory\Plugins\AmazonProduct\Admin\Tabs\DealsTab;
-use Glory\Plugins\AmazonProduct\Admin\Tabs\ConfigTab;
-use Glory\Plugins\AmazonProduct\Admin\Tabs\DesignTab;
-use Glory\Plugins\AmazonProduct\Admin\Tabs\UpdatesTab;
-use Glory\Plugins\AmazonProduct\Admin\Tabs\HelpTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\ManualImportTab;
-use Glory\Plugins\AmazonProduct\Admin\Tabs\ApiSetupWizardTab;
-use Glory\Plugins\AmazonProduct\Admin\Tabs\ClientLicenseTab;
-use Glory\Plugins\AmazonProduct\Mode\PluginMode;
 
 /**
- * Admin Controller for Amazon Product Plugin (Modo Cliente).
+ * Admin Controller para el modo SERVIDOR.
  * 
- * Refactored to use separate Tab classes following SRP.
- * This class now only orchestrates tab registration and rendering.
- * 
- * En modo CLIENTE incluye la tab de licencia para configurar API Key.
+ * Muestra tabs de administracion de licencias, estadisticas y configuracion.
  */
-class AdminController
+class ServerAdminController
 {
     /** @var TabInterface[] */
     private array $tabs = [];
@@ -34,24 +27,17 @@ class AdminController
     }
 
     /**
-     * Register all available tabs.
-     * New tabs can be added here easily.
-     * 
-     * En modo cliente, incluimos la tab de licencia como primera opcion.
+     * Registra los tabs del modo servidor.
      */
     private function registerTabs(): void
     {
-        /*
-         * Orden de tabs optimizado para workflow.
-         * En modo cliente: Licencia primero para configurar API Key.
-         */
         $this->tabs = [
-            new ClientLicenseTab(),
+            new LicensesTab(),
+            new ServerStatsTab(),
+            new ServerLogsTab(),
+            new ServerSettingsTab(),
             new ImportTab(),
             new ManualImportTab(),
-            new UpdatesTab(),
-            new DesignTab(),
-            new HelpTab(),
         ];
     }
 
@@ -59,8 +45,8 @@ class AdminController
     {
         add_submenu_page(
             'edit.php?post_type=amazon_product',
-            'Amazon Settings',
-            'Settings',
+            'Server Dashboard',
+            'Dashboard',
             'manage_options',
             'amazon-product-settings',
             [$this, 'renderSettingsPage']
@@ -69,24 +55,19 @@ class AdminController
 
     public function renderSettingsPage(): void
     {
-        /*
-         * Tab por defecto: Import Products
-         * Ya no dependemos de API key para mostrar el wizard.
-         */
-        $defaultTab = 'import';
+        $defaultTab = 'licenses';
 
-        // Sanitizar y validar el tab activo
         $activeTabSlug = isset($_GET['tab']) ? sanitize_key($_GET['tab']) : $defaultTab;
         $activeTab = $this->findTab($activeTabSlug);
 
-        // Si no se encuentra el tab, usar el primero
         if (!$activeTab && !empty($this->tabs)) {
             $activeTab = $this->tabs[0];
             $activeTabSlug = $activeTab->getSlug();
         }
 ?>
         <div class="wrap">
-            <h1>Amazon Product Integration</h1>
+            <h1>Amazon Product API Server</h1>
+            <p style="color: #666;">Modo: <strong style="color: #0073aa;">SERVIDOR</strong> - Este WordPress actua como API central.</p>
             <?php $this->renderTabNavigation($activeTabSlug); ?>
             <div class="tab-content" style="background: #fff; padding: 20px; border: 1px solid #ccd0d4; border-top: none;">
                 <?php
@@ -100,7 +81,7 @@ class AdminController
     }
 
     /**
-     * Render the tab navigation header.
+     * Renderiza la navegacion de tabs.
      */
     private function renderTabNavigation(string $activeSlug): void
     {
@@ -123,9 +104,6 @@ class AdminController
 <?php
     }
 
-    /**
-     * Find a tab by its slug.
-     */
     private function findTab(string $slug): ?TabInterface
     {
         foreach ($this->tabs as $tab) {
@@ -134,23 +112,5 @@ class AdminController
             }
         }
         return null;
-    }
-
-    /**
-     * Get all registered tabs.
-     * Useful for external access or testing.
-     */
-    public function getTabs(): array
-    {
-        return $this->tabs;
-    }
-
-    /**
-     * Add a custom tab dynamically.
-     * Allows plugins/themes to extend the admin interface.
-     */
-    public function addTab(TabInterface $tab): void
-    {
-        $this->tabs[] = $tab;
     }
 }
