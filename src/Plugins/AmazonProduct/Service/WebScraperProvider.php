@@ -123,22 +123,22 @@ class WebScraperProvider implements ApiProviderInterface
     /**
      * Numero maximo de reintentos para requests fallidos
      */
-    private const MAX_RETRIES = 3;
+    private const MAX_RETRIES = 5;
 
     /**
      * Delay base en milisegundos entre requests
      */
-    private const BASE_DELAY_MS = 1500;
+    private const BASE_DELAY_MS = 2000;
 
     /**
      * Realiza una peticion HTTP con reintentos y delays para evitar bloqueos.
      * 
      * Caracteristicas de resiliencia:
-     * - Delay aleatorio antes de cada request (1.5-4 segundos)
-     * - Retry automatico con backoff exponencial (hasta 3 intentos)
+     * - Delay aleatorio antes de cada request (2-5 segundos)
+     * - Retry automatico con backoff exponencial (hasta 5 intentos)
      * - Deteccion de CAPTCHA y bloqueos
      * - Rotacion de User-Agents
-     * - Logging detallado para diagnostico
+     * - Logging detallado del proxy para diagnostico
      * 
      * @param string $url URL a obtener
      * @param int $attempt Numero de intento actual (para recursion)
@@ -146,11 +146,13 @@ class WebScraperProvider implements ApiProviderInterface
      */
     private function fetchUrl(string $url, int $attempt = 1): string
     {
+        $requestStartTime = microtime(true);
+
         /*
          * Delay aleatorio antes del request para simular comportamiento humano.
-         * Rango: 1.5 a 4 segundos
+         * Rango: 2 a 5 segundos
          */
-        $delayMs = self::BASE_DELAY_MS + random_int(0, 2500);
+        $delayMs = self::BASE_DELAY_MS + random_int(0, 3000);
         usleep($delayMs * 1000);
 
         $ch = curl_init();
@@ -168,13 +170,25 @@ class WebScraperProvider implements ApiProviderInterface
             ? GLORY_PROXY_AUTH
             : get_option('amazon_scraper_proxy_auth', '');
 
+        /*
+         * Log de configuracion de proxy (solo en primer intento)
+         */
+        if ($attempt === 1) {
+            if (!empty($proxy)) {
+                $proxyHost = preg_replace('/:[^:]+$/', ':***', $proxy);
+                GloryLogger::info("Scraper: Proxy ACTIVO - Host: {$proxyHost}");
+            } else {
+                GloryLogger::warning("Scraper: Proxy NO configurado - Usando IP directa");
+            }
+        }
+
         $options = [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => 45,
+            CURLOPT_CONNECTTIMEOUT => 15,
             CURLOPT_ENCODING => '',
             CURLOPT_USERAGENT => $ua,
             CURLOPT_HTTPHEADER => [
@@ -195,7 +209,9 @@ class WebScraperProvider implements ApiProviderInterface
             CURLOPT_COOKIEJAR => '',
         ];
 
-        // Proxy si esta configurado
+        /*
+         * Configurar proxy si esta disponible
+         */
         if (!empty($proxy)) {
             $options[CURLOPT_PROXY] = $proxy;
             if (strpos($proxy, 'socks5') !== false) {
@@ -211,39 +227,70 @@ class WebScraperProvider implements ApiProviderInterface
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
+        $primaryIp = curl_getinfo($ch, CURLINFO_PRIMARY_IP);
+        $totalTime = curl_getinfo($ch, CURLINFO_TOTAL_TIME);
         curl_close($ch);
 
-        // Verificar si fue bloqueado o hay CAPTCHA
+        $elapsedMs = round((microtime(true) - $requestStartTime) * 1000);
+        $responseSize = strlen($response);
+        $responseSizeKb = round($responseSize / 1024, 1);
+
+        /*
+         * Log detallado del request
+         */
+        GloryLogger::info(
+            "Scraper Request #{$attempt}: HTTP {$httpCode} | " .
+                "IP: {$primaryIp} | " .
+                "Tiempo: {$elapsedMs}ms ({$totalTime}s curl) | " .
+                "Tamano: {$responseSizeKb}KB"
+        );
+
+        /*
+         * Verificar si fue bloqueado o hay CAPTCHA
+         */
         $blockStatus = $this->detectBlockOrCaptcha($response, $httpCode);
 
         if ($blockStatus !== false) {
-            GloryLogger::warning("Scraper: Posible bloqueo detectado - {$blockStatus}");
+            GloryLogger::warning("Scraper: Bloqueo detectado - {$blockStatus} (intento {$attempt}/" . self::MAX_RETRIES . ")");
 
-            // Retry con backoff exponencial
+            /*
+             * Retry con backoff exponencial
+             * Espera: 2^intento + random(2-8) segundos
+             */
             if ($attempt < self::MAX_RETRIES) {
-                $waitSeconds = pow(2, $attempt) + random_int(1, 5);
-                GloryLogger::info("Scraper: Reintento {$attempt}/" . self::MAX_RETRIES . " en {$waitSeconds}s");
+                $waitSeconds = pow(2, $attempt) + random_int(2, 8);
+                GloryLogger::info("Scraper: Esperando {$waitSeconds}s antes de reintento " . ($attempt + 1) . "/" . self::MAX_RETRIES);
                 sleep($waitSeconds);
                 return $this->fetchUrl($url, $attempt + 1);
             }
 
-            GloryLogger::error("Scraper: Maximo de reintentos alcanzado para: {$url}");
+            GloryLogger::error("Scraper: FALLO - Maximo de reintentos ({self::MAX_RETRIES}) alcanzado para: {$url}");
             return '';
         }
 
-        // Verificar errores de CURL o HTTP
+        /*
+         * Verificar errores de CURL o HTTP
+         */
         if (!empty($curlError) || $httpCode !== 200) {
-            GloryLogger::error("Scraper Error (HTTP {$httpCode}): {$curlError} - URL: {$url}");
+            GloryLogger::error("Scraper Error (HTTP {$httpCode}): {$curlError} | IP: {$primaryIp} | URL: {$url}");
 
-            // Retry para errores de conexion
+            /*
+             * Retry para errores de conexion o servidor
+             */
             if ($attempt < self::MAX_RETRIES && ($httpCode >= 500 || $httpCode === 0)) {
-                $waitSeconds = pow(2, $attempt);
+                $waitSeconds = pow(2, $attempt) + random_int(1, 3);
+                GloryLogger::info("Scraper: Reintentando en {$waitSeconds}s (error de servidor/conexion)");
                 sleep($waitSeconds);
                 return $this->fetchUrl($url, $attempt + 1);
             }
 
             return '';
         }
+
+        /*
+         * Request exitoso
+         */
+        GloryLogger::info("Scraper: OK - {$responseSizeKb}KB en {$elapsedMs}ms" . (!empty($proxy) ? " (via proxy)" : " (IP directa)"));
 
         return $response;
     }
