@@ -254,11 +254,11 @@ class WebScraperProvider implements ApiProviderInterface
             GloryLogger::warning("Scraper: Bloqueo detectado - {$blockStatus} (intento {$attempt}/" . self::MAX_RETRIES . ")");
 
             /*
-             * Retry con backoff exponencial
-             * Espera: 2^intento + random(2-8) segundos
+             * Retry rapido (2-4 segundos)
+             * El proxy rota IP automaticamente, no necesitamos backoff exponencial
              */
             if ($attempt < self::MAX_RETRIES) {
-                $waitSeconds = pow(2, $attempt) + random_int(2, 8);
+                $waitSeconds = random_int(2, 4);
                 GloryLogger::info("Scraper: Esperando {$waitSeconds}s antes de reintento " . ($attempt + 1) . "/" . self::MAX_RETRIES);
                 sleep($waitSeconds);
                 return $this->fetchUrl($url, $attempt + 1);
@@ -278,7 +278,7 @@ class WebScraperProvider implements ApiProviderInterface
              * Retry para errores de conexion o servidor
              */
             if ($attempt < self::MAX_RETRIES && ($httpCode >= 500 || $httpCode === 0)) {
-                $waitSeconds = pow(2, $attempt) + random_int(1, 3);
+                $waitSeconds = random_int(2, 4);
                 GloryLogger::info("Scraper: Reintentando en {$waitSeconds}s (error de servidor/conexion)");
                 sleep($waitSeconds);
                 return $this->fetchUrl($url, $attempt + 1);

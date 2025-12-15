@@ -133,6 +133,10 @@ class ApiClient
 
     /**
      * Realiza una peticion HTTP al servidor.
+     * 
+     * Timeout alto (120s) porque el servidor puede tardar en:
+     * - Reintentar scraping si hay CAPTCHA
+     * - Procesar requests pesados
      */
     private function request(string $method, string $endpoint, array $body = []): array
     {
@@ -144,10 +148,11 @@ class ApiClient
         }
 
         $url = $this->serverUrl . $endpoint;
+        $startTime = microtime(true);
 
         $args = [
             'method' => $method,
-            'timeout' => 60,
+            'timeout' => 120,
             'headers' => [
                 'X-API-Key' => $this->apiKey,
                 'Content-Type' => 'application/json',
@@ -160,11 +165,17 @@ class ApiClient
         }
 
         $response = wp_remote_request($url, $args);
+        $elapsedMs = round((microtime(true) - $startTime) * 1000);
 
         if (is_wp_error($response)) {
+            $errorCode = $response->get_error_code();
+            $errorMessage = $response->get_error_message();
+
+            error_log("ApiClient Error: {$errorCode} - {$errorMessage} | URL: {$url} | Tiempo: {$elapsedMs}ms");
+
             return [
                 'success' => false,
-                'error' => 'Error de conexion: ' . $response->get_error_message()
+                'error' => "Error de conexion: {$errorMessage} ({$errorCode})"
             ];
         }
 
