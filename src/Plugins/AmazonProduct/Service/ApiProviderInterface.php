@@ -60,4 +60,9 @@ interface ApiProviderInterface
      * @return string Dominio (ej: amazon.com, amazon.es)
      */
     public function getDomain(): string;
+
+    /**
+     * Devuelve timestamp de la ultima cache o null si fue live
+     */
+    public function getLastCacheTime(): ?int;
 }

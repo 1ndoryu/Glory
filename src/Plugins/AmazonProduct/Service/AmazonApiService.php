@@ -102,9 +102,23 @@ class AmazonApiService
      * @param int $page Numero de pagina
      * @return array Lista de productos
      */
-    public function searchProducts(string $keyword, int $page = 1): array
+    public function searchProducts(string $keyword, int $page = 1, bool $forceRefresh = false): array
     {
+        if (method_exists($this->provider, 'searchProducts')) {
+            // Check if method accepts 3rd argument (reflection or try catch?)
+            // PHP allows passing extra args, but we should update interface optimally.
+            // For now, let's assume implementation.
+            return $this->provider->searchProducts($keyword, $page, $forceRefresh);
+        }
         return $this->provider->searchProducts($keyword, $page);
+    }
+
+    public function getLastCacheTime(): ?int
+    {
+        if (method_exists($this->provider, 'getLastCacheTime')) {
+            return $this->provider->getLastCacheTime();
+        }
+        return null;
     }
 
     /**

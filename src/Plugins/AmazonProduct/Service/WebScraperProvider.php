@@ -26,8 +26,34 @@ class WebScraperProvider implements ApiProviderInterface
         $this->region = get_option('amazon_api_region', 'es'); // Default a ES
     }
 
-    public function searchProducts(string $keyword, int $page = 1): array
+    private ?int $lastCacheTime = null;
+
+    public function searchProducts(string $keyword, int $page = 1, bool $forceRefresh = false): array
     {
+        $cacheKey = 'amazon_scraper_search_' . md5($keyword . $page . $this->region);
+
+        if ($forceRefresh) {
+            delete_transient($cacheKey);
+        }
+
+        $cached = get_transient($cacheKey);
+
+        if ($cached !== false) {
+            // No podemos saber el timestamp exacto de creacion del transient nativo de WP facilmente
+            // Asumimos "hace poco" o podriamos guardar un transient paralelo con el time.
+            // Para simplicidad, si viene de cache, marcamos que existe.
+            // Una mejora seria guardar array('data' => ..., 'time' => time()) en el transient.
+            if (isset($cached['data']) && isset($cached['time'])) {
+                $this->lastCacheTime = $cached['time'];
+                return $cached['data'];
+            }
+            // Fallback para caches viejas que no tenian estructura
+            $this->lastCacheTime = time() - (HOUR_IN_SECONDS / 2); // Fake time
+            return $cached;
+        }
+
+        $this->lastCacheTime = null; // Live
+
         $domain = $this->getDomain();
         $url = "https://www.{$domain}/s?k=" . urlencode($keyword) . "&page={$page}";
 
@@ -36,7 +62,19 @@ class WebScraperProvider implements ApiProviderInterface
             return [];
         }
 
-        return $this->parseSearchResults($html);
+        $results = $this->parseSearchResults($html);
+
+        if (!empty($results)) {
+            // Guardamos wrapper con timestamp
+            set_transient($cacheKey, ['data' => $results, 'time' => time()], HOUR_IN_SECONDS);
+        }
+
+        return $results;
+    }
+
+    public function getLastCacheTime(): ?int
+    {
+        return $this->lastCacheTime;
     }
 
     public function getProductByAsin(string $asin): array
@@ -153,7 +191,12 @@ class WebScraperProvider implements ApiProviderInterface
                 if (empty($asin)) continue;
 
                 // Titulo
-                $titleNode = $xpath->query('.//h2//span', $node)->item(0);
+                // Prioridad: H2 dentro de un link (evita marcas como headings)
+                $titleNode = $xpath->query('.//a//h2//span', $node)->item(0);
+                if (!$titleNode) {
+                    // Fallback
+                    $titleNode = $xpath->query('.//h2//span', $node)->item(0);
+                }
                 $title = $titleNode ? $titleNode->textContent : '';
 
                 // Precio (parte entera + fracción)
@@ -172,14 +215,37 @@ class WebScraperProvider implements ApiProviderInterface
                 $image = $imgNode ? $imgNode->getAttribute('src') : '';
 
                 // Rating
-                $ratingNode = $xpath->query('.//span[contains(@aria-label, "estrellas")]', $node)->item(0); // ES especifico
-                // Fallback para US
-                if (!$ratingNode) $ratingNode = $xpath->query('.//span[contains(@aria-label, "stars")]', $node)->item(0);
-
                 $rating = 0;
+                // Intento 1: aria-label en span (Estandar antiguo)
+                $ratingNode = $xpath->query('.//span[contains(@aria-label, "estrellas") or contains(@aria-label, "stars")]', $node)->item(0);
+
+                // Intento 2: a-icon-alt text content (Nuevo layout)
+                if (!$ratingNode) {
+                    $ratingNode = $xpath->query('.//span[contains(@class, "a-icon-alt")]', $node)->item(0);
+                }
+
                 if ($ratingNode) {
-                    $ratingHeader = $ratingNode->getAttribute('aria-label');
-                    $rating = floatval(substr($ratingHeader, 0, 3));
+                    // Si tiene aria-label, usalo
+                    $ratingText = $ratingNode->getAttribute('aria-label');
+                    // Si no, usa el contenido de texto (a-icon-alt)
+                    if (empty($ratingText)) {
+                        $ratingText = $ratingNode->textContent;
+                    }
+
+                    // Extraer numero (ej: "4,6 de 5 estrellas" -> 4.6)
+                    if (preg_match('/([0-9.,]+)/', $ratingText, $matches)) {
+                        $rating = floatval(str_replace(',', '.', $matches[1]));
+                    }
+                }
+
+                // Reviews
+                // Intentamos buscar el numero de reviews (suele estar en un spam con clase s-underline-text)
+                // Relaxed selector: buscar cualquier span con s-underline-text, removiendo constraint de size
+                $reviewsNode = $xpath->query('.//span[contains(@class, "s-underline-text")]', $node)->item(0);
+                $totalReview = 0;
+                if ($reviewsNode) {
+                    // Limpiamos todo lo que no sea numeros
+                    $totalReview = (int) preg_replace('/[^0-9]/', '', $reviewsNode->textContent);
                 }
 
                 if (!empty($title)) {
@@ -190,7 +256,7 @@ class WebScraperProvider implements ApiProviderInterface
                         'asin_currency' => 'EUR', // Asumimos EUR para ES
                         'image_url' => $image,
                         'rating' => $rating,
-                        'total_review' => 0, // Dificil de parsear consistentemente
+                        'total_review' => $totalReview,
                         'in_stock' => true
                     ];
                 }
