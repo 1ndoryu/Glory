@@ -56,6 +56,9 @@ class PluginMode
     {
         if (self::$currentMode === null) {
             self::$currentMode = self::getEnvVar('GLORY_AMAZON_MODE', self::MODE_CLIENT);
+            error_log('[PluginMode] Modo detectado: ' . self::$currentMode);
+            error_log('[PluginMode] ENV GLORY_AMAZON_MODE: ' . ($_ENV['GLORY_AMAZON_MODE'] ?? 'NOT SET'));
+            error_log('[PluginMode] getenv GLORY_AMAZON_MODE: ' . (getenv('GLORY_AMAZON_MODE') ?: 'NOT SET'));
         }
         return self::$currentMode;
     }

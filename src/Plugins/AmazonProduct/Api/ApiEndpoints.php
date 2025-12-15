@@ -33,9 +33,14 @@ class ApiEndpoints
      */
     public static function register(): void
     {
+        error_log('[ApiEndpoints] register() llamado. isServer=' . (PluginMode::isServer() ? 'true' : 'false'));
+
         if (!PluginMode::isServer()) {
+            error_log('[ApiEndpoints] No es modo servidor, saliendo sin registrar rutas');
             return;
         }
+
+        error_log('[ApiEndpoints] Registrando rutas REST API...');
 
         /*
          * Buscar productos
