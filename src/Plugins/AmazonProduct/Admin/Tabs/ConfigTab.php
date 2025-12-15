@@ -116,7 +116,7 @@ class ConfigTab implements TabInterface
                 <tr>
                     <th scope="row"><label for="amazon_api_key">RapidAPI Key</label></th>
                     <td>
-                        <input type="password" name="amazon_api_key" id="amazon_api_key" value="<?php echo esc_attr($apiKey); ?>" class="regular-text">
+                        <input type="text" name="amazon_api_key" id="amazon_api_key" value="<?php echo esc_attr($apiKey); ?>" class="regular-text">
                         <p class="description">Enter your RapidAPI Key for Amazon Data API.</p>
                     </td>
                 </tr>
