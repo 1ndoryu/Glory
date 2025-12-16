@@ -193,32 +193,36 @@ class WebScraperProvider implements ApiProviderInterface
         /*
          * Configuracion de parámetros del proxy DataImpulse.
          * 
-         * IMPORTANTE sobre rotacion de IPs (Puerto 823 = Rotating):
-         * - El puerto 823 rota la IP automaticamente con cada NUEVA conexion
-         * - El parametro sessid MANTIENE la misma IP (sticky session), NO la rota
-         * - Para rotacion, solo necesitamos el country code (cr.XX)
-         * - Debemos forzar a CURL a cerrar conexiones para obtener nueva IP
+         * SOLUCION para forzar rotacion de IP:
+         * Usar un sessid UNICO por cada request. DataImpulse asigna una nueva IP
+         * a cada sessid diferente. Al generar un UUID aleatorio por request,
+         * garantizamos que obtendremos una IP diferente cada vez.
+         * 
+         * Esto funciona incluso si el dashboard tiene configurado un rotation interval.
          * 
          * Ref: https://docs.dataimpulse.com/proxies/types-of-connections
          */
         $countryCode = $this->getProxyCountryCode();
+        $sessionId = bin2hex(random_bytes(8)); // Unico por request
 
         if (!empty($proxyAuth) && strpos($proxyAuth, ':') !== false) {
             [$proxyUser, $proxyPass] = explode(':', $proxyAuth, 2);
-
+            
             /*
-             * Solo agregamos el country code para geo-targeting.
-             * NO usamos sessid porque eso MANTIENE la misma IP (sticky).
-             * El puerto 823 rota automaticamente con cada nueva conexion.
+             * Formato: usuario__cr.XX;sessid.UNIQUE:password
+             * - cr.XX: Geo-targeting (IP del pais)
+             * - sessid.UNIQUE: Fuerza una nueva IP porque es un ID nuevo
              */
-            $proxyAuth = "{$proxyUser}__cr.{$countryCode}:{$proxyPass}";
+            $proxyAuth = "{$proxyUser}__cr.{$countryCode};sessid.{$sessionId}:{$proxyPass}";
         }
 
         /*
-         * Log de configuracion de proxy
+         * Log de configuracion de proxy - Detallado para diagnostico
          */
         if (!empty($proxy)) {
-            GloryLogger::info("Scraper #{$attempt}: Proxy configurado (cr.{$countryCode}, rotating port)");
+            $proxyUserMasked = isset($proxyUser) ? substr($proxyUser, 0, 4) . '***' : 'N/A';
+            GloryLogger::info("Scraper #{$attempt}: Proxy = {$proxy}");
+            GloryLogger::info("Scraper #{$attempt}: sessid.{$sessionId} (unico por request para forzar nueva IP)");
         } elseif ($attempt === 1) {
             GloryLogger::warning("Scraper: Proxy NO configurado - Usando IP directa");
         }

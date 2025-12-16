@@ -481,17 +481,32 @@ El usuario del proxy puede incluir parametros adicionales:
 
 ```
 usuario__cr.XX              -> Geo-targeting (IP del pais XX)
-usuario__sessid.ABC         -> Sticky session (mantiene misma IP)
+usuario__sessid.ABC         -> Sesion especifica (misma IP mientras use ABC)
 usuario__sessttl.60         -> Session TTL en minutos
 usuario__cr.es;sessid.ABC   -> Combinacion de parametros
 ```
 
-**IMPORTANTE**: El parametro `sessid` MANTIENE la misma IP (sticky). 
-Para rotacion automatica, NO usar sessid con el puerto 823.
+### Solucion para Forzar Rotacion de IP
 
-### Configuracion CURL Necesaria
+**PROBLEMA DETECTADO (2025-12-15):**
+El puerto 823 deberia rotar automaticamente, pero la configuracion del Dashboard 
+de DataImpulse puede override esto con un "rotation interval" sticky.
 
-Para garantizar que cada request obtenga una IP diferente:
+**SOLUCION IMPLEMENTADA:**
+Usar un `sessid` UNICO por cada request. DataImpulse asigna una IP diferente
+a cada sessid diferente. Al generar un UUID aleatorio por request:
+
+```php
+$sessionId = bin2hex(random_bytes(8)); // Genera: a1b2c3d4e5f67890
+$proxyAuth = "{$user}__cr.{$country};sessid.{$sessionId}:{$pass}";
+```
+
+Esto garantiza una IP nueva en cada request, independientemente de la 
+configuracion del dashboard.
+
+### Configuracion CURL Adicional
+
+Para garantizar nuevas conexiones TCP:
 
 ```php
 // Forzar nueva conexion TCP (evita reusar conexion existente)
@@ -500,9 +515,6 @@ CURLOPT_FRESH_CONNECT => true
 // Impedir reutilizacion de la conexion despues del request
 CURLOPT_FORBID_REUSE => true
 ```
-
-Sin estas opciones, CURL puede mantener conexiones persistentes y el proxy
-podria seguir usando la misma IP.
 
 ### Verificacion de Rotacion
 
@@ -514,5 +526,12 @@ tail -100 /var/www/wandori/wp-content/themes/glory/logs/glory.log | grep "IP:"
 ```
 
 Cada request deberia mostrar una IP diferente (campo `CURLINFO_PRIMARY_IP`).
+
+### Configuracion del Dashboard (Opcional)
+
+Si prefieres no usar sessid dinamico, puedes configurar en el Dashboard:
+1. Ir a [app.dataimpulse.com](https://app.dataimpulse.com)
+2. Seccion "Proxy Configuration"
+3. Establecer "Rotation Interval" en **0** o "After every request"
 
 ---
