@@ -676,3 +676,59 @@ El sistema maneja automaticamente los siguientes escenarios:
 
 ---
 
+## Bug Corregido: Calculo de Ancho de Banda (2025-12-16)
+
+### Problema Detectado
+
+Los logs mostraban consumo de ~20-25 KB por busqueda, pero el proxy real reportaba ~300-365 KB por peticion.
+
+**Logs del sistema (incorrecto):**
+```
+16/12 20:00:16  search  25.6 KB  Busqueda: "palas de padel" | 60 resultados
+16/12 18:22:45  search  20.5 KB  Busqueda: "iphone" | 50 resultados
+```
+
+**Consumo real del proxy DataImpulse:**
+```
+12/16/2025, 2:22:00 PM  www.amazon.es:443  351.25 KB
+12/16/2025, 12:08:00 PM www.amazon.es:443  365.44 KB
+```
+
+### Causa Raiz
+
+En `ApiEndpoints.php`, el calculo de `$bytesUsed` usaba:
+
+```php
+$bytesUsed = (int) (strlen($resultJson) * 1.5);
+```
+
+Esto media el tamaño del **JSON procesado** (datos extraidos), no el **trafico real del proxy** 
+(el HTML completo de Amazon que puede pesar 300-500 KB).
+
+### Solucion Implementada
+
+1. **`WebScraperProvider.php`**: Ahora rastrea los bytes reales descargados internamente
+   - Nuevo metodo `getLastBytesDownloaded()` para obtener el total
+   - El metodo `fetchUrl()` acumula bytes en `$this->totalBytesDownloaded`
+   - Se resetea en cada llamada a `searchProducts()` o `getProductByAsin()`
+
+2. **`ApiEndpoints.php`**: Usa los bytes reales en lugar del estimado
+   - Para requests con scraping: `$scraper->getLastBytesDownloaded()`
+   - Para requests cacheados: mantiene `strlen(json_encode($cached))` (sin uso real de proxy)
+
+### Impacto en Facturacion
+
+Con esta correccion, los clientes veran reflejado el consumo **real** de ancho de banda:
+
+| Antes (Bug)     | Despues (Correcto) | Diferencia |
+| --------------- | ------------------ | ---------- |
+| ~25 KB/busqueda | ~350 KB/busqueda   | ~14x mas   |
+| ~25 KB/producto | ~350 KB/producto   | ~14x mas   |
+
+**Nota:** Las busquedas cacheadas siguen sin consumir del proxy (solo overhead de respuesta).
+
+### Archivos Modificados
+
+- `Service/WebScraperProvider.php` (tracking de bytes)
+- `Api/ApiEndpoints.php` (uso de bytes reales)
+

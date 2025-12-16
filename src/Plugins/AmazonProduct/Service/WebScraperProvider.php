@@ -28,8 +28,26 @@ class WebScraperProvider implements ApiProviderInterface
 
     private ?int $lastCacheTime = null;
 
+    /*
+     * Total de bytes descargados en la ultima operacion.
+     * Usado para calcular el ancho de banda real consumido del proxy.
+     */
+    private int $totalBytesDownloaded = 0;
+
+    /**
+     * Obtiene los bytes totales descargados en la ultima operacion.
+     * Esto representa el trafico REAL del proxy, no el JSON procesado.
+     */
+    public function getLastBytesDownloaded(): int
+    {
+        return $this->totalBytesDownloaded;
+    }
+
     public function searchProducts(string $keyword, int $page = 1, bool $forceRefresh = false): array
     {
+        /* Resetear contador de bytes para esta operacion */
+        $this->totalBytesDownloaded = 0;
+
         $cacheKey = 'amazon_scraper_search_' . md5($keyword . $page . $this->region);
 
         if ($forceRefresh) {
@@ -79,6 +97,9 @@ class WebScraperProvider implements ApiProviderInterface
 
     public function getProductByAsin(string $asin): array
     {
+        /* Resetear contador de bytes para esta operacion */
+        $this->totalBytesDownloaded = 0;
+
         $domain = $this->getDomain();
         $url = "https://www.{$domain}/dp/{$asin}";
 
@@ -327,8 +348,11 @@ class WebScraperProvider implements ApiProviderInterface
         }
 
         /*
-         * Request exitoso
+         * Request exitoso - Acumular bytes descargados
+         * Esto representa el trafico REAL del proxy (HTML completo de Amazon)
          */
+        $this->totalBytesDownloaded += $responseSize;
+
         GloryLogger::info("Scraper: OK - {$responseSizeKb}KB en {$elapsedMs}ms" . (!empty($proxy) ? " (via proxy)" : " (IP directa)"));
 
         return $response;

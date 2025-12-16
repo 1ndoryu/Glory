@@ -208,11 +208,11 @@ class ApiEndpoints
             $products = $scraper->searchProducts($keyword, $page);
 
             /*
-             * Calcular bytes (aproximado: tamaño del HTML scrapeado)
-             * Usamos tamaño de resultado * 1.5 como estimacion
+             * Obtener bytes REALES descargados del proxy
+             * Esto representa el trafico real (HTML de Amazon ~300-500KB)
+             * en lugar del JSON procesado (~20-25KB)
              */
-            $resultJson = json_encode($products);
-            $bytesUsed = (int) (strlen($resultJson) * 1.5);
+            $bytesUsed = $scraper->getLastBytesDownloaded();
 
             /*
              * Guardar en cache global (1 hora)
@@ -290,8 +290,10 @@ class ApiEndpoints
                 ], 404);
             }
 
-            $resultJson = json_encode($product);
-            $bytesUsed = (int) (strlen($resultJson) * 1.5);
+            /*
+             * Obtener bytes REALES descargados del proxy
+             */
+            $bytesUsed = $scraper->getLastBytesDownloaded();
 
             /*
              * Cache por producto (2 horas)
