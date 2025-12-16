@@ -179,7 +179,7 @@
             }
             const detailedBtn = '<button type="button" class="button amazon-detailed-import-btn" data-asin="' + asin + '" title="Reimportar obteniendo datos completos" style="width: 100%;">Reimp. Detallada</button>';
 
-            container.html(viewBtn + '<div style="display: flex; gap: 4px; margin-top: 4px;">' + quickBtn + detailedBtn + '</div>');
+            container.html(viewBtn + '<div style="display: flex; gap: 10px; margin-top: 4px; flex-direction: column;">' + quickBtn + detailedBtn + '</div>');
 
             $('#row-status-' + asin).html('<span style="background: #46b450; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px;">' + (data.action === 'updated' ? 'Actualizado' : 'Importado') + '</span><br><small style="color: #666;">ID: ' + data.id + ' (' + importType + ')</small>');
 

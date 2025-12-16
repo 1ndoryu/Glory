@@ -102,18 +102,26 @@ if (!defined('ABSPATH')) exit;
                         'in_stock' => $item['in_stock'] ?? true
                     ]);
                     ?>
-                    <div class="amazon-action-btns" style="display: flex; flex-direction: column; gap: 4px;">
+                    <div class="amazon-action-btns" style="display: flex; flex-direction: column; gap: 10px;">
+                        <?php if ($isImported): ?>
+                            <a href="<?php echo esc_url(admin_url('post.php?post=' . $existingId . '&action=edit')); ?>"
+                                target="_blank"
+                                class="button button-secondary"
+                                style="width: 100%; text-align: center;">
+                                Ver Producto
+                            </a>
+                        <?php endif; ?>
                         <button type="button"
-                            class="button button-primary amazon-quick-import-btn"
+                            class="button <?php echo $isImported ? '' : 'button-primary'; ?> amazon-quick-import-btn"
                             data-product='<?php echo esc_attr($productJson); ?>'
                             title="Importacion rapida: usa datos de busqueda, sin peticion extra. Ahorra datos.">
-                            Rapida
+                            <?php echo $isImported ? 'Reimp. Rapida' : 'Rapida'; ?>
                         </button>
                         <button type="button"
                             class="button amazon-detailed-import-btn"
                             data-asin="<?php echo esc_attr($asin); ?>"
                             title="Importacion detallada: obtiene categoria, descripcion, precio original, etc.">
-                            Detallada
+                            <?php echo $isImported ? 'Reimp. Detallada' : 'Detallada'; ?>
                         </button>
                     </div>
                 </td>

@@ -537,23 +537,74 @@ la informacion necesaria.
 
 ## Lista de Verificacion - Importacion Detallada
 
-**IMPORTANTE:** Verificar que la importacion detallada realmente obtiene estos datos.
-Revisar `WebScraperProvider::parseProductPage()` para confirmar.
+**ACTUALIZADO 2025-12-16:** Verificado y funcionando correctamente.
 
-| Dato            | ¿Se extrae? | Selector/Metodo                  | Notas                     |
-| --------------- | ----------- | -------------------------------- | ------------------------- |
-| Titulo          | [ ]         | `#productTitle`                  | Probablemente OK          |
-| Precio actual   | [ ]         | `extractPriceFromHtml()`         | Probablemente OK          |
-| Precio original | [ ]         | `extractOriginalPriceFromHtml()` | Verificar                 |
-| Categoria       | [ ]         | `wayfinding-breadcrumbs`         | **VERIFICAR SI FUNCIONA** |
-| Descripcion     | [ ]         | `#feature-bullets`               | Verificar                 |
-| Rating          | [ ]         | Regex rating                     | Verificar                 |
-| Reviews count   | [ ]         | Regex reviews                    | Verificar                 |
-| Prime           | [ ]         | `.a-icon-prime`                  | Verificar                 |
-| Imagenes        | [ ]         | `#imgTagWrapperId img`           | Verificar                 |
+| Dato            | ¿Se extrae? | Selector/Metodo                  | Notas                          |
+| --------------- | ----------- | -------------------------------- | ------------------------------ |
+| Titulo          | ✅           | `#productTitle`                  | OK                             |
+| Precio actual   | ✅           | `extractPriceFromHtml()`         | OK                             |
+| Precio original | ✅           | `extractOriginalPriceFromHtml()` | OK                             |
+| Categoria       | ✅           | Multiples intentos (4 metodos)   | **SOLUCIONADO** - Ver detalles |
+| Descripcion     | ✅           | `#feature-bullets`               | OK                             |
+| Rating          | ✅           | Regex rating                     | OK                             |
+| Reviews count   | ✅           | Regex reviews                    | OK                             |
+| Prime           | ✅           | `.a-icon-prime`                  | OK                             |
+| Imagenes        | ✅           | `#landingImage`                  | OK + descarga local con proxy  |
 
-**Archivo a revisar:** `Glory/src/Plugins/AmazonProduct/Service/WebScraperProvider.php`
-**Metodo:** `parseProductPage()`
+---
+
+## Mejoras Implementadas (2025-12-16)
+
+### 1. Descarga de Imagenes con Proxy
+**Problema:** Las imagenes de Amazon se usaban via hotlinking (URL directa), lo que:
+- Puede ser bloqueado por Amazon
+- Depende de servidores externos
+- No permite editar la imagen
+
+**Solucion:**
+- `ImageDownloaderService.php` ahora descarga imagenes usando el proxy configurado
+- Las imagenes se guardan en la biblioteca de medios de WordPress
+- Se asignan automaticamente como imagen destacada (thumbnail)
+- Fallback a URL externa si la descarga falla
+
+**Archivos modificados:**
+- `Service/ImageDownloaderService.php` (nuevo metodo `downloadWithProxy()`)
+- `Service/ProductImporter.php` (usa ImageDownloaderService)
+- `Renderer/CardRenderer.php` (prioriza thumbnail local)
+
+### 2. Extraccion de Categorias Mejorada
+**Problema:** Las categorias no se extraian correctamente del HTML de Amazon.
+
+**Solucion:** Implementados 4 metodos de extraccion en cascada:
+1. `wayfinding-breadcrumbs_feature_div` (layout clasico)
+2. `nav-subnav` con atributo `data-category`
+3. Links con href `/b/` (categoria base)
+4. JSON schema en el HTML
+
+**Archivo:** `Service/WebScraperProvider.php` metodo `extractCategoryFromHtml()`
+
+### 3. Botones de Reimportacion Mejorados
+**Problema:** Despues de importar, desaparecian los botones de accion.
+
+**Solucion:**
+- Se muestran 3 botones despues de importar:
+  - **Ver Producto**: Abre el editor de WordPress
+  - **Reimp. Rapida**: Actualiza con datos de busqueda
+  - **Reimp. Detallada**: Actualiza obteniendo datos completos
+- Los productos ya importados en busqueda inicial tambien muestran estos botones
+- Layout vertical con gap de 10px para mejor visibilidad
+
+**Archivos modificados:**
+- `Admin/Views/import-results-table.php`
+- `assets/js/import-tab.js`
+
+### 4. Grid de Productos con Imagen Local
+**Problema:** El grid siempre mostraba la URL de Amazon.
+
+**Solucion:** `CardRenderer::getProductMeta()` ahora:
+1. Primero busca thumbnail local (`has_post_thumbnail()`)
+2. Si no existe, usa `image_url` del meta
+3. Ultimo fallback: `_thumbnail_url_external`
 
 ---
 
@@ -573,4 +624,3 @@ Revisar `WebScraperProvider::parseProductPage()` para confirmar.
 - [ ] Obtener URL de checkout o crear Payment Link
 
 ---
-
