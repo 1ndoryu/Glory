@@ -1,0 +1,173 @@
+/**
+ * --------------------------------------------------------------------
+ * Manual Import Tab Styles
+ * --------------------------------------------------------------------
+ * Estilos para la funcionalidad de importacion manual de productos
+ * desde archivos HTML de Amazon.
+ */
+
+.importacionManualContenedor {
+    max-width: 1200px;
+}
+
+/* 
+ * Zona de Drag & Drop
+ */
+.zonaArrastre {
+    border: 3px dashed #c3c4c7;
+    border-radius: 8px;
+    padding: 60px 20px;
+    text-align: center;
+    background: #f6f7f7;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.zonaArrastre:hover,
+.zonaArrastre.arrastrando {
+    border-color: #2271b1;
+    background: #f0f6fc;
+}
+
+.zonaArrastre.arrastrando {
+    transform: scale(1.02);
+}
+
+/* 
+ * Barra de Progreso
+ */
+.barraProgreso {
+    height: 20px;
+    background: #ddd;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.barraProgresoRelleno {
+    height: 100%;
+    background: linear-gradient(90deg, #2271b1, #135e96);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* 
+ * Tabla de Productos
+ */
+#tabla-productos-manual .columnaImagen img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fff;
+}
+
+#tabla-productos-manual .infoProducto {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#tabla-productos-manual .tituloProducto {
+    font-weight: 600;
+}
+
+#tabla-productos-manual .asinProducto {
+    color: #666;
+    font-size: 12px;
+}
+
+#tabla-productos-manual .categoriaProducto {
+    color: #999;
+    font-size: 11px;
+}
+
+/* 
+ * Precios
+ */
+#tabla-productos-manual .precioActual {
+    font-weight: 600;
+    color: #0f9d58;
+}
+
+#tabla-productos-manual .precioOriginal {
+    text-decoration: line-through;
+    color: #999;
+    font-size: 12px;
+}
+
+#tabla-productos-manual .precioDescuento {
+    color: #d93025;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* 
+ * Badges / Etiquetas
+ */
+.etiqueta {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.etiquetaPendiente {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.etiquetaExito {
+    background: #d4edda;
+    color: #155724;
+}
+
+.etiquetaError {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.etiquetaExistente {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.etiquetaPrime {
+    background: #232f3e;
+    color: #fff;
+    margin-left: 5px;
+}
+
+/* 
+ * Navegacion de Tabla
+ */
+.navTablaManual {
+    padding: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navTablaManual .alineadoDerecha button {
+    margin-left: 5px;
+}
+
+/* 
+ * Log de Importacion
+ */
+#registro-importacion .itemRegistro {
+    padding: 8px 12px;
+    margin: 5px 0;
+    border-radius: 4px;
+}
+
+#registro-importacion .registroExito {
+    background: #d4edda;
+}
+
+#registro-importacion .registroError {
+    background: #f8d7da;
+}

@@ -31,6 +31,10 @@ class AdminController
     {
         $this->registerTabs();
         add_action('admin_menu', [$this, 'registerAdminMenu']);
+
+        /* Inicializar controladores AJAX */
+        new ImportAjaxController();
+        new ManualImportAjaxController();
     }
 
     /**

@@ -318,8 +318,8 @@ Glory/src/Plugins/AmazonProduct/
 5. [x] Crear licencia de prueba
 6. [x] Test endpoint `/license/status` - OK
 7. [x] Test endpoint `/search` - OK (devuelve productos de Amazon)
-8. [ ] Test desde cliente local con API Key
-9. [ ] Probar flujo completo de importacion
+8. [x] Test desde cliente local con API Key - OK (funciona con licencia de prueba)
+9. [x] Probar flujo completo de importacion - OK (buscar, importar, actualizar funciona)
 
 ### Fase 8: Stripe + Proxy - COMPLETADO (2025-12-15)
 1. [x] Configurar webhook en Stripe Dashboard
@@ -504,16 +504,58 @@ CURLOPT_FORBID_REUSE => true   // Impedir reutilizacion
 
 ## Tareas Pendientes
 
-### 1. Optimizacion de Peticiones (EVALUAR)
-**Problema:** Cuando el usuario da clic en "actualizar" un producto, se hace una 
-nueva peticion al servidor aunque los resultados de la busqueda ya contienen 
+### 1. Optimizacion de Peticiones - COMPLETADO (2025-12-16)
+**Problema:** Cuando el usuario da clic en "actualizar" un producto, se hacia una 
+nueva peticion al servidor aunque los resultados de la busqueda ya contenian 
 la informacion necesaria.
 
-**Solucion propuesta:**
-- [ ] Evaluar si los datos de busqueda son suficientes para importar
-- [ ] Si es asi, usar los datos ya obtenidos en lugar de hacer otra peticion
-- [ ] Reducir consumo de proxy y mejorar velocidad
-- [ ] Archivos a revisar: `ImportTab.php`, `ApiClient.php`
+**Solucion implementada:**
+- [x] Evaluado: los datos de busqueda SON suficientes para importacion basica
+- [x] Implementados DOS botones de importacion:
+  - **Rapida**: Usa datos de busqueda directamente (sin peticion extra)
+  - **Detallada**: Hace peticion extra para obtener categoria, descripcion, etc.
+- [x] Archivos modificados: `ImportTab.php` (nuevo metodo `ajaxQuickImport`)
+
+**Comparativa de datos:**
+
+| Campo               | Busqueda (Rapida) | Pagina Producto (Detallada) |
+| ------------------- | ----------------- | --------------------------- |
+| asin                | ✅                 | ✅                           |
+| asin_name (titulo)  | ✅                 | ✅                           |
+| asin_price          | ✅                 | ✅                           |
+| asin_currency       | ✅                 | ✅                           |
+| image_url           | ✅ (1 imagen)      | ✅ (multiples)               |
+| rating              | ✅                 | ✅                           |
+| total_review        | ✅                 | ✅                           |
+| asin_original_price | ❌                 | ✅                           |
+| discount_percent    | ❌                 | ✅                           |
+| category_path       | ❌                 | ✅ (VERIFICAR)               |
+| is_prime            | ❌                 | ✅                           |
+| asin_informations   | ❌                 | ✅                           |
+
+---
+
+## Lista de Verificacion - Importacion Detallada
+
+**IMPORTANTE:** Verificar que la importacion detallada realmente obtiene estos datos.
+Revisar `WebScraperProvider::parseProductPage()` para confirmar.
+
+| Dato            | ¿Se extrae? | Selector/Metodo                  | Notas                     |
+| --------------- | ----------- | -------------------------------- | ------------------------- |
+| Titulo          | [ ]         | `#productTitle`                  | Probablemente OK          |
+| Precio actual   | [ ]         | `extractPriceFromHtml()`         | Probablemente OK          |
+| Precio original | [ ]         | `extractOriginalPriceFromHtml()` | Verificar                 |
+| Categoria       | [ ]         | `wayfinding-breadcrumbs`         | **VERIFICAR SI FUNCIONA** |
+| Descripcion     | [ ]         | `#feature-bullets`               | Verificar                 |
+| Rating          | [ ]         | Regex rating                     | Verificar                 |
+| Reviews count   | [ ]         | Regex reviews                    | Verificar                 |
+| Prime           | [ ]         | `.a-icon-prime`                  | Verificar                 |
+| Imagenes        | [ ]         | `#imgTagWrapperId img`           | Verificar                 |
+
+**Archivo a revisar:** `Glory/src/Plugins/AmazonProduct/Service/WebScraperProvider.php`
+**Metodo:** `parseProductPage()`
+
+---
 
 ### 2. Flujo de Pago del Cliente
 - [ ] Añadir boton "Suscribirse" en el panel del cliente (ClientLicenseTab)

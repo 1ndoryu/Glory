@@ -109,22 +109,10 @@ class AmazonProductPlugin
         if (is_admin()) {
             $adminController = new AdminController();
             $adminController->init();
-
-            $this->registerManualImportAjax();
         }
 
         add_action('init', [$this, 'handleCronSchedule']);
         ProductSyncService::init();
-    }
-
-    /**
-     * Registra los handlers AJAX para importacion manual de productos.
-     */
-    private function registerManualImportAjax(): void
-    {
-        $manualImportTab = new \Glory\Plugins\AmazonProduct\Admin\Tabs\ManualImportTab();
-        add_action('wp_ajax_amazon_parse_html', [$manualImportTab, 'ajaxParseHtml']);
-        add_action('wp_ajax_amazon_import_product', [$manualImportTab, 'ajaxImportProduct']);
     }
 
     private function registerPostType(): void
