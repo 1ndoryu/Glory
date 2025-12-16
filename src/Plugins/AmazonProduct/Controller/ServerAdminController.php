@@ -25,6 +25,9 @@ class ServerAdminController
         $this->registerTabs();
         add_action('admin_menu', [$this, 'registerAdminMenu']);
 
+        /* Registrar assets del admin via AssetManager */
+        \Glory\Plugins\AmazonProduct\Admin\AdminAssetLoader::register();
+
         /* Inicializar controladores AJAX */
         new ImportAjaxController();
         new ManualImportAjaxController();

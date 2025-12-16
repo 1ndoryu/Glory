@@ -4,6 +4,7 @@ namespace Glory\Plugins\AmazonProduct\Admin\Tabs;
 
 use Glory\Plugins\AmazonProduct\Service\ApiClient;
 use Glory\Plugins\AmazonProduct\Mode\PluginMode;
+use Glory\Plugins\AmazonProduct\Admin\AdminAssetLoader;
 
 /**
  * Import Products Tab - UI para buscar e importar productos de Amazon.
@@ -40,7 +41,7 @@ class ImportTab implements TabInterface
 
         $this->renderUsageWidget();
         $this->renderSearchForm($region);
-        $this->enqueueScripts();
+        AdminAssetLoader::enqueueImportTab();
     }
 
     /**
@@ -67,26 +68,13 @@ class ImportTab implements TabInterface
     }
 
     /**
-     * Encola los scripts necesarios.
-     */
-    private function enqueueScripts(): void
-    {
-        $jsPath = get_template_directory_uri() . '/Glory/src/Plugins/AmazonProduct/assets/js/import-tab.js';
-
-        wp_enqueue_script('amazon-import-tab', $jsPath, ['jquery'], '1.0.0', true);
-
-        wp_localize_script('amazon-import-tab', 'amazonImportConfig', [
-            'searchNonce' => wp_create_nonce('amazon_search_ajax'),
-            'importNonce' => wp_create_nonce('amazon_import_ajax')
-        ]);
-    }
-
-    /**
      * Renderiza error de API Key no configurada.
      */
     private function renderApiKeyError(): void
     {
-        echo '<div class="notice notice-error inline"><p><strong>API Key no configurada.</strong> Ve a la pestana "Licencia" para activar tu suscripcion.</p></div>';
+        echo '<div class="notice notice-error inline">
+            <p><strong>API Key no configurada.</strong> Ve a la pestana "Licencia" para activar tu suscripcion.</p>
+        </div>';
     }
 
     /**
@@ -94,7 +82,9 @@ class ImportTab implements TabInterface
      */
     private function renderAffiliateWarning(): void
     {
-        echo '<div class="notice notice-warning inline"><p><strong>Tag de Afiliado no configurado.</strong> Ve a "Settings" para configurar tu Amazon Affiliate Tag y empezar a ganar comisiones.</p></div>';
+        echo '<div class="notice notice-warning inline">
+            <p><strong>Tag de Afiliado no configurado.</strong> Ve a "Settings" para configurar tu Amazon Affiliate Tag y empezar a ganar comisiones.</p>
+        </div>';
     }
 
     /**

@@ -2,6 +2,8 @@
 
 namespace Glory\Plugins\AmazonProduct\Admin\Tabs;
 
+use Glory\Plugins\AmazonProduct\Admin\AdminAssetLoader;
+
 /**
  * API Setup Wizard Tab - Guia paso a paso para configurar la API de RapidAPI.
  * 
@@ -22,32 +24,8 @@ class ApiSetupWizardTab implements TabInterface
 
     public function render(): void
     {
-        $this->enqueueAssets();
+        AdminAssetLoader::enqueueApiWizard();
         $this->renderWizard();
-    }
-
-    private function enqueueAssets(): void
-    {
-        wp_enqueue_style(
-            'amazon-api-wizard',
-            get_template_directory_uri() . '/Glory/src/Plugins/AmazonProduct/assets/css/api-wizard.css',
-            [],
-            '1.0.0'
-        );
-
-        wp_enqueue_script(
-            'amazon-api-wizard',
-            get_template_directory_uri() . '/Glory/src/Plugins/AmazonProduct/assets/js/api-wizard.js',
-            ['jquery'],
-            '1.0.0',
-            true
-        );
-
-        wp_localize_script('amazon-api-wizard', 'apiWizardData', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('api_wizard_nonce'),
-            'currentApiKey' => get_option('amazon_api_key', ''),
-        ]);
     }
 
     private function renderWizard(): void

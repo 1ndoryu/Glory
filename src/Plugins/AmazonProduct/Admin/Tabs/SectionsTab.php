@@ -3,6 +3,7 @@
 namespace Glory\Plugins\AmazonProduct\Admin\Tabs;
 
 use Glory\Plugins\AmazonProduct\Service\SectionManager;
+use Glory\Plugins\AmazonProduct\Admin\AdminAssetLoader;
 
 /**
  * Sections Tab - Gestion de secciones dinamicas de productos.
@@ -34,7 +35,7 @@ class SectionsTab implements TabInterface
 
     public function render(): void
     {
-        $this->enqueueAssets();
+        AdminAssetLoader::enqueueSections();
 
         /* 
          * Escanear archivos automaticamente al abrir la tab.
@@ -47,38 +48,6 @@ class SectionsTab implements TabInterface
 
         $this->renderHeader($stats);
         $this->renderSectionsList($sections);
-    }
-
-    private function enqueueAssets(): void
-    {
-        $baseUrl = get_template_directory_uri() . '/Glory/src/Plugins/AmazonProduct/assets';
-
-        wp_enqueue_style(
-            'glory-sections-tab',
-            $baseUrl . '/css/sections-tab.css',
-            [],
-            '1.0.0'
-        );
-
-        wp_enqueue_script(
-            'glory-sections-tab',
-            $baseUrl . '/js/sections-tab.js',
-            ['jquery'],
-            '1.0.0',
-            true
-        );
-
-        wp_localize_script('glory-sections-tab', 'glorySections', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('glory_sections_nonce'),
-            'strings' => [
-                'confirmRestore' => '¿Restaurar esta seccion a sus valores por defecto?',
-                'saving' => 'Guardando...',
-                'saved' => 'Guardado',
-                'error' => 'Error al guardar',
-                'loading' => 'Cargando...',
-            ],
-        ]);
     }
 
     private function renderHeader(array $stats): void
