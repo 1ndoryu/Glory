@@ -191,31 +191,34 @@ class WebScraperProvider implements ApiProviderInterface
             : get_option('amazon_scraper_proxy_auth', '');
 
         /*
-         * Generar session ID unico y especificar pais para rotacion de IP.
+         * Configuracion de parámetros del proxy DataImpulse.
          * 
-         * DataImpulse parametros:
-         * - sessid.RANDOM: Fuerza una IP diferente por session
-         * - cr.XX: Especifica el pais de la IP (debe coincidir con Amazon region)
+         * IMPORTANTE sobre rotacion de IPs (Puerto 823 = Rotating):
+         * - El puerto 823 rota la IP automaticamente con cada NUEVA conexion
+         * - El parametro sessid MANTIENE la misma IP (sticky session), NO la rota
+         * - Para rotacion, solo necesitamos el country code (cr.XX)
+         * - Debemos forzar a CURL a cerrar conexiones para obtener nueva IP
          * 
-         * Formato: usuario__cr.XX;sessid.RANDOM:password
-         * Ref: https://docs.dataimpulse.com/proxies/parameters/session-id
+         * Ref: https://docs.dataimpulse.com/proxies/types-of-connections
          */
-        $sessionId = '';
         $countryCode = $this->getProxyCountryCode();
 
         if (!empty($proxyAuth) && strpos($proxyAuth, ':') !== false) {
             [$proxyUser, $proxyPass] = explode(':', $proxyAuth, 2);
-            $sessionId = bin2hex(random_bytes(8));
-            $proxyAuth = "{$proxyUser}__cr.{$countryCode};sessid.{$sessionId}:{$proxyPass}";
+
+            /*
+             * Solo agregamos el country code para geo-targeting.
+             * NO usamos sessid porque eso MANTIENE la misma IP (sticky).
+             * El puerto 823 rota automaticamente con cada nueva conexion.
+             */
+            $proxyAuth = "{$proxyUser}__cr.{$countryCode}:{$proxyPass}";
         }
 
         /*
          * Log de configuracion de proxy
          */
         if (!empty($proxy)) {
-            $proxyHost = preg_replace('/:[^:]+$/', ':***', $proxy);
-            $sessInfo = !empty($sessionId) ? " | cr.{$countryCode};sessid.{$sessionId}" : "";
-            GloryLogger::info("Scraper #{$attempt}: Proxy{$sessInfo}");
+            GloryLogger::info("Scraper #{$attempt}: Proxy configurado (cr.{$countryCode}, rotating port)");
         } elseif ($attempt === 1) {
             GloryLogger::warning("Scraper: Proxy NO configurado - Usando IP directa");
         }
@@ -248,10 +251,20 @@ class WebScraperProvider implements ApiProviderInterface
         ];
 
         /*
-         * Configurar proxy si esta disponible
+         * Configurar proxy si esta disponible.
+         * 
+         * IMPORTANTE: Para garantizar rotacion de IP con el puerto 823:
+         * - CURLOPT_FRESH_CONNECT: Fuerza una nueva conexion TCP
+         * - CURLOPT_FORBID_REUSE: Impide que CURL reutilice la conexion
+         * 
+         * Sin estas opciones, CURL puede reusar conexiones persistentes
+         * y el proxy mantendria la misma IP.
          */
         if (!empty($proxy)) {
             $options[CURLOPT_PROXY] = $proxy;
+            $options[CURLOPT_FRESH_CONNECT] = true;
+            $options[CURLOPT_FORBID_REUSE] = true;
+
             if (strpos($proxy, 'socks5') !== false) {
                 $options[CURLOPT_PROXYTYPE] = CURLPROXY_SOCKS5;
             }

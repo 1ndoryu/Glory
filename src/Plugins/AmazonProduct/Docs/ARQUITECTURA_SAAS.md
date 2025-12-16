@@ -465,3 +465,54 @@ php -r "mail('tu@email.com', 'Test', 'Contenido');"
 ```
 
 ---
+
+## Proxy DataImpulse - Configuracion Tecnica
+
+### Tipos de Conexion
+
+| Puerto | Tipo     | Comportamiento                                    |
+| ------ | -------- | ------------------------------------------------- |
+| 823    | Rotating | IP cambia automaticamente con cada nueva conexion |
+| 10000+ | Sticky   | IP se mantiene por 30 mins (configurable)         |
+
+### Parametros de Usuario
+
+El usuario del proxy puede incluir parametros adicionales:
+
+```
+usuario__cr.XX              -> Geo-targeting (IP del pais XX)
+usuario__sessid.ABC         -> Sticky session (mantiene misma IP)
+usuario__sessttl.60         -> Session TTL en minutos
+usuario__cr.es;sessid.ABC   -> Combinacion de parametros
+```
+
+**IMPORTANTE**: El parametro `sessid` MANTIENE la misma IP (sticky). 
+Para rotacion automatica, NO usar sessid con el puerto 823.
+
+### Configuracion CURL Necesaria
+
+Para garantizar que cada request obtenga una IP diferente:
+
+```php
+// Forzar nueva conexion TCP (evita reusar conexion existente)
+CURLOPT_FRESH_CONNECT => true
+
+// Impedir reutilizacion de la conexion despues del request
+CURLOPT_FORBID_REUSE => true
+```
+
+Sin estas opciones, CURL puede mantener conexiones persistentes y el proxy
+podria seguir usando la misma IP.
+
+### Verificacion de Rotacion
+
+Para verificar que las IPs estan rotando, revisar los logs:
+
+```bash
+# En VPS
+tail -100 /var/www/wandori/wp-content/themes/glory/logs/glory.log | grep "IP:"
+```
+
+Cada request deberia mostrar una IP diferente (campo `CURLINFO_PRIMARY_IP`).
+
+---
