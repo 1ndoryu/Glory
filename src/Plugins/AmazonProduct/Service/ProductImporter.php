@@ -55,14 +55,34 @@ class ProductImporter
         }
 
         if ($postId && !is_wp_error($postId)) {
-            // Handle external thumbnail
-            if (!empty($data['asin_images'][0])) {
-                update_post_meta($postId, '_thumbnail_url_external', $data['asin_images'][0]);
+            // Descargar y asignar imagen como thumbnail
+            $imageUrl = $data['asin_images'][0] ?? $data['image_url'] ?? '';
+            if (!empty($imageUrl)) {
+                // Guardar URL original como referencia
+                update_post_meta($postId, '_thumbnail_url_external', $imageUrl);
+
+                // Descargar imagen y asignar como featured image
+                $imageService = new ImageDownloaderService();
+                $productTitle = $data['asin_name'] ?? 'amazon-product-' . $asin;
+                $attachmentId = $imageService->downloadAndSetAsThumbnail($imageUrl, $postId, $productTitle);
+
+                if (!$attachmentId) {
+                    if (class_exists('\\Glory\\Core\\GloryLogger')) {
+                        \Glory\Core\GloryLogger::warning("ProductImporter: No se pudo descargar imagen para ASIN {$asin}");
+                    }
+                }
             }
 
-            // Sync categories
+            // Sincronizar categorias
             if (!empty($data['category_path'])) {
+                if (class_exists('\\Glory\\Core\\GloryLogger')) {
+                    \Glory\Core\GloryLogger::info("ProductImporter: Sincronizando categoria: {$data['category_path']}");
+                }
                 self::syncCategories($postId, $data['category_path']);
+            } else {
+                if (class_exists('\\Glory\\Core\\GloryLogger')) {
+                    \Glory\Core\GloryLogger::info("ProductImporter: No category_path en datos para ASIN {$asin}");
+                }
             }
         }
 
@@ -129,6 +149,18 @@ class ProductImporter
             // Assign "Ofertas" category for new deals
             if ($postId && !is_wp_error($postId)) {
                 self::assignCategory($postId, 'Ofertas');
+            }
+        }
+
+        // Descargar y asignar imagen como thumbnail (para nuevos y actualizados)
+        if ($postId && !is_wp_error($postId)) {
+            $imageUrl = $deal['asin_image'] ?? '';
+            if (!empty($imageUrl) && !has_post_thumbnail($postId)) {
+                update_post_meta($postId, '_thumbnail_url_external', $imageUrl);
+
+                $imageService = new ImageDownloaderService();
+                $dealTitle = $deal['deal_title'] ?? 'amazon-deal-' . $asin;
+                $imageService->downloadAndSetAsThumbnail($imageUrl, $postId, $dealTitle);
             }
         }
 

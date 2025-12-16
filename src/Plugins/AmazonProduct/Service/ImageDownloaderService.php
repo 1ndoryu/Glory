@@ -26,11 +26,12 @@ class ImageDownloaderService
         require_once(ABSPATH . 'wp-admin/includes/media.php');
         require_once(ABSPATH . 'wp-admin/includes/image.php');
 
-        // Descargar imagen a archivo temporal
-        $tempFile = download_url($imageUrl, 30);
+        // Descargar imagen a archivo temporal usando proxy si esta configurado
+        $tempFile = $this->downloadWithProxy($imageUrl);
 
-        if (is_wp_error($tempFile)) {
-            error_log('ImageDownloader: Error descargando imagen - ' . $tempFile->get_error_message());
+        if (is_wp_error($tempFile) || $tempFile === false) {
+            $errorMsg = is_wp_error($tempFile) ? $tempFile->get_error_message() : 'Error desconocido';
+            error_log('ImageDownloader: Error descargando imagen - ' . $errorMsg);
             return false;
         }
 
@@ -146,5 +147,83 @@ class ImageDownloaderService
         $filename .= '-' . time();
 
         return $filename . '.' . $extension;
+    }
+
+    /**
+     * Descarga una imagen usando el proxy configurado.
+     * 
+     * @param string $url URL de la imagen
+     * @return string|false Ruta al archivo temporal o false si falla
+     */
+    private function downloadWithProxy(string $url): string|false
+    {
+        // Crear archivo temporal
+        $tempFile = wp_tempnam($url);
+        if (!$tempFile) {
+            return false;
+        }
+
+        $ch = curl_init();
+
+        // Configuracion del proxy (igual que WebScraperProvider)
+        $proxy = defined('GLORY_PROXY_HOST')
+            ? GLORY_PROXY_HOST
+            : get_option('amazon_scraper_proxy', '');
+
+        $proxyAuth = defined('GLORY_PROXY_AUTH')
+            ? GLORY_PROXY_AUTH
+            : get_option('amazon_scraper_proxy_auth', '');
+
+        $options = [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            CURLOPT_HTTPHEADER => [
+                'Accept: image/webp,image/apng,image/*,*/*;q=0.8',
+                'Accept-Language: es-ES,es;q=0.9,en;q=0.8',
+                'Referer: https://www.amazon.es/',
+            ],
+        ];
+
+        // Configurar proxy si esta disponible
+        if (!empty($proxy)) {
+            $options[CURLOPT_PROXY] = $proxy;
+            $options[CURLOPT_FRESH_CONNECT] = true;
+            $options[CURLOPT_FORBID_REUSE] = true;
+
+            if (!empty($proxyAuth)) {
+                // Generar sessid unico para rotacion de IP
+                $sessionId = bin2hex(random_bytes(8));
+                [$proxyUser, $proxyPass] = explode(':', $proxyAuth, 2);
+                $proxyAuth = "{$proxyUser};sessid.{$sessionId}:{$proxyPass}";
+                $options[CURLOPT_PROXYUSERPWD] = $proxyAuth;
+            }
+        }
+
+        curl_setopt_array($ch, $options);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if (!empty($curlError) || $httpCode !== 200 || empty($response)) {
+            @unlink($tempFile);
+            error_log("ImageDownloader: cURL error (HTTP {$httpCode}): {$curlError}");
+            return false;
+        }
+
+        // Guardar contenido en archivo temporal
+        $written = file_put_contents($tempFile, $response);
+        if ($written === false) {
+            @unlink($tempFile);
+            return false;
+        }
+
+        return $tempFile;
     }
 }

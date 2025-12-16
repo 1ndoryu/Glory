@@ -6,7 +6,7 @@
      *
      * Maneja las interacciones AJAX para busqueda e importacion de productos.
      */
-    
+
     /* Estado de busqueda */
     let currentKeyword = '';
     let currentPage = 1;
@@ -69,6 +69,9 @@
             const productData = btn.data('product');
             const asin = productData.asin;
 
+            /* Guardar datos en el contenedor para reimportacion */
+            container.data('productData', productData);
+
             container.find('button').prop('disabled', true);
             btn.text('Importando...');
 
@@ -95,6 +98,12 @@
             const btn = $(this);
             const container = btn.closest('.amazon-action-btns');
             const asin = btn.data('asin');
+
+            /* Guardar asin y obtener datos del producto del boton rapido */
+            const quickBtn = container.find('.amazon-quick-import-btn');
+            if (quickBtn.length && quickBtn.data('product')) {
+                container.data('productData', quickBtn.data('product'));
+            }
 
             container.find('button').prop('disabled', true);
             btn.text('Obteniendo...');
@@ -155,8 +164,22 @@
         if (response.success) {
             const data = response.data;
             const importType = data.import_type === 'quick' ? 'Rapida' : 'Detallada';
-            const viewBtn = '<a href="' + data.edit_link + '" target="_blank" class="button button-secondary">Ver Producto</a>';
-            container.html(viewBtn);
+
+            /* Reconstruir botones con opcion de reimportar */
+            const viewBtn = '<a href="' + data.edit_link + '" target="_blank" class="button button-secondary" style="margin-bottom: 4px; width: 100%; text-align: center;">Ver Producto</a>';
+
+            /* Obtener datos del producto guardados en el contenedor */
+            const savedProductData = container.data('productData');
+            const productDataJson = savedProductData ? JSON.stringify(savedProductData).replace(/'/g, '&#39;') : '';
+
+            /* Botones de reimportacion */
+            let quickBtn = '';
+            if (productDataJson) {
+                quickBtn = '<button type="button" class="button amazon-quick-import-btn" data-product=\'' + productDataJson + '\' title="Reimportar con datos de busqueda" style="width: 100%;">Reimp. Rapida</button>';
+            }
+            const detailedBtn = '<button type="button" class="button amazon-detailed-import-btn" data-asin="' + asin + '" title="Reimportar obteniendo datos completos" style="width: 100%;">Reimp. Detallada</button>';
+
+            container.html(viewBtn + '<div style="display: flex; gap: 4px; margin-top: 4px;">' + quickBtn + detailedBtn + '</div>');
 
             $('#row-status-' + asin).html('<span style="background: #46b450; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px;">' + (data.action === 'updated' ? 'Actualizado' : 'Importado') + '</span><br><small style="color: #666;">ID: ' + data.id + ' (' + importType + ')</small>');
 
