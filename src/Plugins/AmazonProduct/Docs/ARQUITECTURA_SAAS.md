@@ -614,14 +614,23 @@ la informacion necesaria.
 - [x] Diseño mejorado con gradiente y hover effects
 - [x] Enlace de renovacion para licencias expiradas actualizado
 
-### 3. Verificacion de Emails
-- [ ] Configurar SMTP en el servidor VPS para enviar emails reales
-- [ ] Verificar que `wp_mail()` funciona correctamente
-- [ ] Alternativa: usar servicio como SendGrid, Mailgun o Amazon SES
+### 3. Verificacion de Emails - COMPLETADO (2025-12-16)
+- [x] Configurar SMTP via Brevo (ex-Sendinblue)
+- [x] Constantes en wp-config.php: GLORY_SMTP_HOST, GLORY_SMTP_USER, GLORY_SMTP_PASS
+- [x] Servicio SmtpConfig.php creado para configurar PHPMailer
+- [x] Endpoint de diagnostico: `/email-test?secret=xxx&to=email`
+- [x] Probado y funcionando - emails llegan correctamente
 
 ### 4. Stripe Checkout - COMPLETADO (2025-12-16)
 - [x] Crear producto en Stripe con precio recurrente ($20/mes)
 - [x] Configurar periodo de prueba de 30 dias
 - [x] Obtener URL de checkout: `https://buy.stripe.com/8x26oG58XchA56va31cAo0c`
+
+### 5. Mejoras de UI Cliente - COMPLETADO (2025-12-16)
+- [x] Mostrar email del cliente en panel de licencia
+- [x] Arreglar bug fecha 01/01/1970 (usar expires_at_formatted)
+- [x] Seccion condicional: si suscrito, mostrar gestion; si no, mostrar CTA
+- [x] Boton "Contactar Soporte" con WhatsApp: +58 412 082 52 34
+- [x] Label "Proximo Pago" en lugar de "Expira"
 
 ---
