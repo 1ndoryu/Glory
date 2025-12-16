@@ -127,7 +127,14 @@ class ImportTab implements TabInterface
                     <div style="width: <?php echo min(100, $percentUsed); ?>%; height: 12px; background: <?php echo $barColor; ?>; transition: width 0.3s;"></div>
                 </div>
                 <span style="font-weight: bold; font-size: 13px;">
-                    <?php echo number_format($gbUsed, 2); ?> / <?php echo $gbLimit; ?> GB
+                    <?php
+                    /* Mostrar en MB si es menor a 0.01 GB */
+                    if ($gbUsed < 0.01 && $gbUsed > 0) {
+                        echo number_format($gbUsed * 1024, 1) . ' MB';
+                    } else {
+                        echo number_format($gbUsed, 2) . ' GB';
+                    }
+                    ?> / <?php echo $gbLimit; ?> GB
                 </span>
             </div>
             <p style="margin: 8px 0 0 0; font-size: 12px; color: #666;">

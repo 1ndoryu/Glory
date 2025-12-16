@@ -314,6 +314,41 @@ class ClientLicenseTab implements TabInterface
                     <td><?php echo esc_html($displayDate); ?></td>
                 </tr>
             <?php endif; ?>
+
+            <?php
+            /* Mostrar estado del Tag de Afiliado */
+            $affiliateTag = get_option('amazon_affiliate_tag', '');
+            ?>
+            <tr>
+                <th>Tag de Afiliado</th>
+                <td>
+                    <?php if (!empty($affiliateTag)): ?>
+                        <code style="background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 3px; font-weight: bold;">
+                            <?php echo esc_html($affiliateTag); ?>
+                        </code>
+                        <div style="margin-top: 8px; padding: 10px; background: #d4edda; border-radius: 4px; border-left: 4px solid #28a745;">
+                            <span class="dashicons dashicons-yes-alt" style="color: #28a745;"></span>
+                            <strong style="color: #155724;">¡Listo para generar ingresos!</strong>
+                            <p style="margin: 5px 0 0 0; color: #155724; font-size: 13px;">
+                                Cada venta realizada a traves de los productos mostrados en tu sitio generara comisiones para ti.
+                            </p>
+                        </div>
+                    <?php else: ?>
+                        <span style="color: #dc3232; font-weight: 500;">
+                            <span class="dashicons dashicons-warning" style="font-size: 16px;"></span>
+                            No configurado
+                        </span>
+                        <div style="margin-top: 8px; padding: 10px; background: #fff3cd; border-radius: 4px; border-left: 4px solid #ffc107;">
+                            <span class="dashicons dashicons-info" style="color: #856404;"></span>
+                            <strong style="color: #856404;">Configura tu Tag de Afiliado</strong>
+                            <p style="margin: 5px 0 0 0; color: #856404; font-size: 13px;">
+                                Sin el Tag de Afiliado no podras generar comisiones por las ventas.
+                                Ve a la pestana <a href="<?php echo admin_url('admin.php?page=amazon-product&tab=settings'); ?>"><strong>Configuracion</strong></a> para configurarlo.
+                            </p>
+                        </div>
+                    <?php endif; ?>
+                </td>
+            </tr>
             <tr>
                 <th>Uso de Datos</th>
                 <td>
@@ -322,15 +357,51 @@ class ClientLicenseTab implements TabInterface
                             <div style="width: <?php echo min(100, $percentUsed); ?>%; height: 20px; background: <?php echo $barColor; ?>; transition: width 0.3s;"></div>
                         </div>
                         <span style="font-weight: bold;">
-                            <?php echo number_format($gbUsed, 2); ?> / <?php echo $gbLimit; ?> GB
+                            <?php
+                            /* Mostrar en MB si es menor a 0.01 GB para mejor visibilidad */
+                            if ($gbUsed < 0.01 && $gbUsed > 0) {
+                                $mbUsed = $gbUsed * 1024;
+                                echo number_format($mbUsed, 1) . ' MB';
+                            } else {
+                                echo number_format($gbUsed, 2) . ' GB';
+                            }
+                            ?> / <?php echo $gbLimit; ?> GB
                         </span>
                     </div>
                     <p style="margin-top: 5px; color: #666; font-size: 12px;">
                         Te quedan <strong><?php echo number_format($gbRemaining, 2); ?> GB</strong> disponibles este mes.
+                        <?php if ($gbUsed > 0 && $gbUsed < 0.01): ?>
+                            <br><span style="color: #999; font-size: 11px;">(<?php echo number_format($gbUsed * 1024, 1); ?> MB usados)</span>
+                        <?php endif; ?>
                     </p>
                 </td>
             </tr>
         </table>
+
+        <!-- Estimado de uso incluido -->
+        <div style="background: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 4px; padding: 15px; margin-top: 15px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 14px; color: #1d2327;">
+                <span class="dashicons dashicons-info-outline" style="color: #2271b1;"></span>
+                ¿Que incluye tu plan de <?php echo (int)$gbLimit; ?> GB?
+            </h4>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 150px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #2271b1;">~10,000</div>
+                    <div style="font-size: 12px; color: #666;">Busquedas de productos</div>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #2271b1;">~8,000</div>
+                    <div style="font-size: 12px; color: #666;">Importaciones detalladas</div>
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #0f9d58;">Ilimitadas</div>
+                    <div style="font-size: 12px; color: #666;">Importaciones rapidas*</div>
+                </div>
+            </div>
+            <p style="margin: 10px 0 0 0; font-size: 11px; color: #666; font-style: italic;">
+                * Las importaciones rapidas usan los datos de la busqueda sin peticiones adicionales.
+            </p>
+        </div>
 
         <?php if ($licenseStatus === 'expired'): ?>
             <div class="notice notice-error inline" style="margin-top: 15px;">

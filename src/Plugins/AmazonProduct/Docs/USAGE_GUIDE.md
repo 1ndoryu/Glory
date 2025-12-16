@@ -353,25 +353,50 @@ Para encontrar el slug de una categoria:
 ## Sincronizacion Automatica
 
 ### Configurar sincronizacion
-1. Ve a **Amazon Products > Settings > Updates**
-2. Selecciona la frecuencia: Diaria, Semanal, o Desactivada
-3. Guarda los cambios
+1. Ve a **Amazon Products > Settings > Actualizaciones**
+2. Selecciona la frecuencia deseada
+3. Revisa el estimado de consumo
+4. Guarda los cambios
+
+### Frecuencias disponibles
+
+| Frecuencia   | Intervalo | Veces al mes | Consumo (100 prod.) |
+| ------------ | --------- | ------------ | ------------------- |
+| Desactivado  | -         | 0            | 0 MB                |
+| Diario       | 24 horas  | ~30          | ~1.5 GB             |
+| Cada 3 dias  | 72 horas  | ~10          | ~500 MB             |
+| Semanal      | 7 dias    | ~4           | ~200 MB             |
+| Cada 14 dias | 14 dias   | ~2           | ~100 MB             |
+
+**Recomendacion:** Usa frecuencia **semanal** para balance entre datos frescos y consumo.
+
+### Como funciona la sincronizacion
+
+La actualizacion se realiza de forma **progresiva** para no sobrecargar el servidor:
+
+1. Se crea una cola con todos los productos
+2. Se actualiza 1 producto cada 40 segundos
+3. Si falla, se reintenta hasta 2 veces
+4. El progreso se muestra en tiempo real
+
+**Tiempo estimado:** ~40 segundos por producto (100 productos = ~67 minutos)
 
 ### Que se sincroniza
 - Precio actual
-- Rating
+- Precio original (descuentos)
+- Rating (estrellas)
 - Numero de reviews
 - Estado Prime
-- Disponibilidad
 
 ### Que NO se sincroniza
 - Titulo (para preservar ediciones manuales)
 - Imagen (para mantener la imagen local)
 - Categoria
 
-### Limite de sincronizacion
-- Se actualizan los productos mas antiguos primero
-- La sincronizacion consume datos de tu cuota mensual
+### Consumo de datos
+- Cada producto consume aproximadamente **~500 KB**
+- El consumo se descuenta de tu cuota mensual
+- Puedes ver el estimado antes de activar la sincronizacion
 
 ---
 

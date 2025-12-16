@@ -258,13 +258,15 @@ Glory/src/Plugins/AmazonProduct/
 │   └── ClientMode.php              # Detecta que es cliente
 ├── Service/
 │   ├── ApiClient.php               # Se conecta a tu servidor
-│   └── ProductImporter.php         # Importa desde tu API
+│   ├── ProductImporter.php         # Importa desde tu API
+│   └── ClientSyncService.php       # Sincronizacion automatica programada
 ├── Admin/
 │   └── Tabs/
 │       ├── ImportTab.php           # UI de importacion
 │       ├── ManualImportTab.php     # Import HTML (offline)
-│       ├── ClientLicenseTab.php    # Configurar API Key
-│       └── ClientSettingsTab.php   # Region, Affiliate Tag, Idioma
+│       ├── ClientLicenseTab.php    # Configurar API Key + Estado
+│       ├── ClientSettingsTab.php   # Region, Affiliate Tag, Idioma
+│       └── UpdatesTab.php          # Actualizacion automatica
 └── Config/
     └── ServerConfig.php            # URL de tu servidor
 ```

@@ -123,8 +123,11 @@ class AmazonProductPlugin
             $adminController->init();
         }
 
-        add_action('init', [$this, 'handleCronSchedule']);
-        ProductSyncService::init();
+        /* 
+         * Servicio de sincronizacion automatica para modo cliente
+         * Usa el ApiClient para actualizar productos via el servidor SaaS
+         */
+        \Glory\Plugins\AmazonProduct\Service\ClientSyncService::init();
     }
 
     private function registerPostType(): void
