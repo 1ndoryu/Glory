@@ -12,6 +12,7 @@ use Glory\Plugins\AmazonProduct\Admin\Tabs\HelpTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\ManualImportTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\ApiSetupWizardTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\ClientLicenseTab;
+use Glory\Plugins\AmazonProduct\Admin\Tabs\ClientSettingsTab;
 use Glory\Plugins\AmazonProduct\Mode\PluginMode;
 
 /**
@@ -51,6 +52,7 @@ class AdminController
          */
         $this->tabs = [
             new ClientLicenseTab(),
+            new ClientSettingsTab(),
             new ImportTab(),
             new ManualImportTab(),
             new UpdatesTab(),

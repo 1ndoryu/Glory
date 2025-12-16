@@ -263,7 +263,8 @@ Glory/src/Plugins/AmazonProduct/
 │   └── Tabs/
 │       ├── ImportTab.php           # UI de importacion
 │       ├── ManualImportTab.php     # Import HTML (offline)
-│       └── LicenseTab.php          # Configurar API Key
+│       ├── ClientLicenseTab.php    # Configurar API Key
+│       └── ClientSettingsTab.php   # Region, Affiliate Tag, Idioma
 └── Config/
     └── ServerConfig.php            # URL de tu servidor
 ```
