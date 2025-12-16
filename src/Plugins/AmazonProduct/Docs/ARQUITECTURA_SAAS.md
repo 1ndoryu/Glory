@@ -707,28 +707,41 @@ Esto media el tamaño del **JSON procesado** (datos extraidos), no el **trafico 
 
 ### Solucion Implementada
 
-1. **`WebScraperProvider.php`**: Ahora rastrea los bytes reales descargados internamente
+1. **`WebScraperProvider.php`**: Ahora rastrea los bytes reales transferidos
    - Nuevo metodo `getLastBytesDownloaded()` para obtener el total
-   - El metodo `fetchUrl()` acumula bytes en `$this->totalBytesDownloaded`
+   - Usa `CURLINFO_SIZE_DOWNLOAD` para obtener bytes **comprimidos** (transferencia real)
    - Se resetea en cada llamada a `searchProducts()` o `getProductByAsin()`
 
 2. **`ApiEndpoints.php`**: Usa los bytes reales en lugar del estimado
    - Para requests con scraping: `$scraper->getLastBytesDownloaded()`
    - Para requests cacheados: mantiene `strlen(json_encode($cached))` (sin uso real de proxy)
 
+### Detalle Tecnico: Compresion
+
+Amazon envía las páginas comprimidas con gzip. El ratio de compresión típico es 5-8x:
+
+| Metrica             | Valor Tipico |
+| ------------------- | ------------ |
+| HTML descomprimido  | ~1400 KB     |
+| Transferencia real  | ~250 KB      |
+| Ratio de compresion | ~5.6x        |
+
+**Importante**: `strlen($response)` mide el contenido **descomprimido** (incorrecto para facturación).
+Usamos `CURLINFO_SIZE_DOWNLOAD` que mide bytes **transferidos** (lo que cobra el proxy).
+
 ### Impacto en Facturacion
 
 Con esta correccion, los clientes veran reflejado el consumo **real** de ancho de banda:
 
-| Antes (Bug)     | Despues (Correcto) | Diferencia |
-| --------------- | ------------------ | ---------- |
-| ~25 KB/busqueda | ~350 KB/busqueda   | ~14x mas   |
-| ~25 KB/producto | ~350 KB/producto   | ~14x mas   |
+| Antes (Bug)     | Despues (Correcto) | Notas                  |
+| --------------- | ------------------ | ---------------------- |
+| ~25 KB/busqueda | ~250 KB/busqueda   | Bytes reales del proxy |
+| ~25 KB/producto | ~250 KB/producto   | Bytes reales del proxy |
 
 **Nota:** Las busquedas cacheadas siguen sin consumir del proxy (solo overhead de respuesta).
 
 ### Archivos Modificados
 
-- `Service/WebScraperProvider.php` (tracking de bytes)
+- `Service/WebScraperProvider.php` (tracking de bytes con CURLINFO_SIZE_DOWNLOAD)
 - `Api/ApiEndpoints.php` (uso de bytes reales)
 

@@ -299,11 +299,19 @@ class WebScraperProvider implements ApiProviderInterface
         $curlError = curl_error($ch);
         $primaryIp = curl_getinfo($ch, CURLINFO_PRIMARY_IP);
         $totalTime = curl_getinfo($ch, CURLINFO_TOTAL_TIME);
+
+        /*
+         * Bytes reales transferidos por el proxy (datos comprimidos)
+         * Esto es lo que realmente consume ancho de banda del proxy
+         * CURLINFO_SIZE_DOWNLOAD cuenta bytes ANTES de descompresion
+         */
+        $bytesTransferred = (int) curl_getinfo($ch, CURLINFO_SIZE_DOWNLOAD);
+
         curl_close($ch);
 
         $elapsedMs = round((microtime(true) - $requestStartTime) * 1000);
-        $responseSize = strlen($response);
-        $responseSizeKb = round($responseSize / 1024, 1);
+        $responseSize = strlen($response); // Tamaño descomprimido (solo para logs)
+        $transferredKb = round($bytesTransferred / 1024, 1);
 
         /* Log solo si hay problemas (error o bloqueo) - removido log normal para produccion */
 
@@ -348,12 +356,12 @@ class WebScraperProvider implements ApiProviderInterface
         }
 
         /*
-         * Request exitoso - Acumular bytes descargados
-         * Esto representa el trafico REAL del proxy (HTML completo de Amazon)
+         * Request exitoso - Acumular bytes REALES transferidos (comprimidos)
+         * Esto es lo que el proxy realmente transfiere y cobra
          */
-        $this->totalBytesDownloaded += $responseSize;
+        $this->totalBytesDownloaded += $bytesTransferred;
 
-        GloryLogger::info("Scraper: OK - {$responseSizeKb}KB en {$elapsedMs}ms" . (!empty($proxy) ? " (via proxy)" : " (IP directa)"));
+        GloryLogger::info("Scraper: OK - {$transferredKb}KB transferidos en {$elapsedMs}ms" . (!empty($proxy) ? " (via proxy)" : " (IP directa)"));
 
         return $response;
     }
