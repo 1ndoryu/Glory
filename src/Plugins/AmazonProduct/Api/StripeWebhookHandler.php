@@ -4,6 +4,7 @@ namespace Glory\Plugins\AmazonProduct\Api;
 
 use Glory\Plugins\AmazonProduct\Service\LicenseService;
 use Glory\Plugins\AmazonProduct\Model\License;
+use Glory\Plugins\AmazonProduct\Model\TransactionLog;
 use Glory\Core\GloryLogger;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -139,10 +140,16 @@ class StripeWebhookHandler
         $subscriptionId = $subscription['id'] ?? '';
         $status = $subscription['status'] ?? '';
 
+        GloryLogger::info("=== NUEVA SUSCRIPCION ===");
+        GloryLogger::info("Customer ID: {$customerId}");
+        GloryLogger::info("Subscription ID: {$subscriptionId}");
+        GloryLogger::info("Status: {$status}");
+
         /*
          * Obtener email del cliente desde metadata o customer
          */
         $customerEmail = $this->getCustomerEmail($customerId);
+        GloryLogger::info("Email obtenido: " . ($customerEmail ?: 'NULL'));
 
         /*
          * Si no hay email (cliente de prueba CLI), generar uno temporal
@@ -162,11 +169,14 @@ class StripeWebhookHandler
             $license = LicenseService::create($customerEmail, $customerId, $subscriptionId);
 
             if (!$license) {
+                GloryLogger::error("ERROR: No se pudo crear la licencia");
                 return new WP_REST_Response(['error' => 'Could not create license'], 500);
             }
+            GloryLogger::info("Licencia NUEVA creada");
         } else {
             $license->setStripeCustomerId($customerId);
             $license->setStripeSubscriptionId($subscriptionId);
+            GloryLogger::info("Licencia EXISTENTE actualizada");
         }
 
         /*
@@ -178,22 +188,49 @@ class StripeWebhookHandler
             if ($trialEnd) {
                 $license->setExpiresAt($trialEnd);
             }
+            GloryLogger::info("Estado: TRIAL hasta " . date('Y-m-d', $trialEnd));
         } elseif ($status === 'active') {
             $license->setStatus(License::STATUS_ACTIVE);
             $periodEnd = $subscription['current_period_end'] ?? 0;
             if ($periodEnd) {
                 $license->setExpiresAt($periodEnd);
             }
+            GloryLogger::info("Estado: ACTIVE hasta " . date('Y-m-d', $periodEnd));
         }
 
         LicenseService::update($license);
 
         /*
-         * TODO: Enviar email de bienvenida con API Key
+         * Registrar transaccion en historial
+         */
+        $amount = $subscription['items']['data'][0]['price']['unit_amount'] ?? 0;
+        $currency = $subscription['currency'] ?? 'usd';
+
+        TransactionLog::create([
+            'type' => $status === 'trialing'
+                ? TransactionLog::TYPE_TRIAL_STARTED
+                : TransactionLog::TYPE_SUBSCRIPTION_CREATED,
+            'email' => $customerEmail,
+            'subscription_id' => $subscriptionId,
+            'customer_id' => $customerId,
+            'amount' => $amount,
+            'currency' => $currency,
+            'api_key' => $license->getApiKey(),
+            'event_id' => $subscription['id'] ?? '',
+            'details' => [
+                'status' => $status,
+                'plan' => $subscription['items']['data'][0]['plan']['id'] ?? 'unknown',
+                'gb_limit' => $license->getGbLimit(),
+            ],
+        ]);
+        GloryLogger::info("Transaccion registrada en historial");
+
+        /*
+         * Enviar email de bienvenida con API Key
          */
         $this->sendWelcomeEmail($license);
 
-        GloryLogger::info("Stripe Webhook: Licencia creada/activada para {$customerEmail}");
+        GloryLogger::info("=== FIN NUEVA SUSCRIPCION ===");
 
         return new WP_REST_Response(['received' => true, 'license_created' => true], 200);
     }
@@ -258,14 +295,38 @@ class StripeWebhookHandler
     private function handleSubscriptionDeleted(array $subscription): WP_REST_Response
     {
         $subscriptionId = $subscription['id'] ?? '';
+        $customerId = $subscription['customer'] ?? '';
+
+        GloryLogger::info("=== SUSCRIPCION CANCELADA ===");
+        GloryLogger::info("Subscription ID: {$subscriptionId}");
 
         $license = LicenseService::findByStripeSubscription($subscriptionId);
 
         if ($license) {
+            $email = $license->getEmail();
+
             LicenseService::expire($license);
-            GloryLogger::info("Stripe: Licencia expirada por cancelacion - {$license->getEmail()}");
+            GloryLogger::info("Licencia expirada para: {$email}");
+
+            /* Registrar cancelacion en historial */
+            TransactionLog::create([
+                'type' => TransactionLog::TYPE_SUBSCRIPTION_CANCELED,
+                'email' => $email,
+                'subscription_id' => $subscriptionId,
+                'customer_id' => $customerId,
+                'amount' => 0,
+                'currency' => 'usd',
+                'details' => [
+                    'reason' => 'Suscripcion cancelada por el cliente o expirada',
+                    'canceled_at' => date('Y-m-d H:i:s'),
+                ],
+            ]);
+            GloryLogger::info("Cancelacion registrada en historial");
+        } else {
+            GloryLogger::warning("Licencia no encontrada para sub: {$subscriptionId}");
         }
 
+        GloryLogger::info("=== FIN CANCELACION ===");
         return new WP_REST_Response(['received' => true], 200);
     }
 
@@ -275,14 +336,24 @@ class StripeWebhookHandler
     private function handleInvoicePaid(array $invoice): WP_REST_Response
     {
         $subscriptionId = $invoice['subscription'] ?? '';
+        $customerId = $invoice['customer'] ?? '';
+        $amount = $invoice['amount_paid'] ?? 0;
+        $currency = $invoice['currency'] ?? 'usd';
 
         if (empty($subscriptionId)) {
             return new WP_REST_Response(['received' => true], 200);
         }
 
+        GloryLogger::info("=== PAGO RECIBIDO (RENOVACION) ===");
+        GloryLogger::info("Subscription ID: {$subscriptionId}");
+        GloryLogger::info("Monto: {$amount} {$currency}");
+
         $license = LicenseService::findByStripeSubscription($subscriptionId);
 
         if ($license) {
+            $email = $license->getEmail();
+            $gbAnterior = $license->getGbUsed();
+
             /*
              * Renovar licencia
              */
@@ -296,9 +367,30 @@ class StripeWebhookHandler
 
             LicenseService::update($license);
 
-            GloryLogger::info("Stripe: Licencia renovada - {$license->getEmail()}");
+            GloryLogger::info("Licencia renovada para: {$email}");
+            GloryLogger::info("GB reseteados: {$gbAnterior} -> 0");
+            GloryLogger::info("Nueva expiracion: " . date('Y-m-d', time() + (30 * 24 * 3600)));
+
+            /* Registrar renovacion en historial */
+            TransactionLog::create([
+                'type' => TransactionLog::TYPE_SUBSCRIPTION_RENEWED,
+                'email' => $email,
+                'subscription_id' => $subscriptionId,
+                'customer_id' => $customerId,
+                'amount' => $amount,
+                'currency' => $currency,
+                'details' => [
+                    'gb_reset_from' => $gbAnterior,
+                    'new_expiration' => date('Y-m-d', time() + (30 * 24 * 3600)),
+                    'invoice_id' => $invoice['id'] ?? '',
+                ],
+            ]);
+            GloryLogger::info("Renovacion registrada en historial");
+        } else {
+            GloryLogger::warning("Licencia no encontrada para sub: {$subscriptionId}");
         }
 
+        GloryLogger::info("=== FIN RENOVACION ===");
         return new WP_REST_Response(['received' => true], 200);
     }
 
@@ -308,25 +400,51 @@ class StripeWebhookHandler
     private function handlePaymentFailed(array $invoice): WP_REST_Response
     {
         $subscriptionId = $invoice['subscription'] ?? '';
+        $customerId = $invoice['customer'] ?? '';
+        $amount = $invoice['amount_due'] ?? 0;
+        $currency = $invoice['currency'] ?? 'usd';
 
         if (empty($subscriptionId)) {
             return new WP_REST_Response(['received' => true], 200);
         }
 
+        GloryLogger::info("=== PAGO FALLIDO ===");
+        GloryLogger::info("Subscription ID: {$subscriptionId}");
+        GloryLogger::info("Monto intentado: {$amount} {$currency}");
+
         $license = LicenseService::findByStripeSubscription($subscriptionId);
 
         if ($license) {
+            $email = $license->getEmail();
+
             /*
              * No suspender inmediatamente, Stripe reintentara
              * Solo logear para monitoreo
              */
-            GloryLogger::warning("Stripe: Pago fallido para {$license->getEmail()}");
+            GloryLogger::warning("Pago fallido para: {$email}");
+
+            /* Registrar pago fallido en historial */
+            TransactionLog::create([
+                'type' => TransactionLog::TYPE_PAYMENT_FAILED,
+                'email' => $email,
+                'subscription_id' => $subscriptionId,
+                'customer_id' => $customerId,
+                'amount' => $amount,
+                'currency' => $currency,
+                'details' => [
+                    'invoice_id' => $invoice['id'] ?? '',
+                    'attempt_count' => $invoice['attempt_count'] ?? 1,
+                    'next_payment_attempt' => $invoice['next_payment_attempt'] ?? null,
+                ],
+            ]);
+            GloryLogger::info("Pago fallido registrado en historial");
 
             /*
              * TODO: Enviar email de aviso al cliente
              */
         }
 
+        GloryLogger::info("=== FIN PAGO FALLIDO ===");
         return new WP_REST_Response(['received' => true], 200);
     }
 

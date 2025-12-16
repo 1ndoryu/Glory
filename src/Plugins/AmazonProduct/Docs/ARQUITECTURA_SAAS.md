@@ -329,7 +329,8 @@ Glory/src/Plugins/AmazonProduct/
 5. [x] Email de bienvenida enviado automaticamente - OK
 6. [x] Configurar proxy (DataImpulse) - GLORY_PROXY_HOST y GLORY_PROXY_AUTH
 7. [x] Probar scraping con proxy activado - OK (devuelve 20+ productos)
-8. [ ] Prueba con cliente real de pago (Stripe Checkout) - **LISTO PARA PROBAR**
+8. [x] Prueba con webhook de Stripe - OK (licencia creada, email enviado)
+9. [x] Configurado para PRODUCCION (claves live)
 
 ---
 
@@ -633,4 +634,42 @@ la informacion necesaria.
 - [x] Boton "Contactar Soporte" con WhatsApp: +58 412 082 52 34
 - [x] Label "Proximo Pago" en lugar de "Expira"
 
+### 6. Historial de Transacciones - COMPLETADO (2025-12-16)
+- [x] PostType `glory_transaction` para registrar historial
+- [x] Visible en admin bajo "Productos Amazon > Transacciones"
+- [x] Logs super detallados en cada evento de Stripe
+- [x] Registra: nuevas suscripciones, renovaciones, cancelaciones, pagos fallidos
+
 ---
+
+## Manejo de Renovaciones y Cancelaciones
+
+El sistema maneja automaticamente los siguientes escenarios:
+
+| Evento Stripe          | Accion del Sistema                               |
+| ---------------------- | ------------------------------------------------ |
+| `subscription.created` | Crear licencia + 4GB + enviar email              |
+| `invoice.paid`         | Renovar: resetear GB a 4, extender 30 dias       |
+| `subscription.deleted` | Expirar licencia (no puede usar API)             |
+| `payment_failed`       | Log de alerta (Stripe reintenta automaticamente) |
+
+**Flujo de renovacion:**
+```
+1. Cliente paga mes siguiente (automatico por Stripe)
+2. Stripe envia webhook invoice.paid
+3. Servidor resetea GB usados a 0
+4. Servidor extiende expiracion 30 dias
+5. Cliente sigue usando el servicio
+```
+
+**Flujo de cancelacion:**
+```
+1. Cliente cancela desde portal de Stripe (o pago falla definitivamente)
+2. Stripe envia webhook subscription.deleted
+3. Servidor marca licencia como expirada
+4. Cliente ya no puede hacer requests a la API
+5. Si quiere reactivar, debe suscribirse de nuevo
+```
+
+---
+

@@ -12,6 +12,7 @@ use Glory\Plugins\AmazonProduct\Admin\ApiWizardAjaxHandler;
 use Glory\Plugins\AmazonProduct\Mode\PluginMode;
 use Glory\Plugins\AmazonProduct\Api\ApiEndpoints;
 use Glory\Plugins\AmazonProduct\Service\SmtpConfig;
+use Glory\Plugins\AmazonProduct\Model\TransactionLog;
 
 /**
  * Amazon Product Plugin for Glory Framework.
@@ -80,6 +81,11 @@ class AmazonProductPlugin
          * Registrar API REST endpoints
          */
         add_action('rest_api_init', [ApiEndpoints::class, 'register']);
+
+        /*
+         * Registrar PostType de Transacciones (historial de compras)
+         */
+        add_action('init', [TransactionLog::class, 'register']);
 
         /*
          * Admin con tabs de servidor (licencias, estadisticas, logs)
