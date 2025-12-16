@@ -6,6 +6,7 @@ use Glory\Plugins\AmazonProduct\Mode\PluginMode;
 use Glory\Plugins\AmazonProduct\Service\LicenseService;
 use Glory\Plugins\AmazonProduct\Service\UsageController;
 use Glory\Plugins\AmazonProduct\Service\WebScraperProvider;
+use Glory\Plugins\AmazonProduct\Service\ProxyDiagnostic;
 use Glory\Plugins\AmazonProduct\Model\License;
 use Glory\Core\GloryLogger;
 use WP_REST_Request;
@@ -79,6 +80,24 @@ class ApiEndpoints
             'methods' => 'POST',
             'callback' => [self::class, 'handleStripeWebhook'],
             'permission_callback' => '__return_true',
+        ]);
+
+        /*
+         * Diagnostico de Proxy (solo admin, para verificar IPs de salida)
+         */
+        register_rest_route(self::NAMESPACE, self::ROUTE_PREFIX . '/proxy-diagnostic', [
+            'methods' => 'GET',
+            'callback' => [self::class, 'handleProxyDiagnostic'],
+            'permission_callback' => function () {
+                /* 
+                 * Solo permitir si viene de localhost o tiene parametro secreto
+                 */
+                $secret = $_GET['secret'] ?? '';
+                $expectedSecret = defined('GLORY_DIAGNOSTIC_SECRET')
+                    ? GLORY_DIAGNOSTIC_SECRET
+                    : 'glory-diag-2024';
+                return $secret === $expectedSecret;
+            },
         ]);
     }
 
@@ -341,6 +360,23 @@ class ApiEndpoints
                 'gb_remaining' => round($license->getGbRemaining(), 3),
                 'gb_limit' => $license->getGbLimit(),
             ]
+        ], 200);
+    }
+
+    /**
+     * Diagnostico de Proxy.
+     * 
+     * GET /glory/v1/amazon/proxy-diagnostic?secret=xxx
+     * 
+     * Verifica la IP de salida real del proxy usando servicios externos.
+     */
+    public static function handleProxyDiagnostic(WP_REST_Request $request): WP_REST_Response
+    {
+        $results = ProxyDiagnostic::run();
+
+        return new WP_REST_Response([
+            'success' => true,
+            'diagnostic' => $results
         ], 200);
     }
 }
