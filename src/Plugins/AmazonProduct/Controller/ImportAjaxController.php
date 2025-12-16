@@ -204,7 +204,7 @@ class ImportAjaxController
     {
         $importedAsins = $this->getImportedAsins($results);
 
-        require __DIR__ . '/../Views/import-results-table.php';
+        require __DIR__ . '/../Admin/Views/import-results-table.php';
     }
 
     /**
