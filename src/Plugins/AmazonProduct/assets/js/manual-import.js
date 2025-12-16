@@ -7,13 +7,13 @@
 (function ($) {
     'use strict';
 
-    const dropZone = $('#zona-arrastre');
-    const fileInput = $('#entrada-archivo');
-    const productsContainer = $('#contenedor-productos');
-    const productsTbody = $('#cuerpo-tabla-productos');
-    const progressContainer = $('#contenedor-progreso');
-    const progressFill = $('#relleno-progreso');
-    const progressText = $('#texto-progreso');
+    let dropZone;
+    let fileInput;
+    let productsContainer;
+    let productsTbody;
+    let progressContainer;
+    let progressFill;
+    let progressText;
 
     let products = [];
 
@@ -21,6 +21,21 @@
      * Inicializacion
      */
     $(document).ready(function () {
+        /* Inicializar selectores DESPUES de que el DOM este listo */
+        dropZone = $('#zona-arrastre');
+        fileInput = $('#entrada-archivo');
+        productsContainer = $('#contenedor-productos');
+        productsTbody = $('#cuerpo-tabla-productos');
+        progressContainer = $('#contenedor-progreso');
+        progressFill = $('#relleno-progreso');
+        progressText = $('#texto-progreso');
+
+        /* Verificar que los elementos existan */
+        if (dropZone.length === 0) {
+            console.error('ManualImport: No se encontro #zona-arrastre');
+            return;
+        }
+
         bindDropZoneEvents();
         bindSelectionEvents();
         bindImportEvents();
@@ -30,29 +45,66 @@
      * Eventos de Drag & Drop
      */
     function bindDropZoneEvents() {
-        dropZone.on('click', function () {
-            fileInput.click();
+        /* Click en la zona para abrir selector de archivos */
+        dropZone.on('click', function (e) {
+            /* Prevenir que el click se propague si viene del input */
+            if (e.target === fileInput[0]) {
+                return;
+            }
+            fileInput.trigger('click');
         });
 
+        /* Prevenir comportamiento por defecto del navegador para drag/drop */
+        $(document).on('dragover dragenter', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        $(document).on('drop', function (e) {
+            /* Solo prevenir si no es en la zona de drop */
+            if (!$(e.target).closest('#zona-arrastre').length) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        });
+
+        /* Eventos de arrastre en la zona */
         dropZone.on('dragover dragenter', function (e) {
             e.preventDefault();
             e.stopPropagation();
             $(this).addClass('arrastrando');
         });
 
-        dropZone.on('dragleave dragend drop', function (e) {
+        dropZone.on('dragleave', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            $(this).removeClass('arrastrando');
+            /* Solo quitar clase si salimos realmente de la zona */
+            const rect = this.getBoundingClientRect();
+            const x = e.originalEvent.clientX;
+            const y = e.originalEvent.clientY;
+            if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+                $(this).removeClass('arrastrando');
+            }
         });
 
         dropZone.on('drop', function (e) {
-            const files = e.originalEvent.dataTransfer.files;
-            processFiles(files);
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).removeClass('arrastrando');
+
+            const dt = e.originalEvent.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                processFiles(dt.files);
+            }
         });
 
+        /* Evento de cambio en el input file */
         fileInput.on('change', function () {
-            processFiles(this.files);
+            if (this.files && this.files.length > 0) {
+                processFiles(this.files);
+                /* Limpiar el input para permitir seleccionar el mismo archivo de nuevo */
+                this.value = '';
+            }
         });
     }
 
@@ -102,7 +154,7 @@
         const htmlFiles = Array.from(files).filter(f => f.name.match(/\.html?$/i));
 
         if (htmlFiles.length === 0) {
-            alert('Por favor selecciona archivos HTML validos.');
+            alert('Por favor selecciona archivos HTML validos (.html o .htm)');
             return;
         }
 

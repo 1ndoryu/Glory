@@ -2,28 +2,194 @@
 
 ## Indice
 1. [Introduccion](#introduccion)
-2. [Shortcodes Disponibles](#shortcodes-disponibles)
-3. [Atributos del Shortcode](#atributos-del-shortcode)
-4. [Ejemplos de Uso](#ejemplos-de-uso)
-5. [Importacion de Productos](#importacion-de-productos)
-6. [Sistema de Categorias](#sistema-de-categorias)
-7. [Sincronizacion Automatica](#sincronizacion-automatica)
-8. [Consejos y Mejores Practicas](#consejos-y-mejores-practicas)
+2. [Primeros Pasos](#primeros-pasos)
+3. [Panel de Configuracion](#panel-de-configuracion)
+4. [Importacion de Productos](#importacion-de-productos)
+5. [Shortcodes Disponibles](#shortcodes-disponibles)
+6. [Atributos del Shortcode](#atributos-del-shortcode)
+7. [Ejemplos de Uso](#ejemplos-de-uso)
+8. [Sistema de Categorias](#sistema-de-categorias)
+9. [Sincronizacion Automatica](#sincronizacion-automatica)
+10. [Consejos y Mejores Practicas](#consejos-y-mejores-practicas)
+11. [Solucion de Problemas](#solucion-de-problemas)
 
 ---
 
 ## Introduccion
 
-El **Amazon Product Plugin** permite integrar productos de Amazon en tu sitio web WordPress. Los productos se almacenan localmente como un Custom Post Type (`amazon_product`) y pueden mostrarse mediante shortcodes flexibles.
+El **Amazon Product Plugin** es un servicio SaaS que permite importar y mostrar productos de Amazon en tu sitio web WordPress. Los productos se almacenan localmente como un Custom Post Type (`amazon_product`) y pueden mostrarse mediante shortcodes flexibles.
 
-### Caracteristicas principales:
-- Importacion de productos desde Amazon via API o manualmente (HTML)
+### Arquitectura del Servicio
+
+El plugin funciona conectandose a un servidor central que realiza el scraping de Amazon:
+
+```
+Tu WordPress  -->  API Glory  -->  Amazon
+   (cliente)       (servidor)      (scraping)
+```
+
+**Ventajas de este modelo:**
+- No necesitas configurar APIs de Amazon ni proxies
+- El servidor maneja todos los bloqueos y CAPTCHAs
+- Solo necesitas tu API Key para empezar
+
+### Caracteristicas principales
+- Importacion de productos desde Amazon via servidor central
 - Almacenamiento local de datos del producto
 - Filtros interactivos para los visitantes
 - Sistema de categorias jerarquicas
 - Sincronizacion automatica de precios
 - Soporte para ofertas y descuentos
 - Deteccion automatica de productos Prime
+- Descarga automatica de imagenes al servidor local
+
+---
+
+## Primeros Pasos
+
+### 1. Obtener tu API Key
+
+Para usar el plugin necesitas una suscripcion activa:
+
+1. Ve a **Amazon Products > Settings > Licencia**
+2. Si no tienes API Key, haz clic en **"Suscribirse Ahora"**
+3. Completa el proceso de pago en Stripe
+4. Recibiras tu API Key por email
+5. Copia la API Key en el campo correspondiente
+6. Haz clic en **"Guardar"**
+
+**Planes disponibles:**
+
+| Plan   | Precio  | Datos Incluidos | Trial          |
+| ------ | ------- | --------------- | -------------- |
+| Basico | $20/mes | 4 GB            | 30 dias gratis |
+
+### 2. Configurar Region y Affiliate Tag
+
+1. Ve a **Amazon Products > Settings > Configuracion**
+2. Selecciona tu **Region de Amazon** (es, us, mx, etc.)
+3. Ingresa tu **Tag de Afiliado** (ej: `mitienda-21`)
+4. Guarda los cambios
+
+**Importante:** Sin el tag de afiliado no ganaras comisiones por las ventas.
+
+### 3. Importar tu primer producto
+
+1. Ve a **Amazon Products > Settings > Import Products**
+2. Escribe una palabra clave (ej: "auriculares bluetooth")
+3. Haz clic en **"Buscar en Amazon"**
+4. Selecciona los productos que quieres importar
+5. Elige entre:
+   - **Importar Rapido**: Usa datos de busqueda (mas rapido)
+   - **Importar Detallado**: Obtiene mas datos como categoria y descripcion
+
+---
+
+## Panel de Configuracion
+
+### Pestana: Licencia
+
+Muestra el estado de tu suscripcion:
+- **Estado**: Activa, Periodo de Prueba, o Expirada
+- **Cuenta**: Email asociado a la suscripcion
+- **Uso de Datos**: Barra de progreso de GB usados/disponibles
+- **Proximo Pago**: Fecha de renovacion
+
+Acciones disponibles:
+- Ingresar o actualizar API Key
+- Probar conexion con el servidor
+- Contactar soporte via WhatsApp
+
+### Pestana: Configuracion
+
+Opciones de personalizacion:
+
+| Opcion            | Descripcion                                        |
+| ----------------- | -------------------------------------------------- |
+| Region de Amazon  | Pais de Amazon donde buscar (es, us, mx, uk, etc.) |
+| Tag de Afiliado   | Tu ID de Amazon Associates para comisiones         |
+| Idioma del Plugin | Idioma de las etiquetas (precio, valoracion, etc.) |
+
+### Pestana: Import Products
+
+Interfaz para buscar e importar productos:
+- Barra de busqueda por palabra clave
+- Tabla de resultados con preview
+- Botones de importacion rapida/detallada
+- Widget de uso de datos en tiempo real
+
+### Pestana: Manual Import
+
+Importacion sin usar el servidor (offline):
+- Copia el HTML de una pagina de producto de Amazon
+- El plugin extrae automaticamente los datos
+- Soporta importacion por lotes con archivos .html
+
+### Pestana: Updates
+
+Actualizacion masiva de productos:
+- Actualizar precios de productos existentes
+- Programar sincronizacion automatica
+- Ver historial de actualizaciones
+
+### Pestana: Design
+
+Opciones de presentacion visual (en desarrollo).
+
+### Pestana: Help
+
+Documentacion y soporte.
+
+---
+
+## Importacion de Productos
+
+### Metodo 1: Busqueda via API (Recomendado)
+
+1. Ve a **Amazon Products > Settings > Import Products**
+2. Ingresa una palabra clave de busqueda
+3. Haz clic en **"Buscar en Amazon"**
+4. Espera los resultados (puede tardar 10-30 segundos)
+5. Para cada producto puedes:
+   - **Importar Rapido**: Usa datos de la busqueda, sin peticion extra
+   - **Importar Detallado**: Obtiene datos adicionales (categoria, descripcion)
+
+**Nota:** Las busquedas consumen datos de tu cuota mensual (GB).
+
+### Metodo 2: Importacion Manual (HTML)
+
+Ideal para productos especificos sin gastar datos:
+
+1. Ve a **Amazon Products > Settings > Manual Import**
+2. Visita el producto en Amazon
+3. Presiona `Ctrl+U` para ver el codigo fuente
+4. Copia todo el HTML (`Ctrl+A` -> `Ctrl+C`)
+5. Pegalo en el area de texto del plugin
+6. Haz clic en **"Procesar HTML"**
+7. Verifica los datos extraidos
+8. Haz clic en **"Guardar Producto"**
+
+**Importacion por lotes:**
+- Guarda las paginas de productos como archivos `.html`
+- Arrastra multiples archivos a la zona de importacion
+- Revisa la tabla de productos detectados
+- Importa todos o solo los seleccionados
+
+**Ventajas de la importacion manual:**
+- No consume datos de tu cuota
+- Incluye todos los datos: precio original, rating, reviews, categoria
+- Permite importar cualquier producto de Amazon
+- Descarga automatica de imagenes al servidor local
+
+### Comparativa de Metodos de Importacion
+
+| Caracteristica      | Busqueda API | Importacion Manual |
+| ------------------- | ------------ | ------------------ |
+| Velocidad           | Rapido       | Mas lento          |
+| Consume cuota       | Si           | No                 |
+| Multiples productos | Si           | Si (por lotes)     |
+| Datos completos     | Var.         | Si                 |
+| Requiere HTML       | No           | Si                 |
 
 ---
 
@@ -50,7 +216,7 @@ Muestra productos con descuento (precio original > precio actual).
 [amazon_deals]
 ```
 
-**Importante:** Este shortcode NO consume llamadas a la API. Muestra productos ya importados que tienen descuento registrado.
+**Importante:** Este shortcode NO consume datos. Muestra productos ya importados que tienen descuento registrado.
 
 ---
 
@@ -162,50 +328,6 @@ Productos entre $25 y $75, del mas barato al mas caro.
 
 ---
 
-## Importacion de Productos
-
-### Metodo 1: Importacion via API (Search)
-1. Ve a **Amazon Products > Settings > Import**
-2. Ingresa una palabra clave de busqueda
-3. Selecciona la region de Amazon
-4. Click en "Buscar"
-5. Selecciona los productos a importar
-6. Click en "Importar Seleccionados"
-
-**Nota:** Cada busqueda consume 1 llamada a la API.
-
-### Metodo 2: Importacion de Ofertas (Deals)
-1. Ve a **Amazon Products > Settings > Deals**
-2. Selecciona la region
-3. Click en "Buscar Ofertas"
-4. Los productos incluyen precio original y descuento
-
-**Ventaja:** Las ofertas siempre incluyen precio original, ideal para mostrar descuentos.
-
-### Metodo 3: Importacion Manual (HTML)
-1. Ve a **Amazon Products > Settings > Manual Import**
-2. Visita un producto en Amazon.com
-3. Presiona `Ctrl+U` para ver el codigo fuente
-4. Copia todo el HTML (`Ctrl+A` -> `Ctrl+C`)
-5. Pegalo en el area de texto del plugin
-6. Click en "Procesar HTML"
-7. Verifica los datos extraidos
-8. Click en "Guardar Producto"
-
-**Importacion por lotes:**
-- Guarda las paginas de productos como archivos `.html`
-- Arrastra multiples archivos a la zona de importacion
-- Revisa la tabla de productos detectados
-- Importa todos o solo los seleccionados
-
-**Ventajas de la importacion manual:**
-- No consume llamadas a la API
-- Incluye todos los datos: precio original, rating, reviews, categoria
-- Permite importar cualquier producto de Amazon
-- Descarga automatica de imagenes al servidor local
-
----
-
 ## Sistema de Categorias
 
 Los productos se organizan en la taxonomia `amazon_category`.
@@ -215,7 +337,7 @@ Los productos se organizan en la taxonomia `amazon_category`.
 - Ejemplo: "Electronics > Computers > Laptops" crea 3 categorias jerarquicas
 
 ### Categoria especial: Ofertas
-- Los productos importados desde "Deals" se asignan automaticamente a la categoria "Ofertas"
+- Los productos con descuento pueden asignarse automaticamente a "Ofertas"
 
 ### Filtrar por categoria
 ```
@@ -232,7 +354,7 @@ Para encontrar el slug de una categoria:
 
 ### Configurar sincronizacion
 1. Ve a **Amazon Products > Settings > Updates**
-2. Selecciona la frecuencia: Diaria, Dos veces al dia, o Desactivada
+2. Selecciona la frecuencia: Diaria, Semanal, o Desactivada
 3. Guarda los cambios
 
 ### Que se sincroniza
@@ -240,6 +362,7 @@ Para encontrar el slug de una categoria:
 - Rating
 - Numero de reviews
 - Estado Prime
+- Disponibilidad
 
 ### Que NO se sincroniza
 - Titulo (para preservar ediciones manuales)
@@ -248,20 +371,19 @@ Para encontrar el slug de una categoria:
 
 ### Limite de sincronizacion
 - Se actualizan los productos mas antiguos primero
-- Maximo 50 productos por ejecucion
-- Respeta el limite mensual de llamadas API
+- La sincronizacion consume datos de tu cuota mensual
 
 ---
 
 ## Consejos y Mejores Practicas
 
-### 1. Optimiza las llamadas API
-- Importa productos via "Deals" para obtener precio original
-- Usa importacion manual para productos individuales
+### 1. Optimiza el uso de datos
+- Usa **Importacion Manual** para productos individuales (no consume cuota)
+- Usa **Importacion Rapida** cuando no necesites descripcion/categoria
 - Configura sincronizacion solo si es necesario
 
 ### 2. Mejora el rendimiento
-- Activa la opcion de descargar imagenes localmente
+- Las imagenes se descargan localmente automaticamente
 - Usa `limit` para evitar cargar demasiados productos
 - Usa `hide_filters="1"` en widgets pequenos
 
@@ -273,7 +395,7 @@ Para encontrar el slug de una categoria:
 ### 4. Ofertas y descuentos
 - Usa `[amazon_deals]` para paginas de ofertas
 - Los descuentos se calculan automaticamente
-- Mantiene los productos actualizados con sincronizacion
+- El badge de descuento aparece cuando hay precio original
 
 ### 5. Widgets y sidebars
 ```
@@ -310,25 +432,54 @@ Cada producto almacena los siguientes datos:
 
 ## Solucion de Problemas
 
+### Error: "API Key no configurada"
+1. Ve a **Amazon Products > Settings > Licencia**
+2. Ingresa tu API Key
+3. Haz clic en "Guardar"
+4. Prueba la conexion
+
+### Error: "Limite de GB alcanzado"
+- Has agotado tu cuota mensual de datos
+- Espera al proximo ciclo de facturacion
+- O contacta soporte para ampliar tu plan
+
+### Error: "API Key invalida o expirada"
+- Verifica que la API Key este correcta
+- Si expiro, renueva tu suscripcion
+
 ### Los productos no aparecen
 1. Verifica que existan productos importados en **Amazon Products > All Products**
 2. Revisa la categoria configurada en el shortcode
 3. Verifica los filtros de precio/rating
 
 ### Las imagenes no cargan
-1. Activa "Descargar imagenes localmente" al importar
-2. Las imagenes externas pueden estar bloqueadas por Amazon
+1. Las imagenes se descargan automaticamente al importar
+2. Verifica que tu servidor tenga permisos de escritura
+3. Comprueba que la imagen existe en la biblioteca de medios
 
 ### Los precios no se actualizan
 1. Verifica la configuracion de sincronizacion
-2. Revisa el limite de llamadas API
-3. Ejecuta sincronizacion manual desde el panel
+2. Cada actualizacion consume datos de tu cuota
+3. Ejecuta actualizacion manual desde el panel
 
 ### El descuento no aparece
 - El producto necesita tener `original_price` mayor que `price`
-- Importa productos desde "Deals" para asegurar precio original
+- Usa "Importar Detallado" para obtener precio original
+
+### La busqueda tarda mucho
+- Es normal que tarde 10-30 segundos
+- El servidor debe hacer scraping real de Amazon
+- Si tarda mas de 2 minutos, puede haber un problema temporal
 
 ---
 
-*Documento actualizado: Diciembre 2024*
-*Version del plugin: AmazonProduct 2.0*
+## Soporte
+
+Si necesitas ayuda:
+- **WhatsApp:** +58 412 082 52 34
+- **Email:** Contacta via panel de licencia
+
+---
+
+*Documento actualizado: Diciembre 2025*
+*Version: Amazon Product Plugin SaaS 3.0*

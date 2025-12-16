@@ -14,6 +14,7 @@
  * Zona de Drag & Drop
  */
 .zonaArrastre {
+    position: relative;
     border: 3px dashed #c3c4c7;
     border-radius: 8px;
     padding: 60px 20px;
@@ -22,6 +23,7 @@
     cursor: pointer;
     transition: all 0.3s ease;
     margin-bottom: 20px;
+    min-height: 180px;
 }
 
 .zonaArrastre:hover,

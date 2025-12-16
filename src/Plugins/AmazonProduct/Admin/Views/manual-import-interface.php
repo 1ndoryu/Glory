@@ -19,11 +19,16 @@ use Glory\Plugins\AmazonProduct\i18n\Labels;
     <!-- Zona de Drag & Drop -->
     <div id="zona-arrastre" class="zonaArrastre">
         <div class="contenidoZonaArrastre">
-            <span class="dashicons dashicons-upload" style="font-size: 48px; color: #2271b1;"></span>
+            <span class="dashicons dashicons-upload" style="font-size: 48px; color: #2271b1; height: auto; width: auto;"></span>
             <p><strong>Arrastra archivos HTML aqui</strong></p>
             <p style="color: #666;">o haz clic para seleccionar</p>
-            <input type="file" id="entrada-archivo" multiple accept=".html,.htm" style="display: none;">
         </div>
+        <input
+            type="file"
+            id="entrada-archivo"
+            multiple
+            accept=".html,.htm"
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer;">
     </div>
 
     <!-- Barra de progreso -->
