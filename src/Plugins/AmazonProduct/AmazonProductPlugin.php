@@ -11,6 +11,7 @@ use Glory\Plugins\AmazonProduct\Service\LicenseService;
 use Glory\Plugins\AmazonProduct\Admin\ApiWizardAjaxHandler;
 use Glory\Plugins\AmazonProduct\Mode\PluginMode;
 use Glory\Plugins\AmazonProduct\Api\ApiEndpoints;
+use Glory\Plugins\AmazonProduct\Service\SmtpConfig;
 
 /**
  * Amazon Product Plugin for Glory Framework.
@@ -55,6 +56,11 @@ class AmazonProductPlugin
      */
     private function initServerMode(): void
     {
+        /*
+         * Configurar SMTP para envio de emails (Brevo)
+         */
+        SmtpConfig::init();
+
         /*
          * Crear tablas en activacion
          */

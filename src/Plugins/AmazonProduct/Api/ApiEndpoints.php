@@ -7,6 +7,7 @@ use Glory\Plugins\AmazonProduct\Service\LicenseService;
 use Glory\Plugins\AmazonProduct\Service\UsageController;
 use Glory\Plugins\AmazonProduct\Service\WebScraperProvider;
 use Glory\Plugins\AmazonProduct\Service\ProxyDiagnostic;
+use Glory\Plugins\AmazonProduct\Service\SmtpConfig;
 use Glory\Plugins\AmazonProduct\Model\License;
 use Glory\Core\GloryLogger;
 use WP_REST_Request;
@@ -408,7 +409,7 @@ class ApiEndpoints
 
         $subject = 'Prueba de Email - Glory Amazon Plugin';
         $timestamp = date('Y-m-d H:i:s');
-        
+
         $message = "
 Hola!
 
@@ -456,13 +457,14 @@ Glory Amazon Plugin - Test automatico
             'mail_function_exists' => function_exists('mail'),
             'home_url' => home_url(),
             'admin_email' => get_option('admin_email'),
+            'smtp_config' => SmtpConfig::getConfigInfo(),
         ];
 
         GloryLogger::info("Email test enviado a {$toEmail}: " . ($result ? 'OK' : 'FAILED - ' . $error));
 
         return new WP_REST_Response([
             'success' => $result,
-            'message' => $result 
+            'message' => $result
                 ? "Email enviado correctamente a {$toEmail}. Revisa tu bandeja de entrada (y spam)."
                 : "Error al enviar email: " . ($error ?: 'Error desconocido'),
             'details' => [
