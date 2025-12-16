@@ -207,7 +207,7 @@ class WebScraperProvider implements ApiProviderInterface
 
         if (!empty($proxyAuth) && strpos($proxyAuth, ':') !== false) {
             [$proxyUser, $proxyPass] = explode(':', $proxyAuth, 2);
-            
+
             /*
              * Formato: usuario__cr.XX;sessid.UNIQUE:password
              * - cr.XX: Geo-targeting (IP del pais)
@@ -216,14 +216,8 @@ class WebScraperProvider implements ApiProviderInterface
             $proxyAuth = "{$proxyUser}__cr.{$countryCode};sessid.{$sessionId}:{$proxyPass}";
         }
 
-        /*
-         * Log de configuracion de proxy - Detallado para diagnostico
-         */
-        if (!empty($proxy)) {
-            $proxyUserMasked = isset($proxyUser) ? substr($proxyUser, 0, 4) . '***' : 'N/A';
-            GloryLogger::info("Scraper #{$attempt}: Proxy = {$proxy}");
-            GloryLogger::info("Scraper #{$attempt}: sessid.{$sessionId} (unico por request para forzar nueva IP)");
-        } elseif ($attempt === 1) {
+        /* Solo advertir si el proxy no está configurado */
+        if (empty($proxy) && $attempt === 1) {
             GloryLogger::warning("Scraper: Proxy NO configurado - Usando IP directa");
         }
 
@@ -290,15 +284,7 @@ class WebScraperProvider implements ApiProviderInterface
         $responseSize = strlen($response);
         $responseSizeKb = round($responseSize / 1024, 1);
 
-        /*
-         * Log detallado del request
-         */
-        GloryLogger::info(
-            "Scraper Request #{$attempt}: HTTP {$httpCode} | " .
-                "IP: {$primaryIp} | " .
-                "Tiempo: {$elapsedMs}ms ({$totalTime}s curl) | " .
-                "Tamano: {$responseSizeKb}KB"
-        );
+        /* Log solo si hay problemas (error o bloqueo) - removido log normal para produccion */
 
         /*
          * Verificar si fue bloqueado o hay CAPTCHA
@@ -314,7 +300,6 @@ class WebScraperProvider implements ApiProviderInterface
              */
             if ($attempt < self::MAX_RETRIES) {
                 $waitSeconds = random_int(2, 4);
-                GloryLogger::info("Scraper: Esperando {$waitSeconds}s antes de reintento " . ($attempt + 1) . "/" . self::MAX_RETRIES);
                 sleep($waitSeconds);
                 return $this->fetchUrl($url, $attempt + 1);
             }
@@ -334,7 +319,6 @@ class WebScraperProvider implements ApiProviderInterface
              */
             if ($attempt < self::MAX_RETRIES && ($httpCode >= 500 || $httpCode === 0)) {
                 $waitSeconds = random_int(2, 4);
-                GloryLogger::info("Scraper: Reintentando en {$waitSeconds}s (error de servidor/conexion)");
                 sleep($waitSeconds);
                 return $this->fetchUrl($url, $attempt + 1);
             }

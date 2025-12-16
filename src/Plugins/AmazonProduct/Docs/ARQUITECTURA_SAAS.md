@@ -404,41 +404,6 @@ tail -50 /var/www/wandori/wp-content/themes/glory/logs/glory.log
 
 ---
 
-## Tareas Pendientes (Proxima Sesion)
-
-### 1. Flujo de Pago del Cliente
-- [ ] Añadir boton "Suscribirse" en el panel del cliente (ClientLicenseTab)
-- [ ] El boton debe redirigir a Stripe Checkout
-- [ ] El cliente introduce su email en Stripe Checkout al pagar
-
-### 2. Identificacion del WordPress del Cliente
-**Pregunta:** ¿Como identificamos el WordPress del cliente cuando paga?
-
-**Solucion propuesta:**
-- El cliente paga con su email en Stripe
-- Stripe envia webhook con el email
-- El servidor genera la API Key y la envia por email
-- El cliente copia la API Key en su panel de WordPress
-- No necesitamos identificar su WordPress directamente
-
-### 3. Verificacion de Emails
-- [ ] Configurar SMTP en el servidor VPS para enviar emails reales
-- [ ] Verificar que `wp_mail()` funciona correctamente
-- [ ] Probar envio de email de bienvenida
-- [ ] Alternativa: usar servicio como SendGrid, Mailgun o Amazon SES
-
-### 4. Limpieza de Codigo
-- [ ] Remover logs de diagnostico de `ApiEndpoints.php`
-- [ ] Remover logs de diagnostico de `StripeWebhookHandler.php`
-- [ ] Los logs actuales son utiles para debugging pero no para produccion
-
-### 5. Stripe Checkout
-- [ ] Crear producto en Stripe con precio recurrente ($20/mes)
-- [ ] Configurar periodo de prueba de 30 dias
-- [ ] Obtener URL de checkout o crear Payment Link
-- [ ] Añadir URL al boton del cliente
-
----
 
 ## Notas Tecnicas
 
@@ -504,34 +469,66 @@ $proxyAuth = "{$user}__cr.{$country};sessid.{$sessionId}:{$pass}";
 Esto garantiza una IP nueva en cada request, independientemente de la 
 configuracion del dashboard.
 
+### Diagnostico Confirmado (2025-12-16)
+
+Se creo endpoint de diagnostico para verificar IPs de salida reales:
+
+```
+GET https://api.wandori.us/wp-json/glory/v1/amazon/proxy-diagnostic?secret=glory-diag-2024
+```
+
+**Resultados:**
+
+| Test              | IP de Salida     | Pais       | ISP                                |
+| ----------------- | ---------------- | ---------- | ---------------------------------- |
+| Sin proxy         | `167.86.117.147` | Francia    | Contabo GmbH (VPS)                 |
+| Con proxy         | `95.56.180.69`   | Kazajistan | JSC Kazakhtelecom                  |
+| Con proxy + cr.es | `176.101.23.2`   | **Espana** | Television por Cable Santa Pola SL |
+
+**Conclusiones:**
+- El proxy funciona correctamente
+- El geo-targeting (cr.es) funciona
+- Las IPs son residenciales REALES (no datacenter)
+- La IP `67.213.121.97` que mostraba CURL era solo el gateway de DataImpulse
+
 ### Configuracion CURL Adicional
 
 Para garantizar nuevas conexiones TCP:
 
 ```php
-// Forzar nueva conexion TCP (evita reusar conexion existente)
-CURLOPT_FRESH_CONNECT => true
-
-// Impedir reutilizacion de la conexion despues del request
-CURLOPT_FORBID_REUSE => true
+CURLOPT_FRESH_CONNECT => true  // Forzar nueva conexion TCP
+CURLOPT_FORBID_REUSE => true   // Impedir reutilizacion
 ```
-
-### Verificacion de Rotacion
-
-Para verificar que las IPs estan rotando, revisar los logs:
-
-```bash
-# En VPS
-tail -100 /var/www/wandori/wp-content/themes/glory/logs/glory.log | grep "IP:"
-```
-
-Cada request deberia mostrar una IP diferente (campo `CURLINFO_PRIMARY_IP`).
-
-### Configuracion del Dashboard (Opcional)
-
-Si prefieres no usar sessid dinamico, puedes configurar en el Dashboard:
-1. Ir a [app.dataimpulse.com](https://app.dataimpulse.com)
-2. Seccion "Proxy Configuration"
-3. Establecer "Rotation Interval" en **0** o "After every request"
 
 ---
+
+## Tareas Pendientes
+
+### 1. Optimizacion de Peticiones (EVALUAR)
+**Problema:** Cuando el usuario da clic en "actualizar" un producto, se hace una 
+nueva peticion al servidor aunque los resultados de la busqueda ya contienen 
+la informacion necesaria.
+
+**Solucion propuesta:**
+- [ ] Evaluar si los datos de busqueda son suficientes para importar
+- [ ] Si es asi, usar los datos ya obtenidos en lugar de hacer otra peticion
+- [ ] Reducir consumo de proxy y mejorar velocidad
+- [ ] Archivos a revisar: `ImportTab.php`, `ApiClient.php`
+
+### 2. Flujo de Pago del Cliente
+- [ ] Añadir boton "Suscribirse" en el panel del cliente (ClientLicenseTab)
+- [ ] El boton debe redirigir a Stripe Checkout
+- [ ] El cliente introduce su email en Stripe Checkout al pagar
+
+### 3. Verificacion de Emails
+- [ ] Configurar SMTP en el servidor VPS para enviar emails reales
+- [ ] Verificar que `wp_mail()` funciona correctamente
+- [ ] Alternativa: usar servicio como SendGrid, Mailgun o Amazon SES
+
+### 4. Stripe Checkout
+- [ ] Crear producto en Stripe con precio recurrente ($20/mes)
+- [ ] Configurar periodo de prueba de 30 dias
+- [ ] Obtener URL de checkout o crear Payment Link
+
+---
+

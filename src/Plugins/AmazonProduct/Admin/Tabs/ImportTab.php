@@ -19,6 +19,7 @@ class ImportTab implements TabInterface
     {
         add_action('wp_ajax_amazon_search_products', [$this, 'ajaxSearch']);
         add_action('wp_ajax_amazon_import_single', [$this, 'ajaxImport']);
+        add_action('wp_ajax_amazon_quick_import', [$this, 'ajaxQuickImport']);
     }
 
     public function getSlug(): string
@@ -102,13 +103,49 @@ class ImportTab implements TabInterface
                     performSearch(true);
                 });
 
-                // Bind Import/Update
-                $(document).on('click', '.amazon-import-btn', function(e) {
+                /* 
+                 * Handler para Importacion Rapida (Quick Import)
+                 * Usa los datos de busqueda directamente, sin peticion extra al servidor.
+                 */
+                $(document).on('click', '.amazon-quick-import-btn', function(e) {
                     e.preventDefault();
                     const btn = $(this);
+                    const container = btn.closest('.amazon-action-btns');
+                    const productData = btn.data('product');
+                    const asin = productData.asin;
+
+                    container.find('button').prop('disabled', true);
+                    btn.text('Importando...');
+
+                    $.ajax({
+                        url: ajaxurl,
+                        method: 'POST',
+                        data: {
+                            action: 'amazon_quick_import',
+                            product_data: JSON.stringify(productData),
+                            nonce: '<?php echo wp_create_nonce('amazon_import_ajax'); ?>'
+                        },
+                        success: function(response) {
+                            handleImportSuccess(response, asin, container);
+                        },
+                        error: function() {
+                            handleImportError(container, btn, 'Rapida');
+                        }
+                    });
+                });
+
+                /* 
+                 * Handler para Importacion Detallada (Detailed Import)
+                 * Hace peticion extra al servidor para obtener mas datos.
+                 */
+                $(document).on('click', '.amazon-detailed-import-btn', function(e) {
+                    e.preventDefault();
+                    const btn = $(this);
+                    const container = btn.closest('.amazon-action-btns');
                     const asin = btn.data('asin');
 
-                    btn.prop('disabled', true).text('Procesando...');
+                    container.find('button').prop('disabled', true);
+                    btn.text('Obteniendo...');
 
                     $.ajax({
                         url: ajaxurl,
@@ -119,38 +156,50 @@ class ImportTab implements TabInterface
                             nonce: '<?php echo wp_create_nonce('amazon_import_ajax'); ?>'
                         },
                         success: function(response) {
-                            if (response.success) {
-                                const data = response.data;
-                                // Change button to "Ver Producto"
-                                const viewBtn = `<a href="${data.edit_link}" target="_blank" class="button button-secondary">Ver Producto</a>`;
-                                btn.parent().html(viewBtn);
-
-                                // Update row status
-                                $(`#row-status-${asin}`).html(`
-                                    <span style="background: #46b450; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px;">
-                                        ${data.action === 'updated' ? 'Actualizado' : 'Importado'}
-                                    </span>
-                                    <br><small style="color: #666;">ID: ${data.id}</small>
-                                `);
-
-                                // Update row highlight
-                                btn.closest('tr').css('background', '#f0f8e8');
-
-                                // Update price status if available
-                                if (data.price_html) {
-                                    $(`#row-price-${asin}`).html(data.price_html);
-                                }
-                            } else {
-                                alert('Error: ' + (response.data || 'Unknown error'));
-                                btn.prop('disabled', false).text('Reintentar');
-                            }
+                            handleImportSuccess(response, asin, container);
                         },
                         error: function() {
-                            alert('Error de conexión');
-                            btn.prop('disabled', false).text('Reintentar');
+                            handleImportError(container, btn, 'Detallada');
                         }
                     });
                 });
+
+                /* 
+                 * Funcion comun para manejar exito de importacion 
+                 */
+                function handleImportSuccess(response, asin, container) {
+                    if (response.success) {
+                        const data = response.data;
+                        const importType = data.import_type === 'quick' ? 'Rapida' : 'Detallada';
+                        const viewBtn = `<a href="${data.edit_link}" target="_blank" class="button button-secondary">Ver Producto</a>`;
+                        container.html(viewBtn);
+
+                        $(`#row-status-${asin}`).html(`
+                            <span style="background: #46b450; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px;">
+                                ${data.action === 'updated' ? 'Actualizado' : 'Importado'}
+                            </span>
+                            <br><small style="color: #666;">ID: ${data.id} (${importType})</small>
+                        `);
+
+                        container.closest('tr').css('background', '#f0f8e8');
+
+                        if (data.price_html) {
+                            $(`#row-price-${asin}`).html(data.price_html);
+                        }
+                    } else {
+                        alert('Error: ' + (response.data || 'Unknown error'));
+                        container.find('button').prop('disabled', false);
+                    }
+                }
+
+                /* 
+                 * Funcion comun para manejar error de importacion 
+                 */
+                function handleImportError(container, btn, type) {
+                    alert('Error de conexion');
+                    container.find('button').prop('disabled', false);
+                    btn.text(type);
+                }
 
                 function performSearch(forceRefresh) {
                     if (!currentKeyword) return;
@@ -224,6 +273,10 @@ class ImportTab implements TabInterface
         wp_send_json_success($html);
     }
 
+    /**
+     * Importacion Detallada - Hace peticion extra para obtener mas datos.
+     * Obtiene: categoria, descripcion, precio original, prime, multiples imagenes.
+     */
     public function ajaxImport(): void
     {
         try {
@@ -234,9 +287,8 @@ class ImportTab implements TabInterface
                 wp_send_json_error('ASIN vacio');
             }
 
-            // Log de inicio para depuracion
             if (class_exists('\Glory\Core\GloryLogger')) {
-                \Glory\Core\GloryLogger::info("AjaxImport: Start for ASIN $asin");
+                \Glory\Core\GloryLogger::info("AjaxImport (Detallada): Start for ASIN $asin");
             }
 
             $service = new AmazonApiService();
@@ -247,17 +299,14 @@ class ImportTab implements TabInterface
             if (!empty($productData) && is_array($productData)) {
                 $postId = ProductImporter::importProduct($productData);
                 if ($postId) {
-                    // Get edit link
                     $editLink = get_edit_post_link($postId, 'display');
                     if (!$editLink) $editLink = admin_url('post.php?post=' . $postId . '&action=edit');
 
                     $action = $existingId ? 'updated' : 'imported';
 
-                    // Construct price HTML for update
                     $savedPrice = get_post_meta($postId, 'price', true);
                     $fetchedPrice = $productData['asin_price'] ?? 0;
 
-                    // Fix potential wc_price crash
                     $fetchedPriceFormatted = function_exists('wc_price') ? wc_price($fetchedPrice) : $fetchedPrice . ' €';
                     $savedPriceFormatted = function_exists('wc_price') ? wc_price($savedPrice) : $savedPrice . ' €';
 
@@ -265,7 +314,7 @@ class ImportTab implements TabInterface
                     $priceHtml .= '<div style="margin-top: 5px; border-top: 1px dotted #ccc; padding-top: 2px;"><span style="color: #46b450; font-weight: bold;">' . $savedPriceFormatted . '</span><br><small style="color: #666;">Guardado</small></div>';
 
                     if (class_exists('\Glory\Core\GloryLogger')) {
-                        \Glory\Core\GloryLogger::info("AjaxImport: Success. Post ID: $postId");
+                        \Glory\Core\GloryLogger::info("AjaxImport (Detallada): Success. Post ID: $postId");
                     }
 
                     wp_send_json_success([
@@ -273,7 +322,8 @@ class ImportTab implements TabInterface
                         'action' => $action,
                         'edit_link' => $editLink,
                         'title' => get_the_title($postId),
-                        'price_html' => $priceHtml
+                        'price_html' => $priceHtml,
+                        'import_type' => 'detailed'
                     ]);
                 } else {
                     wp_send_json_error('Error al importar en BD');
@@ -284,6 +334,78 @@ class ImportTab implements TabInterface
         } catch (\Throwable $e) {
             if (class_exists('\Glory\Core\GloryLogger')) {
                 \Glory\Core\GloryLogger::error("AjaxImport Error: " . $e->getMessage());
+            }
+            wp_send_json_error('Error Fatal: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Importacion Rapida - Usa datos de busqueda sin peticion extra.
+     * Ahorra proxy y tiempo. No obtiene: categoria, descripcion, precio original.
+     */
+    public function ajaxQuickImport(): void
+    {
+        try {
+            check_ajax_referer('amazon_import_ajax', 'nonce');
+
+            $productJson = stripslashes($_POST['product_data'] ?? '');
+            $productData = json_decode($productJson, true);
+
+            if (empty($productData) || empty($productData['asin'])) {
+                wp_send_json_error('Datos del producto invalidos');
+            }
+
+            $asin = sanitize_text_field($productData['asin']);
+
+            if (class_exists('\Glory\Core\GloryLogger')) {
+                \Glory\Core\GloryLogger::info("AjaxQuickImport: Start for ASIN $asin");
+            }
+
+            $existingId = ProductImporter::findByAsin($asin);
+
+            /* 
+             * Normalizar datos de busqueda al formato esperado por importProduct:
+             * - image_url -> asin_images (array)
+             */
+            if (!empty($productData['image_url']) && empty($productData['asin_images'])) {
+                $productData['asin_images'] = [$productData['image_url']];
+            }
+
+            $postId = ProductImporter::importProduct($productData);
+
+            if ($postId) {
+                $editLink = get_edit_post_link($postId, 'display');
+                if (!$editLink) $editLink = admin_url('post.php?post=' . $postId . '&action=edit');
+
+                $action = $existingId ? 'updated' : 'imported';
+
+                $savedPrice = get_post_meta($postId, 'price', true);
+                $fetchedPrice = $productData['asin_price'] ?? 0;
+
+                $fetchedPriceFormatted = function_exists('wc_price') ? wc_price($fetchedPrice) : $fetchedPrice . ' €';
+                $savedPriceFormatted = function_exists('wc_price') ? wc_price($savedPrice) : $savedPrice . ' €';
+
+                $priceHtml = '<div><span style="color: #2271b1; font-weight: bold;">' . $fetchedPriceFormatted . '</span><br><small style="color: #666;">Detectado</small></div>';
+                $priceHtml .= '<div style="margin-top: 5px; border-top: 1px dotted #ccc; padding-top: 2px;"><span style="color: #46b450; font-weight: bold;">' . $savedPriceFormatted . '</span><br><small style="color: #666;">Guardado</small></div>';
+
+                if (class_exists('\Glory\Core\GloryLogger')) {
+                    \Glory\Core\GloryLogger::info("AjaxQuickImport: Success. Post ID: $postId");
+                }
+
+                wp_send_json_success([
+                    'id' => $postId,
+                    'action' => $action,
+                    'edit_link' => $editLink,
+                    'title' => get_the_title($postId),
+                    'price_html' => $priceHtml,
+                    'import_type' => 'quick'
+                ]);
+            } else {
+                wp_send_json_error('Error al importar en BD');
+            }
+        } catch (\Throwable $e) {
+            if (class_exists('\Glory\Core\GloryLogger')) {
+                \Glory\Core\GloryLogger::error("AjaxQuickImport Error: " . $e->getMessage());
             }
             wp_send_json_error('Error Fatal: ' . $e->getMessage());
         }
@@ -313,7 +435,7 @@ class ImportTab implements TabInterface
                     <th style="width: 100px;">Reseñas</th>
                     <th style="width: 150px;">Precio</th>
                     <th style="width: 100px;">Estado</th>
-                    <th style="width: 120px;">Accion</th>
+                    <th style="width: 200px;">Accion</th>
                 </tr>
             </thead>
             <tbody>
@@ -374,11 +496,33 @@ class ImportTab implements TabInterface
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php if ($isImported): ?>
-                                <button type="button" class="button amazon-import-btn" data-asin="<?php echo esc_attr($asin); ?>">Actualizar</button>
-                            <?php else: ?>
-                                <button type="button" class="button button-primary amazon-import-btn" data-asin="<?php echo esc_attr($asin); ?>">Importar</button>
-                            <?php endif; ?>
+                            <?php 
+                                /* Preparar datos del producto para importacion rapida */
+                                $productJson = wp_json_encode([
+                                    'asin' => $asin,
+                                    'asin_name' => $item['asin_name'] ?? '',
+                                    'asin_price' => $item['asin_price'] ?? 0,
+                                    'asin_currency' => $item['asin_currency'] ?? 'EUR',
+                                    'image_url' => $item['asin_images'][0] ?? $item['image_url'] ?? '',
+                                    'rating' => $item['rating'] ?? 0,
+                                    'total_review' => $item['total_review'] ?? 0,
+                                    'in_stock' => $item['in_stock'] ?? true
+                                ]);
+                            ?>
+                            <div class="amazon-action-btns" style="display: flex; flex-direction: column; gap: 4px;">
+                                <button type="button" 
+                                    class="button button-primary amazon-quick-import-btn" 
+                                    data-product='<?php echo esc_attr($productJson); ?>'
+                                    title="Importacion rapida: usa datos de busqueda, sin peticion extra. Ahorra datos.">
+                                    <?php echo $isImported ? 'Rapida' : 'Rapida'; ?>
+                                </button>
+                                <button type="button" 
+                                    class="button amazon-detailed-import-btn" 
+                                    data-asin="<?php echo esc_attr($asin); ?>"
+                                    title="Importacion detallada: obtiene categoria, descripcion, precio original, etc.">
+                                    <?php echo $isImported ? 'Detallada' : 'Detallada'; ?>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>
