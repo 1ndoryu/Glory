@@ -13,6 +13,7 @@ use Glory\Plugins\AmazonProduct\Admin\Tabs\ManualImportTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\ApiSetupWizardTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\ClientLicenseTab;
 use Glory\Plugins\AmazonProduct\Admin\Tabs\ClientSettingsTab;
+use Glory\Plugins\AmazonProduct\Admin\Tabs\SectionsTab;
 use Glory\Plugins\AmazonProduct\Mode\PluginMode;
 
 /**
@@ -36,6 +37,9 @@ class AdminController
         /* Inicializar controladores AJAX */
         new ImportAjaxController();
         new ManualImportAjaxController();
+
+        /* Registrar handlers AJAX de SectionsTab */
+        SectionsTab::registerAjaxHandlers();
     }
 
     /**
@@ -56,6 +60,7 @@ class AdminController
             new ImportTab(),
             new ManualImportTab(),
             new UpdatesTab(),
+            new SectionsTab(),
             new DesignTab(),
             new HelpTab(),
         ];

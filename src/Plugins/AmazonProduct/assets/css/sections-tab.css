@@ -1,0 +1,484 @@
+/* 
+ * Sections Tab - Estilos para la gestion de secciones dinamicas
+ * Plugin Amazon Products - Glory Theme
+ */
+
+/* 
+ * Encabezado 
+ */
+.seccionesEncabezado {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    color: #fff;
+}
+
+.seccionesEncabezado h3 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    color: #fff;
+}
+
+.seccionesDescripcion {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 13px;
+    max-width: 600px;
+}
+
+.seccionesDescripcion code {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: #fff;
+}
+
+.seccionesEstadisticas {
+    display: flex;
+    gap: 12px;
+}
+
+.seccionesContador,
+.seccionesModificadas {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.seccionesModificadas {
+    background: rgba(255, 193, 7, 0.3);
+}
+
+.seccionesAccionesHeader {
+    display: flex;
+    gap: 12px;
+}
+
+.seccionesBotonEscanear {
+    background: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: #fff !important;
+}
+
+.seccionesBotonEscanear:hover {
+    background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 
+ * Lista de secciones 
+ */
+.seccionesLista {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* 
+ * Card de seccion 
+ */
+.seccionCard {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.seccionCard:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.seccionCard.seccionModificada {
+    border-left: 3px solid #667eea;
+}
+
+.seccionCard.seccionAbierta .seccionToggle {
+    transform: rotate(90deg);
+}
+
+/* 
+ * Cabecera de seccion 
+ */
+.seccionCabecera {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease;
+}
+
+.seccionCabecera:hover {
+    background: #f8f9fa;
+}
+
+.seccionToggle {
+    color: #666;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+
+.seccionNombre {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e1e1e;
+}
+
+.seccionConteoProductos {
+    color: #666;
+    font-size: 13px;
+}
+
+.seccionBadgeModificada,
+.seccionBadgeExcluidos {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.seccionBadgeModificada {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.seccionBadgeExcluidos {
+    background: #fff3e0;
+    color: #f57c00;
+}
+
+/* 
+ * Contenido de seccion 
+ */
+.seccionContenido {
+    border-top: 1px solid #eee;
+    padding: 20px;
+    background: #fafafa;
+}
+
+/* 
+ * Formulario 
+ */
+.seccionFormulario {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.seccionCampos {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.seccionCamposGrupo {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.seccionCamposGrupo .seccionCampo {
+    flex: 1;
+    min-width: 150px;
+}
+
+.seccionCampo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.seccionCampo label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #444;
+}
+
+.seccionCampoDefault {
+    font-weight: normal;
+    color: #999;
+    font-size: 11px;
+}
+
+.seccionCampo input[type='text'],
+.seccionCampo input[type='number'],
+.seccionCampo select {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.15s ease;
+}
+
+.seccionCampo input:focus,
+.seccionCampo select:focus {
+    border-color: #667eea;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.seccionCampoModificado input,
+.seccionCampoModificado select {
+    border-color: #667eea;
+    background: #f8f9ff;
+}
+
+.seccionCampoCheckbox {
+    flex-direction: row;
+    align-items: center;
+}
+
+.seccionCampoCheckbox label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+/* 
+ * Productos excluidos 
+ */
+.seccionExcluidos {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 16px;
+}
+
+.seccionExcluidos h5 {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    color: #666;
+}
+
+.seccionExcluidosLista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.seccionExcluidoItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border-radius: 4px;
+}
+
+.seccionExcluidoTitulo {
+    font-size: 13px;
+    color: #333;
+}
+
+.seccionBotonIncluir {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 12px;
+}
+
+.seccionBotonIncluir:hover {
+    text-decoration: underline;
+}
+
+/* 
+ * Acciones 
+ */
+.seccionAcciones {
+    display: flex;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.seccionBotonRestaurar {
+    color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.seccionBotonRestaurar:hover {
+    background: #dc3545 !important;
+    color: #fff !important;
+}
+
+/* 
+ * Mensaje de estado 
+ */
+.seccionMensaje {
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+
+.seccionMensaje.exito {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.seccionMensaje.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* 
+ * Estado vacio 
+ */
+.seccionesVacio {
+    text-align: center;
+    padding: 60px 40px;
+    background: #fff;
+    border: 2px dashed #ddd;
+    border-radius: 12px;
+}
+
+.seccionesVacioIcono {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.seccionesVacio h4 {
+    margin: 0 0 12px 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.seccionesVacio p {
+    color: #666;
+    margin: 0 0 16px 0;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.seccionesVacio pre {
+    display: inline-block;
+    background: #f5f5f5;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #333;
+    margin: 16px 0;
+}
+
+/* 
+ * Modal de preview 
+ */
+.seccionPreviewModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100000;
+}
+
+.seccionPreviewContenido {
+    background: #fff;
+    border-radius: 12px;
+    max-width: 900px;
+    max-height: 80vh;
+    width: 90%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.seccionPreviewCabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.seccionPreviewCabecera h4 {
+    margin: 0;
+}
+
+.seccionPreviewCerrar {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+}
+
+.seccionPreviewConteo {
+    flex: 1;
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+}
+
+.seccionPreviewGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 16px;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.seccionPreviewProducto {
+    background: #f9f9f9;
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+}
+
+.seccionPreviewProducto img {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 8px;
+}
+
+.seccionPreviewProducto .titulo {
+    font-size: 12px;
+    color: #333;
+    margin-bottom: 4px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.seccionPreviewProducto .precio {
+    font-weight: 600;
+    color: #b12704;
+}
+
+/* 
+ * Responsive 
+ */
+@media (max-width: 782px) {
+    .seccionesEncabezado {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .seccionCamposGrupo {
+        flex-direction: column;
+    }
+
+    .seccionCamposGrupo .seccionCampo {
+        min-width: 100%;
+    }
+
+    .seccionAcciones {
+        flex-wrap: wrap;
+    }
+}

@@ -2,6 +2,8 @@
 
 namespace Glory\Plugins\AmazonProduct\Renderer;
 
+use Glory\Plugins\AmazonProduct\Service\SectionRegistry;
+
 /**
  * Product Renderer - Coordinador principal del frontend.
  * 
@@ -13,6 +15,7 @@ namespace Glory\Plugins\AmazonProduct\Renderer;
  * - GridRenderer: Grid de productos y paginacion
  * - DealsRenderer: Shortcode [amazon_deals]
  * - QueryBuilder: Construccion de WP_Query
+ * - SectionRegistry: Registro y configuracion de secciones dinamicas
  * 
  * Refactorizado siguiendo SOLID (Diciembre 2024):
  * - De 709 lineas a ~130 lineas
@@ -25,6 +28,7 @@ class ProductRenderer
     private GridRenderer $gridRenderer;
     private DealsRenderer $dealsRenderer;
     private QueryBuilder $queryBuilder;
+    private SectionRegistry $sectionRegistry;
 
     public function __construct()
     {
@@ -33,6 +37,7 @@ class ProductRenderer
         $this->gridRenderer = new GridRenderer();
         $this->dealsRenderer = new DealsRenderer();
         $this->queryBuilder = new QueryBuilder();
+        $this->sectionRegistry = new SectionRegistry();
     }
 
     /**
@@ -49,6 +54,7 @@ class ProductRenderer
      * Main shortcode: [amazon_products]
      * 
      * Atributos soportados:
+     * - section: Identificador de seccion dinamica (permite configuracion desde admin)
      * - limit: Numero de productos (default: 12)
      * - min_price / max_price: Filtro de precio
      * - category: Slug de categoria
@@ -66,6 +72,7 @@ class ProductRenderer
     public function renderShortcode($atts): string
     {
         $atts = shortcode_atts([
+            'section' => '',
             'limit' => 12,
             'min_price' => '',
             'max_price' => '',
@@ -81,6 +88,14 @@ class ProductRenderer
             'min_rating' => '',
             'exclude' => '',
         ], $atts);
+
+        /* 
+         * Si hay seccion, procesarla a traves del registry.
+         * Esto registra la seccion (si es nueva) y aplica overrides guardados.
+         */
+        if (!empty($atts['section'])) {
+            $atts = $this->sectionRegistry->processShortcode($atts);
+        }
 
         $hideFilters = ($atts['hide_filters'] === '1');
         $showPagination = ($atts['pagination'] !== '0');

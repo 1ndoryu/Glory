@@ -20,6 +20,7 @@ class QueryBuilder
     {
         $args = $this->getBaseArgs($params);
         $args = $this->applyIdFilter($args, $params);
+        $args = $this->applyExcludedIdsFilter($args, $params);
         $args = $this->applySearchFilter($args, $params);
         $args = $this->applyExcludeFilter($args, $params);
         $args = $this->applyCategoryFilter($args, $params);
@@ -30,6 +31,27 @@ class QueryBuilder
         $args = $this->applySorting($args, $params);
 
         return new \WP_Query($args);
+    }
+
+    /**
+     * Filtro por IDs excluidos (de secciones dinamicas).
+     * Excluye productos que han sido manualmente quitados de una seccion.
+     */
+    private function applyExcludedIdsFilter(array $args, array $params): array
+    {
+        if (empty($params['_excluded_ids'])) {
+            return $args;
+        }
+
+        $excludedIds = array_map('intval', (array) $params['_excluded_ids']);
+        $excludedIds = array_filter($excludedIds);
+
+        if (!empty($excludedIds)) {
+            $existing = $args['post__not_in'] ?? [];
+            $args['post__not_in'] = array_unique(array_merge($existing, $excludedIds));
+        }
+
+        return $args;
     }
 
     /**

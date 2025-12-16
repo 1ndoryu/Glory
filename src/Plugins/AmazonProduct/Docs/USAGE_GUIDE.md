@@ -224,12 +224,13 @@ Muestra productos con descuento (precio original > precio actual).
 
 ### Atributos de contenido
 
-| Atributo   | Valores       | Default | Descripcion                                          |
-| ---------- | ------------- | ------- | ---------------------------------------------------- |
-| `limit`    | Numero        | 12      | Cantidad maxima de productos a mostrar               |
-| `ids`      | "123,456,789" | -       | Mostrar productos especificos por ID de WordPress    |
-| `search`   | Texto         | -       | Filtrar por palabra clave en el titulo               |
-| `category` | slug          | -       | Filtrar por categoria (usar el slug de la categoria) |
+| Atributo   | Valores       | Default | Descripcion                                                  |
+| ---------- | ------------- | ------- | ------------------------------------------------------------ |
+| `section`  | Texto         | -       | Identificador de seccion dinamica (configurable desde admin) |
+| `limit`    | Numero        | 12      | Cantidad maxima de productos a mostrar                       |
+| `ids`      | "123,456,789" | -       | Mostrar productos especificos por ID de WordPress            |
+| `search`   | Texto         | -       | Filtrar por palabra clave en el titulo                       |
+| `category` | slug          | -       | Filtrar por categoria (usar el slug de la categoria)         |
 
 ### Atributos de filtrado
 
@@ -347,6 +348,105 @@ Los productos se organizan en la taxonomia `amazon_category`.
 Para encontrar el slug de una categoria:
 1. Ve a **Amazon Products > Categorias**
 2. El slug aparece en la columna correspondiente
+
+---
+
+## Secciones Dinamicas
+
+Las secciones dinamicas permiten configurar shortcodes desde el panel de administracion sin editar HTML.
+
+### Concepto
+
+En lugar de escribir todos los parametros directamente en el shortcode:
+```
+[amazon_products search="pala" orderby="random" exclude="paletero,bolsa,funda"]
+```
+
+Puedes usar una seccion con nombre:
+```
+[amazon_products section="palas" search="pala" orderby="random" exclude="paletero,bolsa,funda"]
+```
+
+**Ventajas:**
+- Los atributos del shortcode son valores **por defecto**
+- Puedes modificar la configuracion desde **Amazon Products > Settings > Secciones**
+- Los cambios se aplican inmediatamente sin editar HTML
+- Puedes **excluir productos individuales** de una seccion
+- Boton para **restaurar a defaults** en cualquier momento
+
+### Como usar secciones
+
+1. Agrega el atributo `section` a tu shortcode:
+```
+[amazon_products section="ofertas-palas" only_deals="1" search="pala"]
+```
+
+2. Visita la pagina donde esta el shortcode (esto registra la seccion)
+
+3. Ve a **Amazon Products > Settings > Secciones**
+
+4. Veras la seccion "ofertas-palas" listada
+
+5. Haz clic para expandir y modificar:
+   - Cambiar el texto de busqueda
+   - Agregar palabras a excluir
+   - Cambiar orden y limite
+   - Excluir productos especificos
+
+### Gestion desde el Admin
+
+La tab **Secciones** muestra:
+
+- **Lista colapsable** de todas las secciones registradas
+- **Conteo de productos** que coinciden con cada seccion
+- **Badge "Modificada"** si la seccion tiene cambios respecto a los defaults
+- **Badge de excluidos** si hay productos excluidos manualmente
+
+Para cada seccion puedes:
+
+| Accion             | Descripcion                                      |
+| ------------------ | ------------------------------------------------ |
+| Previsualizar      | Ver los productos que apareceran                 |
+| Guardar cambios    | Aplicar las modificaciones                       |
+| Restaurar defaults | Volver a la configuracion original del shortcode |
+| Incluir producto   | Quitar un producto de la lista de excluidos      |
+
+### Excluir productos individuales
+
+Desde la **tab Secciones**:
+1. Abre la seccion deseada
+2. Haz clic en "Previsualizar"
+3. Cada producto tiene un boton "Excluir"
+
+Desde el **editor de producto**:
+1. Edita cualquier producto Amazon
+2. En el panel lateral, veras el metabox "Secciones"
+3. Desmarca las secciones donde no quieres que aparezca
+
+### Restaurar a defaults
+
+Si modificaste una seccion y quieres volver a los valores originales del shortcode:
+
+1. Ve a **Amazon Products > Settings > Secciones**
+2. Expande la seccion
+3. Haz clic en **"Restaurar defaults"**
+
+Esto eliminara todos los overrides y productos excluidos.
+
+### Ejemplo completo
+
+**Shortcode en la pagina:**
+```
+[amazon_products section="palas-pro" search="pala" orderby="random" limit="8" exclude="junior,ninos"]
+```
+
+**Desde el admin modificas:**
+- Search: "pala padel" (mas especifico)
+- Exclude: "junior,ninos,iniciacion" (agrega palabra)
+- Excluyes 2 productos que no te gustan
+
+**Resultado:**
+El shortcode ahora muestra palas de padel, excluyendo productos para principiantes y los 2 productos manuales, sin tocar el HTML.
 
 ---
 

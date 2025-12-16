@@ -121,6 +121,10 @@ class AmazonProductPlugin
         if (is_admin()) {
             $adminController = new AdminController();
             $adminController->init();
+
+            /* Metabox de secciones en productos */
+            $sectionsMetabox = new \Glory\Plugins\AmazonProduct\Admin\Metabox\ProductSectionsMetabox();
+            $sectionsMetabox->init();
         }
 
         /* 
