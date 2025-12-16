@@ -717,7 +717,7 @@ class WebScraperProvider implements ApiProviderInterface
      */
     private function extractCategoryFromHtml(string $html, \DOMXPath $xpath): string
     {
-        // wayfinding-breadcrumbs
+        // Intento 1: wayfinding-breadcrumbs (layout clasico)
         $breadcrumb = $xpath->query('//div[@id="wayfinding-breadcrumbs_feature_div"]//a')->item(0);
         if ($breadcrumb) {
             $categories = [];
@@ -729,9 +729,40 @@ class WebScraperProvider implements ApiProviderInterface
                 }
             }
             if (!empty($categories)) {
-                return implode(' > ', $categories);
+                $result = implode(' > ', $categories);
+                GloryLogger::info("Scraper Category: Encontrada via wayfinding-breadcrumbs: {$result}");
+                return $result;
             }
         }
+
+        // Intento 2: nav-subnav (barra de navegacion superior)
+        $navSubnav = $xpath->query('//div[@id="nav-subnav"]/@data-category')->item(0);
+        if ($navSubnav) {
+            $category = trim($navSubnav->nodeValue);
+            if (!empty($category)) {
+                GloryLogger::info("Scraper Category: Encontrada via nav-subnav: {$category}");
+                return $category;
+            }
+        }
+
+        // Intento 3: Buscar en dp-container o product-detail
+        $dpCategory = $xpath->query('//a[contains(@class, "a-link-normal") and contains(@href, "/b/")]')->item(0);
+        if ($dpCategory) {
+            $category = trim($dpCategory->textContent);
+            if (!empty($category) && strlen($category) > 2) {
+                GloryLogger::info("Scraper Category: Encontrada via link /b/: {$category}");
+                return $category;
+            }
+        }
+
+        // Intento 4: Meta tag o schema.org
+        if (preg_match('/"category"\s*:\s*"([^"]+)"/', $html, $matches)) {
+            $category = $matches[1];
+            GloryLogger::info("Scraper Category: Encontrada via JSON schema: {$category}");
+            return $category;
+        }
+
+        GloryLogger::warning("Scraper Category: No se pudo extraer categoria del HTML");
         return '';
     }
 }

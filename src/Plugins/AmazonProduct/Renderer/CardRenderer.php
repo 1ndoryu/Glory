@@ -62,6 +62,24 @@ class CardRenderer
      */
     private static function getProductMeta(int $postId): array
     {
+        // Obtener URL de imagen: prioridad a thumbnail local, fallback a URL externa
+        $imageUrl = '';
+
+        // 1. Intentar obtener thumbnail local
+        if (has_post_thumbnail($postId)) {
+            $imageUrl = get_the_post_thumbnail_url($postId, 'medium');
+        }
+
+        // 2. Fallback a URL externa si no hay thumbnail local
+        if (empty($imageUrl)) {
+            $imageUrl = get_post_meta($postId, 'image_url', true);
+        }
+
+        // 3. Ultimo fallback a la URL original guardada
+        if (empty($imageUrl)) {
+            $imageUrl = get_post_meta($postId, '_thumbnail_url_external', true);
+        }
+
         return [
             'asin'           => get_post_meta($postId, 'asin', true),
             'price'          => get_post_meta($postId, 'price', true),
@@ -69,7 +87,7 @@ class CardRenderer
             'rating'         => get_post_meta($postId, 'rating', true),
             'reviews'        => get_post_meta($postId, 'reviews', true),
             'prime'          => get_post_meta($postId, 'prime', true),
-            'image_url'      => get_post_meta($postId, 'image_url', true),
+            'image_url'      => $imageUrl,
             'product_url'    => get_post_meta($postId, 'product_url', true),
         ];
     }
