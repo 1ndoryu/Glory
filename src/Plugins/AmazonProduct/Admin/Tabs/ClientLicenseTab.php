@@ -98,17 +98,26 @@ class ClientLicenseTab implements TabInterface
             <?php endif; ?>
 
             <!-- Instrucciones -->
-            <div id="seccion-instrucciones" style="background: #f9f9f9; padding: 20px; border: 1px solid #ccd0d4; border-radius: 4px; max-width: 600px;">
-                <h3 style="margin-top: 0;">¿No tienes una API Key?</h3>
-                <p style="margin-bottom: 15px;">
+            <div id="seccion-instrucciones" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px; border-radius: 8px; max-width: 600px; color: #fff;">
+                <h3 style="margin-top: 0; color: #fff; font-size: 20px;">¿No tienes una API Key?</h3>
+                <p style="margin-bottom: 20px; opacity: 0.95;">
                     Para obtener tu API Key necesitas una suscripcion activa al servicio Glory Amazon Products.
                 </p>
-                <a href="https://wandori.us/glory-amazon" target="_blank" class="button button-secondary">
-                    Obtener Suscripcion
+                <a href="https://buy.stripe.com/8x26oG58XchA56va31cAo0c"
+                    target="_blank"
+                    style="display: inline-block; background: #fff; color: #667eea; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s;"
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)';"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';">
+                    Suscribirse Ahora
                 </a>
-                <p style="margin-top: 15px; font-size: 12px; color: #666;">
-                    <strong>Plan Basico:</strong> $20/mes - 4GB de datos - 30 dias de prueba gratis
-                </p>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3);">
+                    <p style="margin: 0; font-size: 14px; opacity: 0.9;">
+                        <strong>Plan Basico:</strong> $20/mes - 4GB de datos
+                    </p>
+                    <p style="margin: 5px 0 0; font-size: 13px; opacity: 0.85;">
+                        Incluye <strong>30 dias de prueba GRATIS</strong>
+                    </p>
+                </div>
             </div>
         </div>
 
@@ -261,7 +270,7 @@ class ClientLicenseTab implements TabInterface
             <div class="notice notice-error inline" style="margin-top: 15px;">
                 <p>
                     <strong>Tu suscripcion ha expirado.</strong>
-                    <a href="https://wandori.us/glory-amazon/renew" target="_blank">Renueva ahora</a> para seguir usando el servicio.
+                    <a href="https://buy.stripe.com/8x26oG58XchA56va31cAo0c" target="_blank" style="font-weight: bold;">Renueva ahora</a> para seguir usando el servicio.
                 </p>
             </div>
         <?php elseif ($percentUsed > 80): ?>

@@ -329,7 +329,7 @@ Glory/src/Plugins/AmazonProduct/
 5. [x] Email de bienvenida enviado automaticamente - OK
 6. [x] Configurar proxy (DataImpulse) - GLORY_PROXY_HOST y GLORY_PROXY_AUTH
 7. [x] Probar scraping con proxy activado - OK (devuelve 20+ productos)
-8. [ ] Prueba con cliente real de pago (Stripe Checkout)
+8. [ ] Prueba con cliente real de pago (Stripe Checkout) - **LISTO PARA PROBAR**
 
 ---
 
@@ -608,19 +608,20 @@ la informacion necesaria.
 
 ---
 
-### 2. Flujo de Pago del Cliente
-- [ ] Añadir boton "Suscribirse" en el panel del cliente (ClientLicenseTab)
-- [ ] El boton debe redirigir a Stripe Checkout
-- [ ] El cliente introduce su email en Stripe Checkout al pagar
+### 2. Flujo de Pago del Cliente - COMPLETADO (2025-12-16)
+- [x] Añadir boton "Suscribirse" en el panel del cliente (ClientLicenseTab)
+- [x] El boton redirige a Stripe Checkout: `https://buy.stripe.com/8x26oG58XchA56va31cAo0c`
+- [x] Diseño mejorado con gradiente y hover effects
+- [x] Enlace de renovacion para licencias expiradas actualizado
 
 ### 3. Verificacion de Emails
 - [ ] Configurar SMTP en el servidor VPS para enviar emails reales
 - [ ] Verificar que `wp_mail()` funciona correctamente
 - [ ] Alternativa: usar servicio como SendGrid, Mailgun o Amazon SES
 
-### 4. Stripe Checkout
-- [ ] Crear producto en Stripe con precio recurrente ($20/mes)
-- [ ] Configurar periodo de prueba de 30 dias
-- [ ] Obtener URL de checkout o crear Payment Link
+### 4. Stripe Checkout - COMPLETADO (2025-12-16)
+- [x] Crear producto en Stripe con precio recurrente ($20/mes)
+- [x] Configurar periodo de prueba de 30 dias
+- [x] Obtener URL de checkout: `https://buy.stripe.com/8x26oG58XchA56va31cAo0c`
 
 ---
