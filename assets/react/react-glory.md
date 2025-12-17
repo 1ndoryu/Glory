@@ -148,7 +148,9 @@ glory/
 │   ├── React/
 │   │   ├── islands/                  # Componentes React del proyecto
 │   │   │   └── HomeIsland.tsx
-│   │   └── tsconfig.json             # Extiende Glory para que IDE funcione
+│   │   ├── package.json              # Tipos TS (@types/react, lucide-react)
+│   │   ├── node_modules/             # Solo tipos, no runtime
+│   │   └── tsconfig.json             # Config TS para el IDE
 │   ├── Templates/pages/
 │   │   └── home.php                  # Funciones PHP que renderizan islas
 │   └── Config/
@@ -224,32 +226,48 @@ No uses React en absoluto. Glory funciona como tema WordPress normal.
 
 ## Comandos NPM
 
-Ejecutar desde `Glory/assets/react/`:
+Todos los comandos se ejecutan desde la **raiz del tema** (`/glory`):
 
-| Comando              | Descripcion                      |
-| -------------------- | -------------------------------- |
-| `npm run dev`        | Servidor desarrollo con HMR      |
-| `npm run build`      | Compila JS/CSS + genera HTML SSG |
-| `npm run build:fast` | Solo JS/CSS (sin SSG)            |
-| `npm run prerender`  | Solo genera HTML SSG             |
+| Comando                       | Descripcion                       |
+| ----------------------------- | --------------------------------- |
+| `npm run dev`                 | Servidor desarrollo con HMR       |
+| `npm run build`               | Compila JS/CSS + genera HTML SSG  |
+| `npm run build:fast`          | Solo JS/CSS (sin SSG)             |
+| `npm run prerender`           | Solo genera HTML SSG              |
+| `npm run install:all`         | Instala deps en Glory y App/React |
+| `npm run types:add <paquete>` | Agrega tipos TS a App/React       |
+
+### Agregar Nuevas Librerias
+
+Si necesitas usar una nueva libreria en tus componentes:
+
+```bash
+# Desde /glory
+npm run types:add nombre-libreria
+```
+
+Esto instalara los tipos en `App/React/node_modules` para que el IDE funcione correctamente.
 
 ---
 
 ## Workflow de Desarrollo
 
 ```bash
-# 1. Iniciar servidor de desarrollo
-cd Glory/assets/react
+# 1. Desde la raiz del tema
+cd wp-content/themes/glory
+
+# 2. Iniciar servidor de desarrollo
 npm run dev
 
-# 2. Editar componentes en App/React/islands/
+# 3. Editar componentes en App/React/islands/
 # Los cambios se reflejan al instante (HMR)
 
-# 3. Ver en navegador
+# 4. Ver en navegador
 # http://glorybuilder.local/
 ```
 
 **Nota:** En modo dev, React usa `createRoot()` (renderizado completo), no hidratacion SSG.
+
 
 ---
 
