@@ -164,11 +164,19 @@ class PageManager
 
             if (!empty($defPagina['funcion'])) {
                 self::$funcionParaRenderizar = $defPagina['funcion'];
-                $plantillaCentral = get_template_directory() . '/TemplateGlory.php';
+
+                // Determinar que plantilla usar
+                // Si la pagina esta registrada como React Fullpage, usar TemplateReact.php
+                if (self::isReactFullPage($slug)) {
+                    $plantillaCentral = get_template_directory() . '/TemplateReact.php';
+                } else {
+                    $plantillaCentral = get_template_directory() . '/TemplateGlory.php';
+                }
+
                 if (file_exists($plantillaCentral)) {
                     return $plantillaCentral;
                 }
-                GloryLogger::error("PageManager: No se encontró la plantilla central 'TemplateGlory.php'.");
+                GloryLogger::error("PageManager: No se encontro la plantilla central.");
             }
         }
         return $plantilla;

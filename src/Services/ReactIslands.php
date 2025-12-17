@@ -9,11 +9,24 @@ namespace Glory\Services;
  * Los scripts de React SOLO se cargan si hay islas registradas en la pagina.
  * Si no se usa, no afecta al rendimiento del sitio.
  * 
+ * COMPATIBILIDAD PHP PURO:
+ * - Si no se llama a render() o register(), NINGUN asset de React se carga.
+ * - Glory funciona 100% como tema WordPress tradicional.
+ * - No se requiere Node.js ni npm para proyectos que no usen React.
+ * 
+ * MODOS DE USO:
+ * 1. SSG (100% React): Paginas completas en React con pre-render estatico.
+ * 2. Islands (Hibrido): PHP para contenido, React para widgets interactivos.
+ * 3. PHP Puro: Sin React, tema WordPress clasico.
+ * 
  * Uso basico:
  * 1. Registrar una isla: ReactIslands::register('NombreIsla', ['prop1' => 'valor'])
  * 2. Renderizar el contenedor: ReactIslands::render('NombreIsla')
  * 
  * Los scripts se encolan automaticamente solo si hay islas registradas.
+ * 
+ * @see SSR_ARCHITECTURE.md para detalles de la arquitectura SSG
+ * @see react-glory.md para guia de uso
  */
 class ReactIslands
 {
@@ -137,7 +150,36 @@ class ReactIslands
     }
 
     /**
+     * Intenta obtener el contenido HTML pre-renderizado (SSG)
+     * Busca archivos generados en Glory/assets/react/dist/ssg/
+     * 
+     * @param string $islandName Nombre de la isla
+     * @return string HTML pre-renderizado o string vacio si no existe
+     */
+    private static function getSSRContent(string $islandName): string
+    {
+        // En modo dev, no usamos SSG para evitar contenido stale
+        if (self::isDevMode()) {
+            return '';
+        }
+
+        // Buscar archivo HTML generado para esta isla
+        $ssgPath = self::getReactPath() . '/dist/ssg/' . $islandName . '.html';
+
+        if (file_exists($ssgPath)) {
+            return file_get_contents($ssgPath);
+        }
+
+        return '';
+    }
+
+    /**
      * Renderiza el contenedor para una isla React
+     * 
+     * Flujo SSG:
+     * 1. Si existe HTML pre-renderizado en dist/ssg/, lo usa como contenido inicial
+     * 2. Marca el contenedor con data-hydrate="true" para que React hidrate (no reemplace)
+     * 3. Los props frescos vienen de PHP via data-props
      * 
      * @param string $islandName Nombre del componente
      * @param array $props Props a pasar al componente
@@ -163,6 +205,16 @@ class ReactIslands
 
         if ($propsJson) {
             $attrs['data-props'] = $propsJson;
+        }
+
+        // Intentar cargar contenido SSG si no hay fallback manual
+        if (empty($fallbackContent)) {
+            $fallbackContent = self::getSSRContent($islandName);
+
+            // Si encontramos contenido SSG, marcar para hidratacion
+            if (!empty($fallbackContent)) {
+                $attrs['data-hydrate'] = 'true';
+            }
         }
 
         $attrsString = '';
@@ -265,18 +317,13 @@ class ReactIslands
             return;
         }
 
-        // Cargar CSS si existe - NO BLOQUEANTE usando preload + onload
+        // Cargar CSS - BLOQUEANTE para SSG (el HTML ya esta renderizado)
+        // Esto asegura que los estilos esten disponibles antes de mostrar el contenido
         if (!empty($mainEntry['css'])) {
             foreach ($mainEntry['css'] as $cssFile) {
                 $cssUrl = esc_url($assetsUrl) . '/' . esc_attr($cssFile);
-                // Preload como stylesheet, aplicar cuando cargue (no bloquea render)
                 printf(
-                    '<link rel="preload" href="%s" as="style" onload="this.onload=null;this.rel=\'stylesheet\'">' . PHP_EOL,
-                    $cssUrl
-                );
-                // Fallback para navegadores sin JS
-                printf(
-                    '<noscript><link rel="stylesheet" href="%s"></noscript>' . PHP_EOL,
+                    '<link rel="stylesheet" href="%s">' . PHP_EOL,
                     $cssUrl
                 );
             }

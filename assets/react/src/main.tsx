@@ -6,54 +6,48 @@
  *
  * Sistema de renderizado:
  * 1. PHP renderiza el contenedor con data-island="NombreComponente"
- * 2. Este script busca esos contenedores y monta los componentes React
- * 3. Los props se pasan via data-props (JSON)
+ * 2. Si existe HTML pre-renderizado (SSG), se usa data-hydrate="true"
+ * 3. Este script busca esos contenedores y monta/hidrata los componentes React
+ * 4. Los props se pasan via data-props (JSON)
+ *
+ * Modos de montaje:
+ * - hydrateRoot: Cuando data-hydrate="true" (preserva HTML existente)
+ * - createRoot: Cuando no hay SSG (reemplaza contenido)
  */
 
 import {StrictMode} from 'react';
-import {createRoot} from 'react-dom/client';
+import {createRoot, hydrateRoot} from 'react-dom/client';
 
 // Importar estilos de Tailwind CSS
 import './index.css';
 
 // ===============================================
 // COMPONENTES GLORY (Genericos, reutilizables)
+// Estos componentes vienen con Glory y sirven como ejemplos
 // ===============================================
 import {ExampleIsland} from './islands/ExampleIsland';
 
 // ===============================================
 // COMPONENTES APP (Especificos de este proyecto)
-// Importados desde App/React/ via alias @app
+// Importar desde App/React/ via alias @app
 // ===============================================
 import {HomeIsland} from '@app/islands/HomeIsland';
-import {ServicesIsland} from '@app/islands/ServicesIsland';
-import {PricingIsland} from '@app/islands/PricingIsland';
-import {DemosIsland} from '@app/islands/DemosIsland';
-import {AboutIsland} from '@app/islands/AboutIsland';
-import {MainAppIsland} from '@app/islands/MainAppIsland';
 
 // Mapa de componentes disponibles
 // La clave es el valor de data-island, el valor es el componente React
 const islandComponents: Record<string, React.ComponentType<Record<string, unknown>>> = {
-    // Componentes Glory (genericos)
+    // Componentes Glory (genericos - ejemplos)
     ExampleIsland: ExampleIsland,
 
     // Componentes App (especificos del proyecto)
-    HomeIsland: HomeIsland,
-    ServicesIsland: ServicesIsland,
-    PricingIsland: PricingIsland,
-    DemosIsland: DemosIsland,
-    AboutIsland: AboutIsland,
+    HomeIsland: HomeIsland
 
-    // SPA Router - Usar esto para navegacion sin recarga
-    MainAppIsland: MainAppIsland
-
-    // Agregar nuevas islas aqui
+    // Agregar aqui mas componentes de tu proyecto
 };
 
 /**
  * Inicializa todas las islas React encontradas en el DOM
- * Busca elementos con data-island y monta el componente correspondiente
+ * Busca elementos con data-island y monta/hidrata el componente correspondiente
  */
 function initializeIslands(): void {
     const islands = document.querySelectorAll<HTMLElement>('[data-island]');
@@ -90,21 +84,55 @@ function initializeIslands(): void {
             }
         }
 
-        try {
-            // Limpiar el contenedor antes de montar (elimina placeholders/comentarios)
-            container.innerHTML = '';
+        // Determinar si hay contenido SSG para hidratar
+        const shouldHydrate = container.dataset.hydrate === 'true';
+        const hasContent = container.innerHTML.trim() !== '' && !container.innerHTML.includes('<!-- react-island-loading -->');
 
-            // Usar createRoot para renderizar el componente
-            const root = createRoot(container);
-            root.render(
+        try {
+            const element = (
                 <StrictMode>
                     <Component {...props} />
                 </StrictMode>
             );
 
-            console.log(`[Glory React] Isla "${islandName}" montada correctamente`);
+            if (shouldHydrate && hasContent) {
+                /*
+                 * Modo SSG: Hidratar preservando el HTML existente
+                 * React se "adhiere" al DOM sin recrearlo
+                 */
+                hydrateRoot(container, element);
+                console.log(`[Glory React] Isla "${islandName}" hidratada (SSG)`);
+            } else {
+                /*
+                 * Modo CSR: Crear raiz nueva y renderizar
+                 * Limpia el contenedor y monta React desde cero
+                 */
+                container.innerHTML = '';
+                const root = createRoot(container);
+                root.render(element);
+                console.log(`[Glory React] Isla "${islandName}" montada (CSR)`);
+            }
         } catch (error) {
             console.error(`[Glory React] Error montando isla "${islandName}":`, error);
+
+            /*
+             * Fallback: Si la hidratacion falla, intentar CSR
+             * Esto puede pasar si el HTML SSG no coincide con el componente actual
+             */
+            if (shouldHydrate) {
+                console.warn(`[Glory React] Fallback a CSR para "${islandName}"`);
+                try {
+                    container.innerHTML = '';
+                    const root = createRoot(container);
+                    root.render(
+                        <StrictMode>
+                            <Component {...props} />
+                        </StrictMode>
+                    );
+                } catch (fallbackError) {
+                    console.error(`[Glory React] Fallback CSR tambien fallo:`, fallbackError);
+                }
+            }
         }
     });
 }
