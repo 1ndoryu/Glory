@@ -101,6 +101,133 @@ class PageManager
         }
     }
 
+    /**
+     * Define una pagina React de forma simplificada.
+     * 
+     * Este metodo combina todas las acciones necesarias en UNA sola linea:
+     * 1. Registra como ReactFullPage (sin header/footer WP)
+     * 2. Define la pagina con un handler auto-generado
+     * 3. El handler renderiza el Island especificado via ReactIslands
+     * 
+     * USO SIMPLE (sin props dinamicos):
+     *   PageManager::reactPage('home-static', 'HomeStaticIsland');
+     * 
+     * USO CON PROPS ESTATICOS:
+     *   PageManager::reactPage('about', 'AboutIsland', [
+     *       'siteName' => 'Mi Sitio',
+     *       'year' => 2025
+     *   ]);
+     * 
+     * USO CON CALLBACK DE PROPS (para props dinamicos de WordPress):
+     *   PageManager::reactPage('home', 'HomeIsland', function($pageId) {
+     *       return [
+     *           'blocks' => get_post_meta($pageId, '_glory_page_blocks', true),
+     *           'isAdmin' => current_user_can('edit_pages')
+     *       ];
+     *   });
+     * 
+     * NOTA: Para casos muy complejos, usa define() + archivo PHP manual.
+     * 
+     * @param string $slug Slug de la URL (ej: 'about', 'home-static')
+     * @param string $islandName Nombre del Island React (ej: 'HomeStaticIsland')
+     * @param array|callable|null $props Props estaticos o callback que retorna props
+     * @param array $roles Roles requeridos para ver la pagina
+     */
+    public static function reactPage(
+        string $slug,
+        string $islandName,
+        array|callable|null $props = null,
+        array $roles = []
+    ): void {
+        // Validar slug
+        if (empty($slug) || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
+            GloryLogger::error("PageManager::reactPage: Slug invalido '{$slug}'.");
+            return;
+        }
+
+        // Auto-registrar como ReactFullPage
+        if (!in_array($slug, self::$paginasReactFullpage, true)) {
+            self::$paginasReactFullpage[] = $slug;
+        }
+
+        // Generar nombre de funcion unico para el handler
+        $nombreFuncion = '_glory_react_page_' . str_replace('-', '_', $slug);
+
+        // Guardar configuracion para el closure
+        self::$reactPageConfigs[$slug] = [
+            'islandName' => $islandName,
+            'props' => $props
+        ];
+
+        // Crear el handler dinamico si no existe
+        if (!function_exists($nombreFuncion)) {
+            // Usar eval para crear la funcion (necesario porque define() espera nombre de funcion)
+            // La funcion real esta en renderReactIsland()
+            $GLOBALS['_glory_react_configs'][$slug] = [
+                'islandName' => $islandName,
+                'props' => $props
+            ];
+        }
+
+        // Definir titulo
+        $titulo = ucwords(str_replace(['-', '_'], ' ', $slug));
+
+        // Registrar en paginasDefinidas con handler especial
+        self::$paginasDefinidas[$slug] = [
+            'titulo'      => $titulo,
+            'plantilla'   => 'TemplateGlory.php',
+            'funcion'     => [self::class, 'renderReactIsland'],
+            'slug'        => $slug,
+            'roles'       => $roles,
+            'parentSlug'  => null,
+            'isReactPage' => true,
+            'islandName'  => $islandName,
+            'islandProps' => $props,
+        ];
+    }
+
+    /**
+     * Renderiza un React Island para paginas definidas con reactPage().
+     * Este metodo es llamado internamente por el sistema de templates.
+     */
+    public static function renderReactIsland(): void
+    {
+        $slug = get_post_field('post_name', get_queried_object_id());
+        $config = self::$paginasDefinidas[$slug] ?? null;
+
+        if (!$config || empty($config['isReactPage'])) {
+            echo '<!-- PageManager: No se encontro configuracion para ' . esc_html($slug) . ' -->';
+            return;
+        }
+
+        $islandName = $config['islandName'];
+        $propsConfig = $config['islandProps'] ?? null;
+        $pageId = get_the_ID() ?: 0;
+
+        // Resolver props
+        $props = [];
+        if (is_callable($propsConfig)) {
+            // Callback: pasar pageId para que pueda obtener datos dinamicos
+            $props = call_user_func($propsConfig, $pageId);
+            if (!is_array($props)) {
+                $props = [];
+            }
+        } elseif (is_array($propsConfig)) {
+            // Props estaticos
+            $props = $propsConfig;
+        }
+
+        // Renderizar usando ReactIslands
+        if (class_exists('Glory\\Services\\ReactIslands')) {
+            echo \Glory\Services\ReactIslands::render($islandName, $props);
+        } else {
+            echo '<!-- PageManager: ReactIslands no disponible -->';
+        }
+    }
+
+    // Almacena configuraciones de paginas React
+    private static array $reactPageConfigs = [];
+
     public static function register(): void
     {
         add_filter('template_include', [self::class, 'interceptarPlantilla'], 99);

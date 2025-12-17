@@ -2,7 +2,7 @@
 
 **Fecha:** 17 Diciembre 2025  
 **Estado:** ✅ V1 COMPLETADA  
-**Version:** 1.0 (Simple - Bloques Lineales)
+**Version:** 1.1 (Flujo Simplificado)
 
 ---
 
@@ -17,31 +17,113 @@ El **Glory Page Builder** es un sistema modular para crear y editar paginas con 
 - Agregar y eliminar secciones
 - Guardar cambios en WordPress via REST API
 - Completamente opcional por pagina
-- Componentes reutilizables y agnosticos
+- Solo **3 pasos** para crear una pagina nueva
 
 ---
 
-## 2. Guia de Uso Rapido
+## 2. Crear una Pagina React (Solo 3 Pasos)
 
-### 2.1 Usando PageLayout (Recomendado)
+### Paso 1: Crear el Island
 
-`PageLayout` es el componente que envuelve **todas** las paginas. Incluye nav, footer, y opcionalmente PageBuilder.
+Crear componente en `App/React/islands/MiPaginaIsland.tsx`:
 
 ```tsx
 import { PageLayout } from '@/pageBuilder';
 
-function MiPagina({ blocks, isAdmin, saveEndpoint, restNonce }) {
+export function MiPaginaIsland({ siteName }) {
+    return (
+        <PageLayout siteName={siteName} usePageBuilder={false}>
+            <h1>Mi Pagina</h1>
+            <p>Contenido aqui</p>
+        </PageLayout>
+    );
+}
+
+export default MiPaginaIsland;
+```
+
+### Paso 2: Registrar en appIslands.tsx
+
+Agregar import y registro en `App/React/appIslands.tsx`:
+
+```tsx
+import { MiPaginaIsland } from './islands/MiPaginaIsland';
+
+export const appIslands = {
+    // ... otros islands
+    MiPaginaIsland: MiPaginaIsland,
+};
+```
+
+### Paso 3: Agregar en pages.php
+
+Una sola linea en `App/Config/pages.php`:
+
+```php
+PageManager::reactPage('mi-pagina', 'MiPaginaIsland', [
+    'siteName' => 'Mi Sitio'
+]);
+```
+
+**¡Listo!** La pagina estara disponible en `/mi-pagina/`
+
+---
+
+## 3. Opciones de reactPage()
+
+### 3.1 Sin Props
+
+```php
+PageManager::reactPage('about', 'AboutIsland');
+```
+
+### 3.2 Con Props Estaticos
+
+```php
+PageManager::reactPage('about', 'AboutIsland', [
+    'siteName' => 'Mi Sitio',
+    'year' => 2025
+]);
+```
+
+### 3.3 Con Props Dinamicos (Callback)
+
+Para props que dependen de WordPress (como bloques del Page Builder):
+
+```php
+PageManager::reactPage('home', 'HomeIsland', function($pageId) {
+    $blocksJson = get_post_meta($pageId, '_glory_page_blocks', true);
+    $isAdmin = current_user_can('edit_pages');
+    
+    return [
+        'blocks' => $blocksJson ? json_decode($blocksJson, true) : null,
+        'isAdmin' => $isAdmin,
+        'saveEndpoint' => $isAdmin ? rest_url('glory/v1/page-blocks/' . $pageId) : null,
+        'restNonce' => $isAdmin ? wp_create_nonce('wp_rest') : null
+    ];
+});
+```
+
+### 3.4 Con Restriccion de Roles
+
+```php
+PageManager::reactPage('admin-panel', 'AdminIsland', [], ['administrator']);
+```
+
+---
+
+## 4. Pagina CON Page Builder vs SIN Page Builder
+
+### CON Page Builder (editable visualmente)
+
+```tsx
+// Island
+import { PageLayout } from '@/pageBuilder';
+
+export function HomeIsland({ blocks, isAdmin, saveEndpoint, restNonce }) {
     return (
         <PageLayout
-            siteName="Mi Sitio"
-            navLinks={[
-                { text: 'Inicio', href: '/' },
-                { text: 'Precios', href: '#pricing' }
-            ]}
-            socialLinks={[
-                { type: 'twitter', href: '#' },
-                { type: 'github', href: '#' }
-            ]}
+            siteName="Glory"
             blocks={blocks}
             isAdmin={isAdmin}
             saveEndpoint={saveEndpoint}
@@ -51,52 +133,37 @@ function MiPagina({ blocks, isAdmin, saveEndpoint, restNonce }) {
 }
 ```
 
-Esto genera automaticamente:
-- Navigation con logo y links
-- Page Builder con todos los controles de edicion
-- Footer con copyright y links sociales
+```php
+// pages.php - usa callback para props dinamicos
+PageManager::reactPage('home', 'HomeIsland', function($pageId) {
+    // ... obtener bloques de post_meta, nonce, etc.
+});
+```
 
-### 2.2 Pagina Sin Page Builder
+### SIN Page Builder (contenido estatico)
 
 ```tsx
+// Island
 import { PageLayout } from '@/pageBuilder';
 
-function PaginaSimple() {
+export function AboutIsland({ siteName }) {
     return (
-        <PageLayout siteName="Mi Sitio" usePageBuilder={false}>
-            <h1>Contenido personalizado</h1>
-            <p>Esta pagina no usa bloques.</p>
+        <PageLayout siteName={siteName} usePageBuilder={false}>
+            <h1>Sobre Nosotros</h1>
+            <p>Contenido estatico aqui</p>
         </PageLayout>
     );
 }
 ```
 
-### 2.3 Usando PageBuilder Directamente
-
-Si necesitas control total del layout, usa `PageBuilder`:
-
-```tsx
-import { PageBuilder } from '@/pageBuilder';
-
-function MiLayoutCustom({ blocks, isAdmin, saveEndpoint, restNonce }) {
-    return (
-        <div>
-            <MyCustomHeader />
-            
-            <PageBuilder
-                blocks={blocks}
-                isAdmin={isAdmin}
-                saveEndpoint={saveEndpoint}
-                restNonce={restNonce}
-            />
-            
-            <MyCustomFooter />
-        </div>
-    );
-}
+```php
+// pages.php - props simples
+PageManager::reactPage('about', 'AboutIsland', ['siteName' => 'Mi Sitio']);
 ```
 
-### 2.4 Props de PageLayout
+---
+
+## 5. Props de PageLayout
 
 | Prop             | Tipo           | Default   | Descripcion           |
 | ---------------- | -------------- | --------- | --------------------- |
@@ -116,91 +183,22 @@ function MiLayoutCustom({ blocks, isAdmin, saveEndpoint, restNonce }) {
 | `restNonce`      | `string`       | -         | Nonce de WordPress    |
 | `bgColor`        | `string`       | "#050505" | Color de fondo        |
 
-### 2.5 Props de PageBuilder (uso directo)
-
-| Prop                | Tipo          | Default           | Descripcion              |
-| ------------------- | ------------- | ----------------- | ------------------------ |
-| `blocks`            | `BlockData[]` | `[]`              | Bloques iniciales        |
-| `isAdmin`           | `boolean`     | `false`           | Si puede editar          |
-| `saveEndpoint`      | `string`      | `null`            | URL REST para guardar    |
-| `restNonce`         | `string`      | `null`            | Nonce de WordPress       |
-| `disabled`          | `boolean`     | `false`           | Desactivar completamente |
-| `allowedBlockTypes` | `string[]`    | todos             | Limitar tipos de bloque  |
-| `editButtonText`    | `string`      | "Editar Pagina"   | Texto del boton          |
-| `toolbarTitle`      | `string`      | "Editando Pagina" | Titulo del toolbar       |
-
 ---
 
-## 3. Configuracion PHP
+## 6. Crear Bloques Personalizados
 
-### 3.1 Template Basico
-
-```php
-use Glory\Services\ReactIslands;
-
-function miPagina() {
-    $pageId = get_the_ID() ?: 0;
-    
-    // Cargar bloques guardados (si existen)
-    $blocksJson = get_post_meta($pageId, '_glory_page_blocks', true);
-    $blocks = $blocksJson ? json_decode($blocksJson, true) : null;
-    
-    // Verificar permisos
-    $isAdmin = current_user_can('edit_pages');
-    
-    // Endpoint y nonce (solo para admins)
-    $saveEndpoint = $isAdmin ? rest_url('glory/v1/page-blocks/' . $pageId) : null;
-    $restNonce = $isAdmin ? wp_create_nonce('wp_rest') : null;
-    
-    echo ReactIslands::render('MiIsland', [
-        'blocks' => $blocks,
-        'isAdmin' => $isAdmin,
-        'saveEndpoint' => $saveEndpoint,
-        'restNonce' => $restNonce
-    ]);
-}
-```
-
-### 3.2 Pagina Sin Page Builder
-
-```php
-// Simplemente no pasar props de bloques
-function paginaSimple() {
-    echo ReactIslands::render('MiIsland', [
-        'titulo' => 'Mi Pagina',
-        'contenido' => 'Sin bloques'
-    ]);
-}
-```
-
-### 3.3 Desactivar REST API
-
-En `App/Config/control.php`:
-
-```php
-GloryFeatures::disable('pageBuilder');
-```
-
----
-
-## 4. Crear Bloques Personalizados
-
-### 4.1 Estructura de un Bloque
-
-Cada bloque se define en `App/React/blocks/`:
+### 6.1 Estructura de un Bloque
 
 ```tsx
 // App/React/blocks/MiBloque.tsx
 
 import type { BlockComponentProps, BlockDefinition } from '@/pageBuilder';
 
-// Props del bloque
 interface MiBloqueProps {
     titulo: string;
     descripcion: string;
 }
 
-// Componente
 export function MiBloque({ data }: BlockComponentProps<MiBloqueProps>) {
     return (
         <section id="mi-bloque">
@@ -210,7 +208,6 @@ export function MiBloque({ data }: BlockComponentProps<MiBloqueProps>) {
     );
 }
 
-// Definicion para el registro
 export const miBloqueDefinition: BlockDefinition<MiBloqueProps> = {
     type: 'miBloque',
     label: 'Mi Bloque',
@@ -227,7 +224,7 @@ export const miBloqueDefinition: BlockDefinition<MiBloqueProps> = {
 };
 ```
 
-### 4.2 Registrar Bloques
+### 6.2 Registrar Bloques
 
 En `App/React/blocks/index.ts`:
 
@@ -240,7 +237,7 @@ export function registerAppBlocks() {
 }
 ```
 
-### 4.3 Tipos de Campo Editables
+### 6.3 Tipos de Campo Editables
 
 | Tipo       | Descripcion                        |
 | ---------- | ---------------------------------- |
@@ -252,168 +249,93 @@ export function registerAppBlocks() {
 | `icon`     | Selector de icono Lucide           |
 | `array`    | Lista de items con campos anidados |
 
-Ejemplo de campo array:
-
-```tsx
-editableFields: [
-    {
-        key: 'items',
-        label: 'Items',
-        type: 'array',
-        itemFields: [
-            { key: 'titulo', label: 'Titulo', type: 'text' },
-            { key: 'descripcion', label: 'Descripcion', type: 'textarea' }
-        ]
-    }
-]
-```
-
 ---
 
-## 5. Arquitectura
+## 7. Arquitectura
 
-### 5.1 Separacion Glory / App
+### 7.1 Separacion Glory / App
 
 ```
 Glory/assets/react/src/pageBuilder/   <- AGNOSTICO (no tocar)
-├── types.ts                          # Tipos TypeScript
-├── BlockRegistry.ts                  # Registro global
-├── BlockRenderer.tsx                 # Renderizador
-├── BlockEditorModal.tsx              # Modal de edicion
+├── types.ts
+├── BlockRegistry.ts
+├── BlockRenderer.tsx
+├── BlockEditorModal.tsx
 ├── components/
-│   ├── PageBuilder.tsx               # Componente de bloques
-│   ├── PageBuilderToolbar.tsx        # Toolbar de edicion
-│   ├── EditModeToggle.tsx            # Boton flotante
-│   └── AddBlockPanel.tsx             # Panel agregar bloque
+│   ├── PageBuilder.tsx
+│   ├── PageBuilderToolbar.tsx
+│   ├── EditModeToggle.tsx
+│   └── AddBlockPanel.tsx
 ├── layouts/
-│   └── PageLayout.tsx                # Layout con nav/footer/builder
-└── index.ts                          # Exportaciones
+│   └── PageLayout.tsx
+└── index.ts
 
 App/React/                            <- ESPECIFICO DEL PROYECTO
 ├── blocks/
 │   ├── HeroBlock.tsx
 │   ├── FeaturesBlock.tsx
-│   ├── PricingBlock.tsx
-│   └── index.ts                      # Registro de bloques
-└── islands/
-    └── HomeIsland.tsx                # Solo configura PageLayout
+│   └── index.ts
+├── islands/
+│   ├── HomeIsland.tsx
+│   └── AboutIsland.tsx
+└── appIslands.tsx
 ```
 
-### 5.2 Flujo de Datos
+### 7.2 Flujo de Datos
 
 ```
-WordPress (post_meta)
-    ↓ JSON
-PHP (template)
-    ↓ props
-React Island
+App/Config/pages.php
+    ↓ reactPage()
+PageManager (auto-genera handler)
     ↓
-PageBuilder Component
+ReactIslands::render()
     ↓
-BlockRenderer ←── BlockRegistry
+React Island Component
     ↓
-[Bloque1] [Bloque2] [Bloque3]
-    ↓ (modo edicion)
-Cambios → REST API → WordPress
+PageLayout (nav + contenido + footer)
+    ↓
+PageBuilder (si hay bloques)
 ```
 
 ---
 
-## 6. REST API
-
-### 6.1 Endpoints
+## 8. REST API
 
 | Metodo | Endpoint                             | Descripcion     |
 | ------ | ------------------------------------ | --------------- |
 | GET    | `/wp-json/glory/v1/page-blocks/{id}` | Obtener bloques |
 | POST   | `/wp-json/glory/v1/page-blocks/{id}` | Guardar bloques |
 
-### 6.2 Permisos
+---
 
-- **GET**: Publico (para SSR)
-- **POST**: Requiere `edit_post` en la pagina
+## 9. Comparacion de Metodos
 
-### 6.3 Formato de Datos
+| Metodo               | Uso                   | Template PHP  |
+| -------------------- | --------------------- | ------------- |
+| `reactPage()`        | Paginas React simples | Auto-generado |
+| `define()`           | Logica PHP compleja   | Manual        |
+| `defineWithParent()` | Paginas hijas         | Manual        |
 
-```json
-{
-    "blocks": [
-        {
-            "id": "hero-1",
-            "type": "hero",
-            "props": { ... }
-        }
-    ]
-}
+**Recomendacion:** Usa `reactPage()` siempre que sea posible.
+
+---
+
+## 10. Troubleshooting
+
+### El slug debe ser minusculas con guiones
+
+```php
+// ❌ Incorrecto
+PageManager::reactPage('homeStatic', ...);  // Mayuscula
+
+// ✅ Correcto
+PageManager::reactPage('home-static', ...); // Solo minusculas y guiones
 ```
 
----
+### Island no carga
 
-## 7. UI de Edicion
+Verificar que el island esta registrado en `appIslands.tsx`.
 
-### 7.1 Modo Vista
+### Bloques no registrados (warning en build)
 
-- Usuario normal ve la pagina sin controles
-- Admin ve boton flotante "Editar Pagina"
-
-### 7.2 Modo Edicion
-
-- Toolbar fijo arriba con "Salir" y "Guardar"
-- Bloques con borde punteado
-- Click en bloque lo selecciona
-- Controles: Mover ↑↓, Editar, Eliminar
-- Panel inferior para agregar bloques
-
-### 7.3 Modal de Edicion
-
-- Abre al hacer click en "Editar"
-- Campos dinamicos segun `editableFields`
-- Botones Cancelar y Guardar
-
----
-
-## 8. Notas Tecnicas
-
-### 8.1 SSR Compatible
-
-El Page Builder funciona con Server-Side Rendering. Los bloques se pre-renderizan en el servidor.
-
-### 8.2 Registro de Bloques en Cliente
-
-Los bloques se registran en el cliente, no en SSR. Por eso aparecen warnings de "bloque no registrado" durante el build - es normal.
-
-### 8.3 Validacion de Bloques
-
-Cada bloque en el REST API se valida:
-- Debe tener `id` (string)
-- Debe tener `type` (string)
-- Debe tener `props` (object)
-
----
-
-## 9. Fases de Implementacion
-
-### Fase 1: Infraestructura ✅
-- types.ts, BlockRegistry.ts, BlockRenderer.tsx
-
-### Fase 2: Bloques App ✅
-- HeroBlock, FeaturesBlock, PricingBlock
-
-### Fase 3: Modo Edicion ✅
-- PageBuilder, Toolbar, Modal
-
-### Fase 4: Persistencia ✅
-- REST API, Guardado con nonce
-
-### Fase 5: Refactorizacion ✅
-- Componentes reutilizables en Glory
-- HomeIsland simplificado
-
----
-
-## 10. Escalabilidad Futura (V2+)
-
-- Sistema de Filas/Columnas
-- Drag & Drop con @dnd-kit
-- Bloques Anidados
-- Templates predefinidos
+Es normal durante SSG. Los bloques se registran en el cliente.
