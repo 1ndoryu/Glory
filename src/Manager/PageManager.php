@@ -11,7 +11,7 @@ class PageManager
     private const CLAVE_META_HASH = '_glory_content_hash';
     private const CLAVE_MODO_CONTENIDO = '_glory_content_mode'; // 'code' | 'editor'
     private static array $paginasDefinidas = [];
-    private static ?string $funcionParaRenderizar = null;
+    private static mixed $funcionParaRenderizar = null;
     private static string $modoPorDefecto = 'code'; // 'code' | 'editor'
     private static array $defaultSeoMap = [];
 
@@ -309,7 +309,7 @@ class PageManager
         return $plantilla;
     }
 
-    public static function getFuncionParaRenderizar(): ?string
+    public static function getFuncionParaRenderizar(): mixed
     {
         return self::$funcionParaRenderizar;
     }

@@ -30,63 +30,106 @@ Glory permite decidir **pagina por pagina** que tecnologia usar. Todo convive en
 
 ## Guia Rapida: Crear Pagina React
 
-### Paso 1: Crear el Componente
+### Metodo Simplificado (Solo 3 Pasos)
 
-Crea tu componente en `App/React/islands/MiPagina.tsx`:
+#### Paso 1: Crear el Componente
+
+Crea tu componente en `App/React/islands/MiPaginaIsland.tsx`:
 
 ```tsx
-import { useState } from 'react';
+import { PageLayout } from '@/pageBuilder';
 
-interface MiPaginaProps {
-    titulo?: string;
-    contenido?: string;
+interface MiPaginaIslandProps {
+    siteName?: string;
 }
 
-export function MiPagina({ 
-    titulo = 'Mi Pagina', 
-    contenido = 'Contenido por defecto' 
-}: MiPaginaProps): JSX.Element {
-    const [contador, setContador] = useState(0);
-
+export function MiPaginaIsland({ siteName = 'Glory' }: MiPaginaIslandProps): JSX.Element {
     return (
-        <div className="min-h-screen bg-[#050505] text-white">
+        <PageLayout siteName={siteName} usePageBuilder={false}>
             <div className="max-w-[1200px] mx-auto px-6 py-20">
-                <h1 className="text-5xl font-bold mb-4">{titulo}</h1>
-                <p className="text-gray-400 mb-8">{contenido}</p>
-                <button 
-                    onClick={() => setContador(c => c + 1)}
-                    className="px-6 py-3 bg-white text-black rounded-lg"
-                >
-                    Clicks: {contador}
-                </button>
+                <h1 className="text-5xl font-bold mb-4">Mi Pagina</h1>
+                <p className="text-gray-400">Contenido aqui</p>
             </div>
-        </div>
+        </PageLayout>
     );
 }
 
-export default MiPagina;
+export default MiPaginaIsland;
 ```
 
-### Paso 2: Registrar en appIslands.tsx
+> **Tip:** Usa `PageLayout` para tener nav y footer automaticamente.
+> Con `usePageBuilder={false}` desactivas los bloques editables.
 
-Edita `App/React/appIslands.tsx` para importar y registrar tu componente:
+#### Paso 2: Registrar en appIslands.tsx
+
+Edita `App/React/appIslands.tsx`:
 
 ```tsx
-// Importar tu nueva isla
-import { MiPagina } from './islands/MiPagina';
+import { MiPaginaIsland } from './islands/MiPaginaIsland';
 
-// Agregar al registro
 export const appIslands = {
-    HomeIsland: HomeIsland,
-    MiPagina: MiPagina,  // <-- Agregar aqui
+    // ... otros islands
+    MiPaginaIsland: MiPaginaIsland,
 };
 ```
 
-> **IMPORTANTE:** NO modificar `Glory/assets/react/src/main.tsx` directamente. 
-> Glory debe mantenerse **agnostico** del proyecto. Todas las islas del proyecto
-> se registran en `App/React/appIslands.tsx`.
+#### Paso 3: Una Linea en pages.php
 
-### Paso 3: Crear la Funcion PHP
+Edita `App/Config/pages.php`:
+
+```php
+// Pagina simple con props estaticos
+PageManager::reactPage('mi-pagina', 'MiPaginaIsland', [
+    'siteName' => 'Mi Sitio'
+]);
+```
+
+**¡Listo!** Tu pagina estara disponible en `/mi-pagina/`
+
+---
+
+### Opciones de reactPage()
+
+```php
+// Sin props
+PageManager::reactPage('about', 'AboutIsland');
+
+// Con props estaticos
+PageManager::reactPage('about', 'AboutIsland', [
+    'siteName' => 'Mi Sitio',
+    'year' => 2025
+]);
+
+// Con props dinamicos (callback)
+PageManager::reactPage('home', 'HomeIsland', function($pageId) {
+    $blocksJson = get_post_meta($pageId, '_glory_page_blocks', true);
+    return [
+        'blocks' => $blocksJson ? json_decode($blocksJson, true) : null,
+        'isAdmin' => current_user_can('edit_pages'),
+        'saveEndpoint' => rest_url('glory/v1/page-blocks/' . $pageId),
+        'restNonce' => wp_create_nonce('wp_rest')
+    ];
+});
+
+// Con restriccion de roles
+PageManager::reactPage('admin', 'AdminIsland', [], ['administrator']);
+```
+
+---
+
+### Metodo Tradicional (4 Pasos - Para Casos Complejos)
+
+Usa este metodo cuando necesites logica PHP muy compleja que no encaja en un callback.
+
+#### Paso 1: Crear Componente
+
+Igual que el metodo simplificado.
+
+#### Paso 2: Registrar en appIslands.tsx
+
+Igual que el metodo simplificado.
+
+#### Paso 3: Crear Funcion PHP
 
 Crea `App/Templates/pages/mi-pagina.php`:
 
@@ -97,50 +140,32 @@ use Glory\Services\ReactIslands;
 
 function miPagina()
 {
-    // Datos dinamicos desde WordPress
-    $titulo = get_the_title() ?: 'Mi Pagina';
-    $contenido = get_bloginfo('description');
-
-    // Renderizar isla React
-    echo ReactIslands::render('MiPagina', [
-        'titulo' => $titulo,
-        'contenido' => $contenido
+    // Logica PHP compleja aqui
+    $datos = obtenerDatosComplejos();
+    
+    echo ReactIslands::render('MiPaginaIsland', [
+        'datos' => $datos
     ]);
 }
 ```
 
-### Paso 4: Definir en pages.php
-
-Edita `App/Config/pages.php`:
+#### Paso 4: Definir en pages.php
 
 ```php
-// Registrar como React Fullpage (100% React, sin header/footer WP)
 PageManager::registerReactFullPages(['mi-pagina']);
-
-// Definir la pagina con su funcion
 PageManager::define('mi-pagina', 'miPagina');
 ```
 
-### Paso 5: Agregar Mock Props (Opcional - para SSG)
+---
 
-Edita `Glory/assets/react/scripts/prerender.ts`:
+### Comparacion de Metodos
 
-```typescript
-const mockProps = {
-    // ... otros
-    MiPagina: {
-        titulo: 'Mi Pagina',
-        contenido: 'Contenido de ejemplo'
-    }
-};
-```
+| Metodo        | Pasos | Archivo PHP   | Cuando Usar             |
+| ------------- | ----- | ------------- | ----------------------- |
+| `reactPage()` | 3     | Auto-generado | 90% de los casos        |
+| `define()`    | 4     | Manual        | Logica PHP muy compleja |
 
-### Paso 6: Compilar
-
-```bash
-cd Glory/assets/react
-npm run build
-```
+**Recomendacion:** Siempre empieza con `reactPage()`. Solo usa `define()` si realmente necesitas un archivo PHP dedicado.
 
 ---
 
@@ -328,6 +353,34 @@ Glory mantiene **100% compatibilidad** con proyectos que NO usan React:
 
 ## Referencia Tecnica
 
+### PageManager::reactPage() ⭐ RECOMENDADO
+
+Define una pagina React en una sola linea (auto-genera handler PHP):
+
+```php
+PageManager::reactPage(
+    string $slug,              // Slug de la URL (ej: 'about', 'home-static')
+    string $islandName,        // Nombre del Island React (ej: 'AboutIsland')
+    array|callable|null $props, // Props estaticos o callback
+    array $roles = []          // Roles requeridos (opcional)
+);
+```
+
+**Ejemplos:**
+
+```php
+// Simple
+PageManager::reactPage('about', 'AboutIsland');
+
+// Con props estaticos
+PageManager::reactPage('about', 'AboutIsland', ['siteName' => 'Mi Sitio']);
+
+// Con callback para props dinamicos
+PageManager::reactPage('home', 'HomeIsland', function($pageId) {
+    return ['blocks' => get_post_meta($pageId, '_blocks', true)];
+});
+```
+
 ### ReactIslands::render()
 
 ```php
@@ -347,9 +400,11 @@ Registra slugs como paginas React Fullpage (sin header/footer WP):
 PageManager::registerReactFullPages(['home', 'servicios', 'contacto']);
 ```
 
+> **Nota:** `reactPage()` hace esto automaticamente.
+
 ### PageManager::define()
 
-Define una pagina gestionada:
+Define una pagina gestionada con archivo PHP manual:
 
 ```php
 PageManager::define(
@@ -363,3 +418,4 @@ PageManager::define(
 ---
 
 Consulta `SSR_ARCHITECTURE.md` para detalles tecnicos sobre las limitaciones y mitigaciones del SSG.
+Consulta `PAGE_BUILDER_PLAN.md` para documentacion del sistema de bloques editables.
