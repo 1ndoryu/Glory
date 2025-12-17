@@ -21,28 +21,39 @@ import {createRoot, hydrateRoot} from 'react-dom/client';
 // Importar estilos de Tailwind CSS
 import './index.css';
 
-// ===============================================
-// COMPONENTES GLORY (Genericos, reutilizables)
-// Estos componentes vienen con Glory y sirven como ejemplos
-// ===============================================
+/*
+ * COMPONENTES GLORY (Genericos, reutilizables)
+ * Estos componentes vienen con Glory y sirven como ejemplos.
+ * NO agregar componentes especificos del proyecto aqui.
+ */
 import {ExampleIsland} from './islands/ExampleIsland';
 
-// ===============================================
-// COMPONENTES APP (Especificos de este proyecto)
-// Importar desde App/React/ via alias @app
-// ===============================================
-import {HomeIsland} from '@app/islands/HomeIsland';
+/*
+ * COMPONENTES APP (Especificos del proyecto)
+ *
+ * IMPORTANTE: Glory debe mantenerse AGNOSTICO del proyecto.
+ * Los componentes del proyecto se importan desde App/React/appIslands.tsx
+ *
+ * Para agregar nuevas islas al proyecto:
+ * 1. Crear componente en App/React/islands/NombreIsla.tsx
+ * 2. Registrar en App/React/appIslands.tsx
+ * 3. Crear funcion PHP en App/Templates/pages/nombre-isla.php
+ * 4. Definir pagina en App/Config/pages.php
+ *
+ * NO modificar este archivo para agregar islas del proyecto.
+ */
+import appIslands from '@app/appIslands';
 
-// Mapa de componentes disponibles
-// La clave es el valor de data-island, el valor es el componente React
+/*
+ * Mapa de componentes disponibles
+ * Combina islas de Glory (ejemplos) con islas del proyecto (App)
+ */
 const islandComponents: Record<string, React.ComponentType<Record<string, unknown>>> = {
-    // Componentes Glory (genericos - ejemplos)
+    // Componentes Glory (genericos - NO MODIFICAR)
     ExampleIsland: ExampleIsland,
 
-    // Componentes App (especificos del proyecto)
-    HomeIsland: HomeIsland
-
-    // Agregar aqui mas componentes de tu proyecto
+    // Componentes del proyecto (importados desde App/React/appIslands.tsx)
+    ...appIslands
 };
 
 /**

@@ -18,6 +18,7 @@ use Glory\Utility\AssetsUtility;
 use Glory\Admin\SeoMetabox;
 use Glory\Seo\SeoFrontendRenderer;
 use Glory\Plugins\AmazonProduct\AmazonProductPlugin;
+use Glory\Api\PageBlocksController;
 
 /**
  * Clase principal de inicialización del framework Glory.
@@ -107,6 +108,15 @@ class Setup
                     fn() => SeoFrontendRenderer::register(),
                     'SeoFrontendRenderer.register',
                     'seo'
+                );
+            }
+
+            /* Registrar REST API del Page Builder */
+            if (GloryFeatures::isActive('pageBuilder') !== false) {
+                PerformanceProfiler::medirFuncion(
+                    fn() => PageBlocksController::register(),
+                    'PageBlocksController.register',
+                    'api'
                 );
             }
         }

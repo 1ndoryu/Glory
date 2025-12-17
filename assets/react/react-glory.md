@@ -67,20 +67,24 @@ export function MiPagina({
 export default MiPagina;
 ```
 
-### Paso 2: Registrar en main.tsx
+### Paso 2: Registrar en appIslands.tsx
 
-Edita `Glory/assets/react/src/main.tsx` para importar y registrar tu componente:
+Edita `App/React/appIslands.tsx` para importar y registrar tu componente:
 
 ```tsx
-// COMPONENTES APP (Especificos del proyecto)
-import {MiPagina} from '@app/islands/MiPagina';
+// Importar tu nueva isla
+import { MiPagina } from './islands/MiPagina';
 
-const islandComponents = {
-    ExampleIsland: ExampleIsland,
+// Agregar al registro
+export const appIslands = {
     HomeIsland: HomeIsland,
     MiPagina: MiPagina,  // <-- Agregar aqui
 };
 ```
+
+> **IMPORTANTE:** NO modificar `Glory/assets/react/src/main.tsx` directamente. 
+> Glory debe mantenerse **agnostico** del proyecto. Todas las islas del proyecto
+> se registran en `App/React/appIslands.tsx`.
 
 ### Paso 3: Crear la Funcion PHP
 
@@ -274,13 +278,12 @@ npm run dev
 ## Workflow de Produccion
 
 ```bash
-# 1. Compilar para produccion
-cd Glory/assets/react
+# 1. Compilar para produccion (desde /glory)
 npm run build
 
 # 2. Verificar archivos generados
-# - dist/assets/*.js, *.css
-# - dist/ssg/*.html
+# - Glory/assets/react/dist/assets/*.js, *.css
+# - Glory/assets/react/dist/ssg/*.html
 
 # 3. Subir al hosting via FTP/SFTP
 # Subir: Glory/assets/react/dist/ -> wp-content/themes/glory/Glory/assets/react/dist/

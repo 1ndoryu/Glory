@@ -12,6 +12,14 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@editorjs/delimiter": "^1.4.2",
+        "@editorjs/editorjs": "^2.31.0",
+        "@editorjs/embed": "^2.7.7",
+        "@editorjs/header": "^2.8.8",
+        "@editorjs/image": "^2.10.3",
+        "@editorjs/list": "^2.0.9",
+        "@editorjs/paragraph": "^2.11.7",
+        "@editorjs/quote": "^2.7.6",
         "framer-motion": "^12.23.26",
         "lucide-react": "^0.559.0",
         "react": "^18.3.1",

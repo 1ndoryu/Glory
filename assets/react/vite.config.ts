@@ -79,7 +79,7 @@ export default defineConfig(({mode}) => {
             },
             // Asegurar que los modulos se resuelvan desde node_modules de Glory
             // Esto permite que App/React use las dependencias instaladas aqui
-            dedupe: ['react', 'react-dom', 'lucide-react', 'framer-motion']
+            dedupe: ['react', 'react-dom', 'lucide-react', 'framer-motion', '@editorjs/editorjs', '@editorjs/header', '@editorjs/paragraph', '@editorjs/list', '@editorjs/quote', '@editorjs/delimiter', '@editorjs/image', '@editorjs/embed']
         }
     };
 });
