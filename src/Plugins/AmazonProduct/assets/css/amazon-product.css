@@ -741,14 +741,32 @@ a.amazon-product-card {
     color: #737373;
     text-decoration: none;
     transition: all 0.2s;
+    /* Reset estilos de boton */
+    background: transparent;
+    border: 1px solid var(--amazon-border);
+    cursor: pointer;
+    font-family: inherit;
+    padding: 0;
 }
 
-.amazon-pagination .page-numbers:hover {
+.amazon-pagination .page-numbers:hover:not(:disabled) {
     background: #f5f5f5;
     color: #171717;
+    border-color: #d4d4d4;
 }
 
 .amazon-pagination .page-numbers.current {
     background: #171717;
     color: #fff;
+    border-color: #171717;
+    cursor: default;
+}
+
+.amazon-pagination .page-numbers:disabled {
+    cursor: default;
+}
+
+.amazon-pagination .page-numbers:focus-visible {
+    outline: 2px solid #171717;
+    outline-offset: 2px;
 }

@@ -224,7 +224,10 @@ class GridRenderer
     }
 
     /**
-     * Renderiza los enlaces de paginacion.
+     * Renderiza los botones de paginacion.
+     * 
+     * Nota: Usamos <button> en lugar de <a href="#"> para evitar conflictos
+     * con scripts de navegacion AJAX que interceptan enlaces.
      */
     private function renderPagination(int $totalPages, int $currentPage): void
     {
@@ -232,10 +235,17 @@ class GridRenderer
             return;
         }
     ?>
-        <div class="amazon-pagination">
+        <div class="amazon-pagination" role="navigation" aria-label="Paginacion de productos">
             <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <?php $class = ($i == $currentPage) ? 'page-numbers current' : 'page-numbers'; ?>
-                <a href="#" class="<?php echo $class; ?>" data-page="<?php echo $i; ?>"><?php echo $i; ?></a>
+                <?php
+                $isCurrent = ($i == $currentPage);
+                $class = $isCurrent ? 'page-numbers current' : 'page-numbers';
+                ?>
+                <button
+                    type="button"
+                    class="<?php echo $class; ?>"
+                    data-page="<?php echo $i; ?>"
+                    <?php echo $isCurrent ? 'aria-current="page" disabled' : ''; ?>><?php echo $i; ?></button>
             <?php endfor; ?>
         </div>
 <?php
