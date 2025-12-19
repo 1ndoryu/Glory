@@ -36,7 +36,7 @@ class GridRenderer
 
         /*
          * Si hay palabras de exclusion O terminos de busqueda multiples,
-         * necesitamos traer TODOS los productos primero, aplicar filtros 
+         * necesitamos traer TODOS los productos primero, aplicar filtros
          * en PHP, y luego paginar manualmente.
          */
         if (!empty($excludeWords) || !empty($searchTerms)) {
@@ -129,6 +129,7 @@ class GridRenderer
         }
 
         // Aplicar paginacion manual
+        $limit = max(1, $limit); // Proteccion contra division por cero
         $offset = ($paged - 1) * $limit;
         $pagedPosts = array_slice($filteredPosts, $offset, $limit);
         $totalPages = (int) ceil($totalPosts / $limit);

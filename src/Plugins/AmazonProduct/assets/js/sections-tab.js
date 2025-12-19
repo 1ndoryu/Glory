@@ -18,6 +18,7 @@
             $(document).on('click', '.seccionBotonPreview', this.previewSection);
             $(document).on('click', '.seccionPreviewCerrar', this.closePreview);
             $(document).on('click', '.seccionPreviewModal', this.closePreviewOnBackdrop);
+            $(document).on('click', '.seccionPreviewPagina', this.loadPreviewPage);
         },
 
         toggleSection: function () {
@@ -177,23 +178,14 @@
         },
 
         showPreviewModal: function (slug, data) {
-            let productsHtml = '';
-
-            data.products.forEach(function (product) {
-                productsHtml += `
-                    <div class="seccionPreviewProducto">
-                        <img src="${product.image || ''}" alt="">
-                        <div class="titulo">${product.title}</div>
-                        <div class="precio">${product.price ? product.price + ' €' : ''}</div>
-                    </div>
-                `;
-            });
+            const productsHtml = SectionsTab.buildProductsGrid(data.products);
+            const paginationHtml = SectionsTab.buildPagination(data);
 
             const showing = data.showing || data.products.length;
             const total = data.total || showing;
 
             const modalHtml = `
-                <div class="seccionPreviewModal">
+                <div class="seccionPreviewModal" data-section="${slug}">
                     <div class="seccionPreviewContenido">
                         <div class="seccionPreviewCabecera">
                             <h4>Preview: ${slug}</h4>
@@ -203,11 +195,84 @@
                         <div class="seccionPreviewGrid">
                             ${productsHtml || '<p>No hay productos que mostrar</p>'}
                         </div>
+                        ${paginationHtml}
                     </div>
                 </div>
             `;
 
             $('body').append(modalHtml);
+        },
+
+        buildProductsGrid: function (products) {
+            let html = '';
+            products.forEach(function (product) {
+                html += `
+                    <div class="seccionPreviewProducto">
+                        <img src="${product.image || ''}" alt="">
+                        <div class="titulo">${product.title}</div>
+                        <div class="precio">${product.price ? product.price + ' EUR' : ''}</div>
+                    </div>
+                `;
+            });
+            return html;
+        },
+
+        buildPagination: function (data) {
+            if (!data.totalPages || data.totalPages <= 1) {
+                return '';
+            }
+
+            let pagesHtml = '';
+            for (let i = 1; i <= data.totalPages; i++) {
+                const activeClass = i === data.paged ? 'seccionPreviewPaginaActiva' : '';
+                pagesHtml += `<button class="seccionPreviewPagina ${activeClass}" data-page="${i}">${i}</button>`;
+            }
+
+            return `
+                <div class="seccionPreviewPaginacion">
+                    ${pagesHtml}
+                </div>
+            `;
+        },
+
+        loadPreviewPage: function () {
+            const $button = $(this);
+            const page = $button.data('page');
+            const $modal = $button.closest('.seccionPreviewModal');
+            const slug = $modal.data('section');
+
+            $modal.find('.seccionPreviewGrid').html('<div class="seccionPreviewCargando">Cargando...</div>');
+
+            $.ajax({
+                url: glorySections.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'glory_preview_section',
+                    nonce: glorySections.nonce,
+                    section_slug: slug,
+                    paged: page
+                },
+                success: function (response) {
+                    if (response.success) {
+                        const productsHtml = SectionsTab.buildProductsGrid(response.data.products);
+                        $modal.find('.seccionPreviewGrid').html(productsHtml || '<p>No hay productos que mostrar</p>');
+
+                        // Actualizar conteo
+                        const showing = response.data.showing || 0;
+                        const total = response.data.total || 0;
+                        $modal.find('.seccionPreviewConteo').text(`Mostrando ${showing} de ${total} productos`);
+
+                        // Actualizar paginacion activa
+                        $modal.find('.seccionPreviewPagina').removeClass('seccionPreviewPaginaActiva');
+                        $modal.find(`.seccionPreviewPagina[data-page="${page}"]`).addClass('seccionPreviewPaginaActiva');
+                    } else {
+                        $modal.find('.seccionPreviewGrid').html('<p>Error al cargar productos</p>');
+                    }
+                },
+                error: function () {
+                    $modal.find('.seccionPreviewGrid').html('<p>Error de conexion</p>');
+                }
+            });
         },
 
         closePreview: function () {

@@ -482,3 +482,46 @@
         flex-wrap: wrap;
     }
 }
+
+/* 
+ * Paginacion del preview 
+ */
+.seccionPreviewPaginacion {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 16px 20px;
+    border-top: 1px solid #eee;
+    background: #f9f9f9;
+}
+
+.seccionPreviewPagina {
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s ease;
+}
+
+.seccionPreviewPagina:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.seccionPreviewPagina.seccionPreviewPaginaActiva {
+    background: #667eea;
+    border-color: #667eea;
+    color: #fff;
+}
+
+.seccionPreviewCargando {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    font-size: 14px;
+}

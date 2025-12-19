@@ -282,13 +282,13 @@ class SectionManager
         }
         wp_reset_postdata();
 
-        // Aplicar filtro de busqueda OR (si hay terminos multiples)
+        // Aplicar filtro de busqueda OR
         $searchTerms = $queryBuilder->getSearchTerms($params);
         if (!empty($searchTerms)) {
             $posts = \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder::filterBySearchTerms($posts, $searchTerms);
         }
 
-        // Aplicar filtro de exclusion de palabras
+        // Aplicar filtro de exclusion
         $excludeWords = $queryBuilder->getExcludeWords($params);
         if (!empty($excludeWords)) {
             $posts = \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder::filterExcludedPosts($posts, $excludeWords);

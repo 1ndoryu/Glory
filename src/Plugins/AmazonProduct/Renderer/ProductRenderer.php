@@ -151,7 +151,6 @@ class ProductRenderer
      * 
      * Corregido: 
      * - Aplica el filtro de exclusion de palabras para obtener el conteo real.
-     * - Aplica el filtro de busqueda multiple (OR) para obtener conteo real.
      * - Cuando pagination=0, muestra cuantos productos son visibles (respetando limit).
      * 
      * @param array $atts Atributos del shortcode
@@ -179,7 +178,7 @@ class ProductRenderer
             }
             wp_reset_postdata();
 
-            // Aplicar filtro de busqueda OR (si hay terminos)
+            // Aplicar filtro de busqueda OR
             if (!empty($searchTerms)) {
                 $posts = QueryBuilder::filterBySearchTerms($posts, $searchTerms);
             }

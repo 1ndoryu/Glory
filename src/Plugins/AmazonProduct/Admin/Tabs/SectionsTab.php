@@ -348,12 +348,7 @@ class SectionsTab implements TabInterface
                 $value = sanitize_text_field($_POST[$field]);
                 $defaultValue = $defaults[$field] ?? '';
 
-                /* 
-                 * Si el valor es diferente al default, guardarlo como override.
-                 * Esto incluye cuando el usuario borra el campo (valor vacio),
-                 * para que el default no reaparezca.
-                 */
-                if ($value !== $defaultValue) {
+                if ($value !== '' && $value !== $defaultValue) {
                     $overrides[$field] = $value;
                 }
             }
@@ -418,6 +413,9 @@ class SectionsTab implements TabInterface
             wp_send_json_error(['message' => 'Seccion no especificada']);
         }
 
+        $paged = intval($_POST['paged'] ?? 1);
+        $perPage = 12;
+
         $manager = new SectionManager();
         $section = $manager->get($slug);
 
@@ -428,33 +426,68 @@ class SectionsTab implements TabInterface
         $config = $section->getEffectiveConfig();
         $excludedIds = $section->getExcludedIds();
 
-        $params = array_merge($config, [
-            'limit' => intval($config['limit'] ?? 12),
-            'paged' => 1,
-            '_excluded_ids' => $excludedIds,
-        ]);
-
         $queryBuilder = new \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder();
-        $query = $queryBuilder->build($params);
 
-        $posts = [];
-        while ($query->have_posts()) {
-            $query->the_post();
-            $posts[] = get_post();
-        }
-        wp_reset_postdata();
+        /* 
+         * Verificar si hay filtros que requieren traer todos los productos.
+         * Esto incluye: terminos de busqueda multiples (OR) o palabras de exclusion.
+         */
+        $searchTerms = $queryBuilder->getSearchTerms($config);
+        $excludeWords = $queryBuilder->getExcludeWords($config);
+        $needsPhpFiltering = !empty($searchTerms) || !empty($excludeWords);
 
-        $excludeWords = $queryBuilder->getExcludeWords($params);
-        $searchTerms = $queryBuilder->getSearchTerms($params);
+        if ($needsPhpFiltering) {
+            // Traer TODOS los productos para filtrar en PHP
+            $params = array_merge($config, [
+                'limit' => -1,
+                'paged' => 1,
+                '_excluded_ids' => $excludedIds,
+            ]);
 
-        // Aplicar filtro de busqueda OR (si hay terminos multiples)
-        if (!empty($searchTerms)) {
-            $posts = \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder::filterBySearchTerms($posts, $searchTerms);
-        }
+            $query = $queryBuilder->build($params);
 
-        // Aplicar filtro de exclusion de palabras
-        if (!empty($excludeWords)) {
-            $posts = \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder::filterExcludedPosts($posts, $excludeWords);
+            $allPosts = [];
+            while ($query->have_posts()) {
+                $query->the_post();
+                $allPosts[] = get_post();
+            }
+            wp_reset_postdata();
+
+            // Aplicar filtro de busqueda OR
+            if (!empty($searchTerms)) {
+                $allPosts = \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder::filterBySearchTerms($allPosts, $searchTerms);
+            }
+
+            // Aplicar filtro de exclusion
+            if (!empty($excludeWords)) {
+                $allPosts = \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder::filterExcludedPosts($allPosts, $excludeWords);
+            }
+
+            $totalCount = count($allPosts);
+            $totalPages = $totalCount > 0 ? (int) ceil($totalCount / $perPage) : 0;
+
+            // Aplicar paginacion manual
+            $offset = ($paged - 1) * $perPage;
+            $posts = array_slice($allPosts, $offset, $perPage);
+        } else {
+            // Sin filtros PHP, usar paginacion nativa de WP
+            $params = array_merge($config, [
+                'limit' => $perPage,
+                'paged' => $paged,
+                '_excluded_ids' => $excludedIds,
+            ]);
+
+            $query = $queryBuilder->build($params);
+
+            $posts = [];
+            while ($query->have_posts()) {
+                $query->the_post();
+                $posts[] = get_post();
+            }
+
+            $totalCount = $query->found_posts;
+            $totalPages = $query->max_num_pages;
+            wp_reset_postdata();
         }
 
         $products = [];
@@ -468,12 +501,13 @@ class SectionsTab implements TabInterface
             ];
         }
 
-        $totalCount = $manager->getProductCount($slug);
-
         wp_send_json_success([
             'products' => $products,
             'total' => $totalCount,
             'showing' => count($products),
+            'paged' => $paged,
+            'totalPages' => $totalPages,
+            'perPage' => $perPage,
         ]);
     }
 

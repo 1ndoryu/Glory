@@ -90,33 +90,11 @@ class QueryBuilder
 
     /**
      * Filtro de busqueda por texto en titulo.
-     * 
-     * Soporta multiples terminos separados por coma para busqueda OR.
-     * Ejemplo: "accesorio,grip,pulsera" buscara productos que contengan
-     * cualquiera de esas palabras en el titulo.
      */
     private function applySearchFilter(array $args, array $params): array
     {
-        if (empty($params['search'])) {
-            return $args;
-        }
-
-        $search = $params['search'];
-
-        /* 
-         * Si hay comas, hacer busqueda OR con multiples terminos.
-         * Guardamos los terminos para filtrar post-query ya que WP_Query
-         * no soporta busqueda OR en titulo de forma nativa.
-         */
-        if (strpos($search, ',') !== false) {
-            $terms = array_map('trim', explode(',', $search));
-            $terms = array_filter($terms);
-
-            if (!empty($terms)) {
-                $args['search_terms'] = $terms;
-            }
-        } else {
-            $args['s'] = $search;
+        if (!empty($params['search'])) {
+            $args['s'] = $params['search'];
         }
 
         return $args;
