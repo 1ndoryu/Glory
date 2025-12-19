@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Renderizador de Logo
  *
@@ -57,7 +58,7 @@ class LogoRenderer
      */
     public static function get_html(array $args = []): string
     {
-        $defaultMode = Compatibility::avadaActivo() ? 'default' : 'image';
+        $defaultMode = Compatibility::avadaActivo() ? 'default' : 'svg';
         $logoMode    = OpcionManager::get('glory_logo_mode', $defaultMode);
         $width       = $args['width'] ?? '';
         $filterInput = $args['filter'] ?? '';
@@ -107,6 +108,16 @@ class LogoRenderer
                 $textStyleAttr = ' style="color: #000000;"';
             }
             $output = '<a href="' . $homeUrl . '" rel="home" class="glory-logo-text"' . $textStyleAttr . '>' . esc_html($logoText) . '</a>';
+        } elseif ($logoMode === 'svg') {
+            $svgPath = get_template_directory() . '/App/Assets/images/palaDePadel.svg';
+            if (file_exists($svgPath)) {
+                $svgContent = file_get_contents($svgPath);
+                $svgContent = preg_replace('/<\?xml[^>]*\?>/', '', $svgContent);
+                $svgContent = trim($svgContent);
+                $output = '<a href="' . $homeUrl . '" rel="home" class="logoSvg" aria-label="' . $blogName . '">' . $svgContent . '</a>';
+            } else {
+                $output = '<a href="' . $homeUrl . '" rel="home" class="glory-logo-text">' . esc_html($blogName) . '</a>';
+            }
         } else {
             $logoHtml = '';
             if (Compatibility::avadaActivo() && $logoMode === 'default') {
@@ -130,10 +141,12 @@ class LogoRenderer
                         $logoHtml = str_replace('<img ', '<img ' . $style . ' ', $logoHtml);
                     }
                 } else {
-                    // Fallback al logo por defecto de Glory
-                    $defaultLogoUrl = AssetsUtility::imagenUrl('glory::elements/blackExampleLogo.png');
-                    if ($defaultLogoUrl) {
-                        $logoHtml = '<a href="' . $homeUrl . '" rel="home"><img src="' . esc_url($defaultLogoUrl) . '" alt="' . $blogName . '" ' . $style . '></a>';
+                    $svgPath = get_template_directory() . '/App/Assets/images/palaDePadel.svg';
+                    if (file_exists($svgPath)) {
+                        $svgContent = file_get_contents($svgPath);
+                        $svgContent = preg_replace('/<\?xml[^>]*\?>/', '', $svgContent);
+                        $svgContent = trim($svgContent);
+                        $logoHtml = '<a href="' . $homeUrl . '" rel="home" class="logoSvg" aria-label="' . $blogName . '">' . $svgContent . '</a>';
                     } else {
                         $logoHtml = '<a href="' . $homeUrl . '" rel="home" class="glory-logo-text">' . esc_html($blogName) . '</a>';
                     }

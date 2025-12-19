@@ -82,8 +82,8 @@ function gloryAdaptiveHeader() {
         // --- INICIO: CÓDIGO MODIFICADO Y MEJORADO ---
         const logoLink = header.querySelector('.siteMenuLogo a');
         const isImageLink = logoLink ? !!logoLink.querySelector('img, svg') : false;
-        const logoTextElement = (logoLink && !isImageLink) ? logoLink : null;
-        // --- FIN: CÓDIGO MODIFICADO Y MEJORADO ---
+        const logoTextElement = logoLink && !isImageLink ? logoLink : null;
+        const searchSvg = header.querySelector('.buscadorMenu svg');
 
         if (averageLuminance < LUMINANCE_THRESHOLD) {
             if (!header.classList.contains(classToToggle)) {
@@ -95,11 +95,12 @@ function gloryAdaptiveHeader() {
             if (logoSvg) {
                 logoSvg.style.filter = 'invert(1)';
             }
-            // --- INICIO: CÓDIGO AÑADIDO ---
+            if (searchSvg) {
+                searchSvg.style.filter = 'invert(1)';
+            }
             if (logoTextElement) {
                 logoTextElement.style.color = '#FFFFFF';
             }
-            // --- FIN: CÓDIGO AÑADIDO ---
         } else {
             if (header.classList.contains(classToToggle)) {
                 header.classList.remove(classToToggle);
@@ -110,11 +111,12 @@ function gloryAdaptiveHeader() {
             if (logoSvg) {
                 logoSvg.style.filter = '';
             }
-            // --- INICIO: CÓDIGO AÑADIDO ---
+            if (searchSvg) {
+                searchSvg.style.filter = '';
+            }
             if (logoTextElement) {
                 logoTextElement.style.color = '';
             }
-            // --- FIN: CÓDIGO AÑADIDO ---
         }
     }
 
@@ -136,6 +138,168 @@ function gloryAdaptiveHeader() {
     window.addEventListener('scroll', onScrollOrResize, {passive: true});
     window.addEventListener('resize', onScrollOrResize, {passive: true});
     document.addEventListener('gloryRecarga', () => setTimeout(updateHeaderContrast, 150));
+}
+
+/*
+ * Submenu Adaptativo
+ * Calcula el color de cada enlace del submenu individualmente
+ * basandose en el fondo exacto detras de cada uno
+ */
+function glorySubmenuAdaptive() {
+    const LUMINANCE_THRESHOLD = 140;
+    const headerSelector = '.siteMenuW';
+
+    const header = document.querySelector(headerSelector);
+    if (!header) return;
+
+    if (header.dataset.submenuAdaptiveInitialized) return;
+    header.dataset.submenuAdaptiveInitialized = 'true';
+
+    function getLuminance(r, g, b) {
+        return (r * 299 + g * 587 + b * 114) / 1000;
+    }
+
+    function getBackgroundColorAtPoint(x, y) {
+        /* Ocultar temporalmente header y todos los submenus */
+        header.style.pointerEvents = 'none';
+        const todosSubmenus = document.querySelectorAll('.sub-menu');
+        todosSubmenus.forEach(sm => {
+            sm.dataset.prevPointerEvents = sm.style.pointerEvents;
+            sm.style.pointerEvents = 'none';
+        });
+
+        let elementAtPoint = document.elementFromPoint(x, y);
+
+        /* Restaurar pointer-events */
+        header.style.pointerEvents = '';
+        todosSubmenus.forEach(sm => {
+            sm.style.pointerEvents = sm.dataset.prevPointerEvents || '';
+            delete sm.dataset.prevPointerEvents;
+        });
+
+        if (!elementAtPoint) return {r: 255, g: 255, b: 255};
+
+        let currentElement = elementAtPoint;
+
+        /* Subir en el DOM hasta salir del header y submenus */
+        while (currentElement && (header.contains(currentElement) || currentElement.closest('.sub-menu'))) {
+            currentElement = currentElement.parentElement;
+        }
+
+        while (currentElement) {
+            const style = window.getComputedStyle(currentElement);
+            const bgColor = style.backgroundColor;
+
+            if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+                const match = bgColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+                if (match) {
+                    return {r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3])};
+                }
+            }
+            currentElement = currentElement.parentElement;
+        }
+        return {r: 255, g: 255, b: 255};
+    }
+
+    function adaptarEnlacesSubmenu(submenu) {
+        if (!submenu) return;
+
+        const enlaces = submenu.querySelectorAll('li > a');
+
+        enlaces.forEach(enlace => {
+            const rect = enlace.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+
+            const puntoX = rect.left + rect.width / 2;
+            const puntoY = rect.top + rect.height / 2;
+
+            if (puntoX <= 0 || puntoX >= window.innerWidth || puntoY <= 0 || puntoY >= window.innerHeight) {
+                return;
+            }
+
+            const color = getBackgroundColorAtPoint(puntoX, puntoY);
+            const luminancia = getLuminance(color.r, color.g, color.b);
+
+            if (luminancia < LUMINANCE_THRESHOLD) {
+                /* Fondo oscuro: texto claro */
+                enlace.style.setProperty('color', '#FFFFFF', 'important');
+            } else {
+                /* Fondo claro: texto oscuro */
+                enlace.style.setProperty('color', 'var(--text)', 'important');
+            }
+        });
+    }
+
+    function limpiarEstilosSubmenu(submenu) {
+        if (!submenu) return;
+        const enlaces = submenu.querySelectorAll('a');
+        enlaces.forEach(enlace => {
+            enlace.style.removeProperty('color');
+        });
+    }
+
+    /* Enlazar eventos mouseenter en items con submenu */
+    function enlazarEventosMenu() {
+        const itemsConSubmenu = header.querySelectorAll('.menu-item-has-children');
+
+        itemsConSubmenu.forEach(item => {
+            if (item.dataset.submenuAdaptiveBound) return;
+            item.dataset.submenuAdaptiveBound = 'true';
+
+            item.addEventListener('mouseenter', () => {
+                const submenu = item.querySelector('.sub-menu');
+                if (submenu) {
+                    /* Delay para que el submenu termine de posicionarse */
+                    setTimeout(() => {
+                        adaptarEnlacesSubmenu(submenu);
+                    }, 80);
+                }
+            });
+
+            item.addEventListener('mouseleave', () => {
+                const submenu = item.querySelector('.sub-menu');
+                if (submenu) {
+                    limpiarEstilosSubmenu(submenu);
+                }
+            });
+        });
+    }
+
+    /* Observar nuevos elementos del menu que se añadan */
+    const menuObserver = new MutationObserver(() => {
+        enlazarEventosMenu();
+    });
+
+    const navMenu = header.querySelector('.siteMenuNav');
+    if (navMenu) {
+        menuObserver.observe(navMenu, {childList: true, subtree: true});
+    }
+
+    /* Inicializar */
+    enlazarEventosMenu();
+
+    /* Re-adaptar submenus visibles al hacer scroll */
+    let scrollTimeout;
+    window.addEventListener(
+        'scroll',
+        () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                const submenusVisibles = document.querySelectorAll('.sub-menu');
+                submenusVisibles.forEach(submenu => {
+                    const rect = submenu.getBoundingClientRect();
+                    /* Solo si el submenu esta visible en pantalla */
+                    if (rect.width > 0 && rect.height > 0 && rect.top < window.innerHeight && rect.bottom > 0) {
+                        const display = window.getComputedStyle(submenu).display;
+                        if (display !== 'none') {
+                            adaptarEnlacesSubmenu(submenu);
+                        }
+                    }
+                });
+            }, 100);
+        },
+        {passive: true}
+    );
 }
 
 function gloryMenu() {
@@ -263,7 +427,7 @@ function gloryMenu() {
             li.classList.remove('open');
 
             if (link) {
-                link.addEventListener('click', (e) => {
+                link.addEventListener('click', e => {
                     e.preventDefault();
                     e.stopPropagation();
                     // Toggle del submenú
@@ -371,8 +535,8 @@ function gloryMenuBridge() {
         if (header.classList.contains('open')) {
             applyOpenColors();
             // Mientras esté abierto, asegurar colores ante scroll/resize.
-            window.addEventListener('scroll', applyOpenColors, { passive: true });
-            window.addEventListener('resize', applyOpenColors, { passive: true });
+            window.addEventListener('scroll', applyOpenColors, {passive: true});
+            window.addEventListener('resize', applyOpenColors, {passive: true});
         } else {
             clearOpenColors();
             window.removeEventListener('scroll', applyOpenColors);
@@ -400,7 +564,7 @@ function gloryMenuBridge() {
                 }
             }
         });
-        obs.observe(header, { attributes: true });
+        obs.observe(header, {attributes: true});
         header.__gloryMenuBridgeObserver = obs;
         // Aplicar estado inicial si ya está abierto por alguna razón.
         handleHeaderClassChange();
@@ -419,11 +583,7 @@ function gloryMenuBridge() {
                     return;
                 }
                 const li = a.closest('li');
-                const isParentWithChildren =
-                    li &&
-                    li.classList &&
-                    li.classList.contains('menu-item-has-children') &&
-                    li.querySelector(':scope > ul.sub-menu');
+                const isParentWithChildren = li && li.classList && li.classList.contains('menu-item-has-children') && li.querySelector(':scope > ul.sub-menu');
 
                 // No cerrar si es un padre que solo abre/cierra submenú.
                 if (isParentWithChildren) {
@@ -450,16 +610,19 @@ function gloryMenuBridge() {
 document.addEventListener('DOMContentLoaded', () => {
     gloryMenu();
     gloryAdaptiveHeader();
+    glorySubmenuAdaptive();
     gloryMenuBridge();
 });
 
-// Fallback por si los recursos se cargan después del DOMContentLoaded (por ejemplo, en algunos constructores de páginas)
+/* Fallback por si los recursos se cargan despues del DOMContentLoaded (por ejemplo, en algunos constructores de paginas) */
 window.addEventListener('load', () => {
     gloryMenu();
     gloryAdaptiveHeader();
+    glorySubmenuAdaptive();
     gloryMenuBridge();
 });
 
 document.addEventListener('gloryRecarga', gloryMenu);
 document.addEventListener('gloryRecarga', gloryAdaptiveHeader);
+document.addEventListener('gloryRecarga', glorySubmenuAdaptive);
 document.addEventListener('gloryRecarga', gloryMenuBridge);

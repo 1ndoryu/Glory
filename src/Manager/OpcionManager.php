@@ -176,6 +176,27 @@ class OpcionManager
         self::$haSincronizado = true;
     }
 
+    /**
+     * Restablece TODAS las opciones del tema a sus valores por defecto definidos en el código.
+     * Ignora cualquier valor guardado en el panel y fuerza el valor default.
+     * Se usa cuando el usuario hace clic en "Restablecer a Default".
+     */
+    public static function restablecerTodasLasOpciones(): void
+    {
+        $definiciones = OpcionRegistry::getDefiniciones();
+        if (empty($definiciones)) {
+            return;
+        }
+
+        foreach ($definiciones as $key => $config) {
+            OpcionRepository::save($key, $config['valorDefault']);
+            OpcionRepository::deletePanelMeta($key);
+            GloryLogger::info("OpcionManager: '{$key}' restablecido a valor default.");
+        }
+
+        self::clearCache();
+    }
+
     private static function sincronizarOpcionIndividual(string $key): void
     {
         $config = OpcionRegistry::getDefinicion($key);

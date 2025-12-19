@@ -73,7 +73,9 @@ class DefaultContentSynchronizer
                 if ($post) {
                     $this->postHandler->update($post->ID, $definition, true);
                     // Restablecer sincronización automática: modo 'editor' y limpiar flag de edición manual
-                    update_post_meta($post->ID, '_glory_content_mode', 'editor');
+                    // Restablecer sincronización automática: limpiar flag de edición manual
+                    // Se elimina el forzado a 'editor' para respetar si el usuario prefiere 'code'.
+                    // update_post_meta($post->ID, '_glory_content_mode', 'editor');
                     delete_post_meta($post->ID, self::META_CLAVE_EDITADO_MANUALMENTE);
                 }
             }
