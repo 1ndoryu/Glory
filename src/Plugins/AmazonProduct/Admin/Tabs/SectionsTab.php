@@ -348,7 +348,12 @@ class SectionsTab implements TabInterface
                 $value = sanitize_text_field($_POST[$field]);
                 $defaultValue = $defaults[$field] ?? '';
 
-                if ($value !== '' && $value !== $defaultValue) {
+                /* 
+                 * Si el valor es diferente al default, guardarlo como override.
+                 * Esto incluye cuando el usuario borra el campo (valor vacio),
+                 * para que el default no reaparezca.
+                 */
+                if ($value !== $defaultValue) {
                     $overrides[$field] = $value;
                 }
             }
@@ -440,6 +445,14 @@ class SectionsTab implements TabInterface
         wp_reset_postdata();
 
         $excludeWords = $queryBuilder->getExcludeWords($params);
+        $searchTerms = $queryBuilder->getSearchTerms($params);
+
+        // Aplicar filtro de busqueda OR (si hay terminos multiples)
+        if (!empty($searchTerms)) {
+            $posts = \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder::filterBySearchTerms($posts, $searchTerms);
+        }
+
+        // Aplicar filtro de exclusion de palabras
         if (!empty($excludeWords)) {
             $posts = \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder::filterExcludedPosts($posts, $excludeWords);
         }

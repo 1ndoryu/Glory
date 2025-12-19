@@ -151,6 +151,7 @@ class ProductRenderer
      * 
      * Corregido: 
      * - Aplica el filtro de exclusion de palabras para obtener el conteo real.
+     * - Aplica el filtro de busqueda multiple (OR) para obtener conteo real.
      * - Cuando pagination=0, muestra cuantos productos son visibles (respetando limit).
      * 
      * @param array $atts Atributos del shortcode
@@ -162,11 +163,12 @@ class ProductRenderer
         $showPagination = ($atts['pagination'] ?? '1') !== '0';
         $limit = (int) ($atts['limit'] ?? 12);
 
-        // Obtener palabras de exclusion
+        // Obtener palabras de exclusion y terminos de busqueda
         $excludeWords = $this->queryBuilder->getExcludeWords($params);
+        $searchTerms = $this->queryBuilder->getSearchTerms($params);
 
-        // Si hay palabras de exclusion, necesitamos traer todos los posts y filtrar
-        if (!empty($excludeWords)) {
+        // Si hay filtros PHP necesarios, traer todos los posts y filtrar
+        if (!empty($excludeWords) || !empty($searchTerms)) {
             $countParams = array_merge($params, ['limit' => -1]);
             $query = $this->queryBuilder->build($countParams);
 
@@ -177,9 +179,17 @@ class ProductRenderer
             }
             wp_reset_postdata();
 
+            // Aplicar filtro de busqueda OR (si hay terminos)
+            if (!empty($searchTerms)) {
+                $posts = QueryBuilder::filterBySearchTerms($posts, $searchTerms);
+            }
+
             // Aplicar filtro de exclusion
-            $filteredPosts = QueryBuilder::filterExcludedPosts($posts, $excludeWords);
-            $totalFiltered = count($filteredPosts);
+            if (!empty($excludeWords)) {
+                $posts = QueryBuilder::filterExcludedPosts($posts, $excludeWords);
+            }
+
+            $totalFiltered = count($posts);
 
             // Si no hay paginacion, mostrar solo los visibles (limitados)
             if (!$showPagination) {
@@ -189,7 +199,7 @@ class ProductRenderer
             return $totalFiltered;
         }
 
-        // Sin exclusiones, usar el conteo nativo de WordPress
+        // Sin filtros PHP, usar el conteo nativo de WordPress
         $query = $this->queryBuilder->build($params);
         $foundPosts = $query->found_posts;
         wp_reset_postdata();

@@ -30,16 +30,17 @@ class GridRenderer
     {
         $showPagination = $params['show_pagination'] ?? true;
         $excludeWords = $this->queryBuilder->getExcludeWords($params);
+        $searchTerms = $this->queryBuilder->getSearchTerms($params);
         $limit = (int) ($params['limit'] ?? 12);
         $paged = (int) ($params['paged'] ?? 1);
 
         /*
-         * Si hay palabras de exclusion, necesitamos traer TODOS los productos
-         * primero, aplicar el filtro, y luego paginar manualmente.
-         * Esto es necesario porque WordPress no puede excluir por palabras en titulo.
+         * Si hay palabras de exclusion O terminos de busqueda multiples,
+         * necesitamos traer TODOS los productos primero, aplicar filtros 
+         * en PHP, y luego paginar manualmente.
          */
-        if (!empty($excludeWords)) {
-            return $this->renderWithExclusions($params, $excludeWords, $limit, $paged, $showPagination);
+        if (!empty($excludeWords) || !empty($searchTerms)) {
+            return $this->renderWithFilters($params, $searchTerms, $excludeWords, $limit, $paged, $showPagination);
         }
 
         // Sin exclusiones: usar query normal con paginacion nativa
@@ -73,11 +74,13 @@ class GridRenderer
     }
 
     /**
-     * Renderiza el grid cuando hay palabras de exclusion.
-     * Trae todos los productos, aplica filtro, y pagina manualmente.
+     * Renderiza el grid cuando hay filtros PHP necesarios.
+     * Aplica filtro de busqueda multiples (OR) y/o exclusion de palabras.
+     * Trae todos los productos, aplica filtros, y pagina manualmente.
      */
-    private function renderWithExclusions(
+    private function renderWithFilters(
         array $params,
+        array $searchTerms,
         array $excludeWords,
         int $limit,
         int $paged,
@@ -99,8 +102,24 @@ class GridRenderer
             $allPosts[] = get_post();
         }
 
-        // Aplicar filtro de exclusion
-        $filteredPosts = QueryBuilder::filterExcludedPosts($allPosts, $excludeWords);
+        $filteredPosts = $allPosts;
+
+        /* 
+         * Aplicar filtro de busqueda OR (si hay terminos multiples).
+         * Incluye solo productos que contengan AL MENOS UNO de los terminos.
+         */
+        if (!empty($searchTerms)) {
+            $filteredPosts = QueryBuilder::filterBySearchTerms($filteredPosts, $searchTerms);
+        }
+
+        /* 
+         * Aplicar filtro de exclusion.
+         * Excluye productos que contengan CUALQUIERA de las palabras de exclusion.
+         */
+        if (!empty($excludeWords)) {
+            $filteredPosts = QueryBuilder::filterExcludedPosts($filteredPosts, $excludeWords);
+        }
+
         $totalPosts = count($filteredPosts);
 
         if (empty($filteredPosts)) {

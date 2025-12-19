@@ -90,11 +90,33 @@ class QueryBuilder
 
     /**
      * Filtro de busqueda por texto en titulo.
+     * 
+     * Soporta multiples terminos separados por coma para busqueda OR.
+     * Ejemplo: "accesorio,grip,pulsera" buscara productos que contengan
+     * cualquiera de esas palabras en el titulo.
      */
     private function applySearchFilter(array $args, array $params): array
     {
-        if (!empty($params['search'])) {
-            $args['s'] = $params['search'];
+        if (empty($params['search'])) {
+            return $args;
+        }
+
+        $search = $params['search'];
+
+        /* 
+         * Si hay comas, hacer busqueda OR con multiples terminos.
+         * Guardamos los terminos para filtrar post-query ya que WP_Query
+         * no soporta busqueda OR en titulo de forma nativa.
+         */
+        if (strpos($search, ',') !== false) {
+            $terms = array_map('trim', explode(',', $search));
+            $terms = array_filter($terms);
+
+            if (!empty($terms)) {
+                $args['search_terms'] = $terms;
+            }
+        } else {
+            $args['s'] = $search;
         }
 
         return $args;
@@ -163,6 +185,51 @@ class QueryBuilder
 
         $excludeWords = array_map('trim', explode(',', $params['exclude']));
         return array_filter($excludeWords);
+    }
+
+    /**
+     * Obtiene los terminos de busqueda de los parametros.
+     * Solo devuelve terminos si se uso busqueda multiple (con comas).
+     */
+    public function getSearchTerms(array $params): array
+    {
+        if (empty($params['search'])) {
+            return [];
+        }
+
+        $search = $params['search'];
+
+        if (strpos($search, ',') === false) {
+            return [];
+        }
+
+        $terms = array_map('trim', explode(',', $search));
+        return array_filter($terms);
+    }
+
+    /**
+     * Filtra los resultados incluyendo solo posts que contengan
+     * al menos uno de los terminos de busqueda en el titulo.
+     * 
+     * @param array $posts Array de posts
+     * @param array $searchTerms Terminos de busqueda (OR)
+     * @return array Posts que coinciden con al menos un termino
+     */
+    public static function filterBySearchTerms(array $posts, array $searchTerms): array
+    {
+        if (empty($searchTerms)) {
+            return $posts;
+        }
+
+        return array_filter($posts, function ($post) use ($searchTerms) {
+            $title = strtolower($post->post_title);
+            foreach ($searchTerms as $term) {
+                if (stripos($title, strtolower($term)) !== false) {
+                    return true;
+                }
+            }
+            return false;
+        });
     }
 
     /**
