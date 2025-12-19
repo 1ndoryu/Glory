@@ -178,7 +178,7 @@ class GridRenderer
         });
 
         // Aplicar paginacion manual
-        $limit = (int) ($params['limit'] ?? 12);
+        $limit = max(1, (int) ($params['limit'] ?? 12));
         $paged = (int) ($params['paged'] ?? 1);
         $offset = ($paged - 1) * $limit;
         $pagedPosts = array_slice($postsWithDiscount, $offset, $limit);
