@@ -426,6 +426,19 @@ class SectionsTab implements TabInterface
         $config = $section->getEffectiveConfig();
         $excludedIds = $section->getExcludedIds();
 
+        /* 
+         * Manejo de semilla para orden aleatorio consistente.
+         * Si viene un random_seed del frontend, usarlo; si no, generar uno nuevo.
+         * Esto asegura que la paginacion mantenga el mismo orden aleatorio.
+         */
+        $randomSeed = '';
+        if (($config['orderby'] ?? 'date') === 'random') {
+            $randomSeed = !empty($_POST['random_seed'])
+                ? intval($_POST['random_seed'])
+                : mt_rand(1, 999999999);
+            $config['random_seed'] = $randomSeed;
+        }
+
         $queryBuilder = new \Glory\Plugins\AmazonProduct\Renderer\QueryBuilder();
 
         /* 
@@ -508,6 +521,7 @@ class SectionsTab implements TabInterface
             'paged' => $paged,
             'totalPages' => $totalPages,
             'perPage' => $perPage,
+            'randomSeed' => $randomSeed,
         ]);
     }
 

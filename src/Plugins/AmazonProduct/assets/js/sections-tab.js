@@ -184,8 +184,14 @@
             const showing = data.showing || data.products.length;
             const total = data.total || showing;
 
+            /*
+             * Guardar randomSeed para reutilizarlo en paginacion.
+             * Esto asegura que el orden aleatorio sea consistente entre paginas.
+             */
+            const randomSeed = data.randomSeed || '';
+
             const modalHtml = `
-                <div class="seccionPreviewModal" data-section="${slug}">
+                <div class="seccionPreviewModal" data-section="${slug}" data-random-seed="${randomSeed}">
                     <div class="seccionPreviewContenido">
                         <div class="seccionPreviewCabecera">
                             <h4>Preview: ${slug}</h4>
@@ -240,6 +246,7 @@
             const page = $button.data('page');
             const $modal = $button.closest('.seccionPreviewModal');
             const slug = $modal.data('section');
+            const randomSeed = $modal.data('random-seed') || '';
 
             $modal.find('.seccionPreviewGrid').html('<div class="seccionPreviewCargando">Cargando...</div>');
 
@@ -250,7 +257,8 @@
                     action: 'glory_preview_section',
                     nonce: glorySections.nonce,
                     section_slug: slug,
-                    paged: page
+                    paged: page,
+                    random_seed: randomSeed
                 },
                 success: function (response) {
                     if (response.success) {
