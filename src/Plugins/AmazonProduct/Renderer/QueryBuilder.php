@@ -90,13 +90,28 @@ class QueryBuilder
 
     /**
      * Filtro de busqueda por texto en titulo.
+     * 
+     * Si hay un solo termino, usa la busqueda nativa de WordPress.
+     * Si hay multiples terminos (con comas), NO los pasa a WP
+     * para que se puedan filtrar en PHP con logica OR.
      */
     private function applySearchFilter(array $args, array $params): array
     {
-        if (!empty($params['search'])) {
-            $args['s'] = $params['search'];
+        if (empty($params['search'])) {
+            return $args;
         }
 
+        $search = $params['search'];
+
+        /* 
+         * Si hay comas, NO pasar a WordPress.
+         * Los terminos se filtraran en PHP despues con filterBySearchTerms.
+         */
+        if (strpos($search, ',') !== false) {
+            return $args;
+        }
+
+        $args['s'] = $search;
         return $args;
     }
 
