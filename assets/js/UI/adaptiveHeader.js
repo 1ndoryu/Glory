@@ -142,8 +142,14 @@ function gloryAdaptiveHeader() {
 
 /*
  * Submenu Adaptativo
- * Calcula el color de cada enlace del submenu individualmente
- * basandose en el fondo exacto detras de cada uno
+ *
+ * Problema: El submenu puede extenderse sobre zonas de la pagina con diferentes
+ * colores de fondo (parte clara, parte oscura), causando problemas de contraste.
+ *
+ * Solucion: Calcular el color de cada enlace del submenu INDIVIDUALMENTE,
+ * detectando el fondo exacto detras de cada uno cuando el submenu se abre.
+ *
+ * Solo se ejecuta al hacer hover (mouseenter), no afecta el rendimiento del scroll.
  */
 function glorySubmenuAdaptive() {
     const LUMINANCE_THRESHOLD = 140;
@@ -155,12 +161,14 @@ function glorySubmenuAdaptive() {
     if (header.dataset.submenuAdaptiveInitialized) return;
     header.dataset.submenuAdaptiveInitialized = 'true';
 
+    /* Calcula luminancia percibida (0=negro, 255=blanco) */
     function getLuminance(r, g, b) {
         return (r * 299 + g * 587 + b * 114) / 1000;
     }
 
+    /* Detecta el color de fondo de la pagina en un punto (x, y) */
     function getBackgroundColorAtPoint(x, y) {
-        /* Ocultar temporalmente header y todos los submenus */
+        /* Ocultar header y submenus para que elementFromPoint detecte la pagina real */
         header.style.pointerEvents = 'none';
         const todosSubmenus = document.querySelectorAll('.sub-menu');
         todosSubmenus.forEach(sm => {
@@ -186,6 +194,7 @@ function glorySubmenuAdaptive() {
             currentElement = currentElement.parentElement;
         }
 
+        /* Buscar el primer elemento con color de fondo definido */
         while (currentElement) {
             const style = window.getComputedStyle(currentElement);
             const bgColor = style.backgroundColor;
@@ -201,6 +210,7 @@ function glorySubmenuAdaptive() {
         return {r: 255, g: 255, b: 255};
     }
 
+    /* Adapta el color de cada enlace del submenu segun su fondo */
     function adaptarEnlacesSubmenu(submenu) {
         if (!submenu) return;
 
@@ -210,6 +220,7 @@ function glorySubmenuAdaptive() {
             const rect = enlace.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) return;
 
+            /* Punto central del enlace */
             const puntoX = rect.left + rect.width / 2;
             const puntoY = rect.top + rect.height / 2;
 
@@ -217,14 +228,14 @@ function glorySubmenuAdaptive() {
                 return;
             }
 
+            /* Detectar fondo y calcular luminancia */
             const color = getBackgroundColorAtPoint(puntoX, puntoY);
             const luminancia = getLuminance(color.r, color.g, color.b);
 
+            /* Aplicar color con !important para forzar sobre CSS */
             if (luminancia < LUMINANCE_THRESHOLD) {
-                /* Fondo oscuro: texto claro */
                 enlace.style.setProperty('color', '#FFFFFF', 'important');
             } else {
-                /* Fondo claro: texto oscuro */
                 enlace.style.setProperty('color', 'var(--text)', 'important');
             }
         });

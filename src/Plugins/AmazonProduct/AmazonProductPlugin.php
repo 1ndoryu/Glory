@@ -47,6 +47,70 @@ class AmazonProductPlugin
 
         add_action('wp_ajax_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
         add_action('wp_ajax_nopriv_amazon_filter_products', [$renderer, 'handleAjaxRequest']);
+
+        /* Endpoint ligero para busqueda rapida (solo JSON, sin renderizar HTML) */
+        add_action('wp_ajax_amazon_quick_search', [$this, 'handleQuickSearch']);
+        add_action('wp_ajax_nopriv_amazon_quick_search', [$this, 'handleQuickSearch']);
+    }
+
+    /**
+     * Endpoint AJAX ligero para busqueda rapida.
+     * Devuelve solo JSON con datos minimos: titulo, precio, imagen, url.
+     * Optimizado para el buscador del menu del header.
+     */
+    public function handleQuickSearch(): void
+    {
+        check_ajax_referer('amazon_product_nonce', 'nonce');
+
+        $search = sanitize_text_field($_POST['search'] ?? '');
+        $limit = min(intval($_POST['limit'] ?? 5), 10);
+
+        if (strlen($search) < 2) {
+            wp_send_json_success(['products' => [], 'count' => 0]);
+        }
+
+        $args = [
+            'post_type' => 'amazon_product',
+            'post_status' => 'publish',
+            'posts_per_page' => $limit,
+            's' => $search,
+            'orderby' => 'relevance',
+            'no_found_rows' => true,
+            'update_post_meta_cache' => true,
+            'update_post_term_cache' => false,
+        ];
+
+        $query = new \WP_Query($args);
+        $products = [];
+
+        foreach ($query->posts as $post) {
+            $imageUrl = '';
+            if (has_post_thumbnail($post->ID)) {
+                $imageUrl = get_the_post_thumbnail_url($post->ID, 'thumbnail');
+            }
+            if (empty($imageUrl)) {
+                $imageUrl = get_post_meta($post->ID, 'image_url', true);
+            }
+
+            $productUrl = get_post_meta($post->ID, 'product_url', true);
+            $affiliateTag = get_option('amazon_affiliate_tag', '');
+            if (!empty($affiliateTag) && !empty($productUrl)) {
+                $separator = (strpos($productUrl, '?') !== false) ? '&' : '?';
+                $productUrl .= $separator . 'tag=' . esc_attr($affiliateTag);
+            }
+
+            $products[] = [
+                'title' => $post->post_title,
+                'price' => get_post_meta($post->ID, 'price', true),
+                'image' => $imageUrl,
+                'url' => $productUrl,
+            ];
+        }
+
+        wp_send_json_success([
+            'products' => $products,
+            'count' => count($products)
+        ]);
     }
 
     /**
