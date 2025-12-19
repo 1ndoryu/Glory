@@ -334,6 +334,10 @@ class QueryBuilder
     /**
      * Aplica ordenamiento a la query.
      * Solo aplica si no se especificaron IDs (los IDs mantienen su orden).
+     * 
+     * Para orden aleatorio, usa una semilla fija para mantener consistencia
+     * entre peticiones de paginacion. La semilla se genera una vez por sesion
+     * y se pasa como parametro 'random_seed'.
      */
     private function applySorting(array $args, array $params): array
     {
@@ -347,7 +351,30 @@ class QueryBuilder
 
         switch ($orderby) {
             case 'random':
+                /* 
+                 * Orden aleatorio con semilla para consistencia en paginacion.
+                 * 
+                 * Problema: RAND() genera un nuevo orden en cada query, causando
+                 * que productos se repitan entre paginas.
+                 * 
+                 * Solucion: Usar RAND(seed) con una semilla fija por sesion.
+                 * La semilla viene del frontend (random_seed) o se genera aqui.
+                 */
+                $seed = $this->getRandomSeed($params);
                 $args['orderby'] = 'rand';
+
+                // Agregar filtro para inyectar la semilla en la query SQL
+                // Se auto-remueve despues de ejecutarse para evitar afectar otras queries
+                $filterCallback = function ($orderby_sql) use ($seed, &$filterCallback) {
+                    // Auto-remover el filtro inmediatamente
+                    remove_filter('posts_orderby', $filterCallback, 10);
+
+                    if (strpos($orderby_sql, 'RAND()') !== false) {
+                        return str_replace('RAND()', "RAND({$seed})", $orderby_sql);
+                    }
+                    return $orderby_sql;
+                };
+                add_filter('posts_orderby', $filterCallback, 10, 1);
                 break;
 
             case 'price':
@@ -374,6 +401,27 @@ class QueryBuilder
         $args['order'] = $order;
 
         return $args;
+    }
+
+    /**
+     * Obtiene o genera una semilla para el orden aleatorio.
+     * 
+     * La semilla asegura que el orden aleatorio sea consistente entre
+     * peticiones de paginacion dentro de la misma sesion.
+     * 
+     * @param array $params Parametros de la query
+     * @return int Semilla numerica para RAND()
+     */
+    private function getRandomSeed(array $params): int
+    {
+        // Si viene una semilla del frontend, usarla
+        if (!empty($params['random_seed'])) {
+            return (int) $params['random_seed'];
+        }
+
+        // Semilla por defecto: basada en la fecha del dia
+        // Esto hace que el orden cambie cada dia pero sea consistente durante el dia
+        return (int) date('Ymd');
     }
 
     /**

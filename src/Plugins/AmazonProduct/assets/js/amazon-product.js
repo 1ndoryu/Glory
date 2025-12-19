@@ -81,7 +81,13 @@
                 onlyDeals: wrapper.dataset.onlyDeals || '',
                 orderby: wrapper.dataset.orderby || 'date',
                 order: wrapper.dataset.order || 'DESC',
-                exclude: wrapper.dataset.exclude || ''
+                exclude: wrapper.dataset.exclude || '',
+                /*
+                 * Semilla para orden aleatorio consistente.
+                 * Se genera en PHP al cargar la pagina y se mantiene durante
+                 * toda la sesion de navegacion para evitar productos repetidos.
+                 */
+                randomSeed: wrapper.dataset.randomSeed || ''
             };
 
             // Debounced fetch para busqueda
@@ -303,6 +309,16 @@
             this.state.orderby = orderby;
             this.state.order = order;
             this.state.paged = 1;
+
+            /*
+             * Si cambia a ordenamiento aleatorio, generar nuevo seed.
+             * Esto asegura un nuevo orden aleatorio, pero consistente
+             * durante la paginacion subsecuente.
+             */
+            if (orderby === 'random') {
+                this.state.randomSeed = Math.floor(Math.random() * 999999999);
+            }
+
             this.fetchProducts();
         }
 
@@ -410,6 +426,7 @@
             formData.append('orderby', this.state.orderby);
             formData.append('order', this.state.order);
             formData.append('exclude', this.state.exclude);
+            formData.append('random_seed', this.state.randomSeed);
 
             fetch(amazonProductAjax.ajax_url, {
                 method: 'POST',

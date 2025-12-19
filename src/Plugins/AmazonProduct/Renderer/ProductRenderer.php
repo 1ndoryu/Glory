@@ -104,6 +104,19 @@ class ProductRenderer
         // BUG-03 fix: Usamos found_posts en lugar de contar cards visibles
         $totalCount = $this->getTotalProductCount($atts);
 
+        /* 
+         * Generar semilla aleatoria para orden consistente.
+         * 
+         * Si el orderby es 'random', generamos una semilla unica para esta sesion.
+         * Esto asegura que el orden aleatorio sea consistente durante la paginacion
+         * pero diferente cada vez que se recarga la pagina.
+         */
+        $randomSeed = '';
+        if ($atts['orderby'] === 'random') {
+            $randomSeed = mt_rand(1, 999999999);
+            $atts['random_seed'] = $randomSeed;
+        }
+
         ob_start();
 ?>
         <div class="amazon-product-wrapper"
@@ -120,7 +133,8 @@ class ProductRenderer
             data-pagination="<?php echo esc_attr($atts['pagination']); ?>"
             data-min-rating="<?php echo esc_attr($atts['min_rating']); ?>"
             data-exclude="<?php echo esc_attr($atts['exclude']); ?>"
-            data-total-count="<?php echo esc_attr($totalCount); ?>">
+            data-total-count="<?php echo esc_attr($totalCount); ?>"
+            data-random-seed="<?php echo esc_attr($randomSeed); ?>">
 
             <?php if (!$hideFilters): ?>
                 <?php $this->filterRenderer->renderHeaderControls($atts); ?>
@@ -241,6 +255,7 @@ class ProductRenderer
             'orderby' => sanitize_text_field($_POST['orderby'] ?? 'date'),
             'order' => sanitize_text_field($_POST['order'] ?? 'DESC'),
             'exclude' => sanitize_text_field($_POST['exclude'] ?? ''),
+            'random_seed' => sanitize_text_field($_POST['random_seed'] ?? ''),
             'show_pagination' => true,
         ];
 
