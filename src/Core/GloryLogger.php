@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Sistema de Registro (Logging)
  *
@@ -41,8 +42,8 @@ class GloryLogger
         self::NIVEL_CRITICO,
     ];
 
-    /** @var int Nivel mínimo para guardar un mensaje. Por defecto: errores y superiores. */
-    private static int $nivelMinimoGuardado = self::NIVEL_INFO;
+    /** @var int Nivel mínimo para guardar un mensaje. Por defecto: solo errores y superiores. */
+    private static int $nivelMinimoGuardado = self::NIVEL_ERROR;
 
     /** @var array Buffer para logs acumulados. */
     private static array $bufferLogs = [];
@@ -208,10 +209,10 @@ class GloryLogger
         // si la llamada fue info(), o $traza[1] si fue directo a registrar() (lo cual es privado).
         // La lógica del bucle y el continue ajustan esto para encontrar el primer frame *fuera* de GloryLogger.
         for ($i = 2; $i < count($traza); $i++) { // Ajuste de $i según la estructura de llamadas interna.
-                                                 // Típicamente, $traza[0] es getNombreLlamador, $traza[1] es registrar, $traza[2] es info/error/etc.
-                                                 // El llamador real es $traza[3] en el caso común.
-                                                 // Sin embargo, si se llamara a registrar() directamente desde otra clase (no debería pasar),
-                                                 // o si la estructura de llamadas cambia, este bucle intenta ser más robusto.
+            // Típicamente, $traza[0] es getNombreLlamador, $traza[1] es registrar, $traza[2] es info/error/etc.
+            // El llamador real es $traza[3] en el caso común.
+            // Sin embargo, si se llamara a registrar() directamente desde otra clase (no debería pasar),
+            // o si la estructura de llamadas cambia, este bucle intenta ser más robusto.
 
             // Si la entrada actual de la traza corresponde a una llamada *dentro* de esta misma clase (GloryLogger),
             // se ignora y se continúa con el siguiente frame. Esto es para saltar los métodos internos del logger.
