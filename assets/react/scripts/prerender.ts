@@ -55,7 +55,8 @@ const mockProps: Record<string, Record<string, unknown>> = {
  * - Islas que requieren datos de servidor obligatorios
  */
 const skipIslands = new Set([
-    'MainAppIsland' // SPA Router
+    'MainAppIsland', // SPA Router
+    'DashboardIsland' // Requires extensive browser APIs (localStorage, window)
 ]);
 
 /**
