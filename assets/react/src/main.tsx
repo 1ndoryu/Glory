@@ -42,7 +42,7 @@ import {ExampleIsland} from './islands/ExampleIsland';
  *
  * NO modificar este archivo para agregar islas del proyecto.
  */
-import appIslands from '@app/appIslands';
+import appIslands, {AppProvider} from '@app/appIslands';
 
 /*
  * Mapa de componentes disponibles
@@ -55,6 +55,16 @@ const islandComponents: Record<string, React.ComponentType<Record<string, unknow
     // Componentes del proyecto (importados desde App/React/appIslands.tsx)
     ...appIslands
 };
+
+/*
+ * Envuelve un elemento con el AppProvider si está definido
+ */
+function wrapWithProvider(element: JSX.Element): JSX.Element {
+    if (AppProvider) {
+        return <AppProvider>{element}</AppProvider>;
+    }
+    return element;
+}
 
 /**
  * Inicializa todas las islas React encontradas en el DOM
@@ -100,11 +110,7 @@ function initializeIslands(): void {
         const hasContent = container.innerHTML.trim() !== '' && !container.innerHTML.includes('<!-- react-island-loading -->');
 
         try {
-            const element = (
-                <StrictMode>
-                    <Component {...props} />
-                </StrictMode>
-            );
+            const element = <StrictMode>{wrapWithProvider(<Component {...props} />)}</StrictMode>;
 
             if (shouldHydrate && hasContent) {
                 /*
@@ -135,11 +141,7 @@ function initializeIslands(): void {
                 try {
                     container.innerHTML = '';
                     const root = createRoot(container);
-                    root.render(
-                        <StrictMode>
-                            <Component {...props} />
-                        </StrictMode>
-                    );
+                    root.render(<StrictMode>{wrapWithProvider(<Component {...props} />)}</StrictMode>);
                 } catch (fallbackError) {
                     console.error(`[Glory React] Fallback CSR tambien fallo:`, fallbackError);
                 }
