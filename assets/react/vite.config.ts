@@ -16,7 +16,9 @@ export default defineConfig(({mode}) => {
         // Base URL para los assets
         // En desarrollo: Vite dev server
         // En produccion: Ruta relativa al tema de WordPress
-        base: isDev ? '/' : '/wp-content/themes/glory/Glory/assets/react/dist/',
+        // En desarrollo: Vite dev server (Debe ser la URL completa para que no busque en el dominio de WP)
+        // En produccion: Ruta relativa al tema de WordPress
+        base: isDev ? 'http://localhost:5173/' : '/wp-content/themes/glory/Glory/assets/react/dist/',
 
         build: {
             // Directorio de salida
@@ -46,6 +48,7 @@ export default defineConfig(({mode}) => {
         server: {
             // Puerto para el dev server
             port: 5173,
+            origin: 'http://localhost:5173',
 
             // Permite conexiones desde cualquier origen (necesario para Local by Flywheel)
             cors: true,
@@ -58,7 +61,9 @@ export default defineConfig(({mode}) => {
                 allow: [
                     // Busca en el directorio actual y arriba hasta la raiz del tema
                     searchForWorkspaceRoot(process.cwd()),
-                    '../../../App/React'
+                    '../../../App/React',
+                    '../../../App/Assets',
+                    '../images'
                 ]
             },
 
