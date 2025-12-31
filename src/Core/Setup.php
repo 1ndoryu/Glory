@@ -19,6 +19,7 @@ use Glory\Admin\SeoMetabox;
 use Glory\Seo\SeoFrontendRenderer;
 use Glory\Plugins\AmazonProduct\AmazonProductPlugin;
 use Glory\Api\PageBlocksController;
+use Glory\Api\MCPController;
 
 /**
  * Clase principal de inicialización del framework Glory.
@@ -169,6 +170,13 @@ class Setup
         if (GloryFeatures::isActive('amazonProduct') !== false) {
             (new AmazonProductPlugin())->init();
         }
+
+        /* Registrar API de configuración MCP */
+        PerformanceProfiler::medirFuncion(
+            fn() => MCPController::register(),
+            'MCPController.register',
+            'api'
+        );
 
         PerformanceProfiler::end('Setup.constructor');
     }
