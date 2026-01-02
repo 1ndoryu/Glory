@@ -68,6 +68,7 @@ class ProductRenderer
      * - pagination: "0" para desactivar paginacion
      * - min_rating: Rating minimo (1-5)
      * - exclude: Palabras a excluir separadas por coma (ej: "paletero,bolsa,funda")
+     * - show_sort: "1" para mostrar el selector de ordenamiento rapido (default: "1")
      */
     public function renderShortcode($atts): string
     {
@@ -87,6 +88,7 @@ class ProductRenderer
             'pagination' => '1',
             'min_rating' => '',
             'exclude' => '',
+            'show_sort' => '1',
         ], $atts);
 
         /* 
@@ -99,6 +101,7 @@ class ProductRenderer
 
         $hideFilters = ($atts['hide_filters'] === '1');
         $showPagination = ($atts['pagination'] !== '0');
+        $showSort = ($atts['show_sort'] === '1');
 
         // Obtener el total de productos antes de renderizar para mostrar contador correcto
         // BUG-03 fix: Usamos found_posts en lugar de contar cards visibles
@@ -141,7 +144,7 @@ class ProductRenderer
                 <?php $this->filterRenderer->renderPanel($atts); ?>
             <?php endif; ?>
 
-            <?php $this->filterRenderer->renderResultsHeader($totalCount); ?>
+            <?php $this->filterRenderer->renderResultsHeader($totalCount, $showSort, $atts); ?>
 
             <div class="amazon-product-grid-container">
                 <?php $this->gridRenderer->render(array_merge($atts, [

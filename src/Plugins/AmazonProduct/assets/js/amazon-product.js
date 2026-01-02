@@ -299,8 +299,21 @@
 
         bindSortEvents() {
             const sortSelect = document.getElementById('amazon-sort');
+            const quickSortSelect = document.getElementById('amazon-quick-sort');
+
             if (sortSelect) {
                 sortSelect.addEventListener('change', this.handleSortChange);
+            }
+
+            /* Mini selector de ordenamiento en el header de resultados */
+            if (quickSortSelect) {
+                quickSortSelect.addEventListener('change', e => {
+                    /* Sincronizar con el selector principal si existe */
+                    if (sortSelect) {
+                        sortSelect.value = e.target.value;
+                    }
+                    this.handleSortChange(e);
+                });
             }
         }
 

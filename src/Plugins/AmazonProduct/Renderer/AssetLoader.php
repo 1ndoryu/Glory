@@ -41,6 +41,17 @@ class AssetLoader
      */
     private function enqueueScripts(): void
     {
+        /* Motor de busqueda del lado del cliente */
+        \Glory\Manager\AssetManager::define(
+            'script',
+            'amazon-buscador-cliente-js',
+            '/Glory/src/Plugins/AmazonProduct/assets/js/buscador-cliente.js',
+            [
+                'dev_mode' => true,
+                'in_footer' => true,
+            ]
+        );
+
         \Glory\Manager\AssetManager::define(
             'script',
             'amazon-product-js',
@@ -48,6 +59,7 @@ class AssetLoader
             [
                 'dev_mode' => true,
                 'in_footer' => true,
+                'deps' => ['amazon-buscador-cliente-js'],
                 'localize' => [
                     'nombreObjeto' => 'amazonProductAjax',
                     'datos' => [

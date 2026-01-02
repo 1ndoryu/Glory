@@ -26,6 +26,7 @@ class DealsRenderer
             'orderby' => 'discount',
             'order' => 'DESC',
             'category' => '',
+            'show_sort' => '1',
         ], $atts);
 
         $query = $this->buildDealsQuery($atts);
@@ -36,15 +37,32 @@ class DealsRenderer
 
         $deals = $this->collectAndSortDeals($query, $atts);
         $limitedDeals = array_slice($deals, 0, (int) $atts['limit']);
-        // Mostrar cuantos productos son visibles, no el total
         $visibleCount = count($limitedDeals);
+        $showSort = ($atts['show_sort'] === '1');
+        $currentSort = $atts['orderby'] . '-' . $atts['order'];
 
         ob_start();
 ?>
-        <div class="amazon-deals-wrapper">
+        <div class="amazon-deals-wrapper" 
+            data-orderby="<?php echo esc_attr($atts['orderby']); ?>"
+            data-order="<?php echo esc_attr($atts['order']); ?>">
             <div class="amazon-results-header">
-                <h2><?php echo esc_html(Labels::get('daily_deals')); ?></h2>
-                <span class="amazon-count-badge"><?php echo $visibleCount; ?> <?php echo esc_html(Labels::get('results')); ?></span>
+                <div class="amazonResultadosInfo">
+                    <h2><?php echo esc_html(Labels::get('daily_deals')); ?></h2>
+                    <span class="amazon-count-badge"><?php echo $visibleCount; ?> <?php echo esc_html(Labels::get('results')); ?></span>
+                </div>
+                <?php if ($showSort): ?>
+                <div class="amazonOrdenamientoRapido">
+                    <label for="amazon-deals-sort"><?php echo esc_html(Labels::get('sort_by')); ?>:</label>
+                    <select id="amazon-deals-sort" class="amazonSelectorOrden" data-deals="1">
+                        <option value="discount-DESC" <?php selected($currentSort, 'discount-DESC'); ?>><?php echo esc_html(Labels::get('best_discount')); ?></option>
+                        <option value="price-ASC" <?php selected($currentSort, 'price-ASC'); ?>><?php echo esc_html(Labels::get('price_low')); ?></option>
+                        <option value="price-DESC" <?php selected($currentSort, 'price-DESC'); ?>><?php echo esc_html(Labels::get('price_high')); ?></option>
+                        <option value="rating-DESC" <?php selected($currentSort, 'rating-DESC'); ?>><?php echo esc_html(Labels::get('top_rated')); ?></option>
+                        <option value="date-DESC" <?php selected($currentSort, 'date-DESC'); ?>><?php echo esc_html(Labels::get('newest')); ?></option>
+                    </select>
+                </div>
+                <?php endif; ?>
             </div>
 
             <div class="amazon-product-grid">
@@ -95,6 +113,7 @@ class DealsRenderer
 
     /**
      * Recolecta productos y los ordena segun el criterio especificado.
+     * Solo incluye productos donde original_price > price (descuento real).
      */
     private function collectAndSortDeals(\WP_Query $query, array $atts): array
     {
@@ -105,7 +124,21 @@ class DealsRenderer
             $post = get_post();
             $price = (float) get_post_meta($post->ID, 'price', true);
             $originalPrice = (float) get_post_meta($post->ID, 'original_price', true);
+
+            /* 
+             * Solo incluir productos con descuento real.
+             * El precio original debe ser mayor que el precio actual.
+             */
+            if ($originalPrice <= $price || $originalPrice <= 0 || $price <= 0) {
+                continue;
+            }
+
             $discount = DiscountCalculator::calculate($originalPrice, $price);
+
+            /* Solo incluir si hay un descuento significativo (al menos 1%) */
+            if ($discount < 1) {
+                continue;
+            }
 
             $dealsWithDiscount[] = [
                 'post' => $post,

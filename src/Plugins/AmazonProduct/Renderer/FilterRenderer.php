@@ -164,16 +164,33 @@ class FilterRenderer
     }
 
     /**
-     * Renderiza el header de resultados con contador.
+     * Renderiza el header de resultados con contador y mini filtro de ordenamiento.
      * 
      * @param int $totalCount Total de productos encontrados (found_posts)
+     * @param bool $showSort Mostrar el selector de ordenamiento rapido
+     * @param array $atts Atributos del shortcode para preseleccionar orden actual
      */
-    public function renderResultsHeader(int $totalCount = 0): void
+    public function renderResultsHeader(int $totalCount = 0, bool $showSort = true, array $atts = []): void
     {
+        $currentSort = ($atts['orderby'] ?? 'date') . '-' . ($atts['order'] ?? 'DESC');
     ?>
         <div class="amazon-results-header">
-            <h2><?php echo esc_html(Labels::get('products')); ?></h2>
-            <span class="amazon-count-badge"><span id="amazon-total-count"><?php echo esc_html($totalCount); ?></span> <?php echo esc_html(Labels::get('results')); ?></span>
+            <div class="amazonResultadosInfo">
+                <h2><?php echo esc_html(Labels::get('products')); ?></h2>
+                <span class="amazon-count-badge"><span id="amazon-total-count"><?php echo esc_html($totalCount); ?></span> <?php echo esc_html(Labels::get('results')); ?></span>
+            </div>
+            <?php if ($showSort): ?>
+                <div class="amazonOrdenamientoRapido">
+                    <label for="amazon-quick-sort"><?php echo esc_html(Labels::get('sort_by')); ?>:</label>
+                    <select id="amazon-quick-sort" class="amazonSelectorOrden">
+                        <option value="date-DESC" <?php selected($currentSort, 'date-DESC'); ?>><?php echo esc_html(Labels::get('newest')); ?></option>
+                        <option value="price-ASC" <?php selected($currentSort, 'price-ASC'); ?>><?php echo esc_html(Labels::get('price_low')); ?></option>
+                        <option value="price-DESC" <?php selected($currentSort, 'price-DESC'); ?>><?php echo esc_html(Labels::get('price_high')); ?></option>
+                        <option value="discount-DESC" <?php selected($currentSort, 'discount-DESC'); ?>><?php echo esc_html(Labels::get('best_discount')); ?></option>
+                        <option value="rating-DESC" <?php selected($currentSort, 'rating-DESC'); ?>><?php echo esc_html(Labels::get('top_rated')); ?></option>
+                    </select>
+                </div>
+            <?php endif; ?>
         </div>
 <?php
     }

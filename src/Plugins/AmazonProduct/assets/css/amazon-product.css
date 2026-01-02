@@ -385,10 +385,19 @@
 .amazon-results-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
     margin-bottom: 24px;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--amazon-border);
+}
+
+.amazonResultadosInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .amazon-results-header h2 {
@@ -405,6 +414,58 @@
     background: #f5f5f5;
     padding: 4px 12px;
     border-radius: 99px;
+}
+
+/* 
+ * Mini filtro de ordenamiento rapido 
+ */
+.amazonOrdenamientoRapido {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.amazonOrdenamientoRapido label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #737373;
+    white-space: nowrap;
+}
+
+.amazonSelectorOrden {
+    padding: 8px 32px 8px 12px;
+    border: 1px solid var(--amazon-border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--amazon-text);
+    background: var(--amazon-bg);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.amazonSelectorOrden:hover {
+    border-color: #d4d4d4;
+}
+
+.amazonSelectorOrden:focus {
+    border-color: #171717;
+    box-shadow: 0 0 0 2px rgba(23, 23, 23, 0.1);
+}
+
+@media (max-width: 600px) {
+    .amazonOrdenamientoRapido {
+        width: 100%;
+    }
+
+    .amazonSelectorOrden {
+        flex: 1;
+    }
 }
 
 /* Grid */

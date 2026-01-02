@@ -157,6 +157,9 @@ class SyncManager
 
     private function resyncAllManagedPagesHtml(): void
     {
+        // Obtener el modo de contenido por defecto definido en config.php
+        $modoPorDefecto = PageManager::getDefaultContentMode();
+
         // Buscar todas las páginas gestionadas por Glory
         $pages = get_posts([
             'post_type'      => 'page',
@@ -176,7 +179,6 @@ class SyncManager
 
         foreach ($pages as $page) {
             $postId = (int) $page->ID;
-            $modo = (string) get_post_meta($postId, '_glory_content_mode', true);
             $slug = (string) get_post_field('post_name', $postId);
             if ($slug === '') {
                 continue;
@@ -186,12 +188,18 @@ class SyncManager
                 continue;
             }
 
-            // Asegurar que quedan en modo 'editor' para mantener sincronización automática posterior
-            if ($modo !== 'editor') {
-                update_post_meta($postId, '_glory_content_mode', 'editor');
+            // Restablecer al modo por defecto definido en código
+            update_post_meta($postId, '_glory_content_mode', $modoPorDefecto);
+
+            // Si el modo por defecto es 'code', el contenido se renderiza dinámicamente
+            // desde la función PHP, no necesitamos actualizar post_content
+            if ($modoPorDefecto === 'code') {
+                // Limpiar el hash ya que no se usa en modo code
+                delete_post_meta($postId, '_glory_content_hash');
+                continue;
             }
 
-            // Obtener HTML limpio desde el handler utilizando la misma rutina que PageManager
+            // En modo 'editor', copiar el HTML del handler al post_content
             $html = PageManager::renderHandlerParaCopiar($handler);
             if (!is_string($html) || $html === '') {
                 continue;
