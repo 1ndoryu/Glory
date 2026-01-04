@@ -124,18 +124,13 @@ class GloryFeatures
 
         $overridden = self::isEnabled($normalized);
 
-        // Verificar modo desarrollo
-        $isDevMode = (method_exists(AssetManager::class, 'isGlobalDevMode') && AssetManager::isGlobalDevMode()) || (defined('WP_DEBUG') && WP_DEBUG);
-
-        // En modo desarrollo, el override por código tiene máxima prioridad
-        if ($isDevMode) {
-            if ($overridden === false) return false;
-            if ($overridden === true) return true;
-        } else {
-            // En producción, el panel tiene prioridad; el valor del código actúa como default
-            if ($overridden !== null) {
-                $defaultOption = (bool) $overridden;
-            }
+        // Si hay un override explícito (enable/disable en control.php), ese tiene prioridad absoluta.
+        // La BD solo aplica cuando NO hay override explícito.
+        if ($overridden === false) {
+            return false;
+        }
+        if ($overridden === true) {
+            return true;
         }
 
         // Resolver clave(s) de opción posibles evitando advertencias por opciones no definidas.
