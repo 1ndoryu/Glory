@@ -440,6 +440,7 @@
             formData.append('order', this.state.order);
             formData.append('exclude', this.state.exclude);
             formData.append('random_seed', this.state.randomSeed);
+            formData.append('pagination', this.wrapper.dataset.pagination || '1');
 
             fetch(amazonProductAjax.ajax_url, {
                 method: 'POST',

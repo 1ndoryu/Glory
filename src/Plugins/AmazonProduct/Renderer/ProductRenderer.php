@@ -259,7 +259,7 @@ class ProductRenderer
             'order' => sanitize_text_field($_POST['order'] ?? 'DESC'),
             'exclude' => sanitize_text_field($_POST['exclude'] ?? ''),
             'random_seed' => sanitize_text_field($_POST['random_seed'] ?? ''),
-            'show_pagination' => true,
+            'show_pagination' => ($_POST['pagination'] ?? '1') !== '0',
         ];
 
         ob_start();

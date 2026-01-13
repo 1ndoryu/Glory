@@ -190,8 +190,13 @@ class GridRenderer
         $paged = (int) ($params['paged'] ?? 1);
         $offset = ($paged - 1) * $limit;
         $pagedPosts = array_slice($postsWithDiscount, $offset, $limit);
-        $totalPosts = count($postsWithDiscount);
-        $totalPages = ceil($totalPosts / $limit);
+        /* 
+         * Si no hay paginación, el total es lo que mostramos (respetando limit).
+         * Esto corrige el bug donde el contador mostraba TODOS los productos  
+         * cuando se usaba orderby="discount" en shortcodes con pagination="0".
+         */
+        $totalPosts = $showPagination ? count($postsWithDiscount) : count($pagedPosts);
+        $totalPages = (int) ceil(count($postsWithDiscount) / $limit);
 
         if (empty($pagedPosts)) {
             $this->renderEmptyState();
