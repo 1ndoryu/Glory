@@ -128,6 +128,14 @@ class GridRenderer
             return 0;
         }
 
+        /* 
+         * Aplicar ordenamiento por descuento si corresponde.
+         * Calcula el descuento para cada producto y ordena de mayor a menor.
+         */
+        if ($this->queryBuilder->isDiscountSorting($params)) {
+            $filteredPosts = $this->sortByDiscount($filteredPosts, $params['order'] ?? 'DESC');
+        }
+
         // Aplicar paginacion manual
         $limit = max(1, $limit); // Proteccion contra division por cero
         $offset = ($paged - 1) * $limit;
@@ -202,6 +210,36 @@ class GridRenderer
 
         wp_reset_postdata();
         return $totalPosts;
+    }
+
+    /**
+     * Ordena un array de posts por descuento.
+     * 
+     * @param array $posts Array de WP_Post objects
+     * @param string $order 'DESC' para mayor descuento primero, 'ASC' para menor
+     * @return array Posts ordenados
+     */
+    private function sortByDiscount(array $posts, string $order = 'DESC'): array
+    {
+        $postsWithDiscount = [];
+
+        foreach ($posts as $post) {
+            $price = (float) get_post_meta($post->ID, 'price', true);
+            $originalPrice = (float) get_post_meta($post->ID, 'original_price', true);
+            $discount = DiscountCalculator::calculate($originalPrice, $price);
+
+            $postsWithDiscount[] = [
+                'post' => $post,
+                'discount' => $discount
+            ];
+        }
+
+        usort($postsWithDiscount, function ($a, $b) use ($order) {
+            $diff = $b['discount'] - $a['discount'];
+            return $order === 'ASC' ? -$diff : $diff;
+        });
+
+        return array_column($postsWithDiscount, 'post');
     }
 
     /**
