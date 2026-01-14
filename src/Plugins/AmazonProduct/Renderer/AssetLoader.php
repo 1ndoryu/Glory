@@ -60,6 +60,7 @@ class AssetLoader
                 'dev_mode' => true,
                 'in_footer' => true,
                 'deps' => ['amazon-buscador-cliente-js'],
+                'version' => '2.0.0', // Forzar recarga - fix IDs globales
                 'localize' => [
                     'nombreObjeto' => 'amazonProductAjax',
                     'datos' => [

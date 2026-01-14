@@ -61,12 +61,12 @@
             this.isLoading = false;
             this.abortController = null;
 
-            // Referencias a elementos del DOM
+            // Referencias a elementos del DOM (dentro del wrapper para evitar conflictos)
             this.gridContainer = wrapper.querySelector('.amazon-product-grid-container');
             this.loader = wrapper.querySelector('.amazon-loader');
-            this.filterPanel = document.getElementById('amazon-filter-panel');
-            this.toggleBtn = document.getElementById('amazon-toggle-filters');
-            this.totalCount = document.getElementById('amazon-total-count');
+            this.filterPanel = wrapper.querySelector('.amazon-filter-panel');
+            this.toggleBtn = wrapper.querySelector('.amazon-btn-filters');
+            this.totalCount = wrapper.querySelector('.amazon-count-badge span');
 
             // Estado inicial desde data attributes
             this.state = {
@@ -207,21 +207,21 @@
                 btn.addEventListener('click', this.handleCategoryClick);
             });
 
-            // Prime checkbox
-            const primeCheckbox = document.getElementById('amazon-prime');
+            // Prime checkbox (buscar dentro del wrapper)
+            const primeCheckbox = this.wrapper.querySelector('#amazon-prime, input[type="checkbox"][value="1"]:first-of-type');
             if (primeCheckbox) {
                 primeCheckbox.addEventListener('change', this.handlePrimeChange);
             }
 
             // Deals checkbox
-            const dealsCheckbox = document.getElementById('amazon-deals');
+            const dealsCheckbox = this.wrapper.querySelector('#amazon-deals, .amazon-checkbox-label:nth-child(2) input');
             if (dealsCheckbox) {
                 dealsCheckbox.addEventListener('change', this.handleDealsChange);
             }
 
             // Price range
-            const priceRange = document.getElementById('amazon-max-price-range');
-            const priceDisplay = document.getElementById('price-display');
+            const priceRange = this.wrapper.querySelector('.amazon-range-wrapper input[type="range"]');
+            const priceDisplay = this.wrapper.querySelector('#price-display');
             if (priceRange) {
                 priceRange.addEventListener('input', function () {
                     if (priceDisplay) priceDisplay.textContent = this.value;
@@ -285,7 +285,7 @@
         }
 
         bindSearchEvents() {
-            const searchInput = document.getElementById('amazon-search');
+            const searchInput = this.wrapper.querySelector('.amazon-search-container input');
             if (searchInput) {
                 searchInput.addEventListener('input', this.handleSearchInput);
             }
@@ -298,8 +298,9 @@
         }
 
         bindSortEvents() {
-            const sortSelect = document.getElementById('amazon-sort');
-            const quickSortSelect = document.getElementById('amazon-quick-sort');
+            // Buscar selectores dentro del wrapper para evitar conflictos con múltiples shortcodes
+            const sortSelect = this.wrapper.querySelector('.amazon-sort-wrapper select');
+            const quickSortSelect = this.wrapper.querySelector('.amazonSelectorOrden');
 
             if (sortSelect) {
                 sortSelect.addEventListener('change', this.handleSortChange);
@@ -336,23 +337,24 @@
         }
 
         bindResetEvents() {
-            const resetBtn = document.getElementById('amazon-reset-filters');
+            const resetBtn = this.wrapper.querySelector('.amazon-filter-footer button');
             if (resetBtn) {
                 resetBtn.addEventListener('click', this.handleResetClick);
             }
 
-            // Evento delegado para boton de limpiar busqueda
-            document.addEventListener('click', this.handleClearSearch);
+            // Evento delegado para boton de limpiar busqueda (solo dentro del wrapper)
+            this.wrapper.addEventListener('click', this.handleClearSearch);
         }
 
         handleResetClick() {
-            // Reset UI elements
-            const searchInput = document.getElementById('amazon-search');
-            const priceRange = document.getElementById('amazon-max-price-range');
-            const priceDisplay = document.getElementById('price-display');
-            const primeCheckbox = document.getElementById('amazon-prime');
-            const dealsCheckbox = document.getElementById('amazon-deals');
-            const sortSelect = document.getElementById('amazon-sort');
+            // Reset UI elements (buscar dentro del wrapper)
+            const searchInput = this.wrapper.querySelector('.amazon-search-container input');
+            const priceRange = this.wrapper.querySelector('.amazon-range-wrapper input[type="range"]');
+            const priceDisplay = this.wrapper.querySelector('#price-display');
+            const primeCheckbox = this.wrapper.querySelector('#amazon-prime');
+            const dealsCheckbox = this.wrapper.querySelector('#amazon-deals');
+            const sortSelect = this.wrapper.querySelector('.amazon-sort-wrapper select');
+            const quickSortSelect = this.wrapper.querySelector('.amazonSelectorOrden');
             const ratingButtons = this.wrapper.querySelectorAll('.amazon-rating-btn');
             const categoryButtons = this.wrapper.querySelectorAll('.amazon-category-btn');
 
@@ -366,6 +368,7 @@
             if (primeCheckbox) primeCheckbox.checked = false;
             if (dealsCheckbox) dealsCheckbox.checked = false;
             if (sortSelect) sortSelect.value = 'date-DESC';
+            if (quickSortSelect) quickSortSelect.value = 'date-DESC';
 
             // Reset state
             this.state.paged = 1;
@@ -384,7 +387,7 @@
 
         handleClearSearch(e) {
             if (e.target && e.target.id === 'amazon-clear-search') {
-                const resetBtn = document.getElementById('amazon-reset-filters');
+                const resetBtn = this.wrapper.querySelector('.amazon-filter-footer button');
                 if (resetBtn) resetBtn.click();
             }
         }
