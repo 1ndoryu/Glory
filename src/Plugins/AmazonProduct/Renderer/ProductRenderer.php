@@ -262,9 +262,15 @@ class ProductRenderer
             'show_pagination' => ($_POST['pagination'] ?? '1') !== '0',
         ];
 
+        /* DEBUG TEMPORAL - Eliminar después de resolver */
+        error_log('[AmazonAJAX] Params recibidos: ' . json_encode($params));
+        error_log('[AmazonAJAX] POST pagination raw: ' . ($_POST['pagination'] ?? 'NOT_SET'));
+
         ob_start();
         $count = $this->gridRenderer->render($params);
         $html = ob_get_clean();
+
+        error_log('[AmazonAJAX] Count retornado: ' . $count);
 
         wp_send_json_success(['html' => $html, 'count' => $count]);
     }
