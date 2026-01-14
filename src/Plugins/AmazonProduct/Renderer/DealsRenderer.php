@@ -43,7 +43,7 @@ class DealsRenderer
 
         ob_start();
 ?>
-        <div class="amazon-deals-wrapper" 
+        <div class="amazon-deals-wrapper"
             data-orderby="<?php echo esc_attr($atts['orderby']); ?>"
             data-order="<?php echo esc_attr($atts['order']); ?>">
             <div class="amazon-results-header">
@@ -52,16 +52,16 @@ class DealsRenderer
                     <span class="amazon-count-badge"><?php echo $visibleCount; ?> <?php echo esc_html(Labels::get('results')); ?></span>
                 </div>
                 <?php if ($showSort): ?>
-                <div class="amazonOrdenamientoRapido">
-                    <label for="amazon-deals-sort"><?php echo esc_html(Labels::get('sort_by')); ?>:</label>
-                    <select id="amazon-deals-sort" class="amazonSelectorOrden" data-deals="1">
-                        <option value="discount-DESC" <?php selected($currentSort, 'discount-DESC'); ?>><?php echo esc_html(Labels::get('best_discount')); ?></option>
-                        <option value="price-ASC" <?php selected($currentSort, 'price-ASC'); ?>><?php echo esc_html(Labels::get('price_low')); ?></option>
-                        <option value="price-DESC" <?php selected($currentSort, 'price-DESC'); ?>><?php echo esc_html(Labels::get('price_high')); ?></option>
-                        <option value="rating-DESC" <?php selected($currentSort, 'rating-DESC'); ?>><?php echo esc_html(Labels::get('top_rated')); ?></option>
-                        <option value="date-DESC" <?php selected($currentSort, 'date-DESC'); ?>><?php echo esc_html(Labels::get('newest')); ?></option>
-                    </select>
-                </div>
+                    <div class="amazonOrdenamientoRapido">
+                        <label for="amazon-deals-sort"><?php echo esc_html(Labels::get('sort_by')); ?>:</label>
+                        <select id="amazon-deals-sort" class="amazonSelectorOrden" data-deals="1">
+                            <option value="discount-DESC" <?php selected($currentSort, 'discount-DESC'); ?>><?php echo esc_html(Labels::get('best_discount')); ?></option>
+                            <option value="price-ASC" <?php selected($currentSort, 'price-ASC'); ?>><?php echo esc_html(Labels::get('price_low')); ?></option>
+                            <option value="price-DESC" <?php selected($currentSort, 'price-DESC'); ?>><?php echo esc_html(Labels::get('price_high')); ?></option>
+                            <option value="rating-DESC" <?php selected($currentSort, 'rating-DESC'); ?>><?php echo esc_html(Labels::get('top_rated')); ?></option>
+                            <option value="date-DESC" <?php selected($currentSort, 'date-DESC'); ?>><?php echo esc_html(Labels::get('newest')); ?></option>
+                        </select>
+                    </div>
                 <?php endif; ?>
             </div>
 
@@ -153,17 +153,26 @@ class DealsRenderer
         // Ordenar segun atributo
         usort($dealsWithDiscount, function ($a, $b) use ($atts) {
             $field = $atts['orderby'];
-            $order = strtoupper($atts['order']) === 'ASC' ? 1 : -1;
+            /* 
+             * FIX: El orden estaba invertido.
+             * DESC debe mostrar mayor primero (orden natural de $b - $a)
+             * ASC debe mostrar menor primero (invertimos con -1)
+             */
+            $isDesc = strtoupper($atts['order']) === 'DESC';
 
             switch ($field) {
                 case 'discount':
-                    return ($b['discount'] - $a['discount']) * $order;
+                    $diff = $b['discount'] - $a['discount'];
+                    return $isDesc ? $diff : -$diff;
                 case 'price':
-                    return ($a['price'] - $b['price']) * $order;
+                    $diff = $a['price'] - $b['price'];
+                    return $isDesc ? -$diff : $diff;
                 case 'rating':
-                    return ($b['rating'] - $a['rating']) * $order;
+                    $diff = $b['rating'] - $a['rating'];
+                    return $isDesc ? $diff : -$diff;
                 default:
-                    return strcmp($b['date'], $a['date']) * $order;
+                    $diff = strcmp($b['date'], $a['date']);
+                    return $isDesc ? $diff : -$diff;
             }
         });
 
