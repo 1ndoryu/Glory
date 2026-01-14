@@ -70,7 +70,12 @@ class GridRenderer
 
         $totalPosts = $query->found_posts;
         wp_reset_postdata();
-        return $totalPosts;
+
+        /*
+         * Si no hay paginación, devolver cuántos productos se mostraron realmente
+         * (el menor entre found_posts y limit).
+         */
+        return $showPagination ? $totalPosts : min($totalPosts, $limit);
     }
 
     /**
@@ -153,7 +158,13 @@ class GridRenderer
         }
 
         wp_reset_postdata();
-        return $totalPosts;
+
+        /* 
+         * Si no hay paginación, el contador debe mostrar cuántos productos son visibles,
+         * no el total de productos filtrados. Esto corrige el bug donde el contador
+         * mostraba 467 productos cuando solo se mostraban 4.
+         */
+        return $showPagination ? $totalPosts : count($pagedPosts);
     }
 
     /**
