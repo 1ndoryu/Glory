@@ -20,6 +20,7 @@ use Glory\Seo\SeoFrontendRenderer;
 use Glory\Plugins\AmazonProduct\AmazonProductPlugin;
 use Glory\Api\PageBlocksController;
 use Glory\Api\MCPController;
+use Glory\Api\ImagesController;
 
 /**
  * Clase principal de inicialización del framework Glory.
@@ -175,6 +176,13 @@ class Setup
         PerformanceProfiler::medirFuncion(
             fn() => MCPController::register(),
             'MCPController.register',
+            'api'
+        );
+
+        /* Registrar API de imágenes optimizadas */
+        PerformanceProfiler::medirFuncion(
+            fn() => ImagesController::register(),
+            'ImagesController.register',
             'api'
         );
 
