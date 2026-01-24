@@ -23,6 +23,8 @@
         "@editorjs/list": "^2.0.9",
         "@editorjs/paragraph": "^2.11.7",
         "@editorjs/quote": "^2.7.6",
+        "@stripe/react-stripe-js": "^5.4.1",
+        "@stripe/stripe-js": "^8.6.4",
         "framer-motion": "^12.23.26",
         "glory-theme": "file:../../..",
         "lucide-react": "^0.559.0",
