@@ -30,47 +30,43 @@ Glory permite decidir **pagina por pagina** que tecnologia usar. Todo convive en
 
 ## Guia Rapida: Crear Pagina React
 
-### Metodo Simplificado (Solo 3 Pasos)
+### Metodo OCP (Solo 3 Pasos - RECOMENDADO)
+
+Este método cumple con el principio **Open/Closed**: los archivos existentes no se modifican para agregar nuevas páginas.
 
 #### Paso 1: Crear el Componente
 
 Crea tu componente en `App/React/islands/MiPaginaIsland.tsx`:
 
 ```tsx
-import { PageLayout } from '@/pageBuilder';
-
 interface MiPaginaIslandProps {
     siteName?: string;
 }
 
 export function MiPaginaIsland({ siteName = 'Glory' }: MiPaginaIslandProps): JSX.Element {
     return (
-        <PageLayout siteName={siteName} usePageBuilder={false}>
-            <div className="max-w-[1200px] mx-auto px-6 py-20">
-                <h1 className="text-5xl font-bold mb-4">Mi Pagina</h1>
-                <p className="text-gray-400">Contenido aqui</p>
-            </div>
-        </PageLayout>
+        <div className="contenedorPrincipal">
+            <h1>Mi Pagina en {siteName}</h1>
+            <p>Contenido aqui</p>
+        </div>
     );
 }
 
 export default MiPaginaIsland;
 ```
 
-> **Tip:** Usa `PageLayout` para tener nav y footer automaticamente.
-> Con `usePageBuilder={false}` desactivas los bloques editables.
+#### Paso 2: Registrar en inicializarIslands.ts
 
-#### Paso 2: Registrar en appIslands.tsx
-
-Edita `App/React/appIslands.tsx`:
+Edita `App/React/config/inicializarIslands.ts`:
 
 ```tsx
-import { MiPaginaIsland } from './islands/MiPaginaIsland';
+import {MiPaginaIsland} from '../islands/MiPaginaIsland';
 
-export const appIslands = {
-    // ... otros islands
-    MiPaginaIsland: MiPaginaIsland,
-};
+registrarIsland(
+    'MiPaginaIsland',
+    MiPaginaIsland,
+    'Descripcion de mi pagina'
+);
 ```
 
 #### Paso 3: Una Linea en pages.php
@@ -78,7 +74,6 @@ export const appIslands = {
 Edita `App/Config/pages.php`:
 
 ```php
-// Pagina simple con props estaticos
 PageManager::reactPage('mi-pagina', 'MiPaginaIsland', [
     'siteName' => 'Mi Sitio'
 ]);
@@ -86,7 +81,22 @@ PageManager::reactPage('mi-pagina', 'MiPaginaIsland', [
 
 **¡Listo!** Tu pagina estara disponible en `/mi-pagina/`
 
+> **Nota OCP:** Con este sistema, `appIslands.tsx` nunca necesita modificarse.
+> Las islands se auto-registran al ser importadas en `inicializarIslands.ts`.
+
 ---
+
+### Metodo Legacy (Compatibilidad)
+
+Para proyectos existentes que prefieren el método manual, puedes seguir agregando islands directamente en `appIslands.tsx` en el objeto `islandsManuales`:
+
+```tsx
+const islandsManuales: Record<string, React.ComponentType<Record<string, unknown>>> = {
+    MiPaginaIsland: MiPaginaIsland,
+};
+```
+
+Este método sigue funcionando pero **no se recomienda** para nuevos desarrollos.
 
 ### Opciones de reactPage()
 
@@ -176,14 +186,21 @@ glory/
 ├── App/                              # Contenido ESPECIFICO del proyecto
 │   ├── React/
 │   │   ├── islands/                  # Componentes React del proyecto
-│   │   │   └── HomeIsland.tsx
+│   │   │   ├── DashboardIsland.tsx
+│   │   │   └── MiNuevaIsland.tsx
+│   │   ├── config/                   # Configuración y registros (OCP)
+│   │   │   ├── registroIslands.ts    # API de registro de islands
+│   │   │   ├── inicializarIslands.ts # Auto-registro de islands
+│   │   │   ├── registroPaneles.ts    # API de registro de paneles
+│   │   │   └── inicializarPaneles.ts # Auto-registro de paneles
+│   │   ├── appIslands.tsx            # Entry point (no modificar para agregar islands)
 │   │   ├── package.json              # Tipos TS (@types/react, lucide-react)
 │   │   ├── node_modules/             # Solo tipos, no runtime
 │   │   └── tsconfig.json             # Config TS para el IDE
 │   ├── Templates/pages/
 │   │   └── home.php                  # Funciones PHP que renderizan islas
 │   └── Config/
-│       └── pages.php                 # Definiciones de paginas
+│       └── pages.php                 # Definiciones de rutas de paginas
 │
 ├── Glory/                            # Framework AGNOSTICO (no modificar por proyecto)
 │   ├── assets/react/
