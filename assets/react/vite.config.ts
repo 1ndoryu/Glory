@@ -80,7 +80,10 @@ export default defineConfig(({mode}) => {
             alias: {
                 '@': resolve(__dirname, 'src'),
                 // Alias para importar componentes especificos del proyecto desde App/React
-                '@app': resolve(__dirname, '../../../App/React')
+                '@app': resolve(__dirname, '../../../App/React'),
+                // Resolver dependencias de Capacitor desde App/React usando los paquetes instalados aqui
+                '@codetrix-studio/capacitor-google-auth': resolve(__dirname, 'node_modules/@codetrix-studio/capacitor-google-auth'),
+                '@capacitor/core': resolve(__dirname, 'node_modules/@capacitor/core')
             },
             // Asegurar que los modulos se resuelvan desde node_modules de Glory
             // Esto permite que App/React use las dependencias instaladas aqui
