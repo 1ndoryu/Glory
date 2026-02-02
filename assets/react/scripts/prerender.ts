@@ -53,10 +53,13 @@ const mockProps: Record<string, Record<string, unknown>> = {
  * Islas que NO deben prerenderizarse
  * - SPA routers (contenido 100% dinamico)
  * - Islas que requieren datos de servidor obligatorios
+ * - Páginas muy grandes de contenido estático (mejor renderizar en cliente)
  */
 const skipIslands = new Set([
     'MainAppIsland', // SPA Router
-    'DashboardIsland' // Requires extensive browser APIs (localStorage, window)
+    'DashboardIsland', // Requires extensive browser APIs (localStorage, window)
+    'PoliticaPrivacidadIsland', // Contenido estático extenso (renderizar en cliente)
+    'TerminosServicioIsland' // Contenido estático extenso (renderizar en cliente)
 ]);
 
 /**
