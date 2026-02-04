@@ -83,7 +83,8 @@ export default defineConfig(({mode}) => {
                 '@app': resolve(__dirname, '../../../App/React'),
                 // Resolver dependencias de Capacitor desde App/React usando los paquetes instalados aqui
                 '@codetrix-studio/capacitor-google-auth': resolve(__dirname, 'node_modules/@codetrix-studio/capacitor-google-auth'),
-                '@capacitor/core': resolve(__dirname, 'node_modules/@capacitor/core')
+                '@capacitor/core': resolve(__dirname, 'node_modules/@capacitor/core'),
+                '@capacitor/app': resolve(__dirname, 'node_modules/@capacitor/app')
             },
             // Asegurar que los modulos se resuelvan desde node_modules de Glory
             // Esto permite que App/React use las dependencias instaladas aqui
