@@ -38,7 +38,14 @@ export default defineConfig(({mode}) => {
                     entryFileNames: 'assets/[name]-[hash].js',
                     chunkFileNames: 'assets/[name]-[hash].js',
                     assetFileNames: 'assets/[name]-[hash].[ext]'
-                }
+                },
+                /*
+                 * Módulos externos que no deben bundlearse
+                 * Se resuelven en runtime (plugins de Capacitor opcionales)
+                 */
+                external: [
+                    '@capacitor/local-notifications'
+                ]
             },
 
             // Limpia el directorio antes de cada build
