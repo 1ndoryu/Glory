@@ -139,19 +139,42 @@ class PageManager
         array|callable|null $props = null,
         array $roles = []
     ): void {
-        // Validar slug
-        if (empty($slug) || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
-            GloryLogger::error("PageManager::reactPage: Slug invalido '{$slug}'.");
-            return;
+        /*
+         * Soporte para slugs anidados (ej: 'soluciones/hosting').
+         * Se separa en parentSlug y childSlug para crear la jerarquía
+         * correcta en WP y registrar la página hija bajo su padre.
+         */
+        $parentSlug = null;
+        $childSlug = $slug;
+
+        if (str_contains($slug, '/')) {
+            $parts = explode('/', $slug);
+            $childSlug = array_pop($parts);
+            $parentSlug = implode('/', $parts);
+
+            foreach (array_merge($parts, [$childSlug]) as $segmento) {
+                if (empty($segmento) || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $segmento)) {
+                    GloryLogger::error("PageManager::reactPage: Segmento invalido '{$segmento}' en slug '{$slug}'.");
+                    return;
+                }
+            }
+        } else {
+            if (empty($slug) || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
+                GloryLogger::error("PageManager::reactPage: Slug invalido '{$slug}'.");
+                return;
+            }
         }
 
-        // Auto-registrar como ReactFullPage
+        // Registrar como ReactFullPage (usar path completo + child por separado)
         if (!in_array($slug, self::$paginasReactFullpage, true)) {
             self::$paginasReactFullpage[] = $slug;
         }
+        if ($parentSlug && !in_array($childSlug, self::$paginasReactFullpage, true)) {
+            self::$paginasReactFullpage[] = $childSlug;
+        }
 
         // Generar nombre de funcion unico para el handler
-        $nombreFuncion = '_glory_react_page_' . str_replace('-', '_', $slug);
+        $nombreFuncion = '_glory_react_page_' . str_replace(['-', '/'], '_', $slug);
 
         // Guardar configuracion para el closure
         self::$reactPageConfigs[$slug] = [
@@ -161,25 +184,23 @@ class PageManager
 
         // Crear el handler dinamico si no existe
         if (!function_exists($nombreFuncion)) {
-            // Usar eval para crear la funcion (necesario porque define() espera nombre de funcion)
-            // La funcion real esta en renderReactIsland()
             $GLOBALS['_glory_react_configs'][$slug] = [
                 'islandName' => $islandName,
                 'props' => $props
             ];
         }
 
-        // Definir titulo
-        $titulo = ucwords(str_replace(['-', '_'], ' ', $slug));
+        // Titulo derivado del slug hijo (no del path completo)
+        $titulo = ucwords(str_replace(['-', '_'], ' ', $childSlug));
 
-        // Registrar en paginasDefinidas con handler especial
+        // Registrar en paginasDefinidas con KEY = path completo
         self::$paginasDefinidas[$slug] = [
             'titulo'      => $titulo,
             'plantilla'   => 'TemplateGlory.php',
             'funcion'     => [self::class, 'renderReactIsland'],
-            'slug'        => $slug,
+            'slug'        => $childSlug,
             'roles'       => $roles,
-            'parentSlug'  => null,
+            'parentSlug'  => $parentSlug,
             'isReactPage' => true,
             'islandName'  => $islandName,
             'islandProps' => $props,
@@ -192,8 +213,17 @@ class PageManager
      */
     public static function renderReactIsland(): void
     {
-        $slug = get_post_field('post_name', get_queried_object_id());
+        $queriedId = get_queried_object_id();
+        $slug = get_post_field('post_name', $queriedId);
         $config = self::$paginasDefinidas[$slug] ?? null;
+
+        /* Fallback: para páginas hijas, buscar por path completo */
+        if (!$config || empty($config['isReactPage'])) {
+            $fullPath = get_page_uri($queriedId);
+            if ($fullPath) {
+                $config = self::$paginasDefinidas[$fullPath] ?? null;
+            }
+        }
 
         if (!$config || empty($config['isReactPage'])) {
             echo '<!-- PageManager: No se encontro configuracion para ' . esc_html($slug) . ' -->';
@@ -273,10 +303,25 @@ class PageManager
             return $plantilla;
         }
 
-        $slug = get_post_field('post_name', get_queried_object_id());
+        $queriedId = get_queried_object_id();
+        $slug = get_post_field('post_name', $queriedId);
 
-        if (isset(self::$paginasDefinidas[$slug])) {
-            $defPagina = self::$paginasDefinidas[$slug];
+        /*
+         * Resolver la key de la pagina definida.
+         * Para paginas hijas (ej: /soluciones/hosting/), el post_name es 'hosting'
+         * pero la key en $paginasDefinidas es 'soluciones/hosting'.
+         * Se intenta primero la key directa, luego el path completo via get_page_uri().
+         */
+        $lookupKey = $slug;
+        if (!isset(self::$paginasDefinidas[$slug])) {
+            $fullPath = get_page_uri($queriedId);
+            if ($fullPath && isset(self::$paginasDefinidas[$fullPath])) {
+                $lookupKey = $fullPath;
+            }
+        }
+
+        if (isset(self::$paginasDefinidas[$lookupKey])) {
+            $defPagina = self::$paginasDefinidas[$lookupKey];
             $rolesRequeridos = $defPagina['roles'] ?? [];
 
             if (!empty($rolesRequeridos)) {
@@ -294,7 +339,7 @@ class PageManager
 
                 // Determinar que plantilla usar
                 // Si la pagina esta registrada como React Fullpage, usar TemplateReact.php
-                if (self::isReactFullPage($slug)) {
+                if (self::isReactFullPage($lookupKey) || self::isReactFullPage($slug)) {
                     $plantillaCentral = get_template_directory() . '/TemplateReact.php';
                 } else {
                     $plantillaCentral = get_template_directory() . '/TemplateGlory.php';

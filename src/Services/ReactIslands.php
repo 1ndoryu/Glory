@@ -246,6 +246,15 @@ class ReactIslands
             return;
         }
 
+        // Inyectar contexto global via filtro (Agnóstico)
+        $context = apply_filters('glory_react_context', []);
+
+        if (!empty($context)) {
+            echo '<script id="glory-context">';
+            echo 'window.GLORY_CONTEXT = ' . json_encode($context) . ';';
+            echo '</script>' . PHP_EOL;
+        }
+
         $assetsUrl = self::getAssetsUrl();
 
         if (self::isDevMode()) {
