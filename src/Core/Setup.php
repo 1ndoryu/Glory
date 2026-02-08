@@ -194,6 +194,15 @@ class Setup
             'api'
         );
 
+        /* Registrar API de Stripe (checkout, portal, webhooks) */
+        if (class_exists(\App\Handlers\StripeController::class)) {
+            PerformanceProfiler::medirFuncion(
+                fn() => \App\Handlers\StripeController::register(),
+                'StripeController.register',
+                'api'
+            );
+        }
+
         PerformanceProfiler::end('Setup.constructor');
     }
 }
