@@ -21,6 +21,7 @@ use Glory\Plugins\AmazonProduct\AmazonProductPlugin;
 use Glory\Api\PageBlocksController;
 use Glory\Api\MCPController;
 use Glory\Api\ImagesController;
+use Glory\Api\NewsletterController;
 
 /**
  * Clase principal de inicialización del framework Glory.
@@ -183,6 +184,13 @@ class Setup
         PerformanceProfiler::medirFuncion(
             fn() => ImagesController::register(),
             'ImagesController.register',
+            'api'
+        );
+
+        /* Registrar API de newsletter */
+        PerformanceProfiler::medirFuncion(
+            fn() => NewsletterController::register(),
+            'NewsletterController.register',
             'api'
         );
 
