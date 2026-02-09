@@ -26,6 +26,7 @@ class AssetsUtility
         self::registerAssetPath('colors', 'Glory/assets/images/colors');
         // Alias para logos de marcas
         self::registerAssetPath('logos', 'Glory/assets/images/logos');
+        self::registerAssetPath('equipo', 'App/Assets/equipo');
         self::registerAssetPath('tema', 'App/Assets/images');
         self::$isInitialized = true;
     }

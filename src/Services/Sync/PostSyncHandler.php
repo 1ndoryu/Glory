@@ -175,6 +175,7 @@ class PostSyncHandler
             'post_content' => $definition['contenido'] ?? '',
             'post_status'  => $definition['estado'] ?? 'publish',
             'post_excerpt' => $definition['extracto'] ?? '',
+            'post_name'    => trim($definition['slugDefault']),
             'meta_input'   => $definition['metaEntrada'] ?? [],
         ];
         $data['meta_input'][self::META_CLAVE_SLUG_DEFAULT] = trim($definition['slugDefault']);
