@@ -339,7 +339,7 @@ AssetManager::define(
     'script',
     'glory-content-actions',
     '/Glory/assets/js/UI/gloryContentActions.js',
-    ['deps' => ['jquery', 'glory-ajax'], 'in_footer' => true, 'area' => 'both', 'feature' => 'contentActions']
+    ['deps' => ['jquery'], 'in_footer' => true, 'area' => 'both', 'feature' => 'contentActions']
 );
 
 // Componente: Pestañas
