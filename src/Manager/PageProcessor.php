@@ -52,7 +52,7 @@ class PageProcessor
             }
         }
 
-        self::actualizarOpcionesPaginaFrontal($idPaginaInicioProcesada);
+        PageReconciler::actualizarOpcionesPaginaFrontal($idPaginaInicioProcesada);
         set_transient('pagemanager_ids_procesados', $idsPaginasProcesadas, 15 * \MINUTE_IN_SECONDS);
     }
 
@@ -171,125 +171,6 @@ class PageProcessor
 
         PageSeoDefaults::aplicarSeoPorDefecto($idPaginaActual, $defPagina['slug'] ?? '');
         return $idPaginaActual;
-    }
-
-    /* ── Reconciliación ── */
-
-    public static function reconciliarPaginasGestionadas(): void
-    {
-        $idsDefinidosActuales = self::obtenerIdsDefinidosActuales();
-
-        $argsTodasGestionadas = [
-            'post_type'      => 'page',
-            'post_status'    => 'any',
-            'posts_per_page' => -1,
-            'meta_key'       => self::CLAVE_META_GESTION,
-            'meta_value'     => true,
-            'fields'         => 'ids',
-        ];
-        $idsPaginasEnBdGestionadas = get_posts($argsTodasGestionadas);
-
-        if (empty($idsPaginasEnBdGestionadas)) {
-            return;
-        }
-
-        $idsPaginasParaEliminar = array_diff($idsPaginasEnBdGestionadas, $idsDefinidosActuales);
-        if (!empty($idsPaginasParaEliminar)) {
-            self::eliminarPaginasObsoletas($idsPaginasParaEliminar);
-        }
-    }
-
-    private static function obtenerIdsDefinidosActuales(): array
-    {
-        $idsDefinidos = get_transient('pagemanager_ids_procesados');
-
-        if ($idsDefinidos === false) {
-            $idsDefinidos = [];
-            $paginasDefinidas = PageDefinition::getPaginasDefinidas();
-            if (!empty($paginasDefinidas)) {
-                $slugsDefinidos = array_keys($paginasDefinidas);
-                $args = [
-                    'post_type'      => 'page',
-                    'post_status'    => 'publish',
-                    'posts_per_page' => -1,
-                    'meta_key'       => self::CLAVE_META_GESTION,
-                    'meta_value'     => true,
-                    'fields'         => 'ids',
-                    'post_name__in'  => $slugsDefinidos,
-                ];
-                $idsReconstruidos = get_posts($args);
-                if (!empty($idsReconstruidos)) {
-                    $idsDefinidos = $idsReconstruidos;
-                }
-            } else {
-                GloryLogger::info("PageManager: No hay páginas definidas para reconstrucción de IDs.");
-            }
-        } else {
-            delete_transient('pagemanager_ids_procesados');
-            if (!is_array($idsDefinidos)) {
-                $idsDefinidos = [];
-            }
-        }
-
-        return $idsDefinidos;
-    }
-
-    private static function eliminarPaginasObsoletas(array $idsPaginasParaEliminar): void
-    {
-        $idPaginaFrontalActual = (int) get_option('page_on_front');
-        $idPaginaEntradasActual = (int) get_option('page_for_posts');
-
-        foreach ($idsPaginasParaEliminar as $idPagina) {
-            if ($idPagina === $idPaginaFrontalActual && $idPaginaFrontalActual > 0) {
-                GloryLogger::warning("PageManager: OMITIENDO eliminación de página ID {$idPagina} (página frontal).");
-                continue;
-            }
-            if ($idPagina === $idPaginaEntradasActual && $idPaginaEntradasActual > 0) {
-                GloryLogger::warning("PageManager: OMITIENDO eliminación de página ID {$idPagina} (página de entradas).");
-                continue;
-            }
-
-            $paginaEliminada = wp_delete_post($idPagina, true);
-            if (!$paginaEliminada) {
-                GloryLogger::error("PageManager: FALLÓ al eliminar página obsoleta ID: {$idPagina}.");
-            } else {
-                GloryLogger::info("PageManager: Página obsoleta ID: {$idPagina} eliminada.");
-            }
-        }
-    }
-
-    public static function actualizarOpcionesPaginaFrontal(?int $idPaginaInicio): void
-    {
-        $opcionMostrarEnFrontActual = get_option('show_on_front');
-        $opcionPaginaEnFrontActual = (int) get_option('page_on_front');
-        $opcionPaginaParaEntradasActual = (int) get_option('page_for_posts');
-
-        if ($idPaginaInicio && $idPaginaInicio > 0) {
-            $objetoPaginaInicio = get_post($idPaginaInicio);
-            if (!$objetoPaginaInicio || $objetoPaginaInicio->post_type !== 'page' || $objetoPaginaInicio->post_status !== 'publish') {
-                GloryLogger::error("PageManager: ID de página de inicio {$idPaginaInicio} es inválido.");
-                if ($opcionMostrarEnFrontActual === 'page' && $opcionPaginaEnFrontActual === $idPaginaInicio) {
-                    update_option('show_on_front', 'posts');
-                    update_option('page_on_front', 0);
-                }
-                return;
-            }
-
-            if ($opcionMostrarEnFrontActual !== 'page') {
-                update_option('show_on_front', 'page');
-            }
-            if ($opcionPaginaEnFrontActual !== $idPaginaInicio) {
-                update_option('page_on_front', $idPaginaInicio);
-                if ($opcionPaginaParaEntradasActual === $idPaginaInicio) {
-                    update_option('page_for_posts', 0);
-                }
-            }
-        } else {
-            if ($opcionMostrarEnFrontActual === 'page') {
-                update_option('show_on_front', 'posts');
-                update_option('page_on_front', 0);
-            }
-        }
     }
 
     /* ── Helpers de contenido ── */

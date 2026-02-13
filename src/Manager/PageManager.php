@@ -9,7 +9,8 @@ namespace Glory\Manager;
  *   - PageDefinition: registro y almacenamiento de definiciones
  *   - PageTemplateInterceptor: interceptación de templates WP
  *   - PageSeoDefaults: valores SEO por defecto
- *   - PageProcessor: CRUD, reconciliación y helpers de contenido
+ *   - PageProcessor: CRUD y helpers de contenido
+ *   - PageReconciler: reconciliación de páginas obsoletas y front page
  *
  * Todos los métodos públicos se mantienen para retrocompatibilidad.
  * Refactorizado para cumplir SRP (max 300 líneas).
@@ -97,20 +98,22 @@ class PageManager
         return PageSeoDefaults::getDefaultSeoForSlug($slug);
     }
 
-    /* ── Fachada: delega a PageProcessor (CRUD / reconciliación) ── */
+    /* ── Fachada: delega a PageProcessor (CRUD) ── */
 
     public static function procesarPaginasDefinidas(): void
     {
         PageProcessor::procesarPaginasDefinidas();
     }
 
-    public static function reconciliarPaginasGestionadas(): void
-    {
-        PageProcessor::reconciliarPaginasGestionadas();
-    }
-
     public static function renderHandlerParaCopiar(string $handler): string
     {
         return PageProcessor::renderHandlerParaCopiar($handler);
+    }
+
+    /* ── Fachada: delega a PageReconciler ── */
+
+    public static function reconciliarPaginasGestionadas(): void
+    {
+        PageReconciler::reconciliarPaginasGestionadas();
     }
 }
