@@ -69,7 +69,7 @@ class PageManager
                 $nombrePlantilla = $plantilla;
             } else {
                 $titulo = ucwords(str_replace(['-', '_'], ' ', $slug));
-                $nombrePlantilla = 'TemplateGlory.php';
+                $nombrePlantilla = 'TemplateReact.php';
                 $nombreFuncion = $handler;
             }
         }
@@ -196,7 +196,7 @@ class PageManager
         // Registrar en paginasDefinidas con KEY = path completo
         self::$paginasDefinidas[$slug] = [
             'titulo'      => $titulo,
-            'plantilla'   => 'TemplateGlory.php',
+            'plantilla'   => 'TemplateReact.php',
             'funcion'     => [self::class, 'renderReactIsland'],
             'slug'        => $childSlug,
             'roles'       => $roles,
@@ -342,7 +342,7 @@ class PageManager
                 if (self::isReactFullPage($lookupKey) || self::isReactFullPage($slug)) {
                     $plantillaCentral = get_template_directory() . '/TemplateReact.php';
                 } else {
-                    $plantillaCentral = get_template_directory() . '/TemplateGlory.php';
+                    $plantillaCentral = get_template_directory() . '/TemplateReact.php';
                 }
 
                 if (file_exists($plantillaCentral)) {

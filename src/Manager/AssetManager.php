@@ -4,7 +4,6 @@ namespace Glory\Manager;
 
 use Glory\Core\GloryLogger;
 use Glory\Core\GloryFeatures;
-use Glory\Services\GestorCssCritico;
 use Glory\Manager\OpcionManager;
 
 
@@ -21,7 +20,6 @@ final class AssetManager
     private static string $versionTema = '1.0.0';
     private static bool $hooksRegistrados = false;
     private static array $deferredScripts = [];
-    private static ?string $cssCritico = null;
     private static array $handlesEstilosAsincronos = [];
     private static bool $asyncStylesEnabled = false; // Flag para CSS asincrono global
 
@@ -155,26 +153,7 @@ final class AssetManager
             add_action('admin_enqueue_scripts', [self::class, 'enqueueAdminAssets'], 20);
             add_filter('script_loader_tag', [self::class, 'addDeferAttribute'], 10, 2);
 
-            // CSS Critico: registrar hook wp_head con prioridad 1 (antes de otros CSS)
-            // El metodo imprimirCssCritico tiene inicializacion perezosa, solo imprime si hay CSS
-            if (!is_admin()) {
-                add_action('wp_head', [self::class, 'imprimirCssCritico'], 1);
-            }
-
             self::$hooksRegistrados = true;
-        }
-    }
-
-    public static function imprimirCssCritico(): void
-    {
-        // Inicialización perezosa: si aún no está calculado, obtenerlo ahora
-        if (self::$cssCritico === null && \Glory\Core\GloryFeatures::isActive('cssCritico', 'glory_css_critico_activado') !== false) {
-            self::$cssCritico = \Glory\Services\GestorCssCritico::getParaPaginaActual();
-        }
-        $bytes = self::$cssCritico ? strlen((string) self::$cssCritico) : 0;
-        // GloryLogger::info('AssetManager: hook wp_head -> imprimirCssCritico', [ 'has' => self::$cssCritico ? 1 : 0, 'bytes' => $bytes ]);
-        if (!empty(self::$cssCritico)) {
-            echo '<style id="glory-css-critico">' . self::$cssCritico . '</style>';
         }
     }
 
@@ -222,27 +201,15 @@ final class AssetManager
 
     public static function enqueueFrontendAssets(): void
     {
-        // Respetar el flag global de GloryFeatures para cssCritico
-        if (GloryFeatures::isActive('cssCritico', 'glory_css_critico_activado') === false) {
-            self::$cssCritico = null;
-        } else {
-            self::$cssCritico = GestorCssCritico::getParaPaginaActual();
-        }
-
         // Determinar si activar CSS asincrono:
         // 1. Si asyncStylesEnabled esta activo (via enableAsyncStyles())
-        // 2. Si cssCritico esta activo y tiene CSS generado
-        // 3. Si la opcion glory_css_async_global esta activa en BD
+        // 2. Si la opcion glory_css_async_global esta activa en BD
         $globalAsyncOption = OpcionManager::get('glory_css_async_global');
         $shouldUseAsync = self::$asyncStylesEnabled
-            || ($globalAsyncOption === true)
-            || (self::$cssCritico !== null);
-
-        // Nota: el hook wp_head para CSS critico ya se registra en register() con prioridad 1
+            || ($globalAsyncOption === true);
 
         // Aplicar CSS asincrono si corresponde
         if ($shouldUseAsync) {
-            // Controlar si el resto de CSS debe ir asincrono
             $optAsync = OpcionManager::get('glory_css_critico_async_resto');
             $asyncResto = ($optAsync === null) ? true : (bool) $optAsync;
             if ($asyncResto) {
@@ -299,7 +266,7 @@ final class AssetManager
                     }
                 }
 
-                if ($tipo === self::ASSET_TYPE_STYLE && self::$cssCritico && $currentArea === 'frontend') {
+                if ($tipo === self::ASSET_TYPE_STYLE && $currentArea === 'frontend') {
                     self::$handlesEstilosAsincronos[] = $handle;
                 }
 

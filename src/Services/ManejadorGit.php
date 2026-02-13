@@ -3,7 +3,6 @@
 namespace Glory\Services;
 
 use Glory\Core\GloryLogger;
-use Glory\Exception\ExcepcionComandoFallido;
 
 class ManejadorGit
 {
@@ -57,7 +56,7 @@ class ManejadorGit
             $errorMsg = 'El comando ejecutable (primer elemento del array) está vacío.';
             GloryLogger::error($errorMsg);
             if ($lanzarExcepcion) {
-                throw new ExcepcionComandoFallido($errorMsg, -1);
+                throw new \RuntimeException($errorMsg, -1);
             }
             return ['exito' => false, 'salida' => '', 'error' => $errorMsg, 'codigo' => -1];
         }
@@ -74,7 +73,7 @@ class ManejadorGit
             }
             GloryLogger::error($errorMsg);
             if ($lanzarExcepcion) {
-                throw new ExcepcionComandoFallido($errorMsg, -1);
+                throw new \RuntimeException($errorMsg, -1);
             }
             return ['exito' => false, 'salida' => '', 'error' => $errorMsg, 'codigo' => -1];
         }
@@ -106,8 +105,8 @@ class ManejadorGit
                 GloryLogger::info("Salida estándar (en error) para {$logCmdDesc}: {$salidaLimpia}");
             }
             if ($lanzarExcepcion) {
-                throw new ExcepcionComandoFallido(
-                    "Error al ejecutar {$logCmdDesc}. Código: {$codigoSalida}.", $codigoSalida, $errorLimpio
+                throw new \RuntimeException(
+                    "Error al ejecutar {$logCmdDesc}. Código: {$codigoSalida}. {$errorLimpio}", $codigoSalida
                 );
             }
             return ['exito' => false, 'salida' => $salidaLimpia, 'error' => $errorLimpio, 'codigo' => $codigoSalida];

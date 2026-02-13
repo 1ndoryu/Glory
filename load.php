@@ -26,12 +26,10 @@ if (is_readable($archivoOpciones)) {
     require_once $archivoOpciones;
 }
 
-// ============================================================================
-// IMPORTANTE: control.php debe cargarse ANTES de scriptSetup.php
-// ============================================================================
-// Esto permite que GloryFeatures::applyReactMode() desactive features
-// antes de que scriptSetup.php defina los scripts con sus condicionales.
-// ============================================================================
+/*
+ * Control del tema: se carga antes de scriptSetup para que
+ * las features esten definidas cuando se registren los assets.
+ */
 $archivoControlTema = get_template_directory() . '/App/Config/control.php';
 if (is_readable($archivoControlTema)) {
     require_once $archivoControlTema;

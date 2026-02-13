@@ -372,16 +372,4 @@ class ReactIslands
         self::$devMode = null;
     }
 
-    /**
-     * Verifica si el tema esta en Modo React.
-     * 
-     * Cuando esta activo, Glory desactiva automaticamente los scripts nativos
-     * de UI (modales, navegacion AJAX, etc.) porque React los reemplaza.
-     * 
-     * @return bool True si reactMode esta habilitado en GloryFeatures.
-     */
-    public static function isReactMode(): bool
-    {
-        return \Glory\Core\GloryFeatures::isReactMode();
-    }
 }
