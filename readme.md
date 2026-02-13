@@ -17,6 +17,7 @@ Framework para trabajar WordPress + React + TypeScript con una experiencia de de
 - 🔄 Flujo completo de una página
 - 📁 Estructura del framework
 - 🪝 Hooks y utilidades principales
+- 🧠 Managers, servicios y herramientas internas
 - 🧰 CLI y generación de código
 - 🎛️ Feature flags
 - 📦 Scripts de desarrollo
@@ -159,6 +160,36 @@ Lee opciones del tema desde contexto compartido.
 ### `useIslandProps<T>()`
 
 Tipa props de la isla actual con DX consistente.
+
+---
+
+## 🧠 Managers, servicios y herramientas internas
+
+Resumen de las piezas más útiles del core PHP de Glory:
+
+### Managers (registro y orquestación)
+
+- `PageManager`, `PageProcessor`, `PageReconciler`: registro, validación y sincronización de páginas React.
+- `AssetManager`: registro y carga ordenada de assets.
+- `MenuManager`, `MenuSync`: normalización y sincronización de menús.
+- `PostTypeManager`: registro de CPTs y soporte asociado.
+- `DefaultContentManager`: contenido inicial controlado por configuración.
+
+### Services (lógica de dominio)
+
+- `ReactIslands`, `ReactContentProvider`, `ReactAssetLoader`: puente entre WordPress y runtime React.
+- `DefaultContentSynchronizer`: sincroniza contenido base y metadatos.
+- `TokenManager`: manejo de tokens/nonce y utilidades de seguridad.
+- `QueryProfiler`, `PerformanceProfiler`, `HttpProfiler`: diagnóstico de rendimiento y consultas.
+- `Stripe/*`: checkout, cliente API y verificación de webhooks.
+- `Sync/*`: utilidades para sincronizar posts, términos y medios.
+
+### Core, API, SEO y Tools
+
+- Core: `GloryFeatures`, `GloryConfig`, `Setup`, `GloryLogger`.
+- API: `ImagesController`, `NewsletterController`, `PageBlocksController`, `MCPController`.
+- SEO: `MetaTagRenderer`, `OpenGraphRenderer`, `JsonLdRenderer`, `SeoFrontendRenderer`.
+- Tools: `GitCommandRunner`, `ManejadorGit` para soporte de flujos internos.
 
 ---
 
