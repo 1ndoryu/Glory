@@ -22,6 +22,7 @@ use Glory\Api\PageBlocksController;
 use Glory\Api\MCPController;
 use Glory\Api\ImagesController;
 use Glory\Api\NewsletterController;
+use Glory\Api\FormController;
 
 /**
  * Clase principal de inicialización del framework Glory.
@@ -168,10 +169,11 @@ class Setup
         }
 
 
-
+        /*
         if (GloryFeatures::isActive('amazonProduct') !== false) {
             (new AmazonProductPlugin())->init();
         }
+        */
 
         /* Registrar API de configuración MCP */
         PerformanceProfiler::medirFuncion(
@@ -193,6 +195,15 @@ class Setup
             'NewsletterController.register',
             'api'
         );
+
+        /* Registrar API de formularios de contacto */
+        if (GloryFeatures::isActive('gloryForm') !== false) {
+            PerformanceProfiler::medirFuncion(
+                fn() => FormController::register(),
+                'FormController.register',
+                'api'
+            );
+        }
 
         /*
          * Registrar API de Stripe (checkout, portal, webhooks).
