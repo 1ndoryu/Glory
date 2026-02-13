@@ -11,6 +11,7 @@
 namespace Glory;
 
 use Glory\Core\Setup;
+use Glory\Core\GloryConfig;
 
 // Definición de constantes de ruta
 if (!defined('GLORY_FRAMEWORK_PATH')) {
@@ -20,33 +21,28 @@ if (!defined('GLORY_CONFIG_PATH')) {
     define('GLORY_CONFIG_PATH', GLORY_FRAMEWORK_PATH . '/Config');
 }
 
-// Carga de definición de opciones del tema (primero, para que scriptSetup pueda consultarlas)
+// Carga de definición de opciones del tema (primero, para que el proyecto pueda consultarlas)
 $archivoOpciones = GLORY_CONFIG_PATH . '/options.php';
 if (is_readable($archivoOpciones)) {
     require_once $archivoOpciones;
 }
 
+/* Inicializar GloryConfig — resuelve rutas del proyecto sin hardcodear App/ */
+GloryConfig::load();
+
 /*
- * Control del tema: se carga antes de scriptSetup para que
+ * Control del tema: se carga antes del boot para que
  * las features esten definidas cuando se registren los assets.
  */
-$archivoControlTema = get_template_directory() . '/App/Config/control.php';
+$archivoControlTema = GloryConfig::path('config_dir') . '/control.php';
 if (is_readable($archivoControlTema)) {
     require_once $archivoControlTema;
 }
 
-// Cargar opciones del tema (antes de scriptSetup para que pueda usarlas)
-$archivoOpcionesTema = get_template_directory() . '/App/Config/opcionesTema.php';
+// Cargar opciones del tema
+$archivoOpcionesTema = GloryConfig::path('config_dir') . '/opcionesTema.php';
 if (is_readable($archivoOpcionesTema)) {
     require_once $archivoOpcionesTema;
-}
-
-// Carga de configuración de scripts (después de control.php y opciones)
-$archivoConfiguracionScripts = GLORY_CONFIG_PATH . '/scriptSetup.php';
-if (is_readable($archivoConfiguracionScripts)) {
-    require_once $archivoConfiguracionScripts;
-} else {
-    error_log("Glory Framework: No se pudo leer el archivo de configuración: {$archivoConfiguracionScripts}");
 }
 
 // Carga de funciones globales

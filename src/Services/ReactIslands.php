@@ -74,6 +74,13 @@ class ReactIslands
             return false;
         }
 
+        /* Cachear resultado con transient para evitar HTTP check en cada request (30s) */
+        $cached = get_transient('glory_vite_dev_mode');
+        if ($cached !== false) {
+            self::$devMode = ($cached === '1');
+            return self::$devMode;
+        }
+
         // Verificar si el dev server esta respondiendo
         $devServerUrl = 'http://localhost:' . self::DEV_SERVER_PORT;
 
@@ -86,6 +93,7 @@ class ReactIslands
         ]));
 
         self::$devMode = $response !== false;
+        set_transient('glory_vite_dev_mode', self::$devMode ? '1' : '0', 30);
 
         return self::$devMode;
     }
@@ -251,7 +259,7 @@ class ReactIslands
 
         if (!empty($context)) {
             echo '<script id="glory-context">';
-            echo 'window.GLORY_CONTEXT = ' . json_encode($context) . ';';
+            echo 'window.GLORY_CONTEXT = ' . wp_json_encode($context, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';';
             echo '</script>' . PHP_EOL;
         }
 

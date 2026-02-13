@@ -76,13 +76,20 @@ class PageBlocksController
 
     /**
      * Verifica si el usuario puede leer los bloques
+     * Posts publicados son publicos; borradores requieren autenticacion
      */
     public static function canReadBlocks(\WP_REST_Request $request): bool
     {
-        /* 
-         * Los bloques son publicos para lectura 
-         * (se usan en el renderizado SSR)
-         */
+        $pageId = (int) $request->get_param('page_id');
+
+        if ($pageId) {
+            $post = get_post($pageId);
+            if ($post && $post->post_status === 'publish') {
+                return true;
+            }
+            return current_user_can('edit_posts');
+        }
+
         return true;
     }
 

@@ -166,11 +166,10 @@ class ScheduleManager
                             if (($s_entry['day'] ?? '') === $next_day_name_candidate && ($s_entry['status'] ?? 'closed') === 'open' && !empty($s_entry['open'])) {
                                 $day_prefix = ($i === 1) ? 'mañana' : 'el ' . lcfirst($next_day_name_candidate);
                                 $next_opening_day_info = $day_prefix . ' a las ' . esc_html($s_entry['open']);
-                                goto found_next_opening_schedule_manager;
+                                break 2;
                             }
                         }
                     }
-                    found_next_opening_schedule_manager:;
                 }
             }
             $message = 'Cerrado.';

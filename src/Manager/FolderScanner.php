@@ -22,7 +22,7 @@ final class FolderScanner
         if (!is_dir(self::$cacheDir)) {
             mkdir(self::$cacheDir, 0755, true);
         }
-        return self::$cacheDir . '/glory_assets_' . md5($cacheKey) . '.php';
+        return self::$cacheDir . '/glory_assets_' . md5($cacheKey) . '.json';
     }
 
 
@@ -35,7 +35,8 @@ final class FolderScanner
         $cacheFile = self::getCacheFilePath($cacheKey);
 
         if (!$modoDesarrollo && file_exists($cacheFile)) {
-            $cachedAssets = include $cacheFile;
+            $cacheContent = file_get_contents($cacheFile);
+            $cachedAssets = $cacheContent !== false ? json_decode($cacheContent, true) : null;
             if (is_array($cachedAssets)) {
                 foreach ($cachedAssets as $handle => $config) {
                     AssetManager::define($tipo, $handle, $config['ruta'], array_merge($configDefault, $config));
@@ -69,7 +70,7 @@ final class FolderScanner
             }
 
             if (!$modoDesarrollo) {
-                $cacheContent = '<?php return ' . var_export($discoveredAssets, true) . ';';
+                $cacheContent = wp_json_encode($discoveredAssets, JSON_PRETTY_PRINT);
                 file_put_contents($cacheFile, $cacheContent, LOCK_EX);
             }
         } catch (\Exception $e) {

@@ -217,14 +217,9 @@ class PostSyncHandler
 
         list($alias, $nombreArchivo) = $parsed;
 
-        // Mapa de alias a rutas (debe coincidir con AssetsUtility::init)
-        $aliasMap = [
-            'glory' => 'Glory/assets/images',
-            'elements' => 'Glory/assets/images/elements',
-            'colors' => 'Glory/assets/images/colors',
-            'logos' => 'Glory/assets/images/logos',
-            'tema' => 'App/Assets/images',
-        ];
+        /* Usar el mapa centralizado de AssetResolver en vez de duplicarlo */
+        \Glory\Utility\AssetResolver::init();
+        $aliasMap = \Glory\Utility\AssetResolver::getAssetPaths();
 
         $basePath = $aliasMap[$alias] ?? null;
         if ($basePath === null) {

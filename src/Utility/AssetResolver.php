@@ -19,13 +19,15 @@ class AssetResolver
         if (self::$isInitialized) {
             return;
         }
+        /* Paths propios del framework Glory */
         self::registerAssetPath('glory', 'Glory/assets/images');
         self::registerAssetPath('elements', 'Glory/assets/images/elements');
-        /* Respetar mayúsculas/minúsculas reales del filesystem (Linux es case-sensitive) */
         self::registerAssetPath('colors', 'Glory/assets/images/colors');
         self::registerAssetPath('logos', 'Glory/assets/images/logos');
-        self::registerAssetPath('equipo', 'App/Assets/equipo');
-        self::registerAssetPath('tema', 'App/Assets/images');
+
+        /* Hook para que el proyecto registre sus propios paths sin hardcodear en Glory */
+        do_action('glory/register_asset_paths');
+
         self::$isInitialized = true;
     }
 

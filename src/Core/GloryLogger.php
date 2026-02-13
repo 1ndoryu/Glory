@@ -153,12 +153,13 @@ class GloryLogger
      */
     private static function registrar(int $nivel, string $mensaje, array $contexto = []): void
     {
-        // Obtiene el nombre de la función o método que llamó al logger.
-        $nombreLlamador = self::getNombreLlamador();
+        /* Solo obtener backtrace para niveles >= advertencia; para info usar clave genérica */
+        $nombreLlamador = ($nivel >= self::NIVEL_ADVERTENCIA)
+            ? self::getNombreLlamador()
+            : '[info]';
 
-        // Genera una huella única para este mensaje específico (nivel, mensaje, contexto)
-        // para prevenir la duplicación exacta de logs dentro del mismo grupo y ejecución.
-        $huellaLog = md5($nivel . '|' . $mensaje . '|' . serialize($contexto));
+        /* Huella ligera para deduplicación: crc32 sin serializar contexto */
+        $huellaLog = crc32($nivel . '|' . $mensaje);
 
         // Si es la primera vez que se registra un log desde este llamador, inicializa su entrada en el buffer.
         if (!isset(self::$bufferLogs[$nombreLlamador])) {

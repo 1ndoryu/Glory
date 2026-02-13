@@ -194,10 +194,16 @@ class Setup
             'api'
         );
 
-        /* Registrar API de Stripe (checkout, portal, webhooks) */
-        if (class_exists(\App\Handlers\StripeController::class)) {
+        /*
+         * Registrar API de Stripe (checkout, portal, webhooks).
+         * TO-DO: Crear Glory\Api\StripeController cuando se implemente
+         * la integración completa de pagos.
+         * Se usa string en class_exists para evitar error de tipo indefinido.
+         */
+        $stripeControllerClass = 'Glory\\Api\\StripeController';
+        if (class_exists($stripeControllerClass)) {
             PerformanceProfiler::medirFuncion(
-                fn() => \App\Handlers\StripeController::register(),
+                fn() => $stripeControllerClass::register(),
                 'StripeController.register',
                 'api'
             );

@@ -11,8 +11,12 @@ use Glory\Core\GloryLogger;
  */
 class EventBus
 {
+    /* Buffer en memoria para agrupar emisiones y flushear en shutdown */
+    private static array $pendingEmits = [];
+    private static bool $shutdownRegistered = false;
+
     /**
-     * Incrementa la versión de un canal y guarda el timestamp del último cambio.
+     * Acumula la emisión en memoria; se persiste en shutdown para evitar múltiples get/update_option.
      */
     public static function emit(string $channel, mixed $payload = null): void
     {
@@ -20,25 +24,43 @@ class EventBus
         if ($channel === '') {
             return;
         }
-        $versionKey = self::getVersionOptionKey($channel);
-        $timeKey    = self::getTimeOptionKey($channel);
 
-        $current = get_option($versionKey, 0);
-        $next    = is_numeric($current) ? (intval($current) + 1) : 1;
-        update_option($versionKey, $next, false);
-        update_option($timeKey, time(), false);
-
-        // Opcional: guardar último payload para diagnósticos (no usar para datos sensibles)
-        if (!is_null($payload)) {
-            $lastPayloadKey = self::getPayloadOptionKey($channel);
-            // Almacenar como JSON compacto para evitar errores de serialización
-            $encoded = wp_json_encode($payload);
-            if (is_string($encoded)) {
-                update_option($lastPayloadKey, $encoded, false);
-            }
+        if (!isset(self::$pendingEmits[$channel])) {
+            self::$pendingEmits[$channel] = ['count' => 1, 'payload' => $payload];
+        } else {
+            self::$pendingEmits[$channel]['count']++;
+            self::$pendingEmits[$channel]['payload'] = $payload;
         }
 
-        // Sin logs en producción; mantener silencioso
+        if (!self::$shutdownRegistered) {
+            add_action('shutdown', [self::class, 'flushPendingEmits'], 5);
+            self::$shutdownRegistered = true;
+        }
+    }
+
+    /**
+     * Persiste todas las emisiones acumuladas al final del request.
+     */
+    public static function flushPendingEmits(): void
+    {
+        foreach (self::$pendingEmits as $channel => $data) {
+            $versionKey = self::getVersionOptionKey($channel);
+            $timeKey    = self::getTimeOptionKey($channel);
+
+            $current = get_option($versionKey, 0);
+            $next    = is_numeric($current) ? (intval($current) + $data['count']) : $data['count'];
+            update_option($versionKey, $next, false);
+            update_option($timeKey, time(), false);
+
+            if (!is_null($data['payload'])) {
+                $lastPayloadKey = self::getPayloadOptionKey($channel);
+                $encoded = wp_json_encode($data['payload']);
+                if (is_string($encoded)) {
+                    update_option($lastPayloadKey, $encoded, false);
+                }
+            }
+        }
+        self::$pendingEmits = [];
     }
 
     /**

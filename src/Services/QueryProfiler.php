@@ -18,14 +18,6 @@ class QueryProfiler
     private static bool $dataInjected = false;
 
     /**
-     * Log interno controlado por la opción/feature 'queryProfilerLogs'.
-     */
-    private static function debugLog(string $message): void
-    {
-        // Logs desactivados por defecto. Para reactivar, eliminar este return
-        return;
-    }
-    /**
      * Hook de arranque. Debe llamarse temprano durante la carga del framework.
      */
     public static function init(): void
@@ -33,7 +25,6 @@ class QueryProfiler
         // Activo sólo si la feature está activa por código o por opción del panel.
         // Por defecto: apagado en prod; en dev, el código puede habilitarlo sin tocar la opción.
         $activo = GloryFeatures::isActive('queryProfiler', 'glory_query_profiler_activado', false);
-        self::debugLog('init: featureActive=' . ($activo ? '1' : '0') . ' area=' . (is_admin() ? 'admin' : 'front'));
         if (!$activo) {
             return;
         }
@@ -96,8 +87,12 @@ class QueryProfiler
         if (self::$dataInjected) {
             return;
         }
-        self::debugLog('injectData: hook=' . current_action() . ' area=' . (is_admin() ? 'admin' : 'front'));
-        // El asset se registra en Glory/Config/scriptSetup.php con handle 'glory-query-profiler'
+
+        /* Solo administradores pueden ver queries SQL en el frontend */
+        if (!current_user_can('manage_options')) {
+            return;
+        }
+
         if (!wp_script_is('glory-query-profiler', 'enqueued')) {
             // Intentar encolarlo si está registrado (para cubrir orden de hooks)
             if (wp_script_is('glory-query-profiler', 'registered')) {
@@ -109,7 +104,6 @@ class QueryProfiler
                 wp_enqueue_style('glory-query-profiler');
             }
         }
-        self::debugLog('injectData: script_enqueued=' . (wp_script_is('glory-query-profiler', 'enqueued') ? '1' : '0') . ' style_enqueued=' . (wp_style_is('glory-query-profiler', 'enqueued') ? '1' : '0'));
         if (!wp_script_is('glory-query-profiler', 'enqueued')) {
             return;
         }
@@ -138,7 +132,6 @@ class QueryProfiler
         // Poner los datos antes del script para que estén disponibles al cargarlo
         wp_add_inline_script('glory-query-profiler', 'window.GloryQueryProfilerData = ' . $json . ';', 'before');
         self::$dataInjected = true;
-        self::debugLog('injectData: inlineData added with ' . count($data['queries']) . ' queries.');
     }
 
     /**
@@ -147,7 +140,6 @@ class QueryProfiler
      */
     public static function enqueueAssets(): void
     {
-        self::debugLog('enqueueAssets: hook=' . current_action() . ' area=' . (is_admin() ? 'admin' : 'front'));
         $styleHandle = 'glory-query-profiler';
         $scriptHandle = 'glory-query-profiler';
 
@@ -172,8 +164,6 @@ class QueryProfiler
         if (wp_script_is($scriptHandle, 'registered') && !wp_script_is($scriptHandle, 'enqueued')) {
             wp_enqueue_script($scriptHandle);
         }
-        self::debugLog('enqueueAssets: script_registered=' . (wp_script_is($scriptHandle, 'registered') ? '1' : '0') . ' style_registered=' . (wp_style_is($styleHandle, 'registered') ? '1' : '0'));
-        self::debugLog('enqueueAssets: enqueued script=' . (wp_script_is($scriptHandle, 'enqueued') ? '1' : '0') . ' style=' . (wp_style_is($styleHandle, 'enqueued') ? '1' : '0'));
     }
 
     /**

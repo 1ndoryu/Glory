@@ -52,13 +52,19 @@ class NewsletterController
 
     /*
      * Crear tabla si no existe
+     * Usa get_option para evitar SHOW TABLES en cada carga
      */
     public static function crearTabla(): void
     {
+        if (get_option('glory_newsletter_tabla_creada')) {
+            return;
+        }
+
         global $wpdb;
         $tabla = $wpdb->prefix . self::TABLE_SUFFIX;
 
         if ($wpdb->get_var("SHOW TABLES LIKE '$tabla'") === $tabla) {
+            update_option('glory_newsletter_tabla_creada', true);
             return;
         }
 
@@ -76,6 +82,8 @@ class NewsletterController
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
         dbDelta($sql);
+
+        update_option('glory_newsletter_tabla_creada', true);
     }
 
     /*
@@ -108,9 +116,10 @@ class NewsletterController
         }
 
         /* Insertar nuevo suscriptor */
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : null;
         $resultado = $wpdb->insert($tabla, [
             'email' => $email,
-            'ip'    => $_SERVER['REMOTE_ADDR'] ?? null
+            'ip'    => $ip
         ], ['%s', '%s']);
 
         if ($resultado === false) {

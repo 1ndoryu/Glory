@@ -269,7 +269,7 @@ class ReactContentProvider
         }
 
         add_action('wp_head', function () use ($content) {
-            $json = wp_json_encode($content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $json = wp_json_encode($content, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP);
             echo '<script>window.__GLORY_CONTENT__ = ' . $json . ';</script>' . PHP_EOL;
         }, 1);
 

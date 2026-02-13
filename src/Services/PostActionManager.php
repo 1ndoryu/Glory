@@ -1,5 +1,5 @@
-<?
-// App/Glory/Class/PostActionManager.php
+<?php
+/* Glory/src/Services/PostActionManager.php */
 
 namespace Glory\Services;
 
@@ -11,6 +11,11 @@ class PostActionManager
 {
     public static function crearPost(string $tipoPost, array $datos, bool $retornarWpError = false): int|WP_Error
     {
+        if (!current_user_can('edit_posts')) {
+            GloryLogger::error("PostActionManager::crearPost() - Usuario sin permisos para crear posts.");
+            return $retornarWpError ? new WP_Error('unauthorized', 'No tienes permisos para crear posts.') : 0;
+        }
+
         if (empty($tipoPost) || !post_type_exists($tipoPost)) {
             GloryLogger::error("PostActionManager::crearPost() - Invalid or non-existent post type: '{$tipoPost}'.");
             return $retornarWpError ? new WP_Error('invalid_post_type', "Invalid post type '{$tipoPost}'.") : 0;
@@ -42,6 +47,12 @@ class PostActionManager
 
     public static function updatePost(array $datos, bool $retornarWpError = false): int|WP_Error
     {
+        $checkId = isset($datos['ID']) ? absint($datos['ID']) : 0;
+        if ($checkId && !current_user_can('edit_post', $checkId)) {
+            GloryLogger::error("PostActionManager::updatePost() - Usuario sin permisos para editar post ID: {$checkId}.");
+            return $retornarWpError ? new WP_Error('unauthorized', "No tienes permisos para editar el post {$checkId}.") : 0;
+        }
+
         if (!isset($datos['ID']) || !($postId = absint($datos['ID'])) || $postId === 0) {
             GloryLogger::error("PostActionManager::updatePost() - Missing or invalid 'ID' in data array.");
             return $retornarWpError ? new WP_Error('missing_id', 'Post ID is required for update.') : 0;
@@ -81,6 +92,11 @@ class PostActionManager
 
     public static function deletePost(int $postId, bool $forzarBorrado = false): bool
     {
+        if (!current_user_can('delete_post', $postId)) {
+            GloryLogger::error("PostActionManager::deletePost() - Usuario sin permisos para eliminar post ID: {$postId}.");
+            return false;
+        }
+
         if (!self::_validarPostId($postId, !$forzarBorrado)) {
             return false;
         }

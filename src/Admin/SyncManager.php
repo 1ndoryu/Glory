@@ -42,13 +42,15 @@ class SyncManager
     public function performAutomaticSyncIfDevMode(): void
     {
         $devMode = AssetManager::isGlobalDevMode();
-        $wpDebug = (defined('WP_DEBUG') && WP_DEBUG);
-        // GloryLogger::info('SyncManager: Estado de desarrollo', [
-        //     'globalDevMode' => $devMode ? 'on' : 'off',
-        //     'wpDebug' => $wpDebug ? 'on' : 'off',
-        // ]);
 
         if (!$devMode) return;
+
+        /* Throttle: evitar sincronización en cada carga de admin (cooldown 60s) */
+        $lastSync = get_transient('glory_last_auto_sync');
+        if ($lastSync !== false) {
+            return;
+        }
+        set_transient('glory_last_auto_sync', time(), 60);
 
         // En admin: sincronización completa (opciones, páginas, default content)
         if (is_admin()) {
@@ -79,7 +81,7 @@ class SyncManager
             'id'     => 'glory_force_sync',
             'parent' => 'glory_sync_group',
             'title'  => 'Sincronizar Todo',
-            'href'   => add_query_arg('glory_action', 'sync'),
+            'href'   => wp_nonce_url(add_query_arg('glory_action', 'sync'), 'glory_sync_action', '_glory_nonce'),
             'meta'   => [
                 'title' => 'Sincroniza Opciones, Páginas y Contenido por Defecto desde el código a la base de datos.',
             ],
@@ -90,7 +92,7 @@ class SyncManager
                 'id'     => 'glory_reset_default',
                 'parent' => 'glory_sync_group',
                 'title'  => 'Restablecer a Default',
-                'href'   => add_query_arg('glory_action', 'reset'),
+                'href'   => wp_nonce_url(add_query_arg('glory_action', 'reset'), 'glory_sync_action', '_glory_nonce'),
                 'meta'   => [
                     'title' => 'Restablece el contenido modificado manualmente a su estado original definido en el código.',
                 ],
@@ -101,10 +103,10 @@ class SyncManager
             'id'     => 'glory_clear_cache',
             'parent' => 'glory_sync_group',
             'title'  => 'Borrar Caché de Glory',
-            'href'   => add_query_arg([
+            'href'   => wp_nonce_url(add_query_arg([
                 'glory_action' => 'clear_cache',
                 'nocache' => time(),
-            ]),
+            ]), 'glory_sync_action', '_glory_nonce'),
             'meta'   => [
                 'title' => 'Elimina toda la caché de contenido (transients) generada por Glory.',
             ],
@@ -115,6 +117,11 @@ class SyncManager
     {
         if (!isset($_GET['glory_action']) || !current_user_can('manage_options')) {
             return;
+        }
+
+        /* Verificar nonce CSRF antes de procesar cualquier acción */
+        if (!isset($_GET['_glory_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_glory_nonce'])), 'glory_sync_action')) {
+            wp_die(__('Nonce de seguridad inválido.', 'glory'), __('Error de seguridad', 'glory'), ['response' => 403]);
         }
 
         $action = sanitize_key($_GET['glory_action']);
@@ -270,98 +277,7 @@ class SyncManager
 
     private function clearAllCaches(): void
     {
-        // 1) Limpiar caché en memoria de Glory
-        OpcionManager::clearCache();
-
-        // 2) Limpiar caché de objeto de WordPress
-        if (function_exists('wp_cache_flush')) {
-            wp_cache_flush();
-        }
-
-        // 3) Borrar transients (incluye timeouts) y site transients
-        global $wpdb;
-        // Options table (single-site transients y también site_transients en single-site)
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_%'");
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_%'");
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_site_transient_%'");
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_site_transient_timeout_%'");
-        // Multisite: site transients viven en sitemeta
-        if (is_multisite() && !empty($wpdb->sitemeta)) {
-            $wpdb->query("DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE '_site_transient_%'");
-            $wpdb->query("DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE '_site_transient_timeout_%'");
-        }
-
-        // 4) Borrar archivos de caché del framework (assets discovery cache)
-        if (defined('GLORY_FRAMEWORK_PATH')) {
-            $cacheDir = rtrim(GLORY_FRAMEWORK_PATH, '/\\') . '/cache';
-            if (is_dir($cacheDir) && is_readable($cacheDir)) {
-                foreach (glob($cacheDir . '/*') ?: [] as $cacheFile) {
-                    if (is_file($cacheFile) && is_writable($cacheFile)) {
-                        @unlink($cacheFile);
-                    }
-                }
-            }
-        }
-
-        // 5) Limpiar caches de plugins populares si existen
-        // WP Rocket
-        if (function_exists('rocket_clean_domain')) {
-            rocket_clean_domain();
-        }
-        // W3 Total Cache
-        if (function_exists('w3tc_flush_all')) {
-            w3tc_flush_all();
-        }
-        // LiteSpeed Cache
-        if (function_exists('litespeed_purge_all')) {
-            litespeed_purge_all();
-        } else {
-            do_action('litespeed_purge_all');
-        }
-        // WP Super Cache
-        if (function_exists('wp_cache_clear_cache')) {
-            wp_cache_clear_cache();
-        } else {
-            do_action('wpsc_clear_cache');
-        }
-        // WP Fastest Cache
-        if (function_exists('wpfc_clear_all_cache')) {
-            wpfc_clear_all_cache(true);
-        }
-        // Hummingbird
-        do_action('wphb_clear_page_cache');
-        do_action('wphb_clear_minify_cache');
-        // Cache Enabler
-        do_action('cache_enabler_clear_complete_cache');
-        // SG Optimizer
-        if (function_exists('sg_cachepress_purge_cache')) {
-            sg_cachepress_purge_cache();
-        }
-        if (function_exists('sg_cachepress_purge_everything')) {
-            sg_cachepress_purge_everything();
-        }
-        // Autoptimize
-        if (class_exists('autoptimizeCache') && method_exists('autoptimizeCache', 'clearall')) {
-            \autoptimizeCache::clearall();
-        }
-        // Swift Performance
-        do_action('swift_performance_clear_all_cache');
-        // Kinsta, WP Engine, Nginx Helper, Cloudflare, Pantheon, etc.
-        do_action('kinsta_cache_flush');
-        do_action('wpe_purge_all_caches');
-        do_action('rt_nginx_helper_purge_all');
-        do_action('cloudflare_purge_all');
-        do_action('pantheon_cache_clear');
-
-        // 6) Flush rewrite rules
-        if (function_exists('flush_rewrite_rules')) {
-            flush_rewrite_rules();
-        }
-
-        // 7) Opcache reset (si está disponible)
-        if (function_exists('opcache_reset')) {
-            @opcache_reset();
-        }
+        CachePurger::purgeAll();
     }
     
     private function runFullSync(): void {

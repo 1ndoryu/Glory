@@ -73,10 +73,11 @@ class MCPController
 
     /**
      * Verifica si el usuario puede gestionar tokens MCP
+     * Requiere manage_options (solo administradores)
      */
     public static function canManageToken(): bool
     {
-        return is_user_logged_in() && current_user_can('edit_posts');
+        return is_user_logged_in() && current_user_can('manage_options');
     }
 
     /**

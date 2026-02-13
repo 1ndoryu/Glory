@@ -127,16 +127,16 @@ class MenuNormalizer
         }
 
         /* 3) Ordenar exactamente como el seed */
+        /* Obtener items una sola vez fuera del bucle para evitar N queries */
+        $actual = wp_get_nav_menu_items($menuId);
+        if (!is_array($actual)) {
+            $actual = [];
+        }
         $pos = 1;
         foreach ($seed as $def) {
             $title = $def['title'];
             $url = $def['url'];
             $keyObjetivo = self::claveItem($title, $url);
-
-            $actual = wp_get_nav_menu_items($menuId);
-            if (!is_array($actual)) {
-                $actual = [];
-            }
 
             foreach ($actual as $item) {
                 $titleRaw = (string) ($item->title ?? $item->post_title ?? '');

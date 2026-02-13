@@ -321,15 +321,6 @@ class PerformanceProfiler
     }
 
     /**
-     * Método obsoleto - ahora solo usamos logs en debug.log
-     * Mantenido por compatibilidad.
-     */
-    public static function injectarDatosDebug(): void
-    {
-        // No hacer nada - ahora solo logs en debug.log
-    }
-
-    /**
      * Reinicia todas las mediciones (útil para testing).
      */
     public static function reiniciar(): void

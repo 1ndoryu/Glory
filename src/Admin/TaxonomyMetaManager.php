@@ -27,6 +27,7 @@ class TaxonomyMetaManager
 
     public function addCategoryField(): void
     {
+        wp_nonce_field('glory_save_category_meta', '_glory_category_nonce');
 ?>
         <div class="form-field term-group">
             <label for="<?php echo self::META_KEY; ?>"><?php _e('Imagen de la Categoría', 'glory'); ?></label>
@@ -44,6 +45,7 @@ class TaxonomyMetaManager
     {
         $imageId = get_term_meta($term->term_id, self::META_KEY, true);
         $imageUrl = $imageId ? wp_get_attachment_image_url($imageId, 'medium') : '';
+        wp_nonce_field('glory_save_category_meta', '_glory_category_nonce');
     ?>
         <tr class="form-field term-group-wrap">
             <th scope="row"><label for="<?php echo self::META_KEY; ?>"><?php _e('Imagen de la Categoría', 'glory'); ?></label></th>
@@ -65,6 +67,11 @@ class TaxonomyMetaManager
 
     public function saveCategoryMeta(int $term_id): void
     {
+        /* Verificar nonce CSRF */
+        if (!isset($_POST['_glory_category_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_glory_category_nonce'])), 'glory_save_category_meta')) {
+            return;
+        }
+
         if (isset($_POST[self::META_KEY]) && is_numeric($_POST[self::META_KEY])) {
             update_term_meta($term_id, self::META_KEY, (int)$_POST[self::META_KEY]);
         } else {

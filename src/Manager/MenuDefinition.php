@@ -2,6 +2,8 @@
 
 namespace Glory\Manager;
 
+use Glory\Core\GloryConfig;
+
 /*
  * Definiciones de menú basadas en código.
  * Contiene la lógica para cargar, normalizar y preparar las definiciones
@@ -10,7 +12,6 @@ namespace Glory\Manager;
 class MenuDefinition
 {
     public const UBICACION_MENU_PRINCIPAL = 'main_navigation';
-    private const RUTA_MENU_CODIGO = '/App/Content/menu.php';
 
     /**
      * Devuelve la definición de los ítems por defecto (seed).
@@ -51,13 +52,13 @@ class MenuDefinition
     }
 
     /**
-     * Carga la definición de menús desde App/Content/menu.php.
+     * Carga la definición de menús desde el directorio de contenido del proyecto.
      * Soporta array numérico (menú único) o asociativo (múltiples menús por ubicación).
      * @return array<string, array>|null
      */
     public static function cargarDefinicionMenusDesdeCodigo(): ?array
     {
-        $ruta = get_template_directory() . self::RUTA_MENU_CODIGO;
+        $ruta = GloryConfig::path('content_dir') . '/menu.php';
         if (!file_exists($ruta)) {
             return null;
         }
