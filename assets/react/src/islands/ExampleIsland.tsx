@@ -26,13 +26,13 @@ export function ExampleIsland({title = 'React funcionando en WordPress', initial
             <p className="m-0 mb-4 opacity-90 text-base">{message}</p>
 
             <div className="flex items-center gap-3">
-                <button onClick={() => setCount(c => c - 1)} className="px-4 py-2 text-lg border-none rounded-lg bg-white/20 text-white cursor-pointer transition-colors hover:bg-white/30">
+                <button onClick={() => setCount(c => c - 1)} aria-label="Decrementar contador" className="px-4 py-2 text-lg border-none rounded-lg bg-white/20 text-white cursor-pointer transition-colors hover:bg-white/30">
                     -
                 </button>
 
                 <span className="text-2xl font-bold min-w-[60px] text-center">{count}</span>
 
-                <button onClick={() => setCount(c => c + 1)} className="px-4 py-2 text-lg border-none rounded-lg bg-white/20 text-white cursor-pointer transition-colors hover:bg-white/30">
+                <button onClick={() => setCount(c => c + 1)} aria-label="Incrementar contador" className="px-4 py-2 text-lg border-none rounded-lg bg-white/20 text-white cursor-pointer transition-colors hover:bg-white/30">
                     +
                 </button>
             </div>

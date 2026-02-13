@@ -1,0 +1,297 @@
+/*
+ * Estilos del Page Builder (Glory Framework)
+ * Centraliza todos los inline styles de BlockRenderer, BlockEditorModal,
+ * PageBuilder y PageLayout.
+ *
+ * Nomenclatura: español + camelCase
+ */
+
+/* ===== BlockRenderer ===== */
+
+.bloqueError {
+    padding: 20px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px dashed #ef4444;
+    border-radius: 8px;
+    color: #ef4444;
+    text-align: center;
+}
+
+.bloqueEditable {
+    position: relative;
+    outline: 1px dashed rgba(255, 255, 255, 0.2);
+    outline-offset: 4px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: outline 0.2s ease;
+}
+
+.bloqueSeleccionado {
+    outline: 2px solid #3b82f6;
+}
+
+.bloqueControles {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    display: flex;
+    gap: 4px;
+    background: #1a1a1a;
+    padding: 6px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 100;
+}
+
+.bloqueControlEtiqueta {
+    color: #888;
+    font-size: 12px;
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.botonControlBloque {
+    background: transparent;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.botonControlBloque:disabled {
+    color: #444;
+    cursor: not-allowed;
+}
+
+.botonEditarBloque {
+    background: #3b82f6;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.botonEliminarBloque {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.bloquesVacio {
+    padding: 60px 20px;
+    text-align: center;
+    color: #666;
+}
+
+/* ===== BlockEditorModal ===== */
+
+.campoEntradaBase {
+    width: 100%;
+    padding: 10px 12px;
+    background: #1a1a1a;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #fff;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.campoTextoArea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.campoSelector {
+    cursor: pointer;
+}
+
+.campoArrayContenedor {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.campoArrayItem {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.campoArrayItemCabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.campoArrayItemNumero {
+    font-size: 12px;
+    color: #888;
+}
+
+.botonEliminarItem {
+    background: transparent;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.campoArrayItemCampos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.campoArraySubEtiqueta {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.botonAgregarItem {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    color: #888;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+/* Variante sin padding para overlay de error */
+.modalOverlayError {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modalError {
+    background: #111;
+    padding: 24px;
+    border-radius: 12px;
+    color: #ef4444;
+}
+
+.modalContenido {
+    background: #0a0a0a;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modalCabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modalTitulo {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #fff;
+}
+
+.botonCerrarModal {
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.modalCuerpo {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modalSinCampos {
+    color: #666;
+    text-align: center;
+}
+
+.modalCamposContenedor {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.campoEtiqueta {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #ccc;
+    margin-bottom: 8px;
+}
+
+.modalPie {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.botonCancelar {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: #888;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.botonGuardar {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    background: #3b82f6;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+}

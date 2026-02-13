@@ -1,0 +1,1 @@
+Elimine el plugin de amazon, ya no es necesario.

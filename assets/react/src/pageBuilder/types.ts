@@ -88,6 +88,8 @@ export interface BlockDefinition<T = Record<string, unknown>> {
 
 /**
  * Contexto del Page Builder
+ * TO-DO: Implementar createContext con este tipo para inyectar estado de edicion
+ * a bloques hijos sin prop drilling. Actualmente no se usa — preparado para futuro.
  */
 export interface PageBuilderContextType {
     /** Si esta en modo edicion */

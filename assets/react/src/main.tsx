@@ -12,14 +12,15 @@ import './index.css';
 import { islandRegistry } from './core';
 import { initializeIslands } from './core/hydration';
 
-/* Islas Glory (genericas, reutilizables) */
-import { ExampleIsland } from './islands/ExampleIsland';
-
 /* Islas del proyecto (importadas desde App/React) */
 import appIslands, { AppProvider } from '@app/appIslands';
 
-/* Registrar islas Glory */
-islandRegistry.register('ExampleIsland', ExampleIsland);
+/* Registrar islas Glory de ejemplo solo en desarrollo */
+if (import.meta.env.DEV) {
+    import('./islands/ExampleIsland').then(({ ExampleIsland }) => {
+        islandRegistry.register('ExampleIsland', ExampleIsland);
+    });
+}
 
 /* Registrar islas del proyecto */
 islandRegistry.registerAll(appIslands);

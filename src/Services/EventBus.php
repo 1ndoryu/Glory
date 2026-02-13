@@ -2,8 +2,6 @@
 
 namespace Glory\Services;
 
-use Glory\Core\GloryLogger;
-
 /**
  * EventBus simple basado en versiones por canal usando opciones de WP.
  *

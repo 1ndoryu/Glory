@@ -2,6 +2,10 @@
  * Hook para consumir la REST API de WordPress/Glory con tipado fuerte.
  * Maneja autenticacion (nonce), cache basico, y estados de carga/error.
  *
+ * IMPORTANTE: Si se pasa `options`, el consumidor DEBE memoizarlo con useMemo
+ * o definirlo fuera del componente. De lo contrario se creara un objeto nuevo
+ * en cada render y el hook re-fetcheara en bucle infinito.
+ *
  * Uso:
  * const { data, isLoading, error, refetch } = useWordPressApi<ImageListResponse>('/glory/v1/images');
  */
@@ -16,9 +20,32 @@ interface UseWordPressApiResult<T> {
     refetch: () => void;
 }
 
-/* Cache en memoria simple con TTL */
+/*
+ * Cache en memoria con TTL y limite maximo de entries.
+ * Evita crecimiento ilimitado limpiando entries expiradas periodicamente.
+ */
 const apiCache = new Map<string, { data: unknown; timestamp: number }>();
 const DEFAULT_CACHE_TTL = 30_000; /* 30 segundos */
+const MAX_CACHE_ENTRIES = 100;
+
+/* Limpia entries expiradas del cache para evitar memory leak */
+function limpiarCacheExpirado(ttl: number): void {
+    if (apiCache.size <= MAX_CACHE_ENTRIES) return;
+    const ahora = Date.now();
+    for (const [key, entry] of apiCache) {
+        if (ahora - entry.timestamp > ttl) {
+            apiCache.delete(key);
+        }
+    }
+    /* Si sigue excediendo, eliminar las mas antiguas */
+    if (apiCache.size > MAX_CACHE_ENTRIES) {
+        const entries = [...apiCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp);
+        const sobran = entries.length - MAX_CACHE_ENTRIES;
+        for (let i = 0; i < sobran; i++) {
+            apiCache.delete(entries[i][0]);
+        }
+    }
+}
 
 function getCacheKey(endpoint: string, options?: ApiRequestOptions): string {
     const method = options?.method ?? 'GET';
@@ -26,26 +53,42 @@ function getCacheKey(endpoint: string, options?: ApiRequestOptions): string {
     return `${method}:${endpoint}:${body}`;
 }
 
+/* Lectura de nonce y restUrl cacheadas como singleton. Solo se leen una vez de window. */
+let cachedNonce: string | null = null;
+let cachedRestUrl: string | null = null;
+
 function getNonce(): string {
+    if (cachedNonce !== null) return cachedNonce;
+
     const context = window.GLORY_CONTEXT;
-    if (context?.nonce) return context.nonce;
+    if (context?.nonce) {
+        cachedNonce = context.nonce;
+        return cachedNonce;
+    }
 
     /* Fallback: WP Core pone el nonce en wpApiSettings */
     const wpSettings = (window as unknown as Record<string, unknown>).wpApiSettings as
         | { nonce?: string }
         | undefined;
-    return wpSettings?.nonce ?? '';
+    cachedNonce = wpSettings?.nonce ?? '';
+    return cachedNonce;
 }
 
 function getRestUrl(): string {
+    if (cachedRestUrl !== null) return cachedRestUrl;
+
     const context = window.GLORY_CONTEXT;
-    if (context?.restUrl) return context.restUrl;
+    if (context?.restUrl) {
+        cachedRestUrl = context.restUrl;
+        return cachedRestUrl;
+    }
 
     /* Fallback: WP Core */
     const wpSettings = (window as unknown as Record<string, unknown>).wpApiSettings as
         | { root?: string }
         | undefined;
-    return wpSettings?.root ?? '/wp-json';
+    cachedRestUrl = wpSettings?.root ?? '/wp-json';
+    return cachedRestUrl;
 }
 
 export function useWordPressApi<T = unknown>(
@@ -57,11 +100,21 @@ export function useWordPressApi<T = unknown>(
     const [error, setError] = useState<string | null>(null);
     const abortRef = useRef<AbortController | null>(null);
 
+    /*
+     * Serializar options a string para estabilizar la referencia en useCallback.
+     * Esto evita el bucle infinito: si el consumidor pasa un objeto literal como
+     * options sin memoizarlo, el JSON string no cambia y useCallback no se recrea.
+     */
+    const optionsKey = options ? JSON.stringify(options) : '';
+    const optionsRef = useRef(options);
+    optionsRef.current = options;
+
     const fetchData = useCallback(async () => {
-        const method = options?.method ?? 'GET';
-        const shouldCache = options?.cache !== false && method === 'GET';
-        const cacheTtl = options?.cacheTtl ?? DEFAULT_CACHE_TTL;
-        const cacheKey = getCacheKey(endpoint, options);
+        const opts = optionsRef.current;
+        const method = opts?.method ?? 'GET';
+        const shouldCache = opts?.cache !== false && method === 'GET';
+        const cacheTtl = opts?.cacheTtl ?? DEFAULT_CACHE_TTL;
+        const cacheKey = getCacheKey(endpoint, opts);
 
         /* Stale-while-revalidate: devuelve cache si es valido */
         if (shouldCache) {
@@ -90,7 +143,7 @@ export function useWordPressApi<T = unknown>(
 
             const headers: Record<string, string> = {
                 'Content-Type': 'application/json',
-                ...options?.headers,
+                ...opts?.headers,
             };
 
             const nonce = getNonce();
@@ -101,11 +154,11 @@ export function useWordPressApi<T = unknown>(
             const fetchOptions: RequestInit = {
                 method,
                 headers,
-                signal: options?.signal ?? controller.signal,
+                signal: opts?.signal ?? controller.signal,
             };
 
-            if (options?.body && method !== 'GET') {
-                fetchOptions.body = JSON.stringify(options.body);
+            if (opts?.body && method !== 'GET') {
+                fetchOptions.body = JSON.stringify(opts.body);
             }
 
             const response = await fetch(url, fetchOptions);
@@ -121,9 +174,10 @@ export function useWordPressApi<T = unknown>(
             setData(result);
             setError(null);
 
-            /* Actualizar cache */
+            /* Actualizar cache y limpiar entries expiradas */
             if (shouldCache) {
                 apiCache.set(cacheKey, { data: result, timestamp: Date.now() });
+                limpiarCacheExpirado(cacheTtl);
             }
         } catch (err) {
             if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -133,7 +187,8 @@ export function useWordPressApi<T = unknown>(
         } finally {
             setIsLoading(false);
         }
-    }, [endpoint, options]);
+    /* eslint-disable-next-line react-hooks/exhaustive-deps -- optionsKey serializa options para estabilizar deps */
+    }, [endpoint, optionsKey]);
 
     useEffect(() => {
         fetchData();
@@ -157,4 +212,13 @@ export function clearApiCache(): void {
 export function invalidateApiCache(endpoint: string, options?: ApiRequestOptions): void {
     const key = getCacheKey(endpoint, options);
     apiCache.delete(key);
+}
+
+/*
+ * Resetea los singletons de nonce/restUrl.
+ * Util si el nonce se renueva sin recargar pagina.
+ */
+export function resetApiCredentials(): void {
+    cachedNonce = null;
+    cachedRestUrl = null;
 }

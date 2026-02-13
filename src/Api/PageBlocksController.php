@@ -66,7 +66,15 @@ class PageBlocksController
                     'blocks' => [
                         'required' => true,
                         'validate_callback' => function ($param) {
-                            return is_array($param);
+                            if (!is_array($param)) {
+                                return false;
+                            }
+                            /* Limitar tamaño del payload a 1MB */
+                            $json = wp_json_encode($param);
+                            if (is_string($json) && strlen($json) > 1048576) {
+                                return false;
+                            }
+                            return true;
                         }
                     ]
                 ]
@@ -82,15 +90,21 @@ class PageBlocksController
     {
         $pageId = (int) $request->get_param('page_id');
 
-        if ($pageId) {
-            $post = get_post($pageId);
-            if ($post && $post->post_status === 'publish') {
-                return true;
-            }
-            return current_user_can('edit_posts');
+        if ($pageId <= 0) {
+            return false;
         }
 
-        return true;
+        $post = get_post($pageId);
+        if (!$post) {
+            return false;
+        }
+
+        /* Posts publicos son accesibles. Para draft/private, verificar permisos. */
+        if ($post->post_status === 'publish') {
+            return true;
+        }
+
+        return current_user_can('edit_post', $pageId);
     }
 
     /**
@@ -193,7 +207,7 @@ class PageBlocksController
             'data' => [
                 'pageId' => $pageId,
                 'blocksCount' => count($blocks),
-                'savedAt' => current_time('mysql')
+                'savedAt' => gmdate('Y-m-d H:i:s')
             ]
         ], 200);
     }

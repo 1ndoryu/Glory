@@ -1,7 +1,7 @@
-import { execSync } from 'node:child_process';
+import { execSync, execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { log } from './utils.mjs';
+import { log, validateName } from './utils.mjs';
 import { validarPrerequisitos } from './setup.mjs';
 
 const REPO_URL = 'https://github.com/1ndoryu/glorytemplate.git';
@@ -43,6 +43,12 @@ export function parsearOpciones(args) {
  *   5. Muestra checklist
  */
 export function newProject(nombre, opciones = {}) {
+    /* Validar nombre para prevenir command injection */
+    if (!validateName(nombre)) {
+        log(`Nombre de proyecto invalido: "${nombre}". Usa solo letras, numeros, guiones y guiones bajos.`, 'error');
+        return false;
+    }
+
     const destino = resolve(process.cwd(), nombre);
 
     log(`Creando proyecto "${nombre}"...`, 'info');
@@ -62,10 +68,10 @@ export function newProject(nombre, opciones = {}) {
         return false;
     }
 
-    /* Clonar repositorio */
+    /* Clonar repositorio — usar execFileSync para evitar inyeccion de shell */
     log(`Clonando ${REPO_URL} (rama ${BRANCH})...`, 'info');
     try {
-        execSync(`git clone --branch ${BRANCH} --single-branch ${REPO_URL} "${nombre}"`, {
+        execFileSync('git', ['clone', '--branch', BRANCH, '--single-branch', REPO_URL, nombre], {
             cwd: process.cwd(),
             stdio: 'inherit',
         });

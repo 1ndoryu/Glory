@@ -235,6 +235,15 @@ class ImagesController
 
         list($alias, $filename) = explode('::', $ref, 2);
 
+        /* Validar path traversal */
+        $filename = sanitize_file_name($filename);
+        if (strpos($filename, '..') !== false) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'error' => 'Nombre de archivo no permitido'
+            ], 400);
+        }
+
         if (!self::isAliasAllowed($alias)) {
             return new \WP_REST_Response([
                 'success' => false,

@@ -26,27 +26,7 @@ final class AssetManager
 
     public static function define(string $tipo, string $handle, string $ruta, array $config = []): void
     {
-        // Soporte flexible para la clave 'feature': puede ser
-        // - string: 'modales'
-        // - array asociativo: ['name' => 'modales', 'option' => 'glory_componente_modales_activado']
-        // - array indexado: ['modales', 'glory_componente_modales_activado']
-        // También se mantiene compatibilidad con 'feature_option' antigua.
-        $featureName = null;
-        $featureOptionKey = null;
-        if (isset($config['feature'])) {
-            if (is_array($config['feature'])) {
-                $featureName = $config['feature']['name'] ?? ($config['feature'][0] ?? null);
-                $featureOptionKey = $config['feature']['option'] ?? ($config['feature'][1] ?? null);
-            } else {
-                $featureName = (string) $config['feature'];
-            }
-        }
-        // Compatibilidad: si se pasó feature_option por separado
-        if (empty($featureOptionKey) && isset($config['feature_option'])) {
-            $featureOptionKey = $config['feature_option'];
-        }
-
-        if (!empty($featureName) && GloryFeatures::isActive($featureName, $featureOptionKey) === false) {
+        if (!self::esFeatureActiva($config)) {
             return;
         }
 
@@ -191,25 +171,9 @@ final class AssetManager
                     }
                 }
 
-                // Si el asset declara explícitamente una feature y esta está desactivada, omitirlo.
-                if (!empty($config['feature'])) {
-                    $featureName = null;
-                    $featureOptionKey = null;
-                    if (is_array($config['feature'])) {
-                        $featureName = $config['feature']['name'] ?? ($config['feature'][0] ?? null);
-                        $featureOptionKey = $config['feature']['option'] ?? ($config['feature'][1] ?? null);
-                    } else {
-                        $featureName = (string) $config['feature'];
-                    }
-
-                    // Compatibilidad con llave antigua
-                    if (empty($featureOptionKey) && isset($config['feature_option'])) {
-                        $featureOptionKey = $config['feature_option'];
-                    }
-
-                    if (!empty($featureName) && GloryFeatures::isActive($featureName, $featureOptionKey) === false) {
-                        continue;
-                    }
+                /* Si el asset declara una feature desactivada, omitirlo */
+                if (!empty($config['feature']) && !self::esFeatureActiva($config)) {
+                    continue;
                 }
 
                 if ($tipo === self::ASSET_TYPE_STYLE && $currentArea === 'frontend') {
@@ -330,5 +294,35 @@ final class AssetManager
             return $tiempoModificacion ? (string)$tiempoModificacion : self::$versionTema;
         }
         return self::$versionTema;
+    }
+
+    /*
+     * Resuelve la clave 'feature' (string, array asociativo o indexado)
+     * y verifica si la feature está activa vía GloryFeatures.
+     * Retorna false si la feature existe y está desactivada.
+     */
+    private static function esFeatureActiva(array $config): bool
+    {
+        $featureName = null;
+        $featureOptionKey = null;
+
+        if (isset($config['feature'])) {
+            if (is_array($config['feature'])) {
+                $featureName = $config['feature']['name'] ?? ($config['feature'][0] ?? null);
+                $featureOptionKey = $config['feature']['option'] ?? ($config['feature'][1] ?? null);
+            } else {
+                $featureName = (string) $config['feature'];
+            }
+        }
+
+        if (empty($featureOptionKey) && isset($config['feature_option'])) {
+            $featureOptionKey = $config['feature_option'];
+        }
+
+        if (!empty($featureName) && GloryFeatures::isActive($featureName, $featureOptionKey) === false) {
+            return false;
+        }
+
+        return true;
     }
 }

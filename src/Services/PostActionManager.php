@@ -45,35 +45,35 @@ class PostActionManager
         return $resultado;
     }
 
-    public static function updatePost(array $datos, bool $retornarWpError = false): int|WP_Error
+    public static function actualizarPost(array $datos, bool $retornarWpError = false): int|WP_Error
     {
         $checkId = isset($datos['ID']) ? absint($datos['ID']) : 0;
         if ($checkId && !current_user_can('edit_post', $checkId)) {
-            GloryLogger::error("PostActionManager::updatePost() - Usuario sin permisos para editar post ID: {$checkId}.");
+            GloryLogger::error("PostActionManager::actualizarPost() - Usuario sin permisos para editar post ID: {$checkId}.");
             return $retornarWpError ? new WP_Error('unauthorized', "No tienes permisos para editar el post {$checkId}.") : 0;
         }
 
         if (!isset($datos['ID']) || !($postId = absint($datos['ID'])) || $postId === 0) {
-            GloryLogger::error("PostActionManager::updatePost() - Missing or invalid 'ID' in data array.");
-            return $retornarWpError ? new WP_Error('missing_id', 'Post ID is required for update.') : 0;
+            GloryLogger::error("PostActionManager::actualizarPost() - 'ID' faltante o invalido.");
+            return $retornarWpError ? new WP_Error('missing_id', 'Post ID es requerido para actualizar.') : 0;
         }
 
-        if (!self::getPostById($postId)) {
-            GloryLogger::error("PostActionManager::updatePost() - Post ID {$postId} not found. Cannot update.");
-            return $retornarWpError ? new WP_Error('post_not_found', "Post ID {$postId} not found.") : 0;
+        if (!self::obtenerPostPorId($postId)) {
+            GloryLogger::error("PostActionManager::actualizarPost() - Post ID {$postId} no encontrado.");
+            return $retornarWpError ? new WP_Error('post_not_found', "Post ID {$postId} no encontrado.") : 0;
         }
 
         $resultado = wp_update_post($datos, $retornarWpError);
 
         if (is_wp_error($resultado)) {
-            GloryLogger::error("PostActionManager::updatePost() - FAILED to update post ID: {$postId}.", [
+            GloryLogger::error("PostActionManager::actualizarPost() - No se pudo actualizar post ID: {$postId}.", [
                 'codigoError'  => $resultado->get_error_code(),
                 'mensajeError' => $resultado->get_error_message(),
                 'datosUsados'  => $datos
             ]);
         } elseif ($resultado === 0) {
-            if (!self::getPostById($postId)) {
-                GloryLogger::error("PostActionManager::updatePost() - FAILED to update post ID: {$postId} (returned 0, post seems gone).", ['datosUsados' => $datos]);
+            if (!self::obtenerPostPorId($postId)) {
+                GloryLogger::error("PostActionManager::actualizarPost() - No se pudo actualizar post ID: {$postId} (retorno 0, post no existe).", ['datosUsados' => $datos]);
             } else {
                 $resultado = $postId;
             }
@@ -90,10 +90,10 @@ class PostActionManager
         return $resultado;
     }
 
-    public static function deletePost(int $postId, bool $forzarBorrado = false): bool
+    public static function eliminarPost(int $postId, bool $forzarBorrado = false): bool
     {
         if (!current_user_can('delete_post', $postId)) {
-            GloryLogger::error("PostActionManager::deletePost() - Usuario sin permisos para eliminar post ID: {$postId}.");
+            GloryLogger::error("PostActionManager::eliminarPost() - Usuario sin permisos para eliminar post ID: {$postId}.");
             return false;
         }
 
@@ -110,12 +110,12 @@ class PostActionManager
             } catch (\Throwable $e) {}
             return true;
         } else {
-            GloryLogger::error("PostActionManager::deletePost() - FAILED to delete post ID: {$postId}. wp_delete_post returned: " . print_r($resultado, true));
+            GloryLogger::error("PostActionManager::eliminarPost() - No se pudo eliminar post ID: {$postId}. wp_delete_post retorno: " . print_r($resultado, true));
             return false;
         }
     }
 
-    public static function trashPost(int $postId): bool
+    public static function enviarAPapelera(int $postId): bool
     {
         if (!self::_validarPostId($postId, true, 'publish,draft,pending,private,future')) {
             return false;
@@ -124,12 +124,12 @@ class PostActionManager
         if ($resultado) {
             return true;
         } else {
-            GloryLogger::error("PostActionManager::trashPost() - FAILED to move post ID: {$postId} to trash.");
+            GloryLogger::error("PostActionManager::enviarAPapelera() - No se pudo mover post ID: {$postId} a papelera.");
             return false;
         }
     }
 
-    public static function untrashPost(int $postId): bool
+    public static function restaurarDePapelera(int $postId): bool
     {
         if (!self::_validarPostId($postId, true, 'trash')) {
             return false;
@@ -138,12 +138,12 @@ class PostActionManager
         if ($resultado) {
             return true;
         } else {
-            GloryLogger::error("PostActionManager::untrashPost() - FAILED to restore post ID: {$postId} from trash.");
+            GloryLogger::error("PostActionManager::restaurarDePapelera() - No se pudo restaurar post ID: {$postId} de papelera.");
             return false;
         }
     }
 
-    public static function getPostById(int $postId, string $formatoSalida = OBJECT): WP_Post|array|null
+    public static function obtenerPostPorId(int $postId, string $formatoSalida = OBJECT): WP_Post|array|null
     {
         if ($postId <= 0) {
             return null;
@@ -151,10 +151,10 @@ class PostActionManager
         return get_post($postId, $formatoSalida);
     }
 
-    public static function getPostBySlug(string $slug, string $tipoPost, string $formatoSalida = OBJECT): WP_Post|array|null
+    public static function obtenerPostPorSlug(string $slug, string $tipoPost, string $formatoSalida = OBJECT): WP_Post|array|null
     {
         if (empty($slug) || empty($tipoPost)) {
-            GloryLogger::error('PostActionManager::getPostBySlug() - Slug and Post Type are required.', ['slug' => $slug, 'tipoPost' => $tipoPost]);
+            GloryLogger::error('PostActionManager::obtenerPostPorSlug() - Slug y Post Type son requeridos.', ['slug' => $slug, 'tipoPost' => $tipoPost]);
             return null;
         }
         return get_page_by_path($slug, $formatoSalida, $tipoPost);
@@ -170,7 +170,7 @@ class PostActionManager
         } elseif ($campo === 'slug') {
             if (empty($identificador) || !is_string($identificador))
                 return false;
-            return !is_null(self::getPostBySlug($identificador, $tipoPost));
+            return !is_null(self::obtenerPostPorSlug($identificador, $tipoPost));
         } else {
             GloryLogger::error("PostActionManager::postExists() - Invalid field type specified: '{$campo}'. Use 'id' or 'slug'.");
             return false;

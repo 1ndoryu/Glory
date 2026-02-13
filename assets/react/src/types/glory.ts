@@ -16,16 +16,22 @@ export type GloryContentMap = Record<string, WPPost[]>;
  * Contexto global inyectado por ReactIslands en window.GLORY_CONTEXT
  * Extendible via el filtro glory_react_context de WordPress.
  */
+/*
+ * Contexto completo con propiedades obligatorias.
+ * PHP inyecta TODAS estas propiedades via glory_react_context.
+ * Usar Partial<GloryContext> solo en window.GLORY_CONTEXT (puede ser incompleto antes de mount).
+ */
 export interface GloryContext {
-    siteUrl?: string;
-    themeUrl?: string;
-    restUrl?: string;
-    nonce?: string;
-    isAdmin?: boolean;
+    siteUrl: string;
+    themeUrl: string;
+    restUrl: string;
+    nonce: string;
+    isAdmin: boolean;
     userId?: number;
-    locale?: string;
+    locale: string;
     options?: Record<string, unknown>;
-    [key: string]: unknown;
+    /* Extensibilidad sin debilitar el tipado principal */
+    extra?: Record<string, unknown>;
 }
 
 /*
@@ -71,6 +77,7 @@ export type IslandRegistry = Record<string, React.ComponentType<Record<string, u
 declare global {
     interface Window {
         __GLORY_CONTENT__?: GloryContentMap;
-        GLORY_CONTEXT?: GloryContext;
+        /* Partial porque PHP puede no haber inyectado todos los campos aun */
+        GLORY_CONTEXT?: Partial<GloryContext>;
     }
 }

@@ -171,7 +171,7 @@ export function PageLayout({children, siteName = 'Glory', logoUrl, navLinks = []
                         {/* Links */}
                         <div className="flex items-center gap-6">
                             {navLinks.map((link, i) => (
-                                <a key={i} href={link.href} className={`text-sm text-gray-400 hover:text-white transition-colors ${link.hideOnMobile ? 'hidden md:block' : ''}`}>
+                                <a key={link.href || i} href={link.href} className={`text-sm text-gray-400 hover:text-white transition-colors ${link.hideOnMobile ? 'hidden md:block' : ''}`}>
                                     {link.text}
                                 </a>
                             ))}
@@ -197,7 +197,7 @@ export function PageLayout({children, siteName = 'Glory', logoUrl, navLinks = []
                         {socialLinks.length > 0 && (
                             <div className="flex gap-6">
                                 {socialLinks.map((social, i) => (
-                                    <a key={i} href={social.href} className="text-gray-500 hover:text-white transition-colors">
+                                    <a key={social.href || i} href={social.href} className="text-gray-500 hover:text-white transition-colors">
                                         <SocialIcon type={social.type} />
                                     </a>
                                 ))}

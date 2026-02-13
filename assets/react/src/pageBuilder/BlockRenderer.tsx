@@ -11,6 +11,7 @@
 
 import {BlockRegistry} from './BlockRegistry';
 import type {BlockData} from './types';
+import './styles/constructorPaginas.css';
 
 interface BlockRendererProps {
     /** Array de bloques a renderizar */
@@ -56,15 +57,7 @@ function renderBlock(
             <div
                 key={block.id}
                 id={`block-error-${block.id}`}
-                className="bloque-error"
-                style={{
-                    padding: '20px',
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px dashed #ef4444',
-                    borderRadius: '8px',
-                    color: '#ef4444',
-                    textAlign: 'center'
-                }}>
+                className="bloqueError">
                 Bloque no encontrado: {block.type}
             </div>
         );
@@ -73,7 +66,7 @@ function renderBlock(
     const Component = definition.component;
     const blockContent = <Component data={block.props} blockId={block.id} isEditing={isEditMode} />;
 
-    // En modo vista, renderizar directamente
+    /* En modo vista, renderizar directamente */
     if (!isEditMode) {
         return (
             <div key={block.id} id={`block-${block.id}`}>
@@ -82,130 +75,72 @@ function renderBlock(
         );
     }
 
-    // En modo edición, envolver con controles
+    /* En modo edición, envolver con controles */
+    const claseBloque = isSelected ? 'bloqueEditable bloqueSeleccionado' : 'bloqueEditable';
+
     return (
         <div
             key={block.id}
             id={`block-${block.id}`}
-            className={`bloque-editable ${isSelected ? 'bloque-seleccionado' : ''}`}
+            className={claseBloque}
             onClick={e => {
                 e.stopPropagation();
                 callbacks.onSelect?.();
-            }}
-            style={{
-                position: 'relative',
-                outline: isSelected ? '2px solid #3b82f6' : '1px dashed rgba(255,255,255,0.2)',
-                outlineOffset: '4px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'outline 0.2s ease'
             }}>
             {/* Controles del bloque */}
             {isSelected && (
-                <div
-                    className="bloque-controles"
-                    style={{
-                        position: 'absolute',
-                        top: '-40px',
-                        left: '0',
-                        display: 'flex',
-                        gap: '4px',
-                        background: '#1a1a1a',
-                        padding: '6px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        zIndex: 100
-                    }}>
-                    <span
-                        style={{
-                            color: '#888',
-                            fontSize: '12px',
-                            marginRight: '8px',
-                            display: 'flex',
-                            alignItems: 'center'
-                        }}>
+                <div className="bloqueControles">
+                    <span className="bloqueControlEtiqueta">
                         {definition.label}
                     </span>
 
                     <button
                         type="button"
+                        className="botonControlBloque"
                         onClick={e => {
                             e.stopPropagation();
                             callbacks.onMoveUp?.();
                         }}
                         disabled={isFirst}
                         title="Mover arriba"
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: isFirst ? '#444' : '#fff',
-                            cursor: isFirst ? 'not-allowed' : 'pointer',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            fontSize: '14px'
-                        }}>
+                        aria-label="Mover bloque arriba">
                         ↑
                     </button>
 
                     <button
                         type="button"
+                        className="botonControlBloque"
                         onClick={e => {
                             e.stopPropagation();
                             callbacks.onMoveDown?.();
                         }}
                         disabled={isLast}
                         title="Mover abajo"
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: isLast ? '#444' : '#fff',
-                            cursor: isLast ? 'not-allowed' : 'pointer',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            fontSize: '14px'
-                        }}>
+                        aria-label="Mover bloque abajo">
                         ↓
                     </button>
 
                     <button
                         type="button"
+                        className="botonEditarBloque"
                         onClick={e => {
                             e.stopPropagation();
                             callbacks.onEdit?.();
                         }}
-                        title="Editar bloque"
-                        style={{
-                            background: '#3b82f6',
-                            border: 'none',
-                            color: '#fff',
-                            cursor: 'pointer',
-                            padding: '4px 12px',
-                            borderRadius: '4px',
-                            fontSize: '12px',
-                            fontWeight: 500
-                        }}>
+                        title="Editar bloque">
                         Editar
                     </button>
 
                     <button
                         type="button"
+                        className="botonEliminarBloque"
                         onClick={e => {
                             e.stopPropagation();
-                            if (confirm('¿Eliminar este bloque?')) {
-                                callbacks.onDelete?.();
-                            }
+                            callbacks.onDelete?.();
                         }}
                         title="Eliminar bloque"
-                        style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: '#ef4444',
-                            cursor: 'pointer',
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            fontSize: '14px'
-                        }}>
-                        🗑
+                        aria-label="Eliminar bloque">
+                        X
                     </button>
                 </div>
             )}
@@ -222,13 +157,7 @@ function renderBlock(
 export function BlockRenderer({blocks, isEditMode = false, selectedBlockId = null, onSelectBlock, onEditBlock, onMoveUp, onMoveDown, onDeleteBlock}: BlockRendererProps): JSX.Element {
     if (!blocks || blocks.length === 0) {
         return (
-            <div
-                id="blocks-empty"
-                style={{
-                    padding: '60px 20px',
-                    textAlign: 'center',
-                    color: '#666'
-                }}>
+            <div id="blocks-empty" className="bloquesVacio">
                 {isEditMode ? 'No hay bloques. Haz clic en "Agregar Bloque" para comenzar.' : 'Esta página no tiene contenido.'}
             </div>
         );

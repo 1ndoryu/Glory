@@ -38,8 +38,7 @@ export const BlockRegistry = {
     /**
      * Registra múltiples bloques a la vez
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    registerAll(definitions: BlockDefinition<any>[]): void {
+    registerAll(definitions: BlockDefinition<Record<string, unknown>>[]): void {
         definitions.forEach(def => this.register(def));
     },
 

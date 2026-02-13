@@ -93,7 +93,8 @@ class ReactContentProvider
         $defaultArgs = [
             'post_type' => $postType,
             'post_status' => 'publish',
-            'posts_per_page' => -1,
+            /* Limite razonable para evitar queries sin cota. Si hay slugs, se limita a esos. */
+            'posts_per_page' => !empty($slugs) ? count($slugs) : 100,
             'orderby' => 'date',
             'order' => 'DESC',
         ];
@@ -151,6 +152,7 @@ class ReactContentProvider
 
     /**
      * Ejecuta una WP_Query y formatea los resultados para React.
+     * Pre-cachea meta y términos en batch para evitar N+1 queries.
      */
     private static function executeQuery(array $args): array
     {
@@ -158,6 +160,23 @@ class ReactContentProvider
         $posts = [];
 
         if ($query->have_posts()) {
+            /* Pre-cachear meta y términos de todos los posts de una vez (evita N+1) */
+            $postIds = wp_list_pluck($query->posts, 'ID');
+            update_postmeta_cache($postIds);
+            update_object_term_cache($postIds, $args['post_type'] ?? 'post');
+
+            /* Pre-cachear alt text de thumbnails en un solo paso */
+            $thumbIds = [];
+            foreach ($query->posts as $p) {
+                $tid = (int) get_post_meta($p->ID, '_thumbnail_id', true);
+                if ($tid > 0) {
+                    $thumbIds[] = $tid;
+                }
+            }
+            if (!empty($thumbIds)) {
+                update_postmeta_cache($thumbIds);
+            }
+
             while ($query->have_posts()) {
                 $query->the_post();
                 $posts[] = self::formatPost(get_post());

@@ -180,20 +180,23 @@ export function PageBuilder({blocks: initialBlocks, isAdmin = false, saveEndpoin
             const data = await response.json();
 
             if (response.ok && data.success) {
-                console.warn('[PageBuilder] Guardado exitoso:', data);
+                if (import.meta.env.DEV) {
+                    console.warn('[PageBuilder] Guardado exitoso:', data);
+                }
                 onSaveSuccess?.();
-                alert('Cambios guardados correctamente');
             } else {
-                console.error('[PageBuilder] Error del servidor:', data);
                 const errorMsg = data.message || 'Error al guardar';
+                if (import.meta.env.DEV) {
+                    console.error('[PageBuilder] Error del servidor:', data);
+                }
                 onSaveError?.(errorMsg);
-                alert(errorMsg);
             }
         } catch (error) {
-            console.error('[PageBuilder] Error de red:', error);
+            if (import.meta.env.DEV) {
+                console.error('[PageBuilder] Error de red:', error);
+            }
             const errorMsg = 'Error de conexion al guardar';
             onSaveError?.(errorMsg);
-            alert(errorMsg);
         } finally {
             setIsSaving(false);
         }

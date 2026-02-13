@@ -91,6 +91,18 @@ class NewsletterController
      */
     public static function suscribir(\WP_REST_Request $request): \WP_REST_Response
     {
+        /* Rate limiting simple: max 5 suscripciones por IP cada 10 minutos */
+        $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : 'unknown';
+        $rateLimitKey = 'glory_newsletter_rate_' . md5($ip);
+        $intentos = (int) get_transient($rateLimitKey);
+        if ($intentos >= 5) {
+            return new \WP_REST_Response([
+                'success' => false,
+                'message' => 'Demasiados intentos. Intenta de nuevo más tarde.'
+            ], 429);
+        }
+        set_transient($rateLimitKey, $intentos + 1, 600);
+
         global $wpdb;
         $tabla = $wpdb->prefix . self::TABLE_SUFFIX;
         $email = $request->get_param('email');
@@ -116,7 +128,6 @@ class NewsletterController
         }
 
         /* Insertar nuevo suscriptor */
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : null;
         $resultado = $wpdb->insert($tabla, [
             'email' => $email,
             'ip'    => $ip

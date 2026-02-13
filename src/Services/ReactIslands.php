@@ -104,8 +104,8 @@ class ReactIslands
     private static function isLocalEnvironment(): bool
     {
         $localHosts = ['localhost', '127.0.0.1', '::1'];
-        $serverName = $_SERVER['SERVER_NAME'] ?? '';
-        $serverAddr = $_SERVER['SERVER_ADDR'] ?? '';
+        $serverName = isset($_SERVER['SERVER_NAME']) ? sanitize_text_field($_SERVER['SERVER_NAME']) : '';
+        $serverAddr = isset($_SERVER['SERVER_ADDR']) ? sanitize_text_field($_SERVER['SERVER_ADDR']) : '';
 
         // Detectar Local by Flywheel (.local domains)
         if (str_contains($serverName, '.local')) {
@@ -266,92 +266,10 @@ class ReactIslands
         $assetsUrl = self::getAssetsUrl();
 
         if (self::isDevMode()) {
-            // Modo desarrollo: cargar desde Vite dev server
-            self::enqueueDevScripts($assetsUrl);
+            ReactAssetLoader::enqueueDevScripts($assetsUrl);
         } else {
-            // Modo produccion: cargar desde bundles compilados
-            self::enqueueProdScripts($assetsUrl);
+            ReactAssetLoader::enqueueProdScripts($assetsUrl, self::getReactPath());
         }
-    }
-
-    /**
-     * Encola scripts en modo desarrollo (Vite HMR)
-     */
-    private static function enqueueDevScripts(string $assetsUrl): void
-    {
-        // React Refresh Preamble - necesario para @vitejs/plugin-react
-        // Debe cargarse ANTES de cualquier otro script
-        echo '<script type="module">';
-        echo 'import RefreshRuntime from "' . esc_url($assetsUrl) . '/@react-refresh";';
-        echo 'RefreshRuntime.injectIntoGlobalHook(window);';
-        echo 'window.$RefreshReg$ = () => {};';
-        echo 'window.$RefreshSig$ = () => (type) => type;';
-        echo 'window.__vite_plugin_react_preamble_installed__ = true;';
-        echo '</script>' . PHP_EOL;
-
-        // Vite client para HMR
-        printf(
-            '<script type="module" src="%s/@vite/client"></script>' . PHP_EOL,
-            esc_url($assetsUrl)
-        );
-
-        // Entry point principal
-        printf(
-            '<script type="module" src="%s/src/main.tsx"></script>' . PHP_EOL,
-            esc_url($assetsUrl)
-        );
-    }
-
-    /**
-     * Encola scripts en modo produccion
-     */
-    private static function enqueueProdScripts(string $assetsUrl): void
-    {
-        $manifestPath = self::getReactPath() . '/dist/.vite/manifest.json';
-
-        if (!file_exists($manifestPath)) {
-            // Fallback: intentar ruta alternativa del manifest
-            $manifestPath = self::getReactPath() . '/dist/manifest.json';
-        }
-
-        if (!file_exists($manifestPath)) {
-            if (current_user_can('manage_options')) {
-                echo '<!-- Glory React: manifest.json no encontrado. Ejecuta "npm run build" en Glory/assets/react/ -->';
-            }
-            return;
-        }
-
-        $manifest = json_decode(file_get_contents($manifestPath), true);
-
-        if (!$manifest) {
-            return;
-        }
-
-        // Buscar el entry point principal
-        $mainEntry = $manifest['src/main.tsx'] ?? null;
-
-        if (!$mainEntry) {
-            return;
-        }
-
-        // Cargar CSS - BLOQUEANTE para SSG (el HTML ya esta renderizado)
-        // Esto asegura que los estilos esten disponibles antes de mostrar el contenido
-        if (!empty($mainEntry['css'])) {
-            foreach ($mainEntry['css'] as $cssFile) {
-                $cssUrl = esc_url($assetsUrl) . '/' . esc_attr($cssFile);
-                printf(
-                    '<link rel="stylesheet" href="%s">' . PHP_EOL,
-                    $cssUrl
-                );
-            }
-        }
-
-        // Cargar el script principal
-        printf(
-            '<script type="module" src="%s/%s"></script>' . PHP_EOL,
-            esc_url($assetsUrl),
-            esc_attr($mainEntry['file'])
-        );
     }
 
     /**

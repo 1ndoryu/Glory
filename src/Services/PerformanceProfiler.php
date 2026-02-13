@@ -46,10 +46,10 @@ class PerformanceProfiler
     private static float $requestStart = 0.0;
 
     /**
-     * Tiempos de inicio de peticiones HTTP por clave URL|METHOD (pila para múltiples llamadas).
-     * @var array<string, float[]>
+     * Buffer de logs de mediciones individuales para flush en shutdown.
+     * @var string[]
      */
-    private static array $httpStarts = [];
+    private static array $logBuffer = [];
 
     /**
      * Inicializa el profiler si está activo.
@@ -86,12 +86,14 @@ class PerformanceProfiler
         // Registrar hook para mostrar resumen final
         add_action('shutdown', [self::class, 'mostrarResumenFinal'], 999);
 
+        // Flush de logs en buffer justo antes del resumen
+        add_action('shutdown', [self::class, 'flushLogBuffer'], 997);
+
         // Log de wall time total justo antes del resumen
         add_action('shutdown', [self::class, 'logWallTime'], 998);
 
-        // Instrumentación de HTTP API para detectar bloqueos (p. ej. wp-cron loopback)
-        add_filter('pre_http_request', [self::class, 'httpRequestStart'], 10, 3);
-        add_filter('http_response', [self::class, 'httpRequestEnd'], 10, 3);
+        // Instrumentación de HTTP API — delegado a HttpProfiler
+        HttpProfiler::registerHooks();
     }
 
     /**
@@ -173,12 +175,12 @@ class PerformanceProfiler
     }
 
     /**
-     * Registra una medición inmediata en el log.
+     * Acumula una medición en el buffer en lugar de escribir a disco inmediatamente.
      */
     private static function logMedicionInmediata(string $etiqueta, float $duracion, int $memoria, int $llamadas, string $tipo): void
     {
         $memoriaMB = number_format($memoria / 1024 / 1024, 2);
-        $mensaje = sprintf(
+        self::$logBuffer[] = sprintf(
             '[Glory Profiler] %s | %0.6fs | %s MB | %d llamadas | %s',
             str_pad($etiqueta, 35),
             $duracion,
@@ -186,8 +188,18 @@ class PerformanceProfiler
             $llamadas,
             $tipo
         );
+    }
 
-        error_log($mensaje);
+    /**
+     * Escribe todas las mediciones acumuladas al log de una sola vez.
+     */
+    public static function flushLogBuffer(): void
+    {
+        if (empty(self::$logBuffer)) {
+            return;
+        }
+        error_log(implode("\n", self::$logBuffer));
+        self::$logBuffer = [];
     }
 
     /**
@@ -248,39 +260,6 @@ class PerformanceProfiler
         $duracion = microtime(true) - (self::$requestStart ?: microtime(true));
         $memoriaMB = number_format(memory_get_peak_usage(true) / 1024 / 1024, 2);
         error_log(sprintf('[Glory Profiler] TOTAL REQUEST | %0.6fs | %s MB', $duracion, $memoriaMB));
-    }
-
-    /**
-     * Marca inicio de una petición HTTP (no corta la petición).
-     * Debe devolver false para no interceptar la solicitud.
-     */
-    public static function httpRequestStart($pre, array $args, string $url)
-    {
-        $method = strtoupper($args['method'] ?? 'GET');
-        $key = $url . '|' . $method;
-        self::$httpStarts[$key] = self::$httpStarts[$key] ?? [];
-        self::$httpStarts[$key][] = microtime(true);
-        return $pre; // no interceptar
-    }
-
-    /**
-     * Marca fin de una petición HTTP y registra su duración.
-     */
-    public static function httpRequestEnd($response, array $args, string $url)
-    {
-        $method = strtoupper($args['method'] ?? 'GET');
-        $key = $url . '|' . $method;
-        $start = null;
-        if (isset(self::$httpStarts[$key]) && !empty(self::$httpStarts[$key])) {
-            $start = array_pop(self::$httpStarts[$key]);
-        }
-        if ($start !== null) {
-            $duracion = microtime(true) - $start;
-            $code = is_array($response) && isset($response['response']['code']) ? (int) $response['response']['code'] : 0;
-            $timeout = $args['timeout'] ?? '';
-            error_log(sprintf('[Glory Profiler][HTTP] %s %s | %0.6fs | code=%s | timeout=%s', $method, $url, $duracion, $code, $timeout));
-        }
-        return $response;
     }
 
     /**

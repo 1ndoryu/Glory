@@ -24,7 +24,6 @@ class OpcionPanelSaver
     public static function guardarDesdePanel(array $datosPost): array
     {
         $opcionesGuardadas = [];
-        $opcionesOmitidas = [];
 
         // Procesar solo las opciones registradas para garantizar que los checkboxes
         // que no vienen en $_POST se guarden como false.
@@ -55,7 +54,7 @@ class OpcionPanelSaver
             OpcionManager::clearCache();
         }
 
-        return ['guardadas' => count($opcionesGuardadas), 'omitidas' => count($opcionesOmitidas)];
+        return ['guardadas' => count($opcionesGuardadas)];
     }
 
     /**

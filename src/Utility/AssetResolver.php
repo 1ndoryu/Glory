@@ -13,6 +13,9 @@ class AssetResolver
 
     private static bool $isInitialized = false;
 
+    /* Cache en memoria de listados de directorio para evitar glob() repetidos en el mismo request */
+    private static array $dirListCache = [];
+
 
     public static function init(): void
     {
@@ -121,14 +124,14 @@ class AssetResolver
         $basenameLower = strtolower($basenameSolicitado);
         $poseeExtension = (strpos($basenameSolicitado, '.') !== false);
 
+        /* Obtener listado de directorio cacheado en memoria (evita glob x6 por llamada) */
+        $archivosDelDir = self::getDirectoryListingCached($baseDir, $extensiones);
+
         /* 2) Búsqueda insensible a mayúsculas/minúsculas */
         if ($poseeExtension) {
-            foreach ($extensiones as $ext) {
-                $glob = glob($baseDir . '*.' . $ext, GLOB_NOSORT) ?: [];
-                foreach ($glob as $ruta) {
-                    if (strtolower(basename($ruta)) === $basenameLower) {
-                        return $dirRel . '/' . basename($ruta);
-                    }
+            foreach ($archivosDelDir as $archivo) {
+                if (strtolower($archivo) === $basenameLower) {
+                    return $dirRel . '/' . $archivo;
                 }
             }
             return null;
@@ -137,15 +140,35 @@ class AssetResolver
         /* 3) Sin extensión: buscar por nombre (filename) y preferir orden de extensiones */
         $needle = strtolower(pathinfo($basenameSolicitado, PATHINFO_FILENAME));
         foreach ($extensiones as $ext) {
-            $glob = glob($baseDir . '*.' . $ext, GLOB_NOSORT) ?: [];
-            foreach ($glob as $ruta) {
-                if (strtolower(pathinfo($ruta, PATHINFO_FILENAME)) === $needle) {
-                    return $dirRel . '/' . basename($ruta);
+            foreach ($archivosDelDir as $archivo) {
+                if (strtolower(pathinfo($archivo, PATHINFO_EXTENSION)) === $ext
+                    && strtolower(pathinfo($archivo, PATHINFO_FILENAME)) === $needle) {
+                    return $dirRel . '/' . $archivo;
                 }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Obtiene el listado de archivos de un directorio, cacheado en memoria por request.
+     */
+    private static function getDirectoryListingCached(string $baseDir, array $extensiones): array
+    {
+        if (isset(self::$dirListCache[$baseDir])) {
+            return self::$dirListCache[$baseDir];
+        }
+
+        $archivos = [];
+        foreach ($extensiones as $ext) {
+            $glob = glob($baseDir . '*.' . $ext, GLOB_NOSORT) ?: [];
+            foreach ($glob as $ruta) {
+                $archivos[] = basename($ruta);
+            }
+        }
+        self::$dirListCache[$baseDir] = $archivos;
+        return $archivos;
     }
 
 
