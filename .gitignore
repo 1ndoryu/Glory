@@ -55,3 +55,5 @@ Cargo.lock
 status.md
 copiar.py
 cache/
+.vitepress/cache/
+.vitepress/dist/
