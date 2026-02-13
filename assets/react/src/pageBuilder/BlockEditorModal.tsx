@@ -6,7 +6,7 @@
  * del bloque registrado en BlockRegistry.
  */
 
-import {useState, useCallback, useEffect} from 'react';
+import {useState, useCallback} from 'react';
 import {X, Plus, Trash2} from 'lucide-react';
 import {BlockRegistry} from './BlockRegistry';
 import type {EditableField} from './types';
@@ -212,17 +212,10 @@ function ArrayFieldRenderer({field, value, onChange}: ArrayFieldRendererProps): 
  * Modal principal de edicion
  */
 export function BlockEditorModal({isOpen, blockType, blockData, onSave, onClose}: BlockEditorModalProps): JSX.Element | null {
-    const [formData, setFormData] = useState<Record<string, unknown>>({});
+    const [formData, setFormData] = useState<Record<string, unknown>>(() => ({...blockData}));
 
     // Obtener definicion del bloque
     const definition = BlockRegistry.get(blockType);
-
-    // Inicializar formData cuando se abre el modal
-    useEffect(() => {
-        if (isOpen && blockData) {
-            setFormData({...blockData});
-        }
-    }, [isOpen, blockData]);
 
     const handleFieldChange = useCallback((key: string, value: unknown) => {
         setFormData(prev => ({

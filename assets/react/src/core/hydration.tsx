@@ -97,13 +97,13 @@ function mountIsland(
         if (shouldHydrate && hasContent) {
             hydrateRoot(container, element);
             if (import.meta.env.DEV) {
-                console.log(`[Glory] Isla "${islandName}" hidratada (SSG)`);
+                console.warn(`[Glory] Isla "${islandName}" hidratada (SSG)`);
             }
         } else {
             container.innerHTML = '';
             createRoot(container).render(element);
             if (import.meta.env.DEV) {
-                console.log(`[Glory] Isla "${islandName}" montada (CSR)`);
+                console.warn(`[Glory] Isla "${islandName}" montada (CSR)`);
             }
         }
     } catch (error) {
@@ -137,7 +137,7 @@ export function initializeIslands(options: InitOptions = {}): void {
     }
 
     if (import.meta.env.DEV) {
-        console.log(`[Glory] Montando ${islands.length} isla(s), registry: ${islandRegistry.getNames().join(', ')}`);
+        console.warn(`[Glory] Montando ${islands.length} isla(s), registry: ${islandRegistry.getNames().join(', ')}`);
     }
 
     islands.forEach((container) => {

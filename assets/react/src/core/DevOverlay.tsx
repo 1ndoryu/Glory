@@ -4,7 +4,7 @@
  * Se activa automaticamente con import.meta.env.DEV.
  */
 
-import { useRef, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 interface DevOverlayProps {
     islandName: string;
@@ -13,9 +13,6 @@ interface DevOverlayProps {
 }
 
 export function DevOverlay({ islandName, props, children }: DevOverlayProps): JSX.Element {
-    const renderCount = useRef(0);
-    renderCount.current++;
-
     const propsKeys = Object.keys(props);
     const propsResumen = propsKeys.length > 0 ? propsKeys.join(', ') : 'sin props';
 
@@ -39,7 +36,7 @@ export function DevOverlay({ islandName, props, children }: DevOverlayProps): JS
                 }}
                 title={`Props: ${propsResumen}`}
             >
-                {islandName} #{renderCount.current}
+                {islandName}
             </div>
             {children}
         </div>

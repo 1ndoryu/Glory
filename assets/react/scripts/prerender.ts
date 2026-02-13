@@ -57,10 +57,15 @@ const mockProps: Record<string, Record<string, unknown>> = {
  */
 const skipIslands = new Set([
     'MainAppIsland', // SPA Router
+    'BienvenidaIsland', // Requiere contexto de browser no estable en vite-node
     'DashboardIsland', // Requires extensive browser APIs (localStorage, window)
     'PoliticaPrivacidadIsland', // Contenido estático extenso (renderizar en cliente)
     'TerminosServicioIsland' // Contenido estático extenso (renderizar en cliente)
 ]);
+
+function wait(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 /**
  * Descubre las islas disponibles para prerenderizar
@@ -126,6 +131,27 @@ async function prerenderIsland(island: {name: string; path: string; source: stri
         return html;
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+
+        if (errorMessage.includes('Request is outdated')) {
+            try {
+                await wait(250);
+                const retryModule = await import(island.path);
+                const RetryComponent = retryModule[island.name] || retryModule.default;
+
+                if (!RetryComponent) {
+                    console.warn(`[SSG] Reintento sin export valido para ${island.name}`);
+                    return null;
+                }
+
+                const props = mockProps[island.name] || {};
+                return renderToString(createElement(RetryComponent, props));
+            } catch (retryError) {
+                const retryMessage = retryError instanceof Error ? retryError.message : String(retryError);
+                console.error(`[SSG] Reintento fallido en ${island.name}: ${retryMessage}`);
+                return null;
+            }
+        }
+
         console.error(`[SSG] Error prerenderizando ${island.name}: ${errorMessage}`);
         return null;
     }
@@ -183,7 +209,11 @@ async function main(): Promise<void> {
 }
 
 // Ejecutar
-main().catch(error => {
-    console.error('[SSG] Error fatal:', error);
-    process.exit(1);
-});
+main()
+    .then(() => {
+        process.exit(0);
+    })
+    .catch(error => {
+        console.error('[SSG] Error fatal:', error);
+        process.exit(1);
+    });

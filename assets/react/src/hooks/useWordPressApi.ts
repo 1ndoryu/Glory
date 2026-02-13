@@ -133,7 +133,7 @@ export function useWordPressApi<T = unknown>(
         } finally {
             setIsLoading(false);
         }
-    }, [endpoint, options?.method, options?.body, options?.cache, options?.cacheTtl, options?.signal, options?.headers]);
+    }, [endpoint, options]);
 
     useEffect(() => {
         fetchData();

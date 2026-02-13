@@ -83,13 +83,13 @@ export function ContactoIsland(): JSX.Element {
 
 ## Convenciones
 
-| Regla | Ejemplo |
-|-------|---------|
-| Nombres en **español** | `.contenedorPrincipal`, `.botonActivo` |
-| Formato **camelCase** | `.tarjetaProducto`, no `.tarjeta-producto` |
-| **Prohibido** CSS inline | Nada de `style={{ ... }}` |
-| Usar **variables** para colores/spacing | `var(--color-primario)` |
-| Buscar clases existentes antes de crear | Reutilizar > duplicar |
+| Regla                                   | Ejemplo                                    |
+| --------------------------------------- | ------------------------------------------ |
+| Nombres en **español**                  | `.contenedorPrincipal`, `.botonActivo`     |
+| Formato **camelCase**                   | `.tarjetaProducto`, no `.tarjeta-producto` |
+| **Prohibido** CSS inline                | Nada de `style={ { ... } }`                |
+| Usar **variables** para colores/spacing | `var(--color-primario)`                    |
+| Buscar clases existentes antes de crear | Reutilizar > duplicar                      |
 
 ::: warning Sin CSS inline
 El unico CSS inline permitido es en componentes del **framework** (error boundaries, dev overlay). En tu codigo todo va en archivos `.css`.

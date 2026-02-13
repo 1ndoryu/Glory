@@ -6,8 +6,9 @@
 export { islandRegistry } from './IslandRegistry';
 export type { IslandComponent, IslandLoader, ResolvedIsland } from './IslandRegistry';
 export { IslandErrorBoundary } from './ErrorBoundary';
-export { GloryProvider, useGloryProvider } from './GloryProvider';
-export type { GloryProviderValue } from './GloryProvider';
+export { GloryProvider } from './GloryProvider';
+export { useGloryProvider } from './useGloryProvider';
+export type { GloryProviderValue } from './gloryContext';
 export { initializeIslands } from './hydration';
 export type { InitOptions } from './hydration';
 export { DevOverlay } from './DevOverlay';

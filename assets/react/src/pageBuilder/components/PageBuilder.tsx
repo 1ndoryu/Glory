@@ -70,9 +70,6 @@ export interface PageBuilderProps {
 }
 
 export function PageBuilder({blocks: initialBlocks, isAdmin = false, saveEndpoint, restNonce, children, onBlocksChange, onSaveSuccess, onSaveError, disabled = false, allowedBlockTypes, editButtonText = 'Editar Pagina', toolbarTitle = 'Editando Pagina'}: PageBuilderProps): JSX.Element | null {
-    /* Si esta desactivado o no hay bloques iniciales, no renderizar nada */
-    if (disabled) return null;
-
     /* Estado */
     const [blocks, setBlocks] = useState<BlockData[]>(initialBlocks || []);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -183,7 +180,7 @@ export function PageBuilder({blocks: initialBlocks, isAdmin = false, saveEndpoin
             const data = await response.json();
 
             if (response.ok && data.success) {
-                console.log('[PageBuilder] Guardado exitoso:', data);
+                console.warn('[PageBuilder] Guardado exitoso:', data);
                 onSaveSuccess?.();
                 alert('Cambios guardados correctamente');
             } else {
@@ -207,6 +204,9 @@ export function PageBuilder({blocks: initialBlocks, isAdmin = false, saveEndpoin
         if (!editingBlockId) return null;
         return blocks.find(b => b.id === editingBlockId) || null;
     }, [editingBlockId, blocks]);
+
+    /* Si esta desactivado, no renderizar nada */
+    if (disabled) return null;
 
     /* Renderizado */
     return (

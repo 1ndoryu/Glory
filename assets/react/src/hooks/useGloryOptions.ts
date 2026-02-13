@@ -8,7 +8,7 @@
  */
 
 import { useMemo } from 'react';
-import { useGloryProvider } from '../core/GloryProvider';
+import { useGloryProvider } from '../core/useGloryProvider';
 
 interface UseGloryOptionsResult<T> {
     options: T;

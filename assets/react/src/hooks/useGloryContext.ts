@@ -7,7 +7,7 @@
 
 import { useMemo } from 'react';
 import type { GloryContext } from '../types/glory';
-import { useGloryProvider } from '../core/GloryProvider';
+import { useGloryProvider } from '../core/useGloryProvider';
 
 const defaultContext: GloryContext = {
     siteUrl: '',

@@ -9,7 +9,7 @@
 import { useState, useEffect } from 'react';
 import type { WPPost } from '../types/wordpress';
 import type { GloryContentMap } from '../types/glory';
-import { useGloryProvider } from '../core/GloryProvider';
+import { useGloryProvider } from '../core/useGloryProvider';
 
 interface UseGloryContentResult<T extends WPPost> {
     data: T[];

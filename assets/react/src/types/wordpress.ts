@@ -28,7 +28,7 @@ export interface WPCategory extends WPTerm {
     parent?: number;
 }
 
-export interface WPTag extends WPTerm {}
+export type WPTag = WPTerm;
 
 export interface WPUser {
     id: number;
