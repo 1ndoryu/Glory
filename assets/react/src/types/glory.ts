@@ -24,6 +24,7 @@ export interface GloryContext {
     isAdmin?: boolean;
     userId?: number;
     locale?: string;
+    options?: Record<string, unknown>;
     [key: string]: unknown;
 }
 
