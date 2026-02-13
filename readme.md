@@ -1,275 +1,263 @@
-# Glory Framework
+# ⚙️ Glory Framework
 
-Framework TypeScript-first para WordPress. React es el UI, WordPress solo maneja datos.
+Framework para trabajar WordPress + React + TypeScript con una experiencia de desarrollo enfocada en:
 
-## Filosofia
+- 🧩 arquitectura por islas,
+- 🧠 tipado fuerte,
+- 🔌 integración limpia con WordPress,
+- 🛠️ herramientas de scaffolding y setup.
 
-Glory NO es un framework PHP que soporta React. Glory ES un framework TypeScript/React que usa WordPress exclusivamente como CMS. PHP existe como puente minimo entre WordPress y React. Cero logica de frontend en PHP.
+---
 
-```
-WordPress (CMS)  ──datos──>  PHP Bridge (minimo)  ──tipado──>  React (todo el UI)
-     |                            |                                |
-  Admin panel               REST API + SEO                  Islas + Hooks
-  Contenido                 Registrar paginas               Validacion runtime
-  Media Library             Servir JSON tipado              Zustand state
-```
+## 🧭 Índice
 
-## Quick Start (5 minutos)
+- ✨ Qué incluye Glory
+- 🚀 Quick start
+- 🧱 Arquitectura
+- 🔄 Flujo completo de una página
+- 📁 Estructura del framework
+- 🪝 Hooks y utilidades principales
+- 🧰 CLI y generación de código
+- 🎛️ Feature flags
+- 📦 Scripts de desarrollo
+- ✅ Casos de uso y buenas prácticas
+- 🧯 Troubleshooting
+
+---
+
+## ✨ Qué incluye Glory
+
+- **Motor de islas React** con montaje/hidratación automática.
+- **Bridge PHP** para páginas, REST API y SEO server-side.
+- **Core React** con provider global, error boundaries y registry tipado.
+- **Hooks** para contenido, opciones y consumo de API.
+- **CLI** para crear islas, páginas, componentes y hooks.
+- **Instalador** para bootstrap de proyecto.
+
+---
+
+## 🚀 Quick start
 
 ```bash
-# 1. Clonar en wp-content/themes/
 cd wp-content/themes
-git clone --branch glory-react https://github.com/1ndoryu/glorytemplate.git mi-proyecto
+git clone https://github.com/1ndoryu/glorytemplate.git mi-proyecto
 cd mi-proyecto
 
-# 2. Inicializar
 node Glory/cli/glory.mjs setup
-
-# 3. Crear primera isla
-node Glory/cli/glory.mjs create island MiPagina
-
-# 4. Desarrollo
 npm run dev
 ```
 
-O con flags:
+Con Tailwind + shadcn desde el inicio:
 
 ```bash
 node Glory/cli/glory.mjs setup --tailwind --shadcn
 ```
 
-## Stack
+---
 
-| Capa | Tecnologia | Rol |
-|------|-----------|-----|
-| CMS | WordPress + PHP 8+ | Solo datos, admin, REST API |
-| PHP Bridge | Glory/src/ | Registrar paginas, servir datos, SEO server-side |
-| Frontend | React 18 + TypeScript 5.6 | TODO el UI |
-| Build | Vite 6 + HMR | Dev server + produccion |
-| Estilos | Tailwind CSS 4 (opt-in) | Feature flag |
-| Componentes UI | shadcn/ui (opt-in) | Feature flag |
-| Estado | Zustand | Estado global React |
-| Linting | ESLint 9 + Prettier | Siempre activo |
+## 🧱 Arquitectura
 
-## Arquitectura: React Islands
+```text
+WordPress (admin, contenido, media)
+  ↓
+Glory PHP Bridge (registro de páginas + API + SEO)
+  ↓
+Glory React Core (islas, hooks, provider, hydration)
+  ↓
+UI del proyecto (App/React)
+```
 
-Cada pagina se registra en PHP y se renderiza como una isla React.
+### Capas y responsabilidades
 
-### 1. Registrar pagina (PHP)
+| Capa | Responsabilidad |
+|---|---|
+| WordPress | Admin, contenido, media, usuarios |
+| PHP Bridge (`Glory/src`) | Registro de páginas, endpoints, SEO server-side |
+| React Core (`Glory/assets/react`) | Runtime React, hooks base, tipado compartido |
+| Proyecto (`App/`) | Islas y lógica específica del sitio |
+
+---
+
+## 🔄 Flujo completo de una página
+
+### 1) Registrar página en PHP
 
 ```php
-// App/Config/pages.php
 PageManager::reactPage('contacto', 'ContactoIsland', [
     'titulo' => 'Contacto'
 ]);
 ```
 
-### 2. Crear isla (CLI o manual)
+### 2) Crear isla
 
 ```bash
 npx glory create island Contacto
 ```
 
-Genera:
-- `App/React/islands/ContactoIsland.tsx` (componente tipado)
-- `App/React/styles/contacto.css` (estilos)
-- Registro en `App/React/appIslands.tsx`
+### 3) Registrar isla
 
-### 3. El flujo
+El CLI puede registrarla automáticamente en `App/React/appIslands.tsx`.
 
-```
-PHP renderiza:  <div data-island="ContactoIsland" data-props="{...}">
-main.tsx:       IslandRegistry busca "ContactoIsland"
-hydration.tsx:  Monta con createRoot o hydrateRoot
-Wrappers:       StrictMode > GloryProvider > AppProvider > ErrorBoundary > Componente
-```
+### 4) Render en runtime
 
-## Arquitectura React (core/)
+1. PHP imprime contenedor con `data-island` y `data-props`.
+2. `main.tsx` busca islas en el DOM.
+3. `IslandRegistry` resuelve el componente.
+4. `hydration.tsx` monta u opera hidrata.
+5. Wrappers aplicados: `StrictMode` → `GloryProvider` → `ErrorBoundary`.
 
-```
-Glory/assets/react/src/
-├── core/                      # Motor del framework
-│   ├── IslandRegistry.ts      # Registro tipado de islas (estatico + lazy)
-│   ├── GloryProvider.tsx      # Context global (contenido + contexto WP)
-│   ├── hydration.tsx          # Logica de montaje/hidratacion
-│   ├── ErrorBoundary.tsx      # Error boundary individual por isla
-│   └── DevOverlay.tsx         # Overlay de debug en desarrollo
-├── hooks/                     # Hooks del framework
-│   ├── useGloryContent.ts     # Acceso tipado a contenido WP
-│   ├── useGloryContext.ts     # Contexto global (siteUrl, nonce, etc)
-│   ├── useGloryOptions.ts     # Opciones del tema
-│   ├── useWordPressApi.ts     # Fetch wrapper con auth y cache
-│   ├── useGloryMedia.ts      # Imagenes via REST API
-│   └── useIslandProps.ts      # Props tipados de la isla actual
-├── types/                     # Tipos compartidos WP + Glory
-│   ├── wordpress.ts           # WPPost, WPMedia, WPUser, WPTerm...
-│   ├── glory.ts               # GloryContext, GloryContentMap, IslandRegistry
-│   ├── api.ts                 # Tipos de respuesta de /glory/v1/*
-│   └── pageBuilder.ts         # BlockDefinition, PageLayout
-├── components/ui/             # shadcn/ui (opt-in)
-├── islands/                   # Islas de ejemplo
-├── pageBuilder/               # Page Builder visual
-└── main.tsx                   # Entry point
+---
+
+## 📁 Estructura del framework
+
+```text
+Glory/
+├── src/                          # Bridge PHP
+│   ├── Core/                     # Setup, features, bootstrap
+│   ├── Manager/                  # Page/Menu/Asset managers
+│   ├── Api/                      # Controllers REST
+│   ├── Seo/                      # Meta tags, OG, JSON-LD
+│   ├── Services/                 # servicios de dominio
+│   └── Utility/                  # utilidades compartidas
+│
+├── assets/react/
+│   ├── src/core/                 # registry, hydration, provider, error boundary
+│   ├── src/hooks/                # hooks framework
+│   ├── src/types/                # tipos WP + Glory
+│   ├── src/pageBuilder/          # page builder visual
+│   ├── src/components/ui/        # componentes UI opt-in
+│   └── scripts/                  # prerender y scripts build
+│
+├── cli/                          # create/setup/new
+└── Config/                       # configuración interna
 ```
 
-## Hooks del Framework
+---
 
-### useGloryContent<T>()
+## 🪝 Hooks y utilidades principales
 
-Acceso tipado al contenido inyectado por PHP.
+### `useGloryContent<T>()`
+
+Lee contenido inyectado por WordPress con tipado y validación base.
 
 ```tsx
 const { data, isLoading, error } = useGloryContent<WPPost>('blog');
 ```
 
-- Lee de `window.__GLORY_CONTENT__` via GloryProvider
-- Validacion runtime basica (id, slug)
-- Fallback automatico si no hay provider
+### `useGloryContext()`
 
-### useGloryContext()
+Accede a `siteUrl`, `nonce`, `isAdmin`, `locale`, etc.
 
-Contexto global de WordPress.
+### `useWordPressApi<T>()`
 
-```tsx
-const { siteUrl, nonce, isAdmin, locale } = useGloryContext();
+Fetch tipado con soporte de nonce, cache y control de errores.
+
+### `useGloryOptions()`
+
+Lee opciones del tema desde contexto compartido.
+
+### `useIslandProps<T>()`
+
+Tipa props de la isla actual con DX consistente.
+
+---
+
+## 🧰 CLI y generación de código
+
+### Comandos de scaffolding
+
+```bash
+npx glory create island MiSeccion
+npx glory create page contacto
+npx glory create component BotonPrimario
+npx glory create hook useProductos
 ```
 
-### useWordPressApi<T>()
+### Comandos de proyecto
 
-Fetch wrapper con autenticacion, tipos y cache.
-
-```tsx
-const { data, isLoading, error, refetch } = useWordPressApi<ImageListResponse>('/glory/v1/images');
+```bash
+npx glory setup --tailwind
+npx glory new mi-proyecto --shadcn
 ```
 
-- Autenticacion via nonce (X-WP-Nonce)
-- Cache en memoria con TTL configurable
-- Cancelacion automatica de peticiones anteriores
+---
 
-### useGloryOptions()
+## 🎛️ Feature flags
 
-Opciones del tema con acceso tipado.
-
-```tsx
-const { options, get, has } = useGloryOptions();
-const color = get('colorPrimario', '#3b82f6');
-```
-
-### useGloryMedia(alias)
-
-Imagenes via REST API.
-
-```tsx
-const { url, alt, isLoading } = useGloryMedia('logo');
-```
-
-### useIslandProps<T>()
-
-Props tipados de la isla actual.
-
-```tsx
-interface MiIslaProps { titulo: string; items: Item[] }
-const props = useIslandProps<MiIslaProps>(rawProps);
-```
-
-## IslandRegistry
-
-Registro tipado que soporta carga estatica y lazy.
-
-```tsx
-// Carga estatica (incluida en el bundle)
-islandRegistry.register('MiIsla', MiIslaComponent);
-
-// Carga lazy (import dinamico, solo cuando aparece en el DOM)
-islandRegistry.registerLazy('PesadaIsla', () => import('./islands/PesadaIsla'));
-
-// Batch desde mapa
-islandRegistry.registerAll(appIslands);
-```
-
-Las islas lazy se envuelven automaticamente en `Suspense` con fallback de carga.
-
-## Error Boundaries
-
-Cada isla tiene su propio error boundary. Si una isla falla, las demas siguen funcionando.
-
-- En desarrollo: muestra error detallado con boton de reintentar
-- En produccion: muestra "Contenido no disponible"
-- Fallback personalizable via props
-
-## DevOverlay
-
-En modo desarrollo (`import.meta.env.DEV`), cada isla muestra un badge con:
-- Nombre de la isla
-- Conteo de renders
-- Tooltip con props disponibles
-
-## GloryProvider
-
-Context global que envuelve automaticamente cada isla. Provee:
-- `context`: GloryContext (siteUrl, nonce, isAdmin, locale, options...)
-- `content`: GloryContentMap (contenido de WordPress)
-
-Los hooks leen del provider cuando esta disponible, con fallback a `window` globals para compatibilidad.
-
-## Feature Flags
+Configuradas en `App/Config/control.php`.
 
 ```php
-// App/Config/control.php
-GloryFeatures::enable('pageManager');     // Core
-GloryFeatures::enable('tailwind');        // Tailwind CSS
-GloryFeatures::enable('shadcnUI');        // shadcn/ui (requiere tailwind)
-GloryFeatures::disable('stripe');         // Stripe optional
-GloryFeatures::disable('queryProfiler'); // Debug SQL
+GloryFeatures::enable('pageManager');
+GloryFeatures::disable('tailwind');
+GloryFeatures::disable('shadcnUI');
+GloryFeatures::disable('stripe');
+GloryFeatures::disable('queryProfiler');
 ```
 
-## CLI
+### Flags habituales
 
-```bash
-# Scaffolding
-npx glory create island MiSeccion       # Isla (.tsx + .css + registro)
-npx glory create page contacto          # Isla + registro PHP
-npx glory create component BotonPrimario # Componente
-npx glory create hook useProductos      # Hook
+- `tailwind`: utilidades CSS.
+- `shadcnUI`: componentes UI.
+- `stripe`: integración de pagos.
+- `queryProfiler`: depuración SQL.
 
-# Proyecto
-npx glory setup --tailwind              # Inicializar proyecto
-npx glory new mi-proyecto --shadcn      # Crear proyecto nuevo
-```
+---
 
-## PHP Bridge (Glory/src/)
+## 📦 Scripts de desarrollo
 
-PHP solo hace lo que WordPress OBLIGA:
+| Script | Acción |
+|---|---|
+| `npm run dev` | Vite dev server con HMR |
+| `npm run build` | Build producción + prerender |
+| `npm run build:fast` | Build rápido |
+| `npm run lint` | ESLint estricto |
+| `npm run lint:fix` | Correcciones automáticas |
+| `npm run format` | Prettier |
+| `npm run type-check` | Validación TS |
 
-| Responsabilidad | Clase |
-|----------------|-------|
-| Registrar paginas | PageManager, PageDefinition |
-| SEO server-side | MetaTagRenderer, OpenGraphRenderer, JsonLdRenderer |
-| Servir datos JSON | REST API Controllers |
-| Gestionar assets | AssetManager |
-| Registrar menus | MenuManager, MenuSync |
-| Opciones del tema | OpcionManager, OpcionRegistry |
-| Contenido default | DefaultContentManager |
+---
 
-Todos los archivos PHP bajo 300 lineas (SRP estricto).
+## ✅ Casos de uso y buenas prácticas
 
-## Scripts npm
+### Ideal para
 
-```bash
-npm run dev           # Vite HMR
-npm run build         # Produccion
-npm run lint          # ESLint
-npm run lint:fix      # ESLint auto-fix
-npm run format        # Prettier
-npm run type-check    # TypeScript
-npm run install:all   # Todas las deps
-```
+- Sitios corporativos con frontend moderno.
+- Landing pages con SEO y componentes dinámicos.
+- Proyectos WordPress que quieren DX sólida en TypeScript.
 
-## Principios
+### Recomendaciones
 
-1. **TypeScript es el lenguaje.** Si puedes hacerlo en TS, hazlo en TS.
-2. **PHP solo para lo que WordPress obliga.** Hooks, filters, REST, SEO.
-3. **Cada archivo < 300 lineas.** SRP estricto.
-4. **Cero `any` en TypeScript.** ESLint lo reporta.
-5. **Islas independientes.** Una rota no tumba las demas.
-6. **Feature flags para todo lo opcional.** Tailwind, shadcn, Stripe.
+- Mantener lógica de interfaz en React/TS.
+- Usar el CLI para reducir boilerplate y errores manuales.
+- Trabajar por islas pequeñas y cohesionadas.
+- Ejecutar `type-check` + `lint` como rutina diaria.
+
+---
+
+## 🧯 Troubleshooting
+
+### Una isla no aparece
+
+1. Verifica que esté en `App/React/islands/`.
+2. Revisa registro en `App/React/appIslands.tsx`.
+3. Revisa página en `App/Config/pages.php`.
+
+### Build falla en prerender
+
+- Revisa `assets/react/scripts/prerender.ts`.
+- Comprueba islas que dependan de APIs exclusivas de navegador.
+- Omite en prerender las islas no compatibles con SSR.
+
+### Error de tipos o lint
+
+- Ejecuta `npm run type-check` para tipado.
+- Ejecuta `npm run lint` para reglas de calidad.
+
+---
+
+## 📚 Relación con el tema
+
+Este framework se consume desde el tema principal:
+
+- [../README.md](../README.md)
+- [../glory-plan.md](../glory-plan.md)
