@@ -2,672 +2,105 @@
 
 namespace Glory\Utility;
 
-use Glory\Core\GloryLogger;
-use Glory\Manager\AssetManager;
-
-
+/**
+ * Fachada retrocompatible para assets del tema.
+ * Delega todas las llamadas a AssetResolver, AssetImporter y AssetLister
+ * para mantener la interfaz pública AssetsUtility::metodo() sin romper llamadas existentes.
+ */
 class AssetsUtility
 {
-
-    private static array $assetPaths = [];
-
-    private static bool $isInitialized = false;
-
+    /* --- AssetResolver: inicialización y resolución de rutas --- */
 
     public static function init(): void
     {
-        if (self::$isInitialized) {
-            return;
-        }
-        self::registerAssetPath('glory', 'Glory/assets/images');
-        self::registerAssetPath('elements', 'Glory/assets/images/elements');
-        // Importante: respetar mayúsculas/minúsculas reales del filesystem (Linux es case-sensitive)
-        // Alias dedicado a la carpeta de colores solicitada para portafolio
-        self::registerAssetPath('colors', 'Glory/assets/images/colors');
-        // Alias para logos de marcas
-        self::registerAssetPath('logos', 'Glory/assets/images/logos');
-        self::registerAssetPath('equipo', 'App/Assets/equipo');
-        self::registerAssetPath('tema', 'App/Assets/images');
-        self::$isInitialized = true;
+        AssetResolver::init();
     }
-
 
     public static function registerAssetPath(string $alias, string $path): void
     {
-        self::$assetPaths[sanitize_key($alias)] = trim($path, '/\\');
+        AssetResolver::registerAssetPath($alias, $path);
     }
-
 
     public static function parseAssetReference(string $reference): array
     {
-        if (strpos($reference, '::') !== false) {
-            return explode('::', $reference, 2);
-        }
-        return ['glory', $reference];
+        return AssetResolver::parseAssetReference($reference);
     }
 
-
-    private static function resolveAssetPath(string $alias, string $nombreArchivo): ?string
-    {
-        if (!isset(self::$assetPaths[$alias])) {
-            // GloryLogger::warning("AssetsUtility: El alias de ruta '{$alias}' no está registrado.");
-            return null;
-        }
-        return self::$assetPaths[$alias] . '/' . ltrim($nombreArchivo, '/\\');
-    }
-
-
-    /**
-     * Intenta resolver la ruta relativa REAL del asset dentro del alias, aceptando:
-     * - Referencias sin extensión (probará varias extensiones comunes)
-     * - Diferencias de mayúsculas/minúsculas en el nombre del archivo
-     * - Archivos dentro de subdirectorios (ej: 'libros/mi-libro.png')
-     * Retorna la ruta relativa con el nombre de archivo real si existe; de lo contrario null.
-     */
-    private static function resolveActualRelativeAssetPath(string $alias, string $nombreArchivo): ?string
-    {
-        if (!isset(self::$assetPaths[$alias])) {
-            return null;
-        }
-
-        // Normalizar para manejar subdirectorios correctamente
-        $nombreArchivo = wp_normalize_path($nombreArchivo);
-        $subDir = dirname($nombreArchivo);
-        $basenameSolicitado = basename($nombreArchivo);
-
-        $dirRel = self::$assetPaths[$alias];
-
-        // Si hay subdirectorio, lo agregamos a la ruta relativa base
-        if ($subDir !== '.' && $subDir !== '') {
-            $dirRel .= '/' . $subDir;
-        }
-
-        $baseDir = trailingslashit(get_template_directory() . '/' . $dirRel);
-
-        // Si el directorio resultante no existe, no podemos buscar nada
-        if (!is_dir($baseDir)) {
-            return null;
-        }
-
-        $extensiones = ['svg', 'png', 'jpg', 'jpeg', 'webp', 'gif'];
-
-        // 1) Si viene con extensión exacta y coincide con el sistema de archivos
-        $directCandidate = $baseDir . $basenameSolicitado;
-        if (is_file($directCandidate)) {
-            return $dirRel . '/' . $basenameSolicitado;
-        }
-
-        $basenameLower = strtolower($basenameSolicitado);
-        $poseeExtension = (strpos($basenameSolicitado, '.') !== false);
-
-        // 2) Búsqueda insensible a mayúsculas/minúsculas
-        if ($poseeExtension) {
-            // Comparar por basename completo (con extensión)
-            foreach ($extensiones as $ext) {
-                $glob = glob($baseDir . '*.' . $ext, GLOB_NOSORT) ?: [];
-                foreach ($glob as $ruta) {
-                    if (strtolower(basename($ruta)) === $basenameLower) {
-                        return $dirRel . '/' . basename($ruta);
-                    }
-                }
-            }
-            return null;
-        }
-
-        // 3) Sin extensión: buscar por nombre (filename) y preferir orden de extensiones
-        $needle = strtolower(pathinfo($basenameSolicitado, PATHINFO_FILENAME));
-        foreach ($extensiones as $ext) {
-            $glob = glob($baseDir . '*.' . $ext, GLOB_NOSORT) ?: [];
-            foreach ($glob as $ruta) {
-                if (strtolower(pathinfo($ruta, PATHINFO_FILENAME)) === $needle) {
-                    return $dirRel . '/' . basename($ruta);
-                }
-            }
-        }
-
-        return null;
-    }
-
-
-    /**
-     * Verifica si un asset referido existe físicamente en el tema.
-     */
     public static function assetExists(string $assetReference): bool
     {
-        if (!self::$isInitialized) self::init();
-        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-        $rutaRelativa = self::resolveActualRelativeAssetPath($alias, $nombreArchivo);
-        if (!$rutaRelativa) {
-            return false;
-        }
-        $rutaLocal = get_template_directory() . '/' . $rutaRelativa;
-        return is_file($rutaLocal);
+        return AssetResolver::assetExists($assetReference);
     }
 
-    /**
-     * Busca un adjunto existente que corresponda a un asset dado, sin importar/crear nada.
-     * Retorna null si no hay un adjunto válido o si el archivo físico del adjunto no existe.
-     * IMPORTANTE: Esta funcion hace busqueda ESTRICTA solo por metas de Glory, no usa LIKE.
-     */
     public static function findExistingAttachmentIdForAsset(string $assetReference): ?int
     {
-        if (!self::$isInitialized) self::init();
-        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-        $rutaRelativaSolicitada = self::resolveAssetPath($alias, $nombreArchivo);
-        if (!$rutaRelativaSolicitada) {
-            return null;
-        }
-
-        // Busqueda ESTRICTA: solo por metas exactos de Glory, sin LIKE
-        $args = [
-            'post_type'      => 'attachment',
-            'post_status'    => 'inherit',
-            'posts_per_page' => 1,
-            'fields'         => 'ids',
-            'no_found_rows'  => true,
-            'meta_query'     => [
-                'relation' => 'OR',
-                ['key' => '_glory_asset_source',    'value' => $rutaRelativaSolicitada, 'compare' => '='],
-                ['key' => '_glory_asset_requested', 'value' => $rutaRelativaSolicitada, 'compare' => '='],
-            ],
-        ];
-        $q = new \WP_Query($args);
-        if ($q->have_posts()) {
-            $id = (int) $q->posts[0];
-            $file = get_attached_file($id);
-            if ($file && file_exists($file)) {
-                return $id;
-            }
-        }
-        return null;
+        return AssetResolver::findExistingAttachmentIdForAsset($assetReference);
     }
 
+
+    /* --- AssetImporter: importación a Biblioteca de Medios --- */
+
+    public static function get_attachment_id_from_asset(string $assetReference, bool $allowAliasFallback = true): ?int
+    {
+        return AssetImporter::get_attachment_id_from_asset($assetReference, $allowAliasFallback);
+    }
+
+    public static function importTemaAssets(): void
+    {
+        AssetImporter::importTemaAssets();
+    }
+
+    public static function importAssetsForAlias(string $alias): void
+    {
+        AssetImporter::importAssetsForAlias($alias);
+    }
+
+
+    /* --- AssetLister: listado, selección aleatoria y renderizado --- */
 
     public static function getRandomDefaultImageName(string $alias = 'glory'): ?string
     {
-        if (!self::$isInitialized) {
-            self::init();
-        }
-
-        if (!isset(self::$assetPaths[$alias])) {
-            GloryLogger::error("AssetsUtility: La ruta con alias '{$alias}' para imágenes aleatorias no está registrada.");
-            return null;
-        }
-
-        $directorioImagenes = get_template_directory() . '/' . self::$assetPaths[$alias] . '/';
-        $patronBusqueda = $directorioImagenes . 'default*.{jpg,jpeg,png,gif,webp}';
-        $archivos = glob($patronBusqueda, GLOB_BRACE);
-
-        if (empty($archivos)) {
-            GloryLogger::warning("AssetsUtility: No se encontraron imágenes por defecto con el patrón '{$patronBusqueda}'.");
-            return null;
-        }
-
-        return basename($archivos[array_rand($archivos)]);
+        return AssetLister::getRandomDefaultImageName($alias);
     }
 
-
-    /**
-     * Retorna un arreglo de nombres de archivo (basename) de imágenes aleatorias y únicas
-     * dentro del alias de assets indicado. Útil para sembrar contenido sin repetición.
-     *
-     * @param string $alias Alias registrado del directorio de assets (por ejemplo, 'colors').
-     * @param int $cantidad Número de imágenes únicas a seleccionar.
-     * @param array $extensiones Extensiones permitidas.
-     * @return array<string> Lista de nombres de archivo (sin ruta) seleccionados aleatoriamente.
-     */
     public static function getRandomUniqueImagesFromAlias(
         string $alias,
         int $cantidad,
         array $extensiones = ['jpg', 'jpeg', 'png', 'gif', 'webp']
     ): array {
-        if (!self::$isInitialized) self::init();
-
-        if (!isset(self::$assetPaths[$alias])) {
-            GloryLogger::error("AssetsUtility: Alias '{$alias}' no registrado para selección aleatoria.");
-            return [];
-        }
-
-        $directorioImagenes = trailingslashit(get_template_directory() . '/' . self::$assetPaths[$alias]);
-
-        $archivos = [];
-        foreach ($extensiones as $ext) {
-            $glob = glob($directorioImagenes . '*.' . $ext, GLOB_NOSORT);
-            if (is_array($glob)) {
-                $archivos = array_merge($archivos, $glob);
-            }
-        }
-
-        if (empty($archivos)) {
-            GloryLogger::warning("AssetsUtility: No se encontraron imágenes en '{$directorioImagenes}'.");
-            return [];
-        }
-
-        shuffle($archivos);
-        $seleccionados = array_slice($archivos, 0, max(0, $cantidad));
-        return array_values(array_map('basename', $seleccionados));
+        return AssetLister::getRandomUniqueImagesFromAlias($alias, $cantidad, $extensiones);
     }
 
-
-    /**
-     * Lista todas las imágenes disponibles para un alias dado, retornando solo los nombres de archivo (basename).
-     * Ordena alfabéticamente para obtener una selección determinística.
-     *
-     * @param string $alias
-     * @param array $extensiones
-     * @return array<string>
-     */
     public static function listImagesForAlias(
         string $alias,
         array $extensiones = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg']
     ): array {
-        if (!self::$isInitialized) self::init();
-
-        if (!isset(self::$assetPaths[$alias])) {
-            GloryLogger::error("AssetsUtility: Alias '{$alias}' no registrado para listado de imágenes.");
-            return [];
-        }
-
-        $directorioImagenes = trailingslashit(get_template_directory() . '/' . self::$assetPaths[$alias]);
-        $archivos = [];
-        foreach ($extensiones as $ext) {
-            $glob = glob($directorioImagenes . '*.' . $ext, GLOB_NOSORT);
-            if (is_array($glob)) {
-                foreach ($glob as $ruta) {
-                    if (is_file($ruta)) {
-                        $archivos[] = basename($ruta);
-                    }
-                }
-            }
-        }
-
-        if (empty($archivos)) {
-            return [];
-        }
-
-        sort($archivos, SORT_NATURAL | SORT_FLAG_CASE);
-        return array_values($archivos);
+        return AssetLister::listImagesForAlias($alias, $extensiones);
     }
 
-    /**
-     * Lista imágenes para un alias filtrando por tamaño mínimo en bytes.
-     * Si no hay suficientes, retorna sin filtrar.
-     *
-     * @param string $alias
-     * @param int $minBytes
-     * @param array $extensiones
-     * @return array<string>
-     */
     public static function listImagesForAliasWithMinSize(
         string $alias,
         int $minBytes = 0,
         array $extensiones = ['jpg', 'jpeg', 'png', 'gif', 'webp']
     ): array {
-        $lista = self::listImagesForAlias($alias, $extensiones);
-        if (empty($lista) || $minBytes <= 0) {
-            return $lista;
-        }
-        $dir = trailingslashit(get_template_directory() . '/' . (self::$assetPaths[$alias] ?? ''));
-        $filtradas = [];
-        foreach ($lista as $nombre) {
-            $ruta = $dir . $nombre;
-            if (is_file($ruta)) {
-                $size = (int) @filesize($ruta);
-                if ($size >= $minBytes) {
-                    $filtradas[] = $nombre;
-                }
-            }
-        }
-        return !empty($filtradas) ? $filtradas : $lista;
+        return AssetLister::listImagesForAliasWithMinSize($alias, $minBytes, $extensiones);
     }
 
-    /**
-     * Selecciona N imágenes aleatorias del alias con filtro de tamaño mínimo opcional.
-     * Retorna basenames.
-     */
     public static function pickRandomImages(
         string $alias,
         int $cantidad,
         int $minBytes = 0,
         array $extensiones = ['jpg', 'jpeg', 'png', 'gif', 'webp']
     ): array {
-        $pool = $minBytes > 0
-            ? self::listImagesForAliasWithMinSize($alias, $minBytes, $extensiones)
-            : self::listImagesForAlias($alias, $extensiones);
-        if (empty($pool)) return [];
-        shuffle($pool);
-        return array_slice($pool, 0, max(0, $cantidad));
+        return AssetLister::pickRandomImages($alias, $cantidad, $minBytes, $extensiones);
     }
-
 
     public static function imagen(string $assetReference, array $atributos = []): void
     {
-        if (!self::$isInitialized) self::init();
-
-        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-        $rutaRelativa = self::resolveAssetPath($alias, $nombreArchivo);
-
-        if (!$rutaRelativa) return;
-
-        $rutaLocal = get_template_directory() . '/' . $rutaRelativa;
-        $urlBase = get_template_directory_uri() . '/' . $rutaRelativa;
-
-        $ancho = $alto = null;
-        if (file_exists($rutaLocal)) {
-            $dimensiones = @getimagesize($rutaLocal);
-            if ($dimensiones !== false) {
-                [$ancho, $alto] = $dimensiones;
-            }
-        }
-
-        $urlFinal = function_exists('jetpack_photon_url') ? jetpack_photon_url($urlBase) : $urlBase;
-
-        if (!isset($atributos['alt'])) {
-            $atributos['alt'] = ucwords(str_replace(['-', '_'], ' ', pathinfo($nombreArchivo, PATHINFO_FILENAME)));
-        }
-
-        if ($ancho && $alto) {
-            if (!isset($atributos['width'])) $atributos['width'] = $ancho;
-            if (!isset($atributos['height'])) $atributos['height'] = $alto;
-        }
-
-        $atributosString = '';
-        foreach ($atributos as $clave => $valor) {
-            $atributosString .= sprintf(' %s="%s"', esc_attr($clave), esc_attr($valor));
-        }
-
-        printf('<img src="%s"%s>', esc_url($urlFinal), $atributosString);
+        AssetLister::imagen($assetReference, $atributos);
     }
 
     public static function imagenUrl(string $assetReference): ?string
     {
-        if (!self::$isInitialized) self::init();
-
-        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-        // Intentar resolver ruta real (case/extension flexible)
-        $rutaRelativa = self::resolveActualRelativeAssetPath($alias, $nombreArchivo) ?: self::resolveAssetPath($alias, $nombreArchivo);
-
-        if (!$rutaRelativa) {
-            return null;
-        }
-
-        $rutaLocal = get_template_directory() . '/' . $rutaRelativa;
-        if (!file_exists($rutaLocal)) {
-            // Evitar ruido en logs; el check de existencia se hace aguas arriba donde importe
-            return null;
-        }
-
-        $urlBase = get_template_directory_uri() . '/' . $rutaRelativa;
-        $ext = strtolower((string) pathinfo($rutaRelativa, PATHINFO_EXTENSION));
-        // Evitar Jetpack Photon para SVG (no soportado y puede romper URLs)
-        if ($ext === 'svg') {
-            $urlFinal = $urlBase;
-        } else {
-            $urlFinal = function_exists('jetpack_photon_url') ? jetpack_photon_url($urlBase) : $urlBase;
-        }
-
-        return esc_url($urlFinal);
-    }
-
-
-    public static function get_attachment_id_from_asset(string $assetReference, bool $allowAliasFallback = true): ?int
-    {
-        if (!self::$isInitialized) self::init();
-
-        $cacheKey = 'glory_asset_id_' . md5($assetReference);
-        $cachedId = get_transient($cacheKey);
-        // Si cache tiene 'null', pero el archivo ahora existe, invalidar para reintentar
-        if ($cachedId === 'null') {
-            list($aliasChk, $nombreChk) = self::parseAssetReference($assetReference);
-            $resolvedChk = self::resolveActualRelativeAssetPath($aliasChk, $nombreChk) ?: self::resolveAssetPath($aliasChk, $nombreChk);
-            if ($resolvedChk) {
-                $absChk = get_template_directory() . '/' . $resolvedChk;
-                if (file_exists($absChk)) {
-                    delete_transient($cacheKey);
-                    $cachedId = false;
-                }
-            }
-        }
-
-        if ($cachedId !== false) {
-            return $cachedId === 'null' ? null : (int)$cachedId;
-        }
-
-        list($alias, $nombreArchivo) = self::parseAssetReference($assetReference);
-        $rutaAssetRelativaSolicitada = self::resolveAssetPath($alias, $nombreArchivo);
-        // Intentar resolver a un archivo real (permitiendo nombres sin extensión o con distinto case)
-        $resolved = self::resolveActualRelativeAssetPath($alias, $nombreArchivo);
-        $rutaAssetRelativa = $resolved ?: $rutaAssetRelativaSolicitada;
-
-        if (!$rutaAssetRelativa) {
-            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
-            return null;
-        }
-
-        $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
-
-        if (!file_exists($rutaAssetCompleta)) {
-            if ($allowAliasFallback && isset(self::$assetPaths[$alias])) {
-                $dirAlias = trailingslashit(get_template_directory() . '/' . self::$assetPaths[$alias]);
-                $alt = glob($dirAlias . '*.{jpg,jpeg,png,gif,webp}', GLOB_BRACE) ?: [];
-                if (!empty($alt)) {
-                    $idx = abs(crc32($nombreArchivo)) % count($alt);
-                    $fallbackFile = $alt[$idx];
-                    $nombreArchivo = basename($fallbackFile);
-                    $rutaAssetRelativa = self::resolveAssetPath($alias, $nombreArchivo) ?: $rutaAssetRelativaSolicitada;
-                    $rutaAssetCompleta = get_template_directory() . '/' . $rutaAssetRelativa;
-                }
-            }
-            if (!file_exists($rutaAssetCompleta)) {
-                set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
-                return null;
-            }
-        }
-
-        // Búsqueda ampliada: primero por nuestro meta, y como respaldo por nombre de archivo en _wp_attached_file
-        $nombreArchivoBase = basename($rutaAssetRelativa);
-
-        $args = [
-            'post_type'      => 'attachment',
-            'post_status'    => 'inherit',
-            'posts_per_page' => 1,
-            'fields'         => 'ids',
-            'no_found_rows'  => true,
-            'meta_query'     => [
-                'relation' => 'OR',
-                [
-                    'key'     => '_glory_asset_source',
-                    'value'   => $rutaAssetRelativa,
-                    'compare' => '='
-                ],
-                [
-                    'key'     => '_wp_attached_file',
-                    'value'   => $nombreArchivoBase,
-                    'compare' => 'LIKE'
-                ],
-                [
-                    'key'     => '_glory_asset_requested',
-                    'value'   => $rutaAssetRelativaSolicitada,
-                    'compare' => '='
-                ],
-            ],
-        ];
-        $query = new \WP_Query($args);
-
-        if ($query->have_posts()) {
-            $id = (int) $query->posts[0];
-
-            // Verificar que el archivo físico exista; si no, intentar reparar manteniendo el mismo adjunto
-            $rutaAdjunta = get_attached_file($id);
-            if (empty($rutaAdjunta) || !file_exists($rutaAdjunta)) {
-                require_once(ABSPATH . 'wp-admin/includes/file.php');
-                require_once(ABSPATH . 'wp-admin/includes/image.php');
-                require_once(ABSPATH . 'wp-admin/includes/media.php');
-
-                $archivoTemporal = wp_tempnam($nombreArchivo);
-                @copy($rutaAssetCompleta, $archivoTemporal);
-
-                $datosArchivo = [
-                    'name'     => basename($nombreArchivo),
-                    'tmp_name' => $archivoTemporal,
-                    'error'    => 0,
-                    'size'     => @filesize($rutaAssetCompleta) ?: 0,
-                ];
-                $subida = wp_handle_sideload($datosArchivo, ['test_form' => false]);
-
-                if (!isset($subida['error']) && isset($subida['file'])) {
-                    // Actualizar el archivo asociado al mismo adjunto
-                    if (function_exists('update_attached_file')) {
-                        update_attached_file($id, $subida['file']);
-                    }
-                    $meta = wp_generate_attachment_metadata($id, $subida['file']);
-                    wp_update_attachment_metadata($id, $meta);
-                    update_post_meta($id, '_glory_asset_source', $rutaAssetRelativa);
-                    update_post_meta($id, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
-                    // MUY IMPORTANTE: actualizar GUID a la nueva URL física
-                    if (isset($subida['url'])) {
-                        wp_update_post([
-                            'ID'   => $id,
-                            'guid' => $subida['url'],
-                        ]);
-                    }
-                } else {
-                    // Si la reparación falla, importar como nuevo adjunto y devolver su ID
-                    $nuevoId = null;
-                    $datosArchivo = [
-                        'name'     => basename($nombreArchivo),
-                        'tmp_name' => $archivoTemporal,
-                        'error'    => 0,
-                        'size'     => @filesize($rutaAssetCompleta) ?: 0,
-                    ];
-                    $subida2 = wp_handle_sideload($datosArchivo, ['test_form' => false]);
-                    if (!isset($subida2['error']) && isset($subida2['file'])) {
-                        $nuevoId = wp_insert_attachment([
-                            'guid'           => $subida2['url'],
-                            'post_mime_type' => $subida2['type'],
-                            'post_title'     => preg_replace('/\.[^.]+$/', '', basename($subida2['file'])),
-                            'post_content'   => '',
-                            'post_status'    => 'inherit'
-                        ], $subida2['file']);
-                        if (!is_wp_error($nuevoId)) {
-                            $meta2 = wp_generate_attachment_metadata($nuevoId, $subida2['file']);
-                            wp_update_attachment_metadata($nuevoId, $meta2);
-                            update_post_meta($nuevoId, '_glory_asset_source', $rutaAssetRelativa);
-                            update_post_meta($nuevoId, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
-                            set_transient($cacheKey, (int) $nuevoId, HOUR_IN_SECONDS);
-                            return (int) $nuevoId;
-                        }
-                    }
-                }
-            }
-
-            // Asegurar metas de trazabilidad
-            if (!metadata_exists('post', $id, '_glory_asset_source')) {
-                update_post_meta($id, '_glory_asset_source', $rutaAssetRelativa);
-            }
-            if (!metadata_exists('post', $id, '_glory_asset_requested')) {
-                update_post_meta($id, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
-            }
-
-            set_transient($cacheKey, $id, HOUR_IN_SECONDS);
-            return $id;
-        }
-
-        // Permitir importación en frontend si estamos en modo desarrollo
-        if (!is_admin() && !AssetManager::isGlobalDevMode()) {
-            return null;
-        }
-
-        // Cachear fallo de importación para evitar reintentos ruidosos
-        $importAttemptKey = 'glory_asset_import_attempt_' . md5($assetReference);
-        $lastAttempt = get_transient($importAttemptKey);
-        if ($lastAttempt !== false) {
-            return null;
-        }
-
-        require_once(ABSPATH . 'wp-admin/includes/file.php');
-        require_once(ABSPATH . 'wp-admin/includes/image.php');
-        require_once(ABSPATH . 'wp-admin/includes/media.php');
-
-        $archivoTemporal = wp_tempnam($nombreArchivo);
-        copy($rutaAssetCompleta, $archivoTemporal);
-
-        $datosArchivo = [
-            'name' => basename($nombreArchivo),
-            'tmp_name' => $archivoTemporal,
-            'error' => 0,
-            'size' => filesize($rutaAssetCompleta)
-        ];
-
-        $subida = wp_handle_sideload($datosArchivo, ['test_form' => false]);
-
-        if (isset($subida['error'])) {
-            GloryLogger::error("AssetsUtility: Error al subir el asset '{$nombreArchivo}'.", ['error' => $subida['error']]);
-            set_transient($importAttemptKey, 'fail', DAY_IN_SECONDS);
-            if (file_exists($archivoTemporal)) @unlink($archivoTemporal);
-            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
-            return null;
-        }
-
-        $idAdjunto = wp_insert_attachment([
-            'guid' => $subida['url'],
-            'post_mime_type' => $subida['type'],
-            'post_title' => preg_replace('/\.[^.]+$/', '', basename($subida['file'])),
-            'post_content' => '',
-            'post_status' => 'inherit'
-        ], $subida['file']);
-
-        if (is_wp_error($idAdjunto)) {
-            GloryLogger::error("AssetsUtility: Error al insertar el adjunto '{$nombreArchivo}'.", ['error' => $idAdjunto->get_error_message()]);
-            set_transient($importAttemptKey, 'fail', DAY_IN_SECONDS);
-            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
-            return null;
-        }
-
-        $metadatosAdjunto = wp_generate_attachment_metadata($idAdjunto, $subida['file']);
-        wp_update_attachment_metadata($idAdjunto, $metadatosAdjunto);
-        update_post_meta($idAdjunto, '_glory_asset_source', $rutaAssetRelativa);
-        update_post_meta($idAdjunto, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
-
-        GloryLogger::info("AssetsUtility: El asset '{$nombreArchivo}' ha sido importado a la Biblioteca de Medios.", ['attachment_id' => $idAdjunto]);
-        set_transient($cacheKey, $idAdjunto, HOUR_IN_SECONDS);
-
-        return $idAdjunto;
-    }
-
-    public static function importTemaAssets(): void
-    {
-        self::importAllFromAlias('tema');
-    }
-
-    public static function importAssetsForAlias(string $alias): void
-    {
-        self::importAllFromAlias($alias);
-    }
-
-    private static function importAllFromAlias(string $alias): void
-    {
-        if (!isset(self::$assetPaths[$alias])) {
-            return;
-        }
-        $dir = get_template_directory() . '/' . self::$assetPaths[$alias] . '/';
-        if (!is_dir($dir)) {
-            return;
-        }
-        $extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
-        foreach ($extensions as $ext) {
-            $files = glob($dir . '*.' . $ext);
-            if (!is_array($files)) {
-                continue;
-            }
-            foreach ($files as $file) {
-                if (!is_file($file)) {
-                    continue;
-                }
-                $basename = basename($file);
-                $assetRef = $alias . '::' . $basename;
-                self::get_attachment_id_from_asset($assetRef);
-            }
-        }
+        return AssetLister::imagenUrl($assetReference);
     }
 }
