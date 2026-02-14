@@ -72,6 +72,18 @@ export interface GloryOption<T = unknown> {
 export type IslandRegistry = Record<string, React.ComponentType<Record<string, unknown>>>;
 
 /*
+ * Mapa de rutas SPA inyectado por PHP.
+ * Cada clave es un path (ej: '/servicios/') y el valor contiene la isla y props.
+ */
+export interface GloryRouteConfig {
+    island: string;
+    props: Record<string, unknown>;
+    title: string;
+}
+
+export type GloryRoutesMap = Record<string, GloryRouteConfig>;
+
+/*
  * Declaracion de variables globales inyectadas por PHP.
  */
 declare global {
@@ -79,5 +91,7 @@ declare global {
         __GLORY_CONTENT__?: GloryContentMap;
         /* Partial porque PHP puede no haber inyectado todos los campos aun */
         GLORY_CONTEXT?: Partial<GloryContext>;
+        /* Mapa de rutas React para navegacion SPA */
+        __GLORY_ROUTES__?: GloryRoutesMap;
     }
 }

@@ -254,12 +254,29 @@ class ReactIslands
             return;
         }
 
-        // Inyectar contexto global via filtro (Agnóstico)
-        $context = apply_filters('glory_react_context', []);
+        // Inyectar contexto global con datos base + filtro extensible
+        $baseContext = [
+            'siteUrl' => home_url(),
+            'themeUrl' => get_template_directory_uri(),
+            'restUrl' => rest_url(),
+            'nonce' => wp_create_nonce('wp_rest'),
+            'isAdmin' => current_user_can('manage_options'),
+            'locale' => get_locale(),
+        ];
+
+        $context = apply_filters('glory_react_context', $baseContext);
 
         if (!empty($context)) {
             echo '<script id="glory-context">';
             echo 'window.GLORY_CONTEXT = ' . wp_json_encode($context, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';';
+            echo '</script>' . PHP_EOL;
+        }
+
+        // Inyectar mapa de rutas React para navegacion SPA
+        $routes = \Glory\Manager\PageDefinition::getReactPageRoutes();
+        if (!empty($routes)) {
+            echo '<script id="glory-routes">';
+            echo 'window.__GLORY_ROUTES__ = ' . wp_json_encode($routes, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . ';';
             echo '</script>' . PHP_EOL;
         }
 

@@ -242,4 +242,40 @@ class PageDefinition
         $modo = get_post_meta($postId, self::CLAVE_MODO_CONTENIDO, true);
         return in_array($modo, ['code', 'editor'], true) ? $modo : 'code';
     }
+
+    /**
+     * Devuelve el mapa de rutas React para navegacion SPA client-side.
+     * Formato: { '/slug/': { island: 'IslandName', props: {...} } }
+     */
+    public static function getReactPageRoutes(): array
+    {
+        $routes = [];
+
+        foreach (self::$paginasDefinidas as $slug => $config) {
+            if (empty($config['isReactPage'])) {
+                continue;
+            }
+
+            $path = '/' . trim($slug, '/') . '/';
+            if ($slug === 'home') {
+                $path = '/';
+            }
+
+            $props = [];
+            $propsConfig = $config['islandProps'] ?? null;
+
+            if (is_array($propsConfig)) {
+                $props = $propsConfig;
+            }
+            /* Los callable props no se serializan, se omiten del mapa estatico */
+
+            $routes[$path] = [
+                'island' => $config['islandName'],
+                'props' => $props,
+                'title' => $config['titulo'] ?? '',
+            ];
+        }
+
+        return $routes;
+    }
 }

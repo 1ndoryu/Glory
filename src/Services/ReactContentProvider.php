@@ -3,6 +3,7 @@
 namespace Glory\Services;
 
 use Glory\Core\DefaultContentRegistry;
+use Glory\Manager\PageDefinition;
 
 /**
  * ReactContentProvider - Provee contenido de WordPress a React
@@ -28,6 +29,75 @@ class ReactContentProvider
 
     // Si ya se inyectó el contenido global
     private static bool $injected = false;
+
+    // Si ya se inicializo el bootstrap automatico
+    private static bool $bootstrapped = false;
+
+    /**
+     * Registra el bootstrap automatico para paginas React.
+     * Solucion agnostica: cualquier proyecto con DefaultContentManager
+     * obtiene __GLORY_CONTENT__ sin cableado manual por App.
+     */
+    public static function bootstrap(): void
+    {
+        if (self::$bootstrapped) {
+            return;
+        }
+
+        add_action('wp', [self::class, 'bootstrapForCurrentRequest'], 15);
+        self::$bootstrapped = true;
+    }
+
+    /**
+     * Bootstrap por request: registra contenido por defecto en paginas React
+     * y lo inyecta en window.__GLORY_CONTENT__.
+     */
+    public static function bootstrapForCurrentRequest(): void
+    {
+        if (is_admin() || !is_page() || !self::isCurrentRequestReactPage()) {
+            return;
+        }
+
+        $definiciones = DefaultContentRegistry::getDefiniciones();
+        if (empty($definiciones)) {
+            return;
+        }
+
+        $postTypes = array_keys($definiciones);
+
+        foreach ($postTypes as $postType) {
+            self::registerFromDefaults($postType, $postType, [
+                'posts_per_page' => 100,
+                'orderby' => 'date',
+                'order' => 'DESC',
+            ]);
+        }
+
+        self::injectGlobal();
+    }
+
+    /**
+     * Determina si la pagina actual corresponde a una reactPage de PageManager.
+     */
+    private static function isCurrentRequestReactPage(): bool
+    {
+        $queriedId = get_queried_object_id();
+        if (!$queriedId) {
+            return false;
+        }
+
+        $slug = get_post_field('post_name', $queriedId);
+        $definicionesPaginas = PageDefinition::getPaginasDefinidas();
+
+        if (isset($definicionesPaginas[$slug]) && !empty($definicionesPaginas[$slug]['isReactPage'])) {
+            return true;
+        }
+
+        $fullPath = get_page_uri($queriedId);
+        return $fullPath
+            && isset($definicionesPaginas[$fullPath])
+            && !empty($definicionesPaginas[$fullPath]['isReactPage']);
+    }
 
     /**
      * Registra contenido para ser inyectado a React.
@@ -82,8 +152,8 @@ class ReactContentProvider
         $definiciones = DefaultContentRegistry::getDefiniciones();
         $slugs = [];
 
-        if (isset($definiciones[$postType]['posts'])) {
-            foreach ($definiciones[$postType]['posts'] as $post) {
+        if (isset($definiciones[$postType]['definicionesPost'])) {
+            foreach ($definiciones[$postType]['definicionesPost'] as $post) {
                 if (isset($post['slugDefault'])) {
                     $slugs[] = $post['slugDefault'];
                 }
@@ -204,7 +274,7 @@ class ReactContentProvider
         }
 
         return [
-            'id' => (string) $post->ID,
+            'id' => (int) $post->ID,
             'slug' => $post->post_name,
             'title' => get_the_title($post),
             'excerpt' => get_the_excerpt($post),
@@ -302,5 +372,6 @@ class ReactContentProvider
     {
         self::$registeredContent = [];
         self::$injected = false;
+        self::$bootstrapped = false;
     }
 }

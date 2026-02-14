@@ -23,6 +23,7 @@ use Glory\Api\MCPController;
 use Glory\Api\ImagesController;
 use Glory\Api\NewsletterController;
 use Glory\Api\FormController;
+use Glory\Services\ReactContentProvider;
 
 /**
  * Clase principal de inicialización del framework Glory.
@@ -147,6 +148,12 @@ class Setup
                 fn() => DefaultContentManager::register(),
                 'DefaultContentManager.register',
                 'manager'
+            );
+
+            PerformanceProfiler::medirFuncion(
+                fn() => ReactContentProvider::bootstrap(),
+                'ReactContentProvider.bootstrap',
+                'service'
             );
         }
 

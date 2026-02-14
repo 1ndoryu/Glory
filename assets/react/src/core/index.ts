@@ -12,3 +12,7 @@ export type { GloryProviderValue } from './gloryContext';
 export { initializeIslands } from './hydration';
 export type { InitOptions } from './hydration';
 export { DevOverlay } from './DevOverlay';
+
+/* Router SPA */
+export { useNavigationStore, GloryLink, PageRenderer } from './router';
+export type { GloryRoute, GloryRoutesMap, GloryLinkProps } from './router';

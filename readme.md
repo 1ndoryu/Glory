@@ -262,6 +262,64 @@ GloryFeatures::disable('queryProfiler');
 - Usar el CLI para reducir boilerplate y errores manuales.
 - Trabajar por islas pequeñas y cohesionadas.
 - Ejecutar `type-check` + `lint` como rutina diaria.
+- Usar `<GloryLink>` en lugar de `<a href>` para navegación interna SPA.
+
+---
+
+## 🔀 Navegación SPA entre islas
+
+Glory incluye navegación client-side nativa entre páginas React. Los clicks en enlaces internos se interceptan y la isla correspondiente se renderiza sin recarga completa del navegador.
+
+### Cómo funciona
+
+1. PHP inyecta `window.__GLORY_ROUTES__` con el mapa de todas las `reactPage()` definidas.
+2. `hydration.tsx` detecta las rutas y activa modo SPA con un `PageRenderer` como root.
+3. Al hacer click en un `<GloryLink>`, el store Zustand actualiza la ruta y el `PageRenderer` monta la isla correspondiente.
+4. El historial del navegador se actualiza con `pushState`, soportando botones atrás/adelante.
+
+### Componentes
+
+| Componente | Ubicación | Propósito |
+|---|---|---|
+| `GloryLink` | `core/router/GloryLink.tsx` | Reemplazo de `<a>` con navegación SPA |
+| `PageRenderer` | `core/router/PageRenderer.tsx` | Renderiza la isla según la ruta actual |
+| `navigationStore` | `core/router/navigationStore.ts` | Store Zustand con estado de navegación |
+| `useNavigation` | `hooks/useNavigation.ts` | Hook público para navegar programáticamente |
+
+### Uso en componentes
+
+```tsx
+import { GloryLink } from '@/core/router';
+
+// Enlace con navegación SPA
+<GloryLink href="/servicios/">Ver servicios</GloryLink>
+
+// Forzar recarga completa
+<GloryLink href="/admin/" forceReload>Admin</GloryLink>
+```
+
+### Navegación programática
+
+```tsx
+import { useNavigation } from '@/hooks';
+
+function MiComponente() {
+    const { navegar, rutaActual, esRutaActiva } = useNavigation();
+
+    return (
+        <button onClick={() => navegar('/contacto/')}>
+            Ir a contacto
+        </button>
+    );
+}
+```
+
+### Comportamiento
+
+- **Enlaces internos** registrados en `pages.php`: navegación SPA sin recarga.
+- **Enlaces externos** o no registrados: navegación normal del navegador.
+- **Teclas modificadoras** (Ctrl+click, Cmd+click): abren en nueva pestaña (comportamiento nativo).
+- **Historial**: soporta botón atrás/adelante del navegador.
 
 ---
 

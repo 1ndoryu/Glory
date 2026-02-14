@@ -53,13 +53,19 @@ export function useGloryContent<T extends WPPost = WPPost>(
                 return;
             }
 
-            /* Validacion runtime: comprobar campos minimos de WPPost */
-            const validItems = items.filter((item): item is T => {
-                if (typeof item !== 'object' || item === null) return false;
-                if (typeof item.id !== 'number') return false;
-                if (typeof item.slug !== 'string') return false;
-                return true;
-            });
+            /* Validacion runtime: comprobar campos minimos de WPPost.
+             * El id puede llegar como number o string numerico desde PHP,
+             * se normaliza a number para mantener consistencia con WPPost. */
+            const validItems = items
+                .map((item) => {
+                    if (typeof item !== 'object' || item === null) return null;
+                    const rawId = item.id;
+                    const numericId = typeof rawId === 'number' ? rawId : Number(rawId);
+                    if (Number.isNaN(numericId) || numericId <= 0) return null;
+                    if (typeof item.slug !== 'string') return null;
+                    return { ...item, id: numericId } as T;
+                })
+                .filter((item): item is T => item !== null);
 
             if (import.meta.env.DEV && validItems.length !== items.length) {
                 console.warn(

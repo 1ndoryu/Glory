@@ -2,7 +2,12 @@
  * Motor de hidratacion/montaje de islas React.
  * Extrae y mejora la logica que antes vivia en main.tsx.
  *
- * Flujo por isla:
+ * Soporta dos modos:
+ *   A) Islas individuales: busca [data-island] y monta cada uno (legacy/fallback).
+ *   B) SPA: si __GLORY_ROUTES__ existe, monta un PageRenderer unico
+ *      que intercambia islas sin recarga al navegar.
+ *
+ * Flujo por isla (modo A):
  *   1. Busca contenedores [data-island] en el DOM
  *   2. Resuelve el componente via IslandRegistry
  *   3. Parsea props de data-props (JSON)
@@ -16,6 +21,9 @@ import { islandRegistry } from './IslandRegistry';
 import { IslandErrorBoundary } from './ErrorBoundary';
 import { GloryProvider } from './GloryProvider';
 import { DevOverlay } from './DevOverlay';
+import { useNavigationStore } from './router/navigationStore';
+import { PageRenderer } from './router/PageRenderer';
+import type { GloryRoutesMap } from './router/navigationStore';
 
 export interface InitOptions {
     appProvider?: ComponentType<{ children: ReactNode }>;
@@ -124,9 +132,73 @@ function mountIsland(
 
 /*
  * Inicializa todas las islas React encontradas en el DOM.
- * Llamar despues de registrar islas en IslandRegistry.
+ * Si __GLORY_ROUTES__ esta disponible, activa modo SPA con PageRenderer.
+ * Si no, monta islas individualmente (modo clasico).
  */
 export function initializeIslands(options: InitOptions = {}): void {
+    const routes = window.__GLORY_ROUTES__ as GloryRoutesMap | undefined;
+
+    /* Modo SPA: hay rutas definidas, montar PageRenderer en el contenedor principal */
+    if (routes && Object.keys(routes).length > 0) {
+        initializeSPA(routes, options);
+        return;
+    }
+
+    /* Modo clasico: montar islas individuales */
+    initializeClassicIslands(options);
+}
+
+/*
+ * Modo SPA: monta un unico PageRenderer que intercambia islas segun la ruta.
+ * El contenedor [data-island] existente se reutiliza como root.
+ */
+function initializeSPA(routes: GloryRoutesMap, options: InitOptions): void {
+    /* Inicializar store de navegacion con las rutas */
+    useNavigationStore.getState().inicializar(routes, window.location.pathname);
+
+    if (import.meta.env.DEV) {
+        const rutasStr = Object.keys(routes).join(', ');
+        console.warn(`[Glory SPA] Modo SPA activo con ${Object.keys(routes).length} rutas: ${rutasStr}`);
+    }
+
+    /* Encontrar el contenedor principal [data-island] para montar el PageRenderer */
+    const container = document.querySelector<HTMLElement>('[data-island]');
+    if (!container) {
+        if (import.meta.env.DEV) {
+            console.error('[Glory SPA] No se encontro contenedor [data-island] para PageRenderer');
+        }
+        return;
+    }
+
+    const AppProv = options.appProvider;
+
+    const element = (
+        <StrictMode>
+            <GloryProvider>
+                {AppProv ? (
+                    <AppProv>
+                        <PageRenderer suspenseFallback={options.suspenseFallback} />
+                    </AppProv>
+                ) : (
+                    <PageRenderer suspenseFallback={options.suspenseFallback} />
+                )}
+            </GloryProvider>
+        </StrictMode>
+    );
+
+    container.innerHTML = '';
+    createRoot(container).render(element);
+
+    if (import.meta.env.DEV) {
+        const { islaActual } = useNavigationStore.getState();
+        console.warn(`[Glory SPA] PageRenderer montado, isla inicial: ${islaActual}`);
+    }
+}
+
+/*
+ * Modo clasico: monta cada isla individualmente en su contenedor DOM.
+ */
+function initializeClassicIslands(options: InitOptions): void {
     const islands = document.querySelectorAll<HTMLElement>('[data-island]');
 
     if (islands.length === 0) {
