@@ -18,6 +18,9 @@ class PageTemplateInterceptor
     {
         add_filter('template_include', [self::class, 'interceptarPlantilla'], 99);
         add_filter('the_content', [self::class, 'disableAutoPForManagedPages'], 1);
+
+        /* Interceptar rutas dinámicas antes de que WP resuelva 404 */
+        add_action('parse_request', [self::class, 'resolverRutaDinamica'], 20);
     }
 
     public static function disableAutoPForManagedPages($content)
@@ -92,5 +95,57 @@ class PageTemplateInterceptor
     public static function getFuncionParaRenderizar(): mixed
     {
         return self::$funcionParaRenderizar;
+    }
+
+    /**
+     * Resuelve rutas dinámicas tipo /perfil/{username} o /sample/{slug}.
+     * Cuando WP no encuentra una página hija real, redirige la query
+     * a la página padre registrada como ruta dinámica.
+     */
+    public static function resolverRutaDinamica(\WP $wp): void
+    {
+        $rutasDinamicas = PageDefinition::getRutasDinamicas();
+        if (empty($rutasDinamicas)) {
+            return;
+        }
+
+        $requestPath = trim($wp->request ?? '', '/');
+        if (empty($requestPath)) {
+            return;
+        }
+
+        foreach ($rutasDinamicas as $padreSlug) {
+            if (strpos($requestPath, $padreSlug . '/') !== 0) {
+                continue;
+            }
+
+            $segmento = substr($requestPath, strlen($padreSlug) + 1);
+            $segmento = trim($segmento, '/');
+
+            /* Ignorar si está vacío o tiene sub-segmentos (ej: /perfil/a/b) */
+            if (empty($segmento) || str_contains($segmento, '/')) {
+                continue;
+            }
+
+            /* Verificar que NO sea una página hija conocida (ej: /perfil/editar) */
+            $paginasDefinidas = PageDefinition::getPaginasDefinidas();
+            $esHijoConocido = false;
+            foreach ($paginasDefinidas as $key => $def) {
+                if (($def['parentSlug'] ?? '') === $padreSlug && $def['slug'] === $segmento) {
+                    $esHijoConocido = true;
+                    break;
+                }
+            }
+
+            if ($esHijoConocido) {
+                continue;
+            }
+
+            /* Redirigir query a la página padre */
+            $wp->query_vars['pagename'] = $padreSlug;
+            unset($wp->query_vars['name'], $wp->query_vars['error']);
+            GloryLogger::debug("PageTemplateInterceptor: Ruta dinámica resuelta — /{$requestPath}/ → página '{$padreSlug}'");
+            break;
+        }
     }
 }

@@ -76,6 +76,15 @@ class PageManager
 
     /* ── Fachada: delega a PageTemplateInterceptor ── */
 
+    /**
+     * Registra un slug como ruta dinámica (acepta segmentos hijos variables).
+     * Ej: 'perfil' permite /perfil/{username}.
+     */
+    public static function registrarRutaDinamica(string $padreSlug): void
+    {
+        PageDefinition::registrarRutaDinamica($padreSlug);
+    }
+
     public static function register(): void
     {
         PageTemplateInterceptor::register();

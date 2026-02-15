@@ -18,6 +18,12 @@ class PageDefinition
     private static array $paginasReactFullpage = [];
     private static array $reactPageConfigs = [];
 
+    /*
+     * Slugs de páginas padre que aceptan segmentos dinámicos.
+     * Ej: 'perfil' permite /perfil/{username}.
+     */
+    private static array $rutasDinamicas = [];
+
     /**
      * Registra slugs como páginas React Fullpage.
      * Las páginas React Fullpage renderizan su propio layout (sin header/footer de WP).
@@ -206,6 +212,24 @@ class PageDefinition
         } else {
             echo '<!-- PageDefinition: ReactIslands no disponible -->';
         }
+    }
+
+    /* ── Rutas dinámicas: /perfil/{username}, /sample/{slug}, etc. ── */
+
+    /**
+     * Registra un slug como ruta dinámica.
+     * Permite que /slug/{segmento} resuelva a la página padre.
+     */
+    public static function registrarRutaDinamica(string $padreSlug): void
+    {
+        if (!in_array($padreSlug, self::$rutasDinamicas, true)) {
+            self::$rutasDinamicas[] = $padreSlug;
+        }
+    }
+
+    public static function getRutasDinamicas(): array
+    {
+        return self::$rutasDinamicas;
     }
 
     /* Accesores de estado (usados por PageTemplateInterceptor, PageProcessor, etc.) */
