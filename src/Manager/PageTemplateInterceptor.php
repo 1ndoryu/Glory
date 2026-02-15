@@ -144,7 +144,7 @@ class PageTemplateInterceptor
             /* Redirigir query a la página padre */
             $wp->query_vars['pagename'] = $padreSlug;
             unset($wp->query_vars['name'], $wp->query_vars['error']);
-            GloryLogger::debug("PageTemplateInterceptor: Ruta dinámica resuelta — /{$requestPath}/ → página '{$padreSlug}'");
+            GloryLogger::info("PageTemplateInterceptor: Ruta dinámica resuelta — /{$requestPath}/ → página '{$padreSlug}'");
             break;
         }
     }
