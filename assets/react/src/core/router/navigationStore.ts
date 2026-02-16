@@ -55,6 +55,25 @@ function normalizarRuta(ruta: string): string {
     return sinQuery.endsWith('/') ? sinQuery : sinQuery + '/';
 }
 
+/*
+ * Busca una ruta en el mapa SPA por coincidencia exacta o por prefijo.
+ * Rutas dinámicas como /perfil/john/ matchean con /perfil/ si no hay exacta.
+ * Retorna la config de la ruta encontrada o null.
+ */
+function buscarRutaEnMapa(rutas: GloryRoutesMap, rutaNormalizada: string): GloryRoute | null {
+    /* Primero búsqueda exacta */
+    if (rutas[rutaNormalizada]) return rutas[rutaNormalizada];
+
+    /* Búsqueda por prefijo: /perfil/john/ → /perfil/ */
+    const segmentos = rutaNormalizada.split('/').filter(Boolean);
+    for (let i = segmentos.length - 1; i >= 1; i--) {
+        const prefijo = '/' + segmentos.slice(0, i).join('/') + '/';
+        if (rutas[prefijo]) return rutas[prefijo];
+    }
+
+    return null;
+}
+
 export const useNavigationStore = create<NavigationState & NavigationActions>((set, get) => ({
     rutaActual: normalizarRuta(window.location.pathname),
     islaActual: null,
@@ -66,7 +85,7 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
 
     inicializar: (rutas, rutaInicial) => {
         const ruta = normalizarRuta(rutaInicial);
-        const config = rutas[ruta] ?? null;
+        const config = buscarRutaEnMapa(rutas, ruta);
 
         set({
             rutas,
@@ -80,7 +99,7 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
         /* Escuchar popstate para navegacion con historial (boton atras/adelante) */
         window.addEventListener('popstate', () => {
             const nuevaRuta = normalizarRuta(window.location.pathname);
-            const nuevaConfig = get().rutas[nuevaRuta] ?? null;
+            const nuevaConfig = buscarRutaEnMapa(get().rutas, nuevaRuta);
 
             if (nuevaConfig) {
                 set({
@@ -91,10 +110,7 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
                     navegando: true,
                 });
 
-                /* Actualizar titulo */
                 if (nuevaConfig.title) document.title = nuevaConfig.title;
-
-                /* Scroll al inicio */
                 window.scrollTo({ top: 0, behavior: 'instant' });
             }
         });
@@ -107,9 +123,9 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
         /* No navegar si ya estamos en esa ruta */
         if (rutaNormalizada === rutaActual) return;
 
-        const config = rutas[rutaNormalizada];
+        const config = buscarRutaEnMapa(rutas, rutaNormalizada);
         if (!config) {
-            /* Ruta no encontrada en mapa SPA, hacer navegacion tradicional */
+            /* Ruta no encontrada en mapa SPA ni por prefijo, hacer navegacion tradicional */
             window.location.href = ruta;
             return;
         }
@@ -126,10 +142,7 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
             navegando: true,
         });
 
-        /* Actualizar titulo del documento */
         if (config.title) document.title = config.title;
-
-        /* Scroll al inicio */
         window.scrollTo({ top: 0, behavior: 'instant' });
     },
 
@@ -139,7 +152,7 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
 
     resolverRuta: (ruta) => {
         const rutaNormalizada = normalizarRuta(ruta);
-        return get().rutas[rutaNormalizada] ?? null;
+        return buscarRutaEnMapa(get().rutas, rutaNormalizada);
     },
 
     finalizarNavegacion: () => {
