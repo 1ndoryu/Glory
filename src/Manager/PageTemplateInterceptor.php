@@ -21,6 +21,9 @@ class PageTemplateInterceptor
 
         /* Interceptar rutas dinámicas antes de que WP resuelva 404 */
         add_action('parse_request', [self::class, 'resolverRutaDinamica'], 20);
+        
+        /* Forzar resolución de 404 para rutas dinámicas que WP no resolvió */
+        add_action('wp', [self::class, 'forzarResolucionDinamica'], 1);
     }
 
     public static function disableAutoPForManagedPages($content)
@@ -145,6 +148,63 @@ class PageTemplateInterceptor
             $wp->query_vars['pagename'] = $padreSlug;
             unset($wp->query_vars['name'], $wp->query_vars['error']);
             GloryLogger::info("PageTemplateInterceptor: Ruta dinámica resuelta — /{$requestPath}/ → página '{$padreSlug}'");
+            break;
+        }
+    }
+
+    /**
+     * Fuerza la resolución de rutas dinámicas que WordPress resolvió como 404.
+     * Esto cubre los casos donde parse_request redirigió pagename pero WP
+     * aún marcó la query como 404 (típico en acceso directo por URL).
+     */
+    public static function forzarResolucionDinamica(): void
+    {
+        if (!is_404()) {
+            return;
+        }
+
+        $rutasDinamicas = PageDefinition::getRutasDinamicas();
+        if (empty($rutasDinamicas)) {
+            return;
+        }
+
+        $requestPath = trim(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
+        if (empty($requestPath)) {
+            return;
+        }
+
+        foreach ($rutasDinamicas as $padreSlug) {
+            if (strpos($requestPath, $padreSlug . '/') !== 0) {
+                continue;
+            }
+
+            $segmento = substr($requestPath, strlen($padreSlug) + 1);
+            $segmento = trim($segmento, '/');
+
+            if (empty($segmento) || str_contains($segmento, '/')) {
+                continue;
+            }
+
+            /* Buscar la página padre en WP */
+            $paginaPadre = get_page_by_path($padreSlug);
+            if (!$paginaPadre) {
+                continue;
+            }
+
+            /* Forzar la main query para que resuelva a la página padre */
+            global $wp_query;
+            $wp_query->is_404 = false;
+            $wp_query->is_page = true;
+            $wp_query->is_singular = true;
+            $wp_query->post = $paginaPadre;
+            $wp_query->posts = [$paginaPadre];
+            $wp_query->found_posts = 1;
+            $wp_query->post_count = 1;
+            $wp_query->queried_object = $paginaPadre;
+            $wp_query->queried_object_id = $paginaPadre->ID;
+
+            status_header(200);
+            GloryLogger::info("PageTemplateInterceptor: Forzado 404 → página '{$padreSlug}' para /{$requestPath}/");
             break;
         }
     }
