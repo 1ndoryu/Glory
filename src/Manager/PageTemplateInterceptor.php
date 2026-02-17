@@ -63,6 +63,32 @@ class PageTemplateInterceptor
             }
         }
 
+        /*
+         * Fallback robusto: si el lookup directo falla, reconstruir la ruta
+         * desde el padre WP o buscar por slug en todas las definiciones.
+         * Cubre el caso donde la página hija existe pero su parent_id
+         * no se ha sincronizado aún con WP (ej: página recién registrada).
+         */
+        if (!isset($paginas[$lookupKey])) {
+            $parentId = wp_get_post_parent_id($queriedId);
+            if ($parentId) {
+                $parentSlug = get_post_field('post_name', $parentId);
+                $candidato = $parentSlug . '/' . $slug;
+                if (isset($paginas[$candidato])) {
+                    $lookupKey = $candidato;
+                }
+            }
+
+            if (!isset($paginas[$lookupKey])) {
+                foreach ($paginas as $key => $def) {
+                    if (($def['slug'] ?? '') === $slug && !empty($def['isReactPage'])) {
+                        $lookupKey = $key;
+                        break;
+                    }
+                }
+            }
+        }
+
         if (!isset($paginas[$lookupKey])) {
             return $plantilla;
         }

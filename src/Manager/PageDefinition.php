@@ -213,6 +213,28 @@ class PageDefinition
             }
         }
 
+        /*
+         * Fallback robusto: reconstruir ruta desde parent WP,
+         * o buscar por slug en todas las definiciones.
+         */
+        if (!$config || empty($config['isReactPage'])) {
+            $parentId = wp_get_post_parent_id($queriedId);
+            if ($parentId) {
+                $parentSlug = get_post_field('post_name', $parentId);
+                $candidato = $parentSlug . '/' . $slug;
+                $config = self::$paginasDefinidas[$candidato] ?? null;
+            }
+
+            if (!$config || empty($config['isReactPage'])) {
+                foreach (self::$paginasDefinidas as $def) {
+                    if (($def['slug'] ?? '') === $slug && !empty($def['isReactPage'])) {
+                        $config = $def;
+                        break;
+                    }
+                }
+            }
+        }
+
         if (!$config || empty($config['isReactPage'])) {
             echo '<!-- PageDefinition: No se encontro configuracion para ' . esc_html($slug) . ' -->';
             return;
