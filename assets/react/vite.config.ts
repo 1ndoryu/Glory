@@ -70,6 +70,7 @@ export default defineConfig(({mode}) => {
                     searchForWorkspaceRoot(process.cwd()),
                     '../../../App/React',
                     '../../../App/Assets',
+                    '../../../Mezclador',
                     '../images'
                 ]
             },
@@ -88,6 +89,8 @@ export default defineConfig(({mode}) => {
                 '@': resolve(__dirname, 'src'),
                 // Alias para importar componentes especificos del proyecto desde App/React
                 '@app': resolve(__dirname, '../../../App/React'),
+                // C184: Mezclador (Mini DAW) aislado del App principal
+                '@mezclador': resolve(__dirname, '../../../Mezclador'),
                 // Resolver dependencias de Capacitor desde App/React usando los paquetes instalados aqui
                 '@codetrix-studio/capacitor-google-auth': resolve(__dirname, 'node_modules/@codetrix-studio/capacitor-google-auth'),
                 '@capacitor/core': resolve(__dirname, 'node_modules/@capacitor/core'),
