@@ -11,7 +11,7 @@
  * recomendado por React docs.
  */
 
-import { useEffect, useRef, useState, Suspense, type ReactNode } from 'react';
+import { useEffect, useState, Suspense, type ReactNode } from 'react';
 import { useNavigationStore } from './navigationStore';
 import { islandRegistry } from '../IslandRegistry';
 import { IslandErrorBoundary } from '../ErrorBoundary';
@@ -47,7 +47,6 @@ export function PageRenderer({ suspenseFallback }: PageRendererProps): JSX.Eleme
     const { islaActual, propsActuales, navegando, finalizarNavegacion } = useNavigationStore();
     const [paginasCache, setPaginasCache] = useState<PaginaCacheada[]>([]);
     const [islaAnterior, setIslaAnterior] = useState<string | null>(null);
-    const islaActualRef = useRef(islaActual);
 
     /*
      * Actualizar cache durante render (NO en effect).
@@ -56,39 +55,42 @@ export function PageRenderer({ suspenseFallback }: PageRendererProps): JSX.Eleme
      */
     if (islaActual && islaActual !== islaAnterior) {
         setIslaAnterior(islaActual);
-        islaActualRef.current = islaActual;
         contadorOrden++;
 
-        const existe = paginasCache.find(p => p.islaId === islaActual);
+        /*
+         * Functional updater para evitar closures stale en clics rápidos.
+         * Sin esto, 2 navegaciones en <100ms usan el mismo paginasCache
+         * del frame anterior, perdiendo la página intermedia.
+         */
+        setPaginasCache(prev => {
+            const existe = prev.find(p => p.islaId === islaActual);
 
-        if (existe) {
-            /* Actualizar props y orden */
-            setPaginasCache(paginasCache.map(p =>
-                p.islaId === islaActual
-                    ? { ...p, props: propsActuales ?? {}, orden: contadorOrden }
-                    : p
-            ));
-        } else {
-            /* Agregar nueva isla */
+            if (existe) {
+                return prev.map(p =>
+                    p.islaId === islaActual
+                        ? { ...p, props: propsActuales ?? {}, orden: contadorOrden }
+                        : p
+                );
+            }
+
             const nueva: PaginaCacheada = {
                 islaId: islaActual,
                 props: propsActuales ?? {},
                 orden: contadorOrden,
             };
 
-            const nuevaLista = [...paginasCache, nueva];
+            const nuevaLista = [...prev, nueva];
 
             if (nuevaLista.length > MAX_CACHE_PAGES) {
-                /* Descartar la mas antigua que NO sea la activa */
                 const ordenadas = nuevaLista
                     .filter(p => p.islaId !== islaActual)
                     .sort((a, b) => a.orden - b.orden);
                 const aDescartar = ordenadas[0];
-                setPaginasCache(nuevaLista.filter(p => p.islaId !== aDescartar.islaId));
-            } else {
-                setPaginasCache(nuevaLista);
+                return nuevaLista.filter(p => p.islaId !== aDescartar.islaId);
             }
-        }
+
+            return nuevaLista;
+        });
     }
 
     /* Notificar fin de la transicion despues de render */
