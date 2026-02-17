@@ -134,6 +134,31 @@ class PageDefinition
             }
         }
 
+        /*
+         * Auto-registrar paginas padre stub cuando no estan definidas.
+         * Necesario para que PageProcessor las cree en WP ANTES que las hijas,
+         * garantizando la jerarquia correcta (ej: /admin/ existe antes de /admin/panel/).
+         * Soporta multiples niveles: 'a/b/c' crea stubs para 'a' y 'a/b'.
+         */
+        if ($parentSlug) {
+            $niveles = explode('/', $parentSlug);
+            $acumulado = '';
+            foreach ($niveles as $i => $nivel) {
+                $acumulado = $i === 0 ? $nivel : $acumulado . '/' . $nivel;
+                if (!isset(self::$paginasDefinidas[$acumulado])) {
+                    $parentDeNivel = $i > 0 ? implode('/', array_slice($niveles, 0, $i)) : null;
+                    self::$paginasDefinidas[$acumulado] = [
+                        'titulo'      => ucwords(str_replace(['-', '_'], ' ', $nivel)),
+                        'plantilla'   => '',
+                        'funcion'     => null,
+                        'slug'        => $nivel,
+                        'roles'       => [],
+                        'parentSlug'  => $parentDeNivel,
+                    ];
+                }
+            }
+        }
+
         /* Registrar como ReactFullPage */
         if (!in_array($slug, self::$paginasReactFullpage, true)) {
             self::$paginasReactFullpage[] = $slug;

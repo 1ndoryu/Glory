@@ -72,7 +72,11 @@ class PageProcessor
             if ($paginaPadre) {
                 $parentId = $paginaPadre->ID;
             } else {
-                GloryLogger::warning("PageManager: Padre '{$defPagina['parentSlug']}' no encontrado para '{$defPagina['slug']}'.");
+                /* Safety net: auto-crear pagina padre stub si no existe en WP */
+                $parentId = self::asegurarPaginaPadre($defPagina['parentSlug']);
+                if (!$parentId) {
+                    GloryLogger::warning("PageManager: Padre '{$defPagina['parentSlug']}' no encontrado ni creado para '{$defPagina['slug']}'.");
+                }
             }
         }
 
@@ -124,6 +128,9 @@ class PageProcessor
             $paginaPadre = get_page_by_path($defPagina['parentSlug'], \OBJECT, 'page');
             if ($paginaPadre) {
                 $parentIdEsperado = $paginaPadre->ID;
+            } else {
+                /* Safety net: auto-crear padre si fue eliminado manualmente */
+                $parentIdEsperado = self::asegurarPaginaPadre($defPagina['parentSlug']);
             }
         }
         if ((int) $paginaExistente->post_parent !== $parentIdEsperado) {
@@ -240,5 +247,46 @@ class PageProcessor
             $salida = (string) preg_replace($patronFinalVacio, '', $salida);
         }
         return $salida;
+    }
+
+    /**
+     * Crea recursivamente paginas padre stub si no existen en WP.
+     * Soporta multiples niveles: 'admin' o 'admin/sub'.
+     * Retorna el ID de la pagina padre final, o 0 si falla.
+     */
+    private static function asegurarPaginaPadre(string $parentSlug): int
+    {
+        $paginaPadre = get_page_by_path($parentSlug, \OBJECT, 'page');
+        if ($paginaPadre) {
+            return $paginaPadre->ID;
+        }
+
+        $grandParentId = 0;
+        $slugFinal = $parentSlug;
+
+        if (str_contains($parentSlug, '/')) {
+            $parts = explode('/', $parentSlug);
+            $slugFinal = array_pop($parts);
+            $grandParentSlug = implode('/', $parts);
+            $grandParentId = self::asegurarPaginaPadre($grandParentSlug);
+        }
+
+        $idInsertado = wp_insert_post([
+            'post_title'   => ucwords(str_replace(['-', '_'], ' ', $slugFinal)),
+            'post_content' => '',
+            'post_status'  => 'publish',
+            'post_type'    => 'page',
+            'post_name'    => $slugFinal,
+            'post_parent'  => $grandParentId,
+        ], true);
+
+        if (!is_wp_error($idInsertado) && $idInsertado > 0) {
+            update_post_meta($idInsertado, self::CLAVE_META_GESTION, true);
+            GloryLogger::info("PageProcessor: Pagina padre stub '{$parentSlug}' auto-creada (ID: {$idInsertado}).");
+            return $idInsertado;
+        }
+
+        GloryLogger::error("PageProcessor: Fallo al auto-crear pagina padre '{$parentSlug}'.");
+        return 0;
     }
 }
