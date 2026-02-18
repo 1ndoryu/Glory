@@ -46,6 +46,7 @@ Glory/src/
 | `DefaultContentRegistry` | Registro de contenido por defecto |
 | `GloryFeatures` | Sistema de feature flags |
 | `GloryLogger` | Logger del framework |
+| `SchemaRegistry` | Registro y validación de schemas (tablas y post types). [Detalle](schema-system.md) |
 | `OpcionRegistry` | Registro de opciones disponibles |
 | `OpcionRepository` | Lectura/escritura de opciones |
 | `Setup` | Bootstrap del framework |

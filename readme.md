@@ -19,6 +19,7 @@ Framework para trabajar WordPress + React + TypeScript con una experiencia de de
 - 🪝 Hooks y utilidades principales
 - 🧠 Managers, servicios y herramientas internas
 - 🧰 CLI y generación de código
+- 🗄️ Schema System (tipado end-to-end)
 - 🎛️ Feature flags
 - 📦 Scripts de desarrollo
 - ✅ Casos de uso y buenas prácticas
@@ -186,7 +187,7 @@ Resumen de las piezas más útiles del core PHP de Glory:
 
 ### Core, API, SEO y Tools
 
-- Core: `GloryFeatures`, `GloryConfig`, `Setup`, `GloryLogger`.
+- Core: `GloryFeatures`, `GloryConfig`, `Setup`, `GloryLogger`, `SchemaRegistry`.
 - API: `ImagesController`, `NewsletterController`, `PageBlocksController`, `MCPController`.
 - SEO: `MetaTagRenderer`, `OpenGraphRenderer`, `JsonLdRenderer`, `SeoFrontendRenderer`.
 - Tools: `GitCommandRunner`, `ManejadorGit` para soporte de flujos internos.
@@ -202,6 +203,14 @@ npx glory create island MiSeccion
 npx glory create page contacto
 npx glory create component BotonPrimario
 npx glory create hook useProductos
+npx glory create table MiTabla
+```
+
+### Comandos de schema
+
+```bash
+npx glory schema:generate    # Genera Cols + DTOs + schema.ts desde los schemas
+npx glory schema:validate    # Detecta strings hardcodeados en PHP que deberían usar Cols
 ```
 
 ### Comandos de proyecto
@@ -210,6 +219,63 @@ npx glory create hook useProductos
 npx glory setup --tailwind
 npx glory new mi-proyecto --shadcn
 ```
+
+---
+
+## 🗄️ Schema System (tipado end-to-end)
+
+Glory incluye un sistema de schemas que es la **única fuente de verdad** para columnas de base de datos y meta fields de WordPress. Elimina strings hardcodeados y genera constantes PHP, DTOs tipados e interfaces TypeScript automáticamente.
+
+### Arquitectura
+
+```text
+App/Config/Schema/SamplesSchema.php  ← Source of truth (declarativo)
+        ↓  npx glory schema:generate
+_generated/SamplesCols.php           ← Constantes (autocomplete, refactor-safe)
+_generated/SamplesDTO.php            ← DTO tipado con desdeRow() + aArrayDB()
+App/React/types/_generated/schema.ts ← Interfaces TS + constantes mirror
+        ↓  Runtime
+SchemaRegistry                       ← Carga schemas, valida en modo estricto
+PostgresService                      ← Valida queries contra schemas registrados
+```
+
+### Definir un schema
+
+```php
+class SamplesSchema extends TableSchema
+{
+    public function tabla(): string { return 'samples'; }
+
+    public function columnas(): array
+    {
+        return [
+            'id'    => ['tipo' => 'int', 'pk' => true],
+            'titulo'=> ['tipo' => 'string', 'max' => 200],
+            'estado'=> ['tipo' => 'string', 'check' => ['activo', 'inactivo']],
+            'bpm'   => ['tipo' => 'int', 'nullable' => true],
+        ];
+    }
+}
+```
+
+### Usar constantes generadas
+
+```php
+use App\Config\Schema\_generated\SamplesCols;
+
+/* Antes (frágil, sin autocompletado, rompe silencioso): */
+$titulo = $row['titulo'];
+
+/* Ahora (refactor-safe, autocompletado, error si se renombra): */
+$titulo = $row[SamplesCols::TITULO];
+```
+
+### Validación automática
+
+- En modo estricto (`WP_DEBUG`), `SchemaRegistry` lanza `SchemaException` si se intenta acceder a una tabla sin schema.
+- `npx glory schema:validate` escanea PHP buscando `$row['xxx']` que no coincidan con ningún schema.
+
+Para documentación detallada, ver [Glory/docs/php/schema-system.md](docs/php/schema-system.md) y [Glory/docs/cli/schema-generate.md](docs/cli/schema-generate.md).
 
 ---
 

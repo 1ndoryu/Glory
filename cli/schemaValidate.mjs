@@ -72,6 +72,9 @@ function listarPHP(dir, archivos = []) {
     return archivos;
 }
 
+/* Claves genéricas que no son columnas de DB (constante fuera del loop) */
+const GENERICAS = new Set(['error', 'success', 'message', 'data', 'status', 'code', 'type', 'result', 'count', 'total', 'items', 'page', 'limit', 'offset', 'key', 'value', 'name', 'label', 'action', 'method', 'url', 'path', 'host', 'port', 'body', 'headers', 'params', 'query']);
+
 /* Escanear un archivo PHP buscando accesos a arrays con string keys */
 function escanearArchivo(contenido, ruta, columnasConocidas) {
     const problemas = [];
@@ -110,8 +113,7 @@ function escanearArchivo(contenido, ruta, columnasConocidas) {
             const columna = match[1];
 
             /* Ignorar claves genéricas que no son columnas */
-            const genericas = new Set(['error', 'success', 'message', 'data', 'status', 'code', 'type', 'result', 'count', 'total', 'items', 'page', 'limit', 'offset', 'key', 'value', 'name', 'label', 'action', 'method', 'url', 'path', 'host', 'port', 'body', 'headers', 'params', 'query']);
-            if (genericas.has(columna)) {
+            if (GENERICAS.has(columna)) {
                 continue;
             }
 

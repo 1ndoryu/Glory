@@ -13,6 +13,47 @@ import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 
 import { resolve, basename } from 'node:path';
 import { getProjectRoot, toPascalCase, log } from './utils.mjs';
 
+/*
+ * Extraer entradas de columna de un bloque PHP respetando arrays anidados.
+ * Solo extrae entradas al nivel 0 de profundidad (columnas, no propiedades internas).
+ * Evita que 'check' => [...] dentro de una columna se confunda con otra columna.
+ */
+function extraerEntradasColumna(bloque) {
+    const entradas = [];
+    let pos = 0;
+
+    while (pos < bloque.length) {
+        /* Buscar patrón 'nombre' => [ solo al nivel 0 */
+        const resto = bloque.substring(pos);
+        const m = resto.match(/^[\s,]*'([a-z_]+)'\s*=>\s*\[/);
+        if (!m) {
+            /* Avanzar un carácter si no hay match al inicio */
+            pos++;
+            continue;
+        }
+
+        const nombre = m[1];
+        pos += m[0].length;
+
+        /* Avanzar respetando niveles de [] para capturar el contenido completo */
+        let nivel = 1;
+        const inicio = pos;
+        while (pos < bloque.length && nivel > 0) {
+            if (bloque[pos] === '[') nivel++;
+            else if (bloque[pos] === ']') nivel--;
+            if (nivel > 0) pos++;
+        }
+
+        const props = bloque.substring(inicio, pos);
+        entradas.push({ nombre, props });
+
+        /* Saltar el ] de cierre */
+        pos++;
+    }
+
+    return entradas;
+}
+
 /* Parsear un archivo *Schema.php y extraer tabla + columnas */
 function parsearSchema(contenido, nombreArchivo) {
     /* Extraer nombre de tabla */
@@ -33,12 +74,13 @@ function parsearSchema(contenido, nombreArchivo) {
     const bloqueColumnas = columnasMatch[1];
     const columnas = [];
 
-    /* Parsear cada columna: 'nombre' => ['tipo' => 'xxx', ...] */
-    const regex = /'([a-z_]+)'\s*=>\s*\[([^\]]*)\]/g;
-    let match;
-    while ((match = regex.exec(bloqueColumnas)) !== null) {
-        const nombre = match[1];
-        const props = match[2];
+    /*
+     * Parsear cada columna con soporte para arrays anidados (ej: 'check' => [...]).
+     * El regex simple [^\]]* falla con arrays anidados, así que extraemos
+     * cada bloque respetando el nivel de profundidad de corchetes.
+     */
+    const entradas = extraerEntradasColumna(bloqueColumnas);
+    for (const { nombre, props } of entradas) {
 
         const col = { nombre };
 
@@ -183,6 +225,12 @@ function generarDTO(schema) {
         return `            ${camel}: ${cast}($row['${col.nombre}'] ?? ${defaultVal})`;
     }).join(',\n');
 
+    /* Mapeo camelCase → snake_case para aArrayDB() */
+    const snakeMap = schema.columnas.map(col => {
+        const camel = snakeToCamel(col.nombre);
+        return `\n            '${col.nombre}' => $this->${camel}`;
+    }).join(',');
+
     return `<?php
 
 /* ARCHIVO AUTO-GENERADO por Glory Schema Generator — NO EDITAR */
@@ -208,11 +256,19 @@ ${asignaciones}
     }
 
     /**
-     * Convertir a array asociativo (para serialización JSON).
+     * Convertir a array asociativo camelCase (para serialización JSON).
      */
     public function aArray(): array
     {
         return get_object_vars($this);
+    }
+
+    /**
+     * Convertir a array con claves snake_case (para queries SQL).
+     */
+    public function aArrayDB(): array
+    {
+        return [${snakeMap}];
     }
 }
 `;
@@ -221,7 +277,7 @@ ${asignaciones}
 /* Obtener valor default para PHP */
 function getDefaultPHP(col) {
     if (col.default === undefined || col.default === null) return 'null';
-    if (col.default === 'NOW()') return "'NOW()'";
+    if (col.default === 'NOW()') return "date('Y-m-d H:i:s')";
     if (col.default === 'true' || col.default === true) return 'true';
     if (col.default === 'false' || col.default === false) return 'false';
     if (typeof col.default === 'number' || /^\d+(\.\d+)?$/.test(col.default)) return String(col.default);

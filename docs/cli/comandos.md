@@ -25,6 +25,9 @@ node Glory/cli/glory.mjs <comando>
 | `create page <nombre>` | Crea isla + registro en pages.php |
 | `create component <Nombre>` | Crea componente en App/React/components/ |
 | `create hook <nombre>` | Crea hook en App/React/hooks/ |
+| `create table <nombre>` | Crea schema + migración SQL |
+| `schema:generate` | Genera Cols + DTOs + schema.ts desde schemas |
+| `schema:validate` | Detecta strings hardcodeados que deberían usar Cols |
 | `setup [--flags]` | Inicializa proyecto existente |
 | `new <nombre> [--flags]` | Crea proyecto nuevo desde cero |
 | `--help` | Muestra ayuda |
@@ -46,6 +49,11 @@ npx glory create island MiSeccion
 npx glory create page contacto
 npx glory create component BotonPrimario
 npx glory create hook useProductos
+npx glory create table MiTabla
+
+# Schema
+npx glory schema:generate
+npx glory schema:validate
 
 # Proyecto
 npx glory new mi-proyecto --tailwind
