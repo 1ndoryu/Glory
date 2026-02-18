@@ -91,6 +91,7 @@ class SchemaRegistry
      */
     public static function tabla(string $nombre): ?TableSchema
     {
+        self::init();
         return self::$tablas[$nombre] ?? null;
     }
 
@@ -99,6 +100,7 @@ class SchemaRegistry
      */
     public static function postType(string $nombre): ?PostTypeSchema
     {
+        self::init();
         return self::$postTypes[$nombre] ?? null;
     }
 
@@ -107,6 +109,7 @@ class SchemaRegistry
      */
     public static function columnaExiste(string $tabla, string $columna): bool
     {
+        self::init();
         $schema = self::$tablas[$tabla] ?? null;
         if ($schema === null) {
             return false;
@@ -120,6 +123,7 @@ class SchemaRegistry
      */
     public static function metaExiste(string $postType, string $metaKey): bool
     {
+        self::init();
         $schema = self::$postTypes[$postType] ?? null;
         if ($schema === null) {
             return false;
@@ -143,6 +147,8 @@ class SchemaRegistry
      */
     public static function exigirTabla(string $tabla): void
     {
+        self::init();
+
         if (isset(self::$tablas[$tabla])) {
             return;
         }
