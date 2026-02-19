@@ -87,7 +87,7 @@ class FormController
         global $wpdb;
         $tabla = $wpdb->prefix . self::TABLE_SUFFIX;
 
-        if ($wpdb->get_var("SHOW TABLES LIKE '$tabla'") === $tabla) {
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $tabla)) === $tabla) {
             update_option('glory_form_entries_tabla_creada', true);
             return;
         }

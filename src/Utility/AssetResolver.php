@@ -2,6 +2,8 @@
 
 namespace Glory\Utility;
 
+use Glory\Utility\AssetMeta;
+
 /**
  * Resolución de rutas y búsqueda de assets del tema.
  * Gestiona alias de directorios, resolución flexible de nombres de archivo
@@ -210,8 +212,8 @@ class AssetResolver
             'no_found_rows'  => true,
             'meta_query'     => [
                 'relation' => 'OR',
-                ['key' => '_glory_asset_source',    'value' => $rutaRelativaSolicitada, 'compare' => '='],
-                ['key' => '_glory_asset_requested', 'value' => $rutaRelativaSolicitada, 'compare' => '='],
+                ['key' => AssetMeta::SOURCE,    'value' => $rutaRelativaSolicitada, 'compare' => '='],
+                ['key' => AssetMeta::REQUESTED, 'value' => $rutaRelativaSolicitada, 'compare' => '='],
             ],
         ];
         $q = new \WP_Query($args);

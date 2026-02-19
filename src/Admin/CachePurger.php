@@ -22,15 +22,15 @@ final class CachePurger
             wp_cache_flush();
         }
 
-        /* 3) Transients y site transients */
+        /* 3) Transients y site transients (prepare + esc_like obligatorio) */
         global $wpdb;
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_%'");
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_transient_timeout_%'");
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_site_transient_%'");
-        $wpdb->query("DELETE FROM {$wpdb->options} WHERE option_name LIKE '_site_transient_timeout_%'");
+        $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like('_transient_') . '%'));
+        $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like('_transient_timeout_') . '%'));
+        $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like('_site_transient_') . '%'));
+        $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->options} WHERE option_name LIKE %s", $wpdb->esc_like('_site_transient_timeout_') . '%'));
         if (is_multisite() && !empty($wpdb->sitemeta)) {
-            $wpdb->query("DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE '_site_transient_%'");
-            $wpdb->query("DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE '_site_transient_timeout_%'");
+            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s", $wpdb->esc_like('_site_transient_') . '%'));
+            $wpdb->query($wpdb->prepare("DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s", $wpdb->esc_like('_site_transient_timeout_') . '%'));
         }
 
         /* 4) Archivos de caché del framework (assets discovery) */
@@ -39,7 +39,12 @@ final class CachePurger
             if (is_dir($cacheDir) && is_readable($cacheDir)) {
                 foreach (glob($cacheDir . '/*') ?: [] as $cacheFile) {
                     if (is_file($cacheFile) && is_writable($cacheFile)) {
-                        @unlink($cacheFile);
+                        try {
+                            unlink($cacheFile);
+                        } catch (\Throwable $e) {
+                            /* Fallo al eliminar archivo de caché: no es crítico, logear si hay logger */
+                            error_log('[CachePurger] No se pudo eliminar: ' . $cacheFile . ' — ' . $e->getMessage());
+                        }
                     }
                 }
             }
@@ -91,7 +96,11 @@ final class CachePurger
 
         /* 7) Opcache */
         if (function_exists('opcache_reset')) {
-            @opcache_reset();
+            try {
+                opcache_reset();
+            } catch (\Throwable $e) {
+                error_log('[CachePurger] opcache_reset falló: ' . $e->getMessage());
+            }
         }
     }
 }

@@ -3,6 +3,7 @@
 namespace Glory\Services\Sync;
 
 use Glory\Utility\AssetsUtility;
+use Glory\Utility\AssetMeta;
 
 /*
  * Reparación de la galería gestionada (_glory_default_galeria_ids) de un post.
@@ -76,8 +77,8 @@ class GalleryRepair
             }
 
             /* Intentar resolver la referencia de asset original */
-            $requested = get_post_meta($aid, '_glory_asset_requested', true);
-            $source    = get_post_meta($aid, '_glory_asset_source', true);
+            $requested = get_post_meta($aid, AssetMeta::REQUESTED, true);
+            $source    = get_post_meta($aid, AssetMeta::SOURCE, true);
             $assetRef  = (is_string($requested) && $requested !== '') ? $requested : ((is_string($source) && $source !== '') ? $source : null);
             if ($assetRef && strpos($assetRef, '::') === false) {
                 $assetRef = $this->featuredImageRepair->guessAssetRefFromBasename(basename($assetRef)) ?: $assetRef;

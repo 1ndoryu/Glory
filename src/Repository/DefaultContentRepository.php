@@ -4,6 +4,7 @@ namespace Glory\Repository;
 
 use WP_Query;
 use WP_Post;
+use Glory\Services\Sync\PostSyncHandler;
 
 /**
  * Repositorio para el contenido por defecto.
@@ -14,9 +15,6 @@ use WP_Post;
  */
 class DefaultContentRepository
 {
-    private const META_CLAVE_SLUG_DEFAULT = '_glory_default_content_slug';
-    private const META_CLAVE_EDITADO_MANUALMENTE = '_glory_default_content_edited';
-
     /**
      * Busca un post gestionado existente por su tipo y slug de definición.
      *
@@ -32,7 +30,7 @@ class DefaultContentRepository
             'posts_per_page' => 1,
             'meta_query' => [
                 [
-                    'key' => self::META_CLAVE_SLUG_DEFAULT,
+                    'key' => PostSyncHandler::META_CLAVE_SLUG_DEFAULT,
                     'value' => $slugDefault,
                     'compare' => '=',
                 ],
@@ -69,11 +67,11 @@ class DefaultContentRepository
             'meta_query' => [
                 'relation' => 'AND',
                 [
-                    'key' => self::META_CLAVE_SLUG_DEFAULT,
+                    'key' => PostSyncHandler::META_CLAVE_SLUG_DEFAULT,
                     'compare' => 'EXISTS',
                 ],
                 [
-                    'key' => self::META_CLAVE_SLUG_DEFAULT,
+                    'key' => PostSyncHandler::META_CLAVE_SLUG_DEFAULT,
                     'value' => $slugsDefinidos,
                     'compare' => 'NOT IN',
                 ],
@@ -96,6 +94,6 @@ class DefaultContentRepository
      */
     public function haSidoEditadoManualmente(int $idPost): bool
     {
-        return get_post_meta($idPost, self::META_CLAVE_EDITADO_MANUALMENTE, true) === '1';
+        return get_post_meta($idPost, PostSyncHandler::META_CLAVE_EDITADO_MANUALMENTE, true) === '1';
     }
 }

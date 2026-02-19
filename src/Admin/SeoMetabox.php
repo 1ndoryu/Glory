@@ -2,13 +2,10 @@
 
 namespace Glory\Admin;
 
+use Glory\Seo\MetaTagRenderer;
+
 class SeoMetabox
 {
-    private const META_TITLE = '_glory_seo_title';
-    private const META_DESC = '_glory_seo_desc';
-    private const META_CANONICAL = '_glory_seo_canonical';
-    private const META_FAQ = '_glory_seo_faq'; // JSON array: [{q, a}]
-    private const META_BREADCRUMB = '_glory_seo_breadcrumb'; // JSON array: [{name, url}]
 
     public function registerHooks(): void
     {
@@ -30,11 +27,11 @@ class SeoMetabox
 
     public function render(\WP_Post $post): void
     {
-        $title = (string) get_post_meta($post->ID, self::META_TITLE, true);
-        $desc = (string) get_post_meta($post->ID, self::META_DESC, true);
-        $canonical = (string) get_post_meta($post->ID, self::META_CANONICAL, true);
-        $faqJson = (string) get_post_meta($post->ID, self::META_FAQ, true);
-        $bcJson = (string) get_post_meta($post->ID, self::META_BREADCRUMB, true);
+        $title = (string) get_post_meta($post->ID, MetaTagRenderer::META_TITLE, true);
+        $desc = (string) get_post_meta($post->ID, MetaTagRenderer::META_DESC, true);
+        $canonical = (string) get_post_meta($post->ID, MetaTagRenderer::META_CANONICAL, true);
+        $faqJson = (string) get_post_meta($post->ID, MetaTagRenderer::META_FAQ, true);
+        $bcJson = (string) get_post_meta($post->ID, MetaTagRenderer::META_BREADCRUMB, true);
 
         // Resolver slug y defaults del mapa para usar como fallback por campo
         $slug = (string) get_post_field('post_name', $post->ID);
@@ -171,9 +168,9 @@ JS
             $canonical .= '/';
         }
 
-        update_post_meta($postId, self::META_TITLE, $title);
-        update_post_meta($postId, self::META_DESC, $desc);
-        update_post_meta($postId, self::META_CANONICAL, $canonical);
+        update_post_meta($postId, MetaTagRenderer::META_TITLE, $title);
+        update_post_meta($postId, MetaTagRenderer::META_DESC, $desc);
+        update_post_meta($postId, MetaTagRenderer::META_CANONICAL, $canonical);
 
         $faq = isset($_POST['glory_faq']) && is_array($_POST['glory_faq']) ? $_POST['glory_faq'] : [];
         $faqClean = [];
@@ -182,7 +179,7 @@ JS
             $a = isset($item['a']) ? wp_kses_post((string) $item['a']) : '';
             if ($q !== '' && $a !== '') { $faqClean[] = ['q' => $q, 'a' => $a]; }
         }
-        update_post_meta($postId, self::META_FAQ, wp_json_encode($faqClean, JSON_UNESCAPED_UNICODE));
+        update_post_meta($postId, MetaTagRenderer::META_FAQ, wp_json_encode($faqClean, JSON_UNESCAPED_UNICODE));
 
         $bc = isset($_POST['glory_bc']) && is_array($_POST['glory_bc']) ? $_POST['glory_bc'] : [];
         $bcClean = [];
@@ -191,7 +188,7 @@ JS
             $url = isset($item['url']) ? esc_url_raw((string) $item['url']) : '';
             if ($name !== '') { $bcClean[] = ['name' => $name, 'url' => $url]; }
         }
-        update_post_meta($postId, self::META_BREADCRUMB, wp_json_encode($bcClean, JSON_UNESCAPED_UNICODE));
+        update_post_meta($postId, MetaTagRenderer::META_BREADCRUMB, wp_json_encode($bcClean, JSON_UNESCAPED_UNICODE));
     }
 
     private function decodeJson(string $json): array

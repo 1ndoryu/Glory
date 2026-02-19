@@ -4,6 +4,7 @@ namespace Glory\Utility;
 
 use Glory\Core\GloryLogger;
 use Glory\Manager\AssetManager;
+use Glory\Utility\AssetMeta;
 
 /**
  * Importación de assets del tema a la Biblioteca de Medios de WordPress.
@@ -83,7 +84,7 @@ class AssetImporter
             'meta_query'     => [
                 'relation' => 'OR',
                 [
-                    'key'     => '_glory_asset_source',
+                    'key'     => AssetMeta::SOURCE,
                     'value'   => $rutaAssetRelativa,
                     'compare' => '='
                 ],
@@ -93,7 +94,7 @@ class AssetImporter
                     'compare' => 'LIKE'
                 ],
                 [
-                    'key'     => '_glory_asset_requested',
+                    'key'     => AssetMeta::REQUESTED,
                     'value'   => $rutaAssetRelativaSolicitada,
                     'compare' => '='
                 ],
@@ -116,11 +117,11 @@ class AssetImporter
             }
 
             /* Asegurar metas de trazabilidad */
-            if (!metadata_exists('post', $id, '_glory_asset_source')) {
-                update_post_meta($id, '_glory_asset_source', $rutaAssetRelativa);
+            if (!metadata_exists('post', $id, AssetMeta::SOURCE)) {
+                update_post_meta($id, AssetMeta::SOURCE, $rutaAssetRelativa);
             }
-            if (!metadata_exists('post', $id, '_glory_asset_requested')) {
-                update_post_meta($id, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
+            if (!metadata_exists('post', $id, AssetMeta::REQUESTED)) {
+                update_post_meta($id, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
             }
 
             set_transient($cacheKey, $id, HOUR_IN_SECONDS);
@@ -182,8 +183,8 @@ class AssetImporter
             }
             $meta = wp_generate_attachment_metadata($id, $subida['file']);
             wp_update_attachment_metadata($id, $meta);
-            update_post_meta($id, '_glory_asset_source', $rutaAssetRelativa);
-            update_post_meta($id, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
+            update_post_meta($id, AssetMeta::SOURCE, $rutaAssetRelativa);
+            update_post_meta($id, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
             if (isset($subida['url'])) {
                 wp_update_post(['ID' => $id, 'guid' => $subida['url']]);
             }
@@ -209,8 +210,8 @@ class AssetImporter
             if (!is_wp_error($nuevoId)) {
                 $meta2 = wp_generate_attachment_metadata($nuevoId, $subida2['file']);
                 wp_update_attachment_metadata($nuevoId, $meta2);
-                update_post_meta($nuevoId, '_glory_asset_source', $rutaAssetRelativa);
-                update_post_meta($nuevoId, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
+                update_post_meta($nuevoId, AssetMeta::SOURCE, $rutaAssetRelativa);
+                update_post_meta($nuevoId, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
                 set_transient($cacheKey, (int) $nuevoId, HOUR_IN_SECONDS);
                 return (int) $nuevoId;
             }
@@ -280,8 +281,8 @@ class AssetImporter
 
         $metadatosAdjunto = wp_generate_attachment_metadata($idAdjunto, $subida['file']);
         wp_update_attachment_metadata($idAdjunto, $metadatosAdjunto);
-        update_post_meta($idAdjunto, '_glory_asset_source', $rutaAssetRelativa);
-        update_post_meta($idAdjunto, '_glory_asset_requested', $rutaAssetRelativaSolicitada);
+        update_post_meta($idAdjunto, AssetMeta::SOURCE, $rutaAssetRelativa);
+        update_post_meta($idAdjunto, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
 
         GloryLogger::info("AssetImporter: El asset '{$nombreArchivo}' ha sido importado a la Biblioteca de Medios.", ['attachment_id' => $idAdjunto]);
         set_transient($cacheKey, $idAdjunto, HOUR_IN_SECONDS);

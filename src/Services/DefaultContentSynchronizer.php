@@ -12,8 +12,6 @@ use WP_Post;
 
 class DefaultContentSynchronizer
 {
-    private const META_CLAVE_EDITADO_MANUALMENTE = '_glory_default_content_edited';
-
     private DefaultContentRepository $repository;
     private PostSyncHandler $postHandler;
     private TermSyncHandler $termHandler;
@@ -76,7 +74,7 @@ class DefaultContentSynchronizer
                     // Restablecer sincronización automática: limpiar flag de edición manual
                     // Se elimina el forzado a 'editor' para respetar si el usuario prefiere 'code'.
                     // update_post_meta($post->ID, '_glory_content_mode', 'editor');
-                    delete_post_meta($post->ID, self::META_CLAVE_EDITADO_MANUALMENTE);
+                    delete_post_meta($post->ID, PostSyncHandler::META_CLAVE_EDITADO_MANUALMENTE);
                 }
             }
         }
@@ -95,9 +93,9 @@ class DefaultContentSynchronizer
             return;
         }
 
-        $slugDefault = get_post_meta($postId, '_glory_default_content_slug', true);
+        $slugDefault = get_post_meta($postId, PostSyncHandler::META_CLAVE_SLUG_DEFAULT, true);
         if (!empty($slugDefault) && !$this->repository->haSidoEditadoManualmente($postId)) {
-            update_post_meta($postId, self::META_CLAVE_EDITADO_MANUALMENTE, '1');
+            update_post_meta($postId, PostSyncHandler::META_CLAVE_EDITADO_MANUALMENTE, '1');
         }
     }
 

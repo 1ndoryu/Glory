@@ -4,6 +4,7 @@
 namespace Glory\Services\Sync;
 
 use Glory\Core\GloryLogger;
+use Glory\Utility\AssetMeta;
 use WP_Post;
 use WP_Error;
 
@@ -12,8 +13,8 @@ use WP_Error;
  */
 class PostSyncHandler
 {
-    private const META_CLAVE_SLUG_DEFAULT = '_glory_default_content_slug';
-    private const META_CLAVE_EDITADO_MANUALMENTE = '_glory_default_content_edited';
+    public const META_CLAVE_SLUG_DEFAULT = '_glory_default_content_slug';
+    public const META_CLAVE_EDITADO_MANUALMENTE = '_glory_default_content_edited';
 
     private PostRelationHandler $relationHandler;
     private MediaIntegrityService $mediaIntegrity;
@@ -129,8 +130,8 @@ class PostSyncHandler
             } else {
                 // Hay imagen - verificar si coincide con la definicion
                 // Obtener el asset guardado en el attachment actual
-                $currentAssetRequested = get_post_meta($currentThumbId, '_glory_asset_requested', true);
-                $currentAssetSource = get_post_meta($currentThumbId, '_glory_asset_source', true);
+                $currentAssetRequested = get_post_meta($currentThumbId, AssetMeta::REQUESTED, true);
+                $currentAssetSource = get_post_meta($currentThumbId, AssetMeta::SOURCE, true);
                 $currentAsset = is_string($currentAssetRequested) && $currentAssetRequested !== ''
                     ? $currentAssetRequested
                     : (is_string($currentAssetSource) && $currentAssetSource !== '' ? $currentAssetSource : '');

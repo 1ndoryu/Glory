@@ -18,6 +18,10 @@ namespace Glory\Services\Stripe;
 
 class StripeConfig
 {
+    private const OPT_SECRET_KEY = 'glory_stripe_secret_key';
+    private const OPT_PUBLISHABLE_KEY = 'glory_stripe_publishable_key';
+    private const OPT_WEBHOOK_SECRET = 'glory_stripe_webhook_secret';
+
     /**
      * Obtiene la clave secreta de Stripe
      */
@@ -27,7 +31,7 @@ class StripeConfig
             return GLORY_STRIPE_SECRET_KEY;
         }
 
-        return get_option('glory_stripe_secret_key', '');
+        return get_option(self::OPT_SECRET_KEY, '');
     }
 
     /**
@@ -39,7 +43,7 @@ class StripeConfig
             return GLORY_STRIPE_PUBLISHABLE_KEY;
         }
 
-        return get_option('glory_stripe_publishable_key', '');
+        return get_option(self::OPT_PUBLISHABLE_KEY, '');
     }
 
     /**
@@ -51,7 +55,7 @@ class StripeConfig
             return GLORY_STRIPE_WEBHOOK_SECRET;
         }
 
-        return get_option('glory_stripe_webhook_secret', '');
+        return get_option(self::OPT_WEBHOOK_SECRET, '');
     }
 
     /**

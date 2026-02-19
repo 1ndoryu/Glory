@@ -4,6 +4,7 @@ namespace Glory\Services\Sync;
 
 use Glory\Core\GloryLogger;
 use Glory\Utility\AssetsUtility;
+use Glory\Utility\AssetMeta;
 
 /*
  * Reparación de imagen destacada (thumbnail) de un post.
@@ -56,8 +57,8 @@ class FeaturedImageRepair
 
         /* Hay thumbnail: verificar si coincide con la definición */
         if (is_string($definedAssetRef) && $definedAssetRef !== '') {
-            $currentAssetRequested = get_post_meta($thumbId, '_glory_asset_requested', true);
-            $currentAssetSource = get_post_meta($thumbId, '_glory_asset_source', true);
+            $currentAssetRequested = get_post_meta($thumbId, AssetMeta::REQUESTED, true);
+            $currentAssetSource = get_post_meta($thumbId, AssetMeta::SOURCE, true);
             $currentAsset = is_string($currentAssetRequested) && $currentAssetRequested !== ''
                 ? $currentAssetRequested
                 : (is_string($currentAssetSource) && $currentAssetSource !== '' ? $currentAssetSource : '');
@@ -123,8 +124,8 @@ class FeaturedImageRepair
                             'thumbId' => $thumbId,
                             'definedAsset' => $definedAssetRef,
                         ]);
-                        update_post_meta($thumbId, '_glory_asset_requested', $definedExpanded);
-                        update_post_meta($thumbId, '_glory_asset_source', $definedExpanded);
+                        update_post_meta($thumbId, AssetMeta::REQUESTED, $definedExpanded);
+                        update_post_meta($thumbId, AssetMeta::SOURCE, $definedExpanded);
                         return;
                     } else {
                         GloryLogger::warning("MediaIntegrity: No se pudo importar attachment para asset definido.", [
@@ -153,8 +154,8 @@ class FeaturedImageRepair
             'attached' => $attached,
         ]);
 
-        $requested = get_post_meta($thumbId, '_glory_asset_requested', true);
-        $source    = get_post_meta($thumbId, '_glory_asset_source', true);
+        $requested = get_post_meta($thumbId, AssetMeta::REQUESTED, true);
+        $source    = get_post_meta($thumbId, AssetMeta::SOURCE, true);
         $assetRef  = (is_string($requested) && $requested !== '') ? $requested : ((is_string($source) && $source !== '') ? $source : null);
 
         if ($assetRef && strpos($assetRef, '::') === false) {
