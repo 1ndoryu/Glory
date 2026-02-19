@@ -439,7 +439,7 @@ export function schemaGenerate() {
 
     /* Generar Repositories — preserva sección CUSTOM de repos existentes */
     if (schemas.length > 0) {
-        const repoDir = resolve(root, 'App/Kamples/Database/Repositories');
+        const repoDir = resolve(root, 'App/Database/Repositories');
         mkdirSync(repoDir, { recursive: true });
         const reposGenerados = generarRepositorios(schemas, repoDir);
         log(`\n  Repositories: ${reposGenerados} generados`, 'success');

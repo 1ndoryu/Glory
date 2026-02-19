@@ -42,7 +42,7 @@ class ${nombreClase}Schema extends TableSchema
 /* Generar migración SQL */
 function generarMigracion(nombreTabla, version) {
     return `-- Migración: Crear tabla ${nombreTabla}
--- Ejecutar: psql -U postgres -d kamples -f ${version}_crear_${nombreTabla}.sql
+-- Ejecutar: psql -U postgres -d mi_proyecto -f ${version}_crear_${nombreTabla}.sql
 
 CREATE TABLE IF NOT EXISTS ${nombreTabla} (
     id SERIAL PRIMARY KEY,
@@ -82,7 +82,7 @@ export function createTable(nombre) {
     /* Rutas */
     const schemaDir = resolve(root, 'App/Config/Schema');
     const schemaPath = resolve(schemaDir, `${nombreClase}Schema.php`);
-    const migrationsDir = resolve(root, 'App/Kamples/Database/migrations');
+    const migrationsDir = resolve(root, 'App/Database/migrations');
 
     /* Verificar que no exista */
     if (fileExists(schemaPath)) {
@@ -103,7 +103,7 @@ export function createTable(nombre) {
     const migrationName = `${version}_crear_${nombreTabla}.sql`;
     const migrationPath = resolve(migrationsDir, migrationName);
     writeFileSync(migrationPath, generarMigracion(nombreTabla, version), 'utf-8');
-    log(`Migración creada: App/Kamples/Database/migrations/${migrationName}`, 'success');
+    log(`Migración creada: App/Database/migrations/${migrationName}`, 'success');
 
     log(`\nSiguientes pasos:`, 'info');
     log(`  1. Edita ${nombreClase}Schema.php y define las columnas`, 'info');
