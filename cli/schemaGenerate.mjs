@@ -12,6 +12,7 @@
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, existsSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { getProjectRoot, toPascalCase, log } from './utils.mjs';
+import { generarRepositorios } from './repositoryGenerate.mjs';
 
 /*
  * Extraer entradas de columna de un bloque PHP respetando arrays anidados.
@@ -156,6 +157,39 @@ function toUpperSnake(str) {
 /* Convertir snake_case a camelCase */
 function snakeToCamel(str) {
     return str.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+/*
+ * Generar archivo {Tabla}Enums.php con constantes de valores permitidos (check).
+ * Solo se genera si alguna columna tiene restricción check.
+ */
+function generarEnums(schema) {
+    /* Filtrar columnas que tienen check */
+    const colsConCheck = schema.columnas.filter(c => c.check && c.check.length > 0);
+    if (colsConCheck.length === 0) return null;
+
+    const bloques = colsConCheck.map(col => {
+        const prefijo = toUpperSnake(col.nombre);
+        const constantes = col.check.map(valor => {
+            /* Convertir el valor a UPPER_SNAKE para la constante: en_supervision → EN_SUPERVISION */
+            const sufijo = valor.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+            return `    const ${prefijo}_${sufijo} = '${valor}';`;
+        }).join('\n');
+        return `    /* Valores para columna "${col.nombre}" */\n${constantes}`;
+    }).join('\n\n');
+
+    return `<?php
+
+/* ARCHIVO AUTO-GENERADO por Glory Schema Generator — NO EDITAR */
+/* Fuente: App/Config/Schema/${schema.nombreClase}Schema.php */
+
+namespace App\\Config\\Schema\\_generated;
+
+final class ${schema.nombreClase}Enums
+{
+${bloques}
+}
+`;
 }
 
 /* Generar archivo {Tabla}Cols.php */
@@ -309,6 +343,24 @@ function generarTS(schemas) {
         return `export const ${constName} = {\n  TABLA: '${schema.tabla}',\n${entries}\n} as const`;
     }).join('\n\n');
 
+    /* Generar constantes de enums (check values) para TS */
+    const enumConsts = schemas
+        .map(schema => {
+            const colsConCheck = schema.columnas.filter(c => c.check && c.check.length > 0);
+            if (colsConCheck.length === 0) return null;
+            const constName = `${schema.nombreClase}Enums`;
+            const entries = colsConCheck.flatMap(col => {
+                const prefijo = toUpperSnake(col.nombre);
+                return col.check.map(valor => {
+                    const sufijo = valor.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+                    return `  ${prefijo}_${sufijo}: '${valor}'`;
+                });
+            }).join(',\n');
+            return `export const ${constName} = {\n${entries}\n} as const`;
+        })
+        .filter(Boolean)
+        .join('\n\n');
+
     return `/* ARCHIVO AUTO-GENERADO por Glory Schema Generator — NO EDITAR */
 /* Regenerar con: npx glory schema:generate */
 
@@ -316,6 +368,9 @@ ${interfaces}
 
 /* Constantes de columna (mirror de PHP) */
 ${colConsts}
+
+/* Constantes de valores enum/check (mirror de PHP) */
+${enumConsts}
 `;
 }
 
@@ -362,6 +417,14 @@ export function schemaGenerate() {
             const dtoPath = resolve(generatedDir, `${schema.nombreClase}DTO.php`);
             writeFileSync(dtoPath, generarDTO(schema), 'utf-8');
             log(`  DTO:  _generated/${schema.nombreClase}DTO.php`, 'success');
+
+            /* Generar {Tabla}Enums.php — solo si hay columnas con check */
+            const enumsContent = generarEnums(schema);
+            if (enumsContent) {
+                const enumsPath = resolve(generatedDir, `${schema.nombreClase}Enums.php`);
+                writeFileSync(enumsPath, enumsContent, 'utf-8');
+                log(`  Enum: _generated/${schema.nombreClase}Enums.php`, 'success');
+            }
         } else {
             errores++;
         }
@@ -372,6 +435,14 @@ export function schemaGenerate() {
         const tsPath = resolve(tsDir, 'schema.ts');
         writeFileSync(tsPath, generarTS(schemas), 'utf-8');
         log(`  TS:   App/React/types/_generated/schema.ts`, 'success');
+    }
+
+    /* Generar Repositories — preserva sección CUSTOM de repos existentes */
+    if (schemas.length > 0) {
+        const repoDir = resolve(root, 'App/Kamples/Database/Repositories');
+        mkdirSync(repoDir, { recursive: true });
+        const reposGenerados = generarRepositorios(schemas, repoDir);
+        log(`\n  Repositories: ${reposGenerados} generados`, 'success');
     }
 
     log(`\nSchema generation completada: ${schemas.length} tablas, ${errores} errores.`, schemas.length > 0 ? 'success' : 'error');

@@ -224,20 +224,29 @@ npx glory new mi-proyecto --shadcn
 
 ## 🗄️ Schema System (tipado end-to-end)
 
-Glory incluye un sistema de schemas que es la **única fuente de verdad** para columnas de base de datos y meta fields de WordPress. Elimina strings hardcodeados y genera constantes PHP, DTOs tipados e interfaces TypeScript automáticamente.
+Glory incluye un sistema de schemas que es la **única fuente de verdad** para estructura de base de datos. Elimina strings hardcodeados (nombres de columna, nombres de tabla y valores enum) y genera constantes PHP, DTOs tipados e interfaces TypeScript automáticamente.
 
 ### Arquitectura
 
 ```text
 App/Config/Schema/SamplesSchema.php  ← Source of truth (declarativo)
         ↓  npx glory schema:generate
-_generated/SamplesCols.php           ← Constantes (autocomplete, refactor-safe)
+_generated/SamplesCols.php           ← Tabla + constantes de columna
+_generated/SamplesEnums.php          ← Constantes de valores enum (check)
 _generated/SamplesDTO.php            ← DTO tipado con desdeRow() + aArrayDB()
-App/React/types/_generated/schema.ts ← Interfaces TS + constantes mirror
+App/React/types/_generated/schema.ts ← Interfaces TS + Cols + Enums mirror
         ↓  Runtime
 SchemaRegistry                       ← Carga schemas, valida en modo estricto
 PostgresService                      ← Valida queries contra schemas registrados
 ```
+
+### Tres tipos de constantes generadas
+
+| Clase | Ejemplo | Cubre |
+|---|---|---|
+| `SamplesCols` | `SamplesCols::TITULO`, `SamplesCols::TABLA` | Nombres de columna y tabla |
+| `SamplesEnums` | `SamplesEnums::ESTADO_ACTIVO`, `LikesEnums::REACCION_ENCANTA` | Valores permitidos (check) |
+| `SamplesDTO` | `SamplesDTO::desdeRow($row)` | Mapeo tipado de filas BD |
 
 ### Definir un schema
 
@@ -249,31 +258,82 @@ class SamplesSchema extends TableSchema
     public function columnas(): array
     {
         return [
-            'id'    => ['tipo' => 'int', 'pk' => true],
-            'titulo'=> ['tipo' => 'string', 'max' => 200],
-            'estado'=> ['tipo' => 'string', 'check' => ['activo', 'inactivo']],
-            'bpm'   => ['tipo' => 'int', 'nullable' => true],
+            'id'     => ['tipo' => 'int', 'pk' => true],
+            'titulo' => ['tipo' => 'string', 'max' => 200],
+            'estado' => ['tipo' => 'string', 'check' => ['procesando', 'activo', 'eliminado']],
+            'tipo'   => ['tipo' => 'string', 'check' => ['loop', 'oneshot', 'fx', 'vocal']],
+            'bpm'    => ['tipo' => 'int', 'nullable' => true],
         ];
     }
 }
 ```
 
-### Usar constantes generadas
+### Usar constantes de columna (Cols)
 
 ```php
 use App\Config\Schema\_generated\SamplesCols;
 
-/* Antes (frágil, sin autocompletado, rompe silencioso): */
+/* Antes (string frágil, rompe silencioso si se renombra): */
 $titulo = $row['titulo'];
+$sql = "SELECT titulo FROM samples WHERE estado = 'activo'";
 
-/* Ahora (refactor-safe, autocompletado, error si se renombra): */
+/* Ahora (refactor-safe, autocompletado): */
 $titulo = $row[SamplesCols::TITULO];
+$sql = "SELECT " . SamplesCols::TITULO . " FROM " . SamplesCols::TABLA . " WHERE " . SamplesCols::ESTADO . " = :estado";
+```
+
+### Usar constantes de enum (Enums)
+
+Los valores `check` de cada columna se generan como constantes en una clase `{Tabla}Enums`. Esto elimina strings literales como `'activo'`, `'sample'`, `'encanta'` de todos los controladores.
+
+```php
+use App\Config\Schema\_generated\SamplesEnums;
+use App\Config\Schema\_generated\LikesEnums;
+
+/* Antes (strings dispersos y frágiles): */
+$where[] = "s.estado = 'activo'";
+$sql = "SELECT * FROM likes WHERE tipo = 'sample' AND reaccion = 'encanta'";
+
+/* Ahora (typo-safe, autocompletado, error de compilación si el valor desaparece): */
+$where[] = "s." . SamplesCols::ESTADO . " = '" . SamplesEnums::ESTADO_ACTIVO . "'";
+
+PostgresService::consultarUno(
+    "SELECT * FROM likes WHERE tipo = :tipo AND reaccion = :reaccion",
+    [
+        'tipo'    => LikesEnums::TIPO_SAMPLE,
+        'reaccion'=> LikesEnums::REACCION_ENCANTA,
+    ]
+);
+```
+
+### Enums disponibles (ejemplos)
+
+```php
+/* Samples */
+SamplesEnums::ESTADO_PROCESANDO    // 'procesando'
+SamplesEnums::ESTADO_ACTIVO        // 'activo'
+SamplesEnums::ESTADO_ELIMINADO     // 'eliminado'
+SamplesEnums::ESTADO_EN_SUPERVISION// 'en_supervision'
+SamplesEnums::TIPO_LOOP            // 'loop'
+SamplesEnums::TIPO_ONESHOT         // 'oneshot'
+
+/* Likes */
+LikesEnums::TIPO_SAMPLE            // 'sample'
+LikesEnums::TIPO_COMENTARIO        // 'comentario'
+LikesEnums::REACCION_LIKE          // 'like'
+LikesEnums::REACCION_ENCANTA       // 'encanta'
+
+/* Usuarios */
+UsuariosExtEnums::PLAN_FREE        // 'free'
+UsuariosExtEnums::PLAN_PRO         // 'pro'
+UsuariosExtEnums::ROL_ADMIN        // 'admin'
 ```
 
 ### Validación automática
 
 - En modo estricto (`WP_DEBUG`), `SchemaRegistry` lanza `SchemaException` si se intenta acceder a una tabla sin schema.
 - `npx glory schema:validate` escanea PHP buscando `$row['xxx']` que no coincidan con ningún schema.
+- Si se añade o elimina un valor `check` en el schema y se regenera, TypeScript genera un error donde el tipo union no cubra el nuevo valor.
 
 Para documentación detallada, ver [Glory/docs/php/schema-system.md](docs/php/schema-system.md) y [Glory/docs/cli/schema-generate.md](docs/cli/schema-generate.md).
 
