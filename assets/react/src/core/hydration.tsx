@@ -153,8 +153,39 @@ export function initializeIslands(options: InitOptions = {}): void {
  * El contenedor [data-island] existente se reutiliza como root.
  */
 function initializeSPA(routes: GloryRoutesMap, options: InitOptions): void {
-    /* Inicializar store de navegacion con las rutas */
-    useNavigationStore.getState().inicializar(routes, window.location.pathname);
+    /*
+     * Los callable props de PHP se omiten de __GLORY_ROUTES__ por diseño,
+     * pero SÍ se evalúan y serializan en data-props del contenedor DOM.
+     * Leer esos props evaluados y mergarlos en la ruta actual del mapa,
+     * para que la isla inicial reciba datos como el usuario autenticado.
+     */
+    const contenedorInicial = document.querySelector<HTMLElement>('[data-island]');
+    let rutasConPropsEvaluados = routes;
+
+    if (contenedorInicial?.dataset.props) {
+        try {
+            const propsServidor = JSON.parse(contenedorInicial.dataset.props) as Record<string, unknown>;
+            /* Normalización básica del path para hacer match con el mapa de rutas */
+            const pathActual = window.location.pathname;
+            const pathNorm = pathActual === '/' ? '/' : (pathActual.endsWith('/') ? pathActual : pathActual + '/');
+
+            if (rutasConPropsEvaluados[pathNorm]) {
+                rutasConPropsEvaluados = {
+                    ...rutasConPropsEvaluados,
+                    [pathNorm]: {
+                        ...rutasConPropsEvaluados[pathNorm],
+                        /* Props del servidor tienen prioridad: incluyen datos de usuario evaluados en tiempo de render */
+                        props: { ...rutasConPropsEvaluados[pathNorm].props, ...propsServidor },
+                    },
+                };
+            }
+        } catch {
+            /* JSON inválido en data-props: continuar sin merge, las props quedan vacías */
+        }
+    }
+
+    /* Inicializar store de navegacion con las rutas (props evaluados incluidos) */
+    useNavigationStore.getState().inicializar(rutasConPropsEvaluados, window.location.pathname);
 
     if (import.meta.env.DEV) {
         const rutasStr = Object.keys(routes).join(', ');
