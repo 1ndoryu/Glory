@@ -1,3 +1,4 @@
+/* sentinel-disable-file limite-lineas — hook cohesivo CRUD de bloques: mover/editar/eliminar/agregar/guardar comparten estado de blocks y no son separables sin overhead artificial */
 /**
  * usePageBuilder
  *
