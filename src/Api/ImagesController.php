@@ -161,9 +161,10 @@ class ImagesController
      */
     public static function listImages(\WP_REST_Request $request): \WP_REST_Response
     {
-        $alias = $request->get_param('alias');
-        $limit = $request->get_param('limit') ?? 50;
-        $minSize = $request->get_param('minSize') ?? 0;
+        try {
+            $alias = $request->get_param('alias');
+            $limit = $request->get_param('limit') ?? 50;
+            $minSize = $request->get_param('minSize') ?? 0;
 
         if (!self::isAliasAllowed($alias)) {
             return new \WP_REST_Response([
@@ -211,6 +212,10 @@ class ImagesController
             'images' => $response,
             'count' => count($response)
         ], 200);
+        } catch (\Throwable $e) {
+            error_log('[ImagesController] Error en listImages: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
+        }
     }
 
     /*
@@ -220,7 +225,8 @@ class ImagesController
      */
     public static function getImageUrl(\WP_REST_Request $request): \WP_REST_Response
     {
-        $ref = $request->get_param('ref');
+        try {
+            $ref = $request->get_param('ref');
         $width = $request->get_param('width');
         $height = $request->get_param('height');
         $quality = $request->get_param('quality') ?? 80;
@@ -284,6 +290,10 @@ class ImagesController
             ],
             'quality' => $quality
         ], 200);
+        } catch (\Throwable $e) {
+            error_log('[ImagesController] Error en getImageUrl: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
+        }
     }
 
     /*
@@ -293,7 +303,8 @@ class ImagesController
      */
     public static function getRandomImages(\WP_REST_Request $request): \WP_REST_Response
     {
-        $alias = $request->get_param('alias');
+        try {
+            $alias = $request->get_param('alias');
         $count = $request->get_param('count') ?? 5;
         $minSize = $request->get_param('minSize') ?? 0;
         $excludeParam = $request->get_param('exclude') ?? '';
@@ -336,6 +347,10 @@ class ImagesController
             'images' => $response,
             'count' => count($response)
         ], 200);
+        } catch (\Throwable $e) {
+            error_log('[ImagesController] Error en getRandomImages: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
+        }
     }
 
     /*
@@ -345,17 +360,22 @@ class ImagesController
      */
     public static function getAliases(\WP_REST_Request $request): \WP_REST_Response
     {
-        return new \WP_REST_Response([
-            'success' => true,
-            'aliases' => self::ALLOWED_ALIASES,
-            'description' => [
-                'glory' => 'Imágenes generales del framework Glory',
-                'colors' => 'Imágenes de colores y fondos',
-                'elements' => 'Elementos decorativos y UI',
-                'logos' => 'Logotipos y marcas',
-                'tema' => 'Imágenes específicas del tema actual'
-            ]
-        ], 200);
+        try {
+            return new \WP_REST_Response([
+                'success' => true,
+                'aliases' => self::ALLOWED_ALIASES,
+                'description' => [
+                    'glory' => 'Imágenes generales del framework Glory',
+                    'colors' => 'Imágenes de colores y fondos',
+                    'elements' => 'Elementos decorativos y UI',
+                    'logos' => 'Logotipos y marcas',
+                    'tema' => 'Imágenes específicas del tema actual'
+                ]
+            ], 200);
+        } catch (\Throwable $e) {
+            error_log('[ImagesController] Error en getAliases: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
+        }
     }
 
     /*

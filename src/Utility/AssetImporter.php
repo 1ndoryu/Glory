@@ -1,4 +1,5 @@
 <?php
+/* sentinel-disable-file limite-lineas -- Clase cohesiva de importacion de assets al media library de WP. 6 metodos con una sola responsabilidad, dividir seria artificial */
 
 namespace Glory\Utility;
 

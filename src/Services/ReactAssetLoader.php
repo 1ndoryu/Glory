@@ -56,7 +56,7 @@ class ReactAssetLoader
 
         $manifest = json_decode(file_get_contents($manifestPath), true);
 
-        if (!$manifest) {
+        if (!is_array($manifest)) {
             return;
         }
 

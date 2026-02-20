@@ -91,58 +91,63 @@ class NewsletterController
      */
     public static function suscribir(\WP_REST_Request $request): \WP_REST_Response
     {
-        /* Rate limiting simple: max 5 suscripciones por IP cada 10 minutos */
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : 'unknown';
-        $rateLimitKey = 'glory_newsletter_rate_' . md5($ip);
-        $intentos = (int) get_transient($rateLimitKey);
-        if ($intentos >= 5) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Demasiados intentos. Intenta de nuevo más tarde.'
-            ], 429);
-        }
-        set_transient($rateLimitKey, $intentos + 1, 600);
+        try {
+            /* Rate limiting simple: max 5 suscripciones por IP cada 10 minutos */
+            $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : 'unknown';
+            $rateLimitKey = 'glory_newsletter_rate_' . md5($ip);
+            $intentos = (int) get_transient($rateLimitKey);
+            if ($intentos >= 5) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Demasiados intentos. Intenta de nuevo más tarde.'
+                ], 429);
+            }
+            set_transient($rateLimitKey, $intentos + 1, 600);
 
-        global $wpdb;
-        $tabla = $wpdb->prefix . self::TABLE_SUFFIX;
-        $email = $request->get_param('email');
+            global $wpdb;
+            $tabla = $wpdb->prefix . self::TABLE_SUFFIX;
+            $email = $request->get_param('email');
 
-        if (empty($email) || !is_email($email)) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Email inválido.'
-            ], 400);
-        }
+            if (empty($email) || !is_email($email)) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Email inválido.'
+                ], 400);
+            }
 
-        /* Verificar si ya existe */
-        $existe = $wpdb->get_var($wpdb->prepare(
-            "SELECT id FROM $tabla WHERE email = %s",
-            $email
-        ));
+            /* Verificar si ya existe */
+            $existe = $wpdb->get_var($wpdb->prepare(
+                "SELECT id FROM $tabla WHERE email = %s",
+                $email
+            ));
 
-        if ($existe) {
+            if ($existe) {
+                return new \WP_REST_Response([
+                    'success' => true,
+                    'message' => 'Ya estás suscrito.'
+                ], 200);
+            }
+
+            /* Insertar nuevo suscriptor */
+            $resultado = $wpdb->insert($tabla, [
+                'email' => $email,
+                'ip'    => $ip
+            ], ['%s', '%s']);
+
+            if ($resultado === false) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Error al guardar la suscripción.'
+                ], 500);
+            }
+
             return new \WP_REST_Response([
                 'success' => true,
-                'message' => 'Ya estás suscrito.'
-            ], 200);
+                'message' => 'Suscripción exitosa.'
+            ], 201);
+        } catch (\Throwable $e) {
+            error_log('[NewsletterController] Error en suscribir: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
         }
-
-        /* Insertar nuevo suscriptor */
-        $resultado = $wpdb->insert($tabla, [
-            'email' => $email,
-            'ip'    => $ip
-        ], ['%s', '%s']);
-
-        if ($resultado === false) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Error al guardar la suscripción.'
-            ], 500);
-        }
-
-        return new \WP_REST_Response([
-            'success' => true,
-            'message' => 'Suscripción exitosa.'
-        ], 201);
     }
 }

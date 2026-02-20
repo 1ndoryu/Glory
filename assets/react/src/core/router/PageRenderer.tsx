@@ -44,7 +44,10 @@ const defaultFallback = (
  * oculto en DOM (display:none) preservando su estado React completo.
  */
 export function PageRenderer({ suspenseFallback }: PageRendererProps): JSX.Element {
-    const { islaActual, propsActuales, navegando, finalizarNavegacion } = useNavigationStore();
+    const islaActual = useNavigationStore(s => s.islaActual);
+    const propsActuales = useNavigationStore(s => s.propsActuales);
+    const navegando = useNavigationStore(s => s.navegando);
+    const finalizarNavegacion = useNavigationStore(s => s.finalizarNavegacion);
     const [paginasCache, setPaginasCache] = useState<PaginaCacheada[]>([]);
     const [islaAnterior, setIslaAnterior] = useState<string | null>(null);
 

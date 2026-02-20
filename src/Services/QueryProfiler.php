@@ -192,8 +192,6 @@ class QueryProfiler
                 self::sanitizeOneLineSql($row['sql'])
             );
         }
-        $lines[] = '===============================================';
-
         error_log(implode("\n", $lines));
     }
 

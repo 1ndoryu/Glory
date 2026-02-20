@@ -130,29 +130,37 @@ class PageBlocksController
      */
     public static function getBlocks(\WP_REST_Request $request): \WP_REST_Response
     {
-        $pageId = (int) $request->get_param('page_id');
+        try {
+            $pageId = (int) $request->get_param('page_id');
 
-        /* Verificar que la pagina existe */
-        $post = get_post($pageId);
-        if (!$post) {
+            /* Verificar que la pagina existe */
+            $post = get_post($pageId);
+            if (!$post) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Pagina no encontrada'
+                ], 404);
+            }
+
+            /* Obtener bloques guardados */
+            $blocksJson = get_post_meta($pageId, self::META_KEY, true);
+            $blocks = $blocksJson ? json_decode($blocksJson, true) : null;
+            if ($blocks !== null && json_last_error() !== JSON_ERROR_NONE) {
+                $blocks = null;
+            }
+
             return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Pagina no encontrada'
-            ], 404);
+                'success' => true,
+                'data' => [
+                    'pageId' => $pageId,
+                    'blocks' => $blocks,
+                    'lastModified' => $post->post_modified
+                ]
+            ], 200);
+        } catch (\Throwable $e) {
+            error_log('[PageBlocksController] Error en getBlocks: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
         }
-
-        /* Obtener bloques guardados */
-        $blocksJson = get_post_meta($pageId, self::META_KEY, true);
-        $blocks = $blocksJson ? json_decode($blocksJson, true) : null;
-
-        return new \WP_REST_Response([
-            'success' => true,
-            'data' => [
-                'pageId' => $pageId,
-                'blocks' => $blocks,
-                'lastModified' => $post->post_modified
-            ]
-        ], 200);
     }
 
     /**
@@ -163,53 +171,58 @@ class PageBlocksController
      */
     public static function saveBlocks(\WP_REST_Request $request): \WP_REST_Response
     {
-        $pageId = (int) $request->get_param('page_id');
-        $blocks = $request->get_param('blocks');
+        try {
+            $pageId = (int) $request->get_param('page_id');
+            $blocks = $request->get_param('blocks');
 
-        /* Verificar que la pagina existe */
-        $post = get_post($pageId);
-        if (!$post) {
+            /* Verificar que la pagina existe */
+            $post = get_post($pageId);
+            if (!$post) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Pagina no encontrada'
+                ], 404);
+            }
+
+            /* Validar estructura de bloques */
+            if (!self::validateBlocks($blocks)) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Estructura de bloques invalida'
+                ], 400);
+            }
+
+            /* Preparar datos para guardar */
+            $pageData = [
+                'version' => '1.0',
+                'time' => time() * 1000,
+                'blocks' => $blocks
+            ];
+
+            /* Guardar en post_meta */
+            $jsonData = wp_json_encode($pageData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            $result = update_post_meta($pageId, self::META_KEY, $jsonData);
+
+            if ($result === false) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Error al guardar los bloques'
+                ], 500);
+            }
+
             return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Pagina no encontrada'
-            ], 404);
+                'success' => true,
+                'message' => 'Bloques guardados correctamente',
+                'data' => [
+                    'pageId' => $pageId,
+                    'blocksCount' => count($blocks),
+                    'savedAt' => gmdate('Y-m-d H:i:s')
+                ]
+            ], 200);
+        } catch (\Throwable $e) {
+            error_log('[PageBlocksController] Error en saveBlocks: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
         }
-
-        /* Validar estructura de bloques */
-        if (!self::validateBlocks($blocks)) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Estructura de bloques invalida'
-            ], 400);
-        }
-
-        /* Preparar datos para guardar */
-        $pageData = [
-            'version' => '1.0',
-            'time' => time() * 1000,
-            'blocks' => $blocks
-        ];
-
-        /* Guardar en post_meta */
-        $jsonData = wp_json_encode($pageData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $result = update_post_meta($pageId, self::META_KEY, $jsonData);
-
-        if ($result === false) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Error al guardar los bloques'
-            ], 500);
-        }
-
-        return new \WP_REST_Response([
-            'success' => true,
-            'message' => 'Bloques guardados correctamente',
-            'data' => [
-                'pageId' => $pageId,
-                'blocksCount' => count($blocks),
-                'savedAt' => gmdate('Y-m-d H:i:s')
-            ]
-        ], 200);
     }
 
     /**

@@ -170,9 +170,7 @@ function saveHtml(name: string, html: string): void {
  * Funcion principal
  */
 async function main(): Promise<void> {
-    console.log('\n========================================');
-    console.log('  Glory SSG Pre-render');
-    console.log('========================================\n');
+    console.log('[SSG] Glory SSG Pre-render');
 
     // Crear directorio de salida
     if (!existsSync(CONFIG.outputDir)) {

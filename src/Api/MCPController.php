@@ -87,23 +87,28 @@ class MCPController
      */
     public static function getToken(\WP_REST_Request $request): \WP_REST_Response
     {
-        $userId = get_current_user_id();
-        $tokenExistente = self::findExistingToken($userId);
+        try {
+            $userId = get_current_user_id();
+            $tokenExistente = self::findExistingToken($userId);
 
-        if ($tokenExistente) {
+            if ($tokenExistente) {
+                return new \WP_REST_Response([
+                    'success' => true,
+                    'existe' => true,
+                    'nombre' => self::APP_PASSWORD_NAME,
+                    'fechaCreacion' => $tokenExistente['created'],
+                    'ultimoUso' => $tokenExistente['last_used'] ?? null
+                ], 200);
+            }
+
             return new \WP_REST_Response([
                 'success' => true,
-                'existe' => true,
-                'nombre' => self::APP_PASSWORD_NAME,
-                'fechaCreacion' => $tokenExistente['created'],
-                'ultimoUso' => $tokenExistente['last_used'] ?? null
+                'existe' => false
             ], 200);
+        } catch (\Throwable $e) {
+            error_log('[MCPController] Error en getToken: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
         }
-
-        return new \WP_REST_Response([
-            'success' => true,
-            'existe' => false
-        ], 200);
     }
 
     /**
@@ -113,43 +118,48 @@ class MCPController
      */
     public static function createToken(\WP_REST_Request $request): \WP_REST_Response
     {
-        $userId = get_current_user_id();
+        try {
+            $userId = get_current_user_id();
 
-        /* Verificar si ya existe - revocar el anterior */
-        $tokenExistente = self::findExistingToken($userId);
-        if ($tokenExistente) {
-            \WP_Application_Passwords::delete_application_password($userId, $tokenExistente['uuid']);
-        }
+            /* Verificar si ya existe - revocar el anterior */
+            $tokenExistente = self::findExistingToken($userId);
+            if ($tokenExistente) {
+                \WP_Application_Passwords::delete_application_password($userId, $tokenExistente['uuid']);
+            }
 
-        /* Generar nuevo Application Password */
-        $resultado = \WP_Application_Passwords::create_new_application_password(
-            $userId,
-            [
-                'name' => self::APP_PASSWORD_NAME,
-            ]
-        );
+            /* Generar nuevo Application Password */
+            $resultado = \WP_Application_Passwords::create_new_application_password(
+                $userId,
+                [
+                    'name' => self::APP_PASSWORD_NAME,
+                ]
+            );
 
-        if (is_wp_error($resultado)) {
+            if (is_wp_error($resultado)) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => $resultado->get_error_message()
+                ], 500);
+            }
+
+            /* El resultado contiene [0] => password, [1] => item info */
+            list($password, $item) = $resultado;
+
+            /* Generar token Base64 para Authorization header */
+            $user = wp_get_current_user();
+            $tokenBase64 = base64_encode($user->user_login . ':' . $password);
+
             return new \WP_REST_Response([
-                'success' => false,
-                'message' => $resultado->get_error_message()
-            ], 500);
+                'success' => true,
+                'token' => $password,
+                'tokenBase64' => $tokenBase64,
+                'nombre' => self::APP_PASSWORD_NAME,
+                'fechaCreacion' => gmdate('c')
+            ], 201);
+        } catch (\Throwable $e) {
+            error_log('[MCPController] Error en createToken: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
         }
-
-        /* El resultado contiene [0] => password, [1] => item info */
-        list($password, $item) = $resultado;
-
-        /* Generar token Base64 para Authorization header */
-        $user = wp_get_current_user();
-        $tokenBase64 = base64_encode($user->user_login . ':' . $password);
-
-        return new \WP_REST_Response([
-            'success' => true,
-            'token' => $password,
-            'tokenBase64' => $tokenBase64,
-            'nombre' => self::APP_PASSWORD_NAME,
-            'fechaCreacion' => gmdate('c')
-        ], 201);
     }
 
     /**
@@ -159,29 +169,34 @@ class MCPController
      */
     public static function deleteToken(\WP_REST_Request $request): \WP_REST_Response
     {
-        $userId = get_current_user_id();
-        $tokenExistente = self::findExistingToken($userId);
+        try {
+            $userId = get_current_user_id();
+            $tokenExistente = self::findExistingToken($userId);
 
-        if (!$tokenExistente) {
+            if (!$tokenExistente) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'No existe token MCP para revocar'
+                ], 404);
+            }
+
+            $resultado = \WP_Application_Passwords::delete_application_password($userId, $tokenExistente['uuid']);
+
+            if ($resultado === false) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Error al revocar el token'
+                ], 500);
+            }
+
             return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'No existe token MCP para revocar'
-            ], 404);
+                'success' => true,
+                'message' => 'Token revocado correctamente'
+            ], 200);
+        } catch (\Throwable $e) {
+            error_log('[MCPController] Error en deleteToken: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
         }
-
-        $resultado = \WP_Application_Passwords::delete_application_password($userId, $tokenExistente['uuid']);
-
-        if ($resultado === false) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Error al revocar el token'
-            ], 500);
-        }
-
-        return new \WP_REST_Response([
-            'success' => true,
-            'message' => 'Token revocado correctamente'
-        ], 200);
     }
 
     /**
@@ -191,48 +206,53 @@ class MCPController
      */
     public static function getConfig(\WP_REST_Request $request): \WP_REST_Response
     {
-        $apiUrl = rest_url('glory/v1');
-        $themePath = get_template_directory();
+        try {
+            $apiUrl = rest_url('glory/v1');
+            $themePath = get_template_directory();
 
-        /* Configuración para Claude Desktop */
-        $claudeConfig = [
-            'mcpServers' => [
+            /* Configuración para Claude Desktop */
+            $claudeConfig = [
+                'mcpServers' => [
+                    'glory-tareas' => [
+                        'command' => 'node',
+                        'args' => [str_replace('/', '\\', $themePath) . '\\mcp\\dist\\index.js'],
+                        'env' => [
+                            'GLORY_API_URL' => $apiUrl,
+                            'GLORY_AUTH_TOKEN' => 'TU_TOKEN_AQUI'
+                        ]
+                    ]
+                ]
+            ];
+
+            /* Configuración para Cursor IDE */
+            $cursorConfig = [
                 'glory-tareas' => [
                     'command' => 'node',
-                    'args' => [str_replace('/', '\\', $themePath) . '\\mcp\\dist\\index.js'],
+                    'args' => ['./mcp/dist/index.js'],
                     'env' => [
                         'GLORY_API_URL' => $apiUrl,
                         'GLORY_AUTH_TOKEN' => 'TU_TOKEN_AQUI'
                     ]
                 ]
-            ]
-        ];
+            ];
 
-        /* Configuración para Cursor IDE */
-        $cursorConfig = [
-            'glory-tareas' => [
-                'command' => 'node',
-                'args' => ['./mcp/dist/index.js'],
-                'env' => [
-                    'GLORY_API_URL' => $apiUrl,
-                    'GLORY_AUTH_TOKEN' => 'TU_TOKEN_AQUI'
-                ]
-            ]
-        ];
+            /* Rutas de archivos de configuración */
+            $rutasClaude = self::getClaudeConfigPath();
+            $rutasCursor = '.cursor/mcp.json';
 
-        /* Rutas de archivos de configuración */
-        $rutasClaude = self::getClaudeConfigPath();
-        $rutasCursor = '.cursor/mcp.json';
-
-        return new \WP_REST_Response([
-            'success' => true,
-            'claudeDesktop' => $claudeConfig,
-            'cursor' => $cursorConfig,
-            'rutaConfigClaude' => $rutasClaude,
-            'rutaConfigCursor' => $rutasCursor,
-            'apiUrl' => $apiUrl,
-            'mcpPath' => $themePath . '/mcp/dist/index.js'
-        ], 200);
+            return new \WP_REST_Response([
+                'success' => true,
+                'claudeDesktop' => $claudeConfig,
+                'cursor' => $cursorConfig,
+                'rutaConfigClaude' => $rutasClaude,
+                'rutaConfigCursor' => $rutasCursor,
+                'apiUrl' => $apiUrl,
+                'mcpPath' => $themePath . '/mcp/dist/index.js'
+            ], 200);
+        } catch (\Throwable $e) {
+            error_log('[MCPController] Error en getConfig: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
+        }
     }
 
     /**

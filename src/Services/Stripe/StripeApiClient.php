@@ -87,6 +87,9 @@ class StripeApiClient
 
         $statusCode = wp_remote_retrieve_response_code($response);
         $body = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($body)) {
+            $body = [];
+        }
 
         if ($statusCode >= 400) {
             $errorMessage = $body['error']['message'] ?? 'Unknown error';

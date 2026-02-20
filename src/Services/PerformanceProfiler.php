@@ -294,8 +294,6 @@ class PerformanceProfiler
             );
         }
 
-        $lineas[] = '===================================================';
-
         error_log(implode("\n", $lineas));
     }
 

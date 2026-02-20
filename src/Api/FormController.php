@@ -121,95 +121,100 @@ class FormController
      */
     public static function procesarFormulario(\WP_REST_Request $request): \WP_REST_Response
     {
-        /* Rate limiting: máx 3 envíos por IP cada 5 minutos */
-        $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : 'unknown';
-        $rateLimitKey = 'glory_form_rate_' . md5($ip);
-        $intentos = (int) get_transient($rateLimitKey);
+        try {
+            /* Rate limiting: máx 3 envíos por IP cada 5 minutos */
+            $ip = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field($_SERVER['REMOTE_ADDR']) : 'unknown';
+            $rateLimitKey = 'glory_form_rate_' . md5($ip);
+            $intentos = (int) get_transient($rateLimitKey);
 
-        if ($intentos >= 3) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Demasiados envíos. Inténtalo de nuevo en unos minutos.',
-            ], 429);
-        }
-        set_transient($rateLimitKey, $intentos + 1, 300);
-
-        $formId   = $request->get_param('formId');
-        $nombre   = $request->get_param('nombre');
-        $email    = $request->get_param('email');
-        $telefono = $request->get_param('telefono') ?? '';
-        $mensaje  = $request->get_param('mensaje') ?? '';
-        $extra    = $request->get_param('extra') ?? [];
-
-        if (empty($email) || !is_email($email)) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'El email proporcionado no es válido.',
-            ], 400);
-        }
-
-        if (empty($nombre)) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'El nombre es obligatorio.',
-            ], 400);
-        }
-
-        /* Guardar en base de datos */
-        global $wpdb;
-        $tabla = $wpdb->prefix . self::TABLE_SUFFIX;
-
-        $resultado = $wpdb->insert($tabla, [
-            'form_id'  => $formId,
-            'nombre'   => $nombre,
-            'email'    => $email,
-            'telefono' => $telefono,
-            'mensaje'  => $mensaje,
-            'extra'    => wp_json_encode($extra),
-            'ip'       => $ip,
-        ], ['%s', '%s', '%s', '%s', '%s', '%s', '%s']);
-
-        if ($resultado === false) {
-            return new \WP_REST_Response([
-                'success' => false,
-                'message' => 'Error al guardar el formulario. Inténtalo más tarde.',
-            ], 500);
-        }
-
-        /* Enviar email de notificación al admin */
-        $adminEmail = get_option('admin_email');
-        $siteName   = get_bloginfo('name');
-        $asunto     = sprintf('[%s] Nuevo formulario: %s', $siteName, $formId);
-
-        $cuerpo = sprintf(
-            "Nuevo envío de formulario\n\n" .
-            "Formulario: %s\n" .
-            "Nombre: %s\n" .
-            "Email: %s\n" .
-            "Teléfono: %s\n" .
-            "Mensaje:\n%s\n",
-            $formId,
-            $nombre,
-            $email,
-            $telefono,
-            $mensaje
-        );
-
-        if (!empty($extra)) {
-            $cuerpo .= "\nDatos adicionales:\n";
-            foreach ($extra as $clave => $valor) {
-                $cuerpo .= sprintf("- %s: %s\n", sanitize_text_field($clave), sanitize_text_field($valor));
+            if ($intentos >= 3) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Demasiados envíos. Inténtalo de nuevo en unos minutos.',
+                ], 429);
             }
+            set_transient($rateLimitKey, $intentos + 1, 300);
+
+            $formId   = $request->get_param('formId');
+            $nombre   = $request->get_param('nombre');
+            $email    = $request->get_param('email');
+            $telefono = $request->get_param('telefono') ?? '';
+            $mensaje  = $request->get_param('mensaje') ?? '';
+            $extra    = $request->get_param('extra') ?? [];
+
+            if (empty($email) || !is_email($email)) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'El email proporcionado no es válido.',
+                ], 400);
+            }
+
+            if (empty($nombre)) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'El nombre es obligatorio.',
+                ], 400);
+            }
+
+            /* Guardar en base de datos */
+            global $wpdb;
+            $tabla = $wpdb->prefix . self::TABLE_SUFFIX;
+
+            $resultado = $wpdb->insert($tabla, [
+                'form_id'  => $formId,
+                'nombre'   => $nombre,
+                'email'    => $email,
+                'telefono' => $telefono,
+                'mensaje'  => $mensaje,
+                'extra'    => wp_json_encode($extra),
+                'ip'       => $ip,
+            ], ['%s', '%s', '%s', '%s', '%s', '%s', '%s']);
+
+            if ($resultado === false) {
+                return new \WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Error al guardar el formulario. Inténtalo más tarde.',
+                ], 500);
+            }
+
+            /* Enviar email de notificación al admin */
+            $adminEmail = get_option('admin_email');
+            $siteName   = get_bloginfo('name');
+            $asunto     = sprintf('[%s] Nuevo formulario: %s', $siteName, $formId);
+
+            $cuerpo = sprintf(
+                "Nuevo envío de formulario\n\n" .
+                "Formulario: %s\n" .
+                "Nombre: %s\n" .
+                "Email: %s\n" .
+                "Teléfono: %s\n" .
+                "Mensaje:\n%s\n",
+                $formId,
+                $nombre,
+                $email,
+                $telefono,
+                $mensaje
+            );
+
+            if (!empty($extra)) {
+                $cuerpo .= "\nDatos adicionales:\n";
+                foreach ($extra as $clave => $valor) {
+                    $cuerpo .= sprintf("- %s: %s\n", sanitize_text_field($clave), sanitize_text_field($valor));
+                }
+            }
+
+            wp_mail($adminEmail, $asunto, $cuerpo, [
+                'Content-Type: text/plain; charset=UTF-8',
+                sprintf('Reply-To: %s <%s>', $nombre, $email),
+            ]);
+
+            return new \WP_REST_Response([
+                'success' => true,
+                'message' => 'Formulario enviado correctamente. Nos pondremos en contacto pronto.',
+            ], 201);
+        } catch (\Throwable $e) {
+            error_log('[FormController] Error en procesarFormulario: ' . $e->getMessage());
+            return new \WP_REST_Response(['error' => 'Error interno del servidor'], 500);
         }
-
-        wp_mail($adminEmail, $asunto, $cuerpo, [
-            'Content-Type: text/plain; charset=UTF-8',
-            sprintf('Reply-To: %s <%s>', $nombre, $email),
-        ]);
-
-        return new \WP_REST_Response([
-            'success' => true,
-            'message' => 'Formulario enviado correctamente. Nos pondremos en contacto pronto.',
-        ], 201);
     }
 }

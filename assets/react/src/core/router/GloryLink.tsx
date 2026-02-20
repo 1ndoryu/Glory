@@ -51,7 +51,9 @@ export function GloryLink({
     onClick,
     ...rest
 }: GloryLinkProps): JSX.Element {
-    const { navegar, resolverRuta, modoSPA } = useNavigationStore();
+    const navegar = useNavigationStore(s => s.navegar);
+    const resolverRuta = useNavigationStore(s => s.resolverRuta);
+    const modoSPA = useNavigationStore(s => s.modoSPA);
 
     const manejarClick = useCallback(
         (e: MouseEvent<HTMLAnchorElement>) => {

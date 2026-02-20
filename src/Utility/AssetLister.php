@@ -133,7 +133,11 @@ class AssetLister
         foreach ($lista as $nombre) {
             $ruta = $dir . $nombre;
             if (is_file($ruta)) {
-                $size = (int) @filesize($ruta);
+                try {
+                    $size = (int) filesize($ruta);
+                } catch (\Throwable $e) {
+                    $size = 0;
+                }
                 if ($size >= $minBytes) {
                     $filtradas[] = $nombre;
                 }
@@ -182,7 +186,11 @@ class AssetLister
 
         $ancho = $alto = null;
         if (file_exists($rutaLocal)) {
-            $dimensiones = @getimagesize($rutaLocal);
+            try {
+                $dimensiones = getimagesize($rutaLocal);
+            } catch (\Throwable $e) {
+                $dimensiones = false;
+            }
             if ($dimensiones !== false) {
                 [$ancho, $alto] = $dimensiones;
             }

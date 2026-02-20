@@ -12,83 +12,21 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { GloryApiResponse, ApiRequestOptions } from '../types/api';
+import {
+    apiCache, DEFAULT_CACHE_TTL, getCacheKey,
+    limpiarCacheExpirado
+} from '../utils/apiCache';
+import { getNonce, getRestUrl } from '../utils/wpCredentials';
+
+/* Re-exports para compatibilidad con consumidores existentes */
+export { clearApiCache, invalidateApiCache } from '../utils/apiCache';
+export { resetApiCredentials } from '../utils/wpCredentials';
 
 interface UseWordPressApiResult<T> {
     data: T | null;
     isLoading: boolean;
     error: string | null;
     refetch: () => void;
-}
-
-/*
- * Cache en memoria con TTL y limite maximo de entries.
- * Evita crecimiento ilimitado limpiando entries expiradas periodicamente.
- */
-const apiCache = new Map<string, { data: unknown; timestamp: number }>();
-const DEFAULT_CACHE_TTL = 30_000; /* 30 segundos */
-const MAX_CACHE_ENTRIES = 100;
-
-/* Limpia entries expiradas del cache para evitar memory leak */
-function limpiarCacheExpirado(ttl: number): void {
-    if (apiCache.size <= MAX_CACHE_ENTRIES) return;
-    const ahora = Date.now();
-    for (const [key, entry] of apiCache) {
-        if (ahora - entry.timestamp > ttl) {
-            apiCache.delete(key);
-        }
-    }
-    /* Si sigue excediendo, eliminar las mas antiguas */
-    if (apiCache.size > MAX_CACHE_ENTRIES) {
-        const entries = [...apiCache.entries()].sort((a, b) => a[1].timestamp - b[1].timestamp);
-        const sobran = entries.length - MAX_CACHE_ENTRIES;
-        for (let i = 0; i < sobran; i++) {
-            apiCache.delete(entries[i][0]);
-        }
-    }
-}
-
-function getCacheKey(endpoint: string, options?: ApiRequestOptions): string {
-    const method = options?.method ?? 'GET';
-    const body = options?.body ? JSON.stringify(options.body) : '';
-    return `${method}:${endpoint}:${body}`;
-}
-
-/* Lectura de nonce y restUrl cacheadas como singleton. Solo se leen una vez de window. */
-let cachedNonce: string | null = null;
-let cachedRestUrl: string | null = null;
-
-function getNonce(): string {
-    if (cachedNonce !== null) return cachedNonce;
-
-    const context = window.GLORY_CONTEXT;
-    if (context?.nonce) {
-        cachedNonce = context.nonce;
-        return cachedNonce;
-    }
-
-    /* Fallback: WP Core pone el nonce en wpApiSettings */
-    const wpSettings = (window as unknown as Record<string, unknown>).wpApiSettings as
-        | { nonce?: string }
-        | undefined;
-    cachedNonce = wpSettings?.nonce ?? '';
-    return cachedNonce;
-}
-
-function getRestUrl(): string {
-    if (cachedRestUrl !== null) return cachedRestUrl;
-
-    const context = window.GLORY_CONTEXT;
-    if (context?.restUrl) {
-        cachedRestUrl = context.restUrl;
-        return cachedRestUrl;
-    }
-
-    /* Fallback: WP Core */
-    const wpSettings = (window as unknown as Record<string, unknown>).wpApiSettings as
-        | { root?: string }
-        | undefined;
-    cachedRestUrl = wpSettings?.root ?? '/wp-json';
-    return cachedRestUrl;
 }
 
 export function useWordPressApi<T = unknown>(
@@ -196,29 +134,4 @@ export function useWordPressApi<T = unknown>(
     }, [fetchData]);
 
     return { data, isLoading, error, refetch: fetchData };
-}
-
-/*
- * Limpia toda la cache de la API.
- * Util al invalidar datos (ej: despues de un POST).
- */
-export function clearApiCache(): void {
-    apiCache.clear();
-}
-
-/*
- * Invalida una entrada especifica de la cache.
- */
-export function invalidateApiCache(endpoint: string, options?: ApiRequestOptions): void {
-    const key = getCacheKey(endpoint, options);
-    apiCache.delete(key);
-}
-
-/*
- * Resetea los singletons de nonce/restUrl.
- * Util si el nonce se renueva sin recargar pagina.
- */
-export function resetApiCredentials(): void {
-    cachedNonce = null;
-    cachedRestUrl = null;
 }

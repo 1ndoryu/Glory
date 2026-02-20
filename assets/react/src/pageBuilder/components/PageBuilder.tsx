@@ -33,14 +33,13 @@
  * simplemente no renderiza nada del Page Builder.
  */
 
-import {useState, useCallback, useMemo} from 'react';
-import {BlockRegistry} from '../BlockRegistry';
 import {BlockRenderer} from '../BlockRenderer';
 import {BlockEditorModal} from '../BlockEditorModal';
 import {PageBuilderToolbar} from './PageBuilderToolbar';
 import {EditModeToggle} from './EditModeToggle';
 import {AddBlockPanel} from './AddBlockPanel';
 import type {BlockData} from '../types';
+import {usePageBuilder} from '../hooks/usePageBuilder';
 
 export interface PageBuilderProps {
     /** Bloques iniciales (de PHP) */
@@ -70,143 +69,17 @@ export interface PageBuilderProps {
 }
 
 export function PageBuilder({blocks: initialBlocks, isAdmin = false, saveEndpoint, restNonce, children, onBlocksChange, onSaveSuccess, onSaveError, disabled = false, allowedBlockTypes, editButtonText = 'Editar Pagina', toolbarTitle = 'Editando Pagina'}: PageBuilderProps): JSX.Element | null {
-    /* Estado */
-    const [blocks, setBlocks] = useState<BlockData[]>(initialBlocks || []);
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
-    const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
+    const {
+        blocks, isEditMode, setIsEditMode,
+        selectedBlockId, setSelectedBlockId,
+        editingBlockId, setEditingBlockId,
+        isSaving, editingBlock,
+        handleMoveUp, handleMoveDown, handleDeleteBlock,
+        handleEditBlock, handleUpdateBlock, handleAddBlock, handleSave,
+    } = usePageBuilder({initialBlocks, saveEndpoint, restNonce, onBlocksChange, onSaveSuccess, onSaveError});
 
     /* Verificar si puede editar */
     const canEdit = isAdmin && !!saveEndpoint;
-
-    /* Handlers de bloques */
-    const handleMoveUp = useCallback(
-        (id: string) => {
-            setBlocks(prev => {
-                const index = prev.findIndex(b => b.id === id);
-                if (index <= 0) return prev;
-                const newBlocks = [...prev];
-                [newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]];
-                onBlocksChange?.(newBlocks);
-                return newBlocks;
-            });
-        },
-        [onBlocksChange]
-    );
-
-    const handleMoveDown = useCallback(
-        (id: string) => {
-            setBlocks(prev => {
-                const index = prev.findIndex(b => b.id === id);
-                if (index < 0 || index >= prev.length - 1) return prev;
-                const newBlocks = [...prev];
-                [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
-                onBlocksChange?.(newBlocks);
-                return newBlocks;
-            });
-        },
-        [onBlocksChange]
-    );
-
-    const handleDeleteBlock = useCallback(
-        (id: string) => {
-            setBlocks(prev => {
-                const newBlocks = prev.filter(b => b.id !== id);
-                onBlocksChange?.(newBlocks);
-                return newBlocks;
-            });
-            setSelectedBlockId(null);
-        },
-        [onBlocksChange]
-    );
-
-    const handleEditBlock = useCallback((id: string) => {
-        setEditingBlockId(id);
-    }, []);
-
-    const handleUpdateBlock = useCallback(
-        (blockId: string, newProps: Record<string, unknown>) => {
-            setBlocks(prev => {
-                const newBlocks = prev.map(block => (block.id === blockId ? {...block, props: newProps} : block));
-                onBlocksChange?.(newBlocks);
-                return newBlocks;
-            });
-        },
-        [onBlocksChange]
-    );
-
-    const handleAddBlock = useCallback(
-        (type: string) => {
-            const defaultProps = BlockRegistry.getDefaultProps(type);
-            const newBlock: BlockData = {
-                id: `${type}-${Date.now()}`,
-                type,
-                props: defaultProps
-            };
-            setBlocks(prev => {
-                const newBlocks = [...prev, newBlock];
-                onBlocksChange?.(newBlocks);
-                return newBlocks;
-            });
-        },
-        [onBlocksChange]
-    );
-
-    /* Handler de guardado */
-    const handleSave = useCallback(async () => {
-        if (!saveEndpoint) {
-            console.warn('[PageBuilder] No hay endpoint de guardado configurado');
-            return;
-        }
-
-        setIsSaving(true);
-        try {
-            const headers: Record<string, string> = {
-                'Content-Type': 'application/json'
-            };
-
-            if (restNonce) {
-                headers['X-WP-Nonce'] = restNonce;
-            }
-
-            const response = await fetch(saveEndpoint, {
-                method: 'POST',
-                headers,
-                credentials: 'same-origin',
-                body: JSON.stringify({blocks})
-            });
-
-            const data = await response.json();
-
-            if (response.ok && data.success) {
-                if (import.meta.env.DEV) {
-                    console.warn('[PageBuilder] Guardado exitoso:', data);
-                }
-                onSaveSuccess?.();
-            } else {
-                const errorMsg = data.message || 'Error al guardar';
-                if (import.meta.env.DEV) {
-                    console.error('[PageBuilder] Error del servidor:', data);
-                }
-                onSaveError?.(errorMsg);
-            }
-        } catch (error) {
-            if (import.meta.env.DEV) {
-                console.error('[PageBuilder] Error de red:', error);
-            }
-            const errorMsg = 'Error de conexion al guardar';
-            onSaveError?.(errorMsg);
-        } finally {
-            setIsSaving(false);
-        }
-    }, [blocks, saveEndpoint, restNonce, onSaveSuccess, onSaveError]);
-
-    /* Bloque siendo editado */
-    const editingBlock = useMemo(() => {
-        if (!editingBlockId) return null;
-        return blocks.find(b => b.id === editingBlockId) || null;
-    }, [editingBlockId, blocks]);
 
     /* Si esta desactivado, no renderizar nada */
     if (disabled) return null;

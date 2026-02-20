@@ -290,7 +290,11 @@ final class AssetManager
         }
         $esDesarrollo = $modoDevEspecifico ?? self::$modoDesarrolloGlobal;
         if ($esDesarrollo) {
-            $tiempoModificacion = @filemtime($rutaArchivo);
+            try {
+                $tiempoModificacion = filemtime($rutaArchivo);
+            } catch (\Throwable $e) {
+                $tiempoModificacion = false;
+            }
             return $tiempoModificacion ? (string)$tiempoModificacion : self::$versionTema;
         }
         return self::$versionTema;
