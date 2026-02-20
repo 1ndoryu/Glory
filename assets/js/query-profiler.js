@@ -10,7 +10,9 @@
       if (window.location && typeof window.location.search === 'string' && window.location.search.indexOf('fb-edit') !== -1) {
         return true;
       }
-    } catch (e) {}
+    } catch (e) {
+      /* Cross-origin: la excepcion es el mecanismo de deteccion */
+    }
 
     try {
       if (window.self !== window.top) {
@@ -21,13 +23,17 @@
           return true;
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      /* Cross-origin: acceso a window.top/parent lanza excepcion en iframes de otro dominio */
+    }
 
     try {
       if (document.querySelector('.fusion-builder-live-toolbar')) {
         return true;
       }
-    } catch (e) {}
+    } catch (e) {
+      /* Fallback DOM: querySelector puede fallar en contextos restringidos */
+    }
 
     return false;
   }

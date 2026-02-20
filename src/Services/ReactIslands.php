@@ -84,15 +84,19 @@ class ReactIslands
         // Verificar si el dev server esta respondiendo
         $devServerUrl = 'http://localhost:' . self::DEV_SERVER_PORT;
 
-        // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
-        $response = @file_get_contents($devServerUrl, false, stream_context_create([
-            'http' => [
-                'timeout' => 0.5,
-                'ignore_errors' => true,
-            ],
-        ]));
-
-        self::$devMode = $response !== false;
+        /* Probe al dev server: un fallo de conexion es resultado esperado en produccion */
+        try {
+            $response = file_get_contents($devServerUrl, false, stream_context_create([
+                'http' => [
+                    'timeout' => 0.5,
+                    'ignore_errors' => true,
+                ],
+            ]));
+            self::$devMode = $response !== false;
+        } catch (\Throwable $e) {
+            /* Fallo de red esperado cuando no hay dev server corriendo */
+            self::$devMode = false;
+        }
         set_transient('glory_vite_dev_mode', self::$devMode ? '1' : '0', 30);
 
         return self::$devMode;

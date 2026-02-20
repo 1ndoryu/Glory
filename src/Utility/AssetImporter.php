@@ -167,56 +167,101 @@ class AssetImporter
         require_once(ABSPATH . 'wp-admin/includes/media.php');
 
         $archivoTemporal = wp_tempnam($nombreArchivo);
-        @copy($rutaAssetCompleta, $archivoTemporal);
-
-        $datosArchivo = [
-            'name'     => basename($nombreArchivo),
-            'tmp_name' => $archivoTemporal,
-            'error'    => 0,
-            'size'     => @filesize($rutaAssetCompleta) ?: 0,
-        ];
-        $subida = wp_handle_sideload($datosArchivo, ['test_form' => false]);
-
-        if (!isset($subida['error']) && isset($subida['file'])) {
-            if (function_exists('update_attached_file')) {
-                update_attached_file($id, $subida['file']);
+        /* try/finally garantiza cleanup del archivo temporal en cualquier escenario */
+        try {
+            try {
+                if (!copy($rutaAssetCompleta, $archivoTemporal)) {
+                    GloryLogger::error('AssetImporter: No se pudo copiar asset para reparacion.', [
+                        'origen'  => $rutaAssetCompleta,
+                        'destino' => $archivoTemporal,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                GloryLogger::error('AssetImporter: Excepcion al copiar asset para reparacion.', [
+                    'error' => $e->getMessage(),
+                ]);
             }
-            $meta = wp_generate_attachment_metadata($id, $subida['file']);
-            wp_update_attachment_metadata($id, $meta);
-            update_post_meta($id, AssetMeta::SOURCE, $rutaAssetRelativa);
-            update_post_meta($id, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
-            if (isset($subida['url'])) {
-                wp_update_post(['ID' => $id, 'guid' => $subida['url']]);
+
+            $tamanoArchivo = 0;
+            try {
+                $tamanoArchivo = filesize($rutaAssetCompleta) ?: 0;
+            } catch (\Throwable $e) {
+                GloryLogger::error('AssetImporter: No se pudo obtener tamano de archivo.', [
+                    'archivo' => $rutaAssetCompleta,
+                    'error'   => $e->getMessage(),
+                ]);
             }
-            return $id;
+
+            $datosArchivo = [
+                'name'     => basename($nombreArchivo),
+                'tmp_name' => $archivoTemporal,
+                'error'    => 0,
+                'size'     => $tamanoArchivo,
+            ];
+            $subida = wp_handle_sideload($datosArchivo, ['test_form' => false]);
+
+            if (!isset($subida['error']) && isset($subida['file'])) {
+                if (function_exists('update_attached_file')) {
+                    update_attached_file($id, $subida['file']);
+                }
+                $meta = wp_generate_attachment_metadata($id, $subida['file']);
+                wp_update_attachment_metadata($id, $meta);
+                update_post_meta($id, AssetMeta::SOURCE, $rutaAssetRelativa);
+                update_post_meta($id, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
+                if (isset($subida['url'])) {
+                    wp_update_post(['ID' => $id, 'guid' => $subida['url']]);
+                }
+                return $id;
+            }
+
+            /* Si la reparacion falla, importar como nuevo adjunto */
+            $tamanoArchivo2 = 0;
+            try {
+                $tamanoArchivo2 = filesize($rutaAssetCompleta) ?: 0;
+            } catch (\Throwable $e) {
+                GloryLogger::error('AssetImporter: No se pudo obtener tamano de archivo (fallback).', [
+                    'archivo' => $rutaAssetCompleta,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
+
+            $datosArchivo2 = [
+                'name'     => basename($nombreArchivo),
+                'tmp_name' => $archivoTemporal,
+                'error'    => 0,
+                'size'     => $tamanoArchivo2,
+            ];
+            $subida2 = wp_handle_sideload($datosArchivo2, ['test_form' => false]);
+            if (!isset($subida2['error']) && isset($subida2['file'])) {
+                $nuevoId = wp_insert_attachment([
+                    'guid'           => $subida2['url'],
+                    'post_mime_type' => $subida2['type'],
+                    'post_title'     => preg_replace('/\.[^.]+$/', '', basename($subida2['file'])),
+                    'post_content'   => '',
+                    'post_status'    => 'inherit'
+                ], $subida2['file']);
+                if (!is_wp_error($nuevoId)) {
+                    $meta2 = wp_generate_attachment_metadata($nuevoId, $subida2['file']);
+                    wp_update_attachment_metadata($nuevoId, $meta2);
+                    update_post_meta($nuevoId, AssetMeta::SOURCE, $rutaAssetRelativa);
+                    update_post_meta($nuevoId, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
+                    set_transient($cacheKey, (int) $nuevoId, HOUR_IN_SECONDS);
+                    return (int) $nuevoId;
+                }
+            }
+            return null;
+        } finally {
+            /* wp_handle_sideload mueve el archivo si tiene exito; si sigue existiendo, hubo error */
+            if (file_exists($archivoTemporal)) {
+                try {
+                    unlink($archivoTemporal);
+                } catch (\Throwable $e) {
+                    GloryLogger::error('AssetImporter: No se pudo limpiar archivo temporal en reparacion.', [
+                        'archivo' => $archivoTemporal,
+                    ]);
+                }
+            }
         }
-
-        /* Si la reparación falla, importar como nuevo adjunto */
-        $datosArchivo2 = [
-            'name'     => basename($nombreArchivo),
-            'tmp_name' => $archivoTemporal,
-            'error'    => 0,
-            'size'     => @filesize($rutaAssetCompleta) ?: 0,
-        ];
-        $subida2 = wp_handle_sideload($datosArchivo2, ['test_form' => false]);
-        if (!isset($subida2['error']) && isset($subida2['file'])) {
-            $nuevoId = wp_insert_attachment([
-                'guid'           => $subida2['url'],
-                'post_mime_type' => $subida2['type'],
-                'post_title'     => preg_replace('/\.[^.]+$/', '', basename($subida2['file'])),
-                'post_content'   => '',
-                'post_status'    => 'inherit'
-            ], $subida2['file']);
-            if (!is_wp_error($nuevoId)) {
-                $meta2 = wp_generate_attachment_metadata($nuevoId, $subida2['file']);
-                wp_update_attachment_metadata($nuevoId, $meta2);
-                update_post_meta($nuevoId, AssetMeta::SOURCE, $rutaAssetRelativa);
-                update_post_meta($nuevoId, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
-                set_transient($cacheKey, (int) $nuevoId, HOUR_IN_SECONDS);
-                return (int) $nuevoId;
-            }
-        }
-        return null;
     }
 
 
@@ -243,51 +288,62 @@ class AssetImporter
         require_once(ABSPATH . 'wp-admin/includes/media.php');
 
         $archivoTemporal = wp_tempnam($nombreArchivo);
-        copy($rutaAssetCompleta, $archivoTemporal);
+        /* try/finally garantiza cleanup del archivo temporal en cualquier escenario */
+        try {
+            copy($rutaAssetCompleta, $archivoTemporal);
 
-        $datosArchivo = [
-            'name'     => basename($nombreArchivo),
-            'tmp_name' => $archivoTemporal,
-            'error'    => 0,
-            'size'     => filesize($rutaAssetCompleta)
-        ];
+            $datosArchivo = [
+                'name'     => basename($nombreArchivo),
+                'tmp_name' => $archivoTemporal,
+                'error'    => 0,
+                'size'     => filesize($rutaAssetCompleta)
+            ];
 
-        $subida = wp_handle_sideload($datosArchivo, ['test_form' => false]);
+            $subida = wp_handle_sideload($datosArchivo, ['test_form' => false]);
 
-        if (isset($subida['error'])) {
-            GloryLogger::error("AssetImporter: Error al subir el asset '{$nombreArchivo}'.", ['error' => $subida['error']]);
-            set_transient($importAttemptKey, 'fail', DAY_IN_SECONDS);
-            if (file_exists($archivoTemporal)) {
-                @unlink($archivoTemporal);
+            if (isset($subida['error'])) {
+                GloryLogger::error("AssetImporter: Error al subir el asset '{$nombreArchivo}'.", ['error' => $subida['error']]);
+                set_transient($importAttemptKey, 'fail', DAY_IN_SECONDS);
+                set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
+                return null;
             }
-            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
-            return null;
+
+            $idAdjunto = wp_insert_attachment([
+                'guid'           => $subida['url'],
+                'post_mime_type' => $subida['type'],
+                'post_title'     => preg_replace('/\.[^.]+$/', '', basename($subida['file'])),
+                'post_content'   => '',
+                'post_status'    => 'inherit'
+            ], $subida['file']);
+
+            if (is_wp_error($idAdjunto)) {
+                GloryLogger::error("AssetImporter: Error al insertar el adjunto '{$nombreArchivo}'.", ['error' => $idAdjunto->get_error_message()]);
+                set_transient($importAttemptKey, 'fail', DAY_IN_SECONDS);
+                set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
+                return null;
+            }
+
+            $metadatosAdjunto = wp_generate_attachment_metadata($idAdjunto, $subida['file']);
+            wp_update_attachment_metadata($idAdjunto, $metadatosAdjunto);
+            update_post_meta($idAdjunto, AssetMeta::SOURCE, $rutaAssetRelativa);
+            update_post_meta($idAdjunto, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
+
+            GloryLogger::info("AssetImporter: El asset '{$nombreArchivo}' ha sido importado a la Biblioteca de Medios.", ['attachment_id' => $idAdjunto]);
+            set_transient($cacheKey, $idAdjunto, HOUR_IN_SECONDS);
+
+            return $idAdjunto;
+        } finally {
+            /* wp_handle_sideload mueve el archivo si tiene exito; si sigue existiendo, hubo error */
+            if (file_exists($archivoTemporal)) {
+                try {
+                    unlink($archivoTemporal);
+                } catch (\Throwable $e) {
+                    GloryLogger::error('AssetImporter: No se pudo limpiar archivo temporal en importacion.', [
+                        'archivo' => $archivoTemporal,
+                    ]);
+                }
+            }
         }
-
-        $idAdjunto = wp_insert_attachment([
-            'guid'           => $subida['url'],
-            'post_mime_type' => $subida['type'],
-            'post_title'     => preg_replace('/\.[^.]+$/', '', basename($subida['file'])),
-            'post_content'   => '',
-            'post_status'    => 'inherit'
-        ], $subida['file']);
-
-        if (is_wp_error($idAdjunto)) {
-            GloryLogger::error("AssetImporter: Error al insertar el adjunto '{$nombreArchivo}'.", ['error' => $idAdjunto->get_error_message()]);
-            set_transient($importAttemptKey, 'fail', DAY_IN_SECONDS);
-            set_transient($cacheKey, 'null', HOUR_IN_SECONDS);
-            return null;
-        }
-
-        $metadatosAdjunto = wp_generate_attachment_metadata($idAdjunto, $subida['file']);
-        wp_update_attachment_metadata($idAdjunto, $metadatosAdjunto);
-        update_post_meta($idAdjunto, AssetMeta::SOURCE, $rutaAssetRelativa);
-        update_post_meta($idAdjunto, AssetMeta::REQUESTED, $rutaAssetRelativaSolicitada);
-
-        GloryLogger::info("AssetImporter: El asset '{$nombreArchivo}' ha sido importado a la Biblioteca de Medios.", ['attachment_id' => $idAdjunto]);
-        set_transient($cacheKey, $idAdjunto, HOUR_IN_SECONDS);
-
-        return $idAdjunto;
     }
 
 

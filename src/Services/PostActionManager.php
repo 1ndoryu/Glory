@@ -107,7 +107,12 @@ class PostActionManager
                 if ($postType) {
                     EventBus::emit('post_' . $postType);
                 }
-            } catch (\Throwable $e) {}
+            } catch (\Throwable $e) {
+                GloryLogger::error('PostActionManager::eliminarPost() - Error al emitir evento EventBus.', [
+                    'postId' => $postId,
+                    'error'  => $e->getMessage(),
+                ]);
+            }
             return true;
         } else {
             GloryLogger::error("PostActionManager::eliminarPost() - No se pudo eliminar post ID: {$postId}. wp_delete_post retorno: " . print_r($resultado, true));
