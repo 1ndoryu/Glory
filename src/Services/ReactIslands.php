@@ -86,13 +86,11 @@ class ReactIslands
 
         /* Probe al dev server: un fallo de conexion es resultado esperado en produccion */
         try {
-            $response = file_get_contents($devServerUrl, false, stream_context_create([
-                'http' => [
-                    'timeout' => 0.5,
-                    'ignore_errors' => true,
-                ],
-            ]));
-            self::$devMode = $response !== false;
+            $response = wp_remote_get($devServerUrl, [
+                'timeout' => 1, // Reducido para no bloquear
+                'sslverify' => false,
+            ]);
+            self::$devMode = !is_wp_error($response);
         } catch (\Throwable $e) {
             /* Fallo de red esperado cuando no hay dev server corriendo */
             self::$devMode = false;
@@ -179,7 +177,14 @@ class ReactIslands
         $ssgPath = self::getReactPath() . '/dist/ssg/' . $islandName . '.html';
 
         if (file_exists($ssgPath)) {
-            return file_get_contents($ssgPath);
+            try {
+                $content = file_get_contents($ssgPath);
+                if ($content !== false) {
+                    return $content;
+                }
+            } catch (\Throwable $e) {
+                // Silencioso o log error si se desea, fallback a vacío
+            }
         }
 
         return '';
@@ -318,5 +323,4 @@ class ReactIslands
         self::$initialized = false;
         self::$devMode = null;
     }
-
 }
