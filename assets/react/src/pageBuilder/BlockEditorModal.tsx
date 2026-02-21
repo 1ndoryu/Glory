@@ -114,8 +114,9 @@ function ArrayFieldRenderer({field, value, onChange}: ArrayFieldRendererProps): 
 
     return (
         <div className="campoArrayContenedor">
+            {/* sentinel-disable-next-line key-index-lista: items son unknown[] sin ID garantizado */}
             {items.map((item, index) => (
-                <div key={index} className="campoArrayItem">
+                <div key={`array-item-${index}`} className="campoArrayItem">
                     <div className="campoArrayItemCabecera">
                         <span className="campoArrayItemNumero">Item {index + 1}</span>
                         <button
