@@ -19,6 +19,8 @@ import appIslands, { AppProvider } from '@app/appIslands';
 if (import.meta.env.DEV) {
     import('./islands/ExampleIsland').then(({ ExampleIsland }) => {
         islandRegistry.register('ExampleIsland', ExampleIsland);
+    }).catch(() => {
+        /* Isla de ejemplo no disponible — ignorar en desarrollo */
     });
 }
 
