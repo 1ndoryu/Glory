@@ -72,7 +72,7 @@ export function PageBuilder({blocks: initialBlocks, isAdmin = false, saveEndpoin
     const {
         blocks, isEditMode, setIsEditMode,
         selectedBlockId, setSelectedBlockId,
-        editingBlockId, setEditingBlockId,
+        editingBlockId: _editingBlockId, setEditingBlockId,
         isSaving, editingBlock,
         handleMoveUp, handleMoveDown, handleDeleteBlock,
         handleEditBlock, handleUpdateBlock, handleAddBlock, handleSave,

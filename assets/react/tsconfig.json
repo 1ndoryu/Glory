@@ -25,6 +25,7 @@
             "react/*": ["node_modules/@types/react/*"],
             "react/jsx-runtime": ["node_modules/@types/react/jsx-runtime"],
             "lucide-react": ["node_modules/lucide-react"],
+            "react-dom": ["node_modules/@types/react-dom"],
             "zustand": ["node_modules/zustand"],
             "zustand/*": ["node_modules/zustand/*"]
         }
