@@ -114,15 +114,15 @@ export function usePageBuilder({initialBlocks, saveEndpoint, restNonce, onBlocks
             const data = await response.json();
 
             if (response.ok && data.success) {
-                if (import.meta.env.DEV) console.warn('[PageBuilder] Guardado exitoso:', data);
+                if ((import.meta as unknown as {env: {DEV: boolean}}).env.DEV) console.warn('[PageBuilder] Guardado exitoso:', data);
                 onSaveSuccess?.();
             } else {
                 const errorMsg = data.message || 'Error al guardar';
-                if (import.meta.env.DEV) console.error('[PageBuilder] Error del servidor:', data);
+                if ((import.meta as unknown as {env: {DEV: boolean}}).env.DEV) console.error('[PageBuilder] Error del servidor:', data);
                 onSaveError?.(errorMsg);
             }
         } catch (error) {
-            if (import.meta.env.DEV) console.error('[PageBuilder] Error de red:', error);
+            if ((import.meta as unknown as {env: {DEV: boolean}}).env.DEV) console.error('[PageBuilder] Error de red:', error);
             onSaveError?.('Error de conexion al guardar');
         } finally {
             setIsSaving(false);

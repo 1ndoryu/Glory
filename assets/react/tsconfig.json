@@ -27,7 +27,8 @@
             "lucide-react": ["node_modules/lucide-react"],
             "react-dom": ["node_modules/@types/react-dom"],
             "zustand": ["node_modules/zustand"],
-            "zustand/*": ["node_modules/zustand/*"]
+            "zustand/*": ["node_modules/zustand/*"],
+            "framer-motion": ["node_modules/framer-motion"]
         }
     },
     "include": ["src", "scripts", "../../../App/React", "../../../Mezclador"],
