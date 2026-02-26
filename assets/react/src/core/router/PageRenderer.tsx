@@ -20,8 +20,13 @@ interface PageRendererProps {
     suspenseFallback?: ReactNode;
 }
 
-/* Máximo de páginas cacheadas en DOM simultáneamente */
-const MAX_CACHE_PAGES = 5;
+/*
+ * Máximo de páginas cacheadas en DOM simultáneamente.
+ * Debe cubrir todas las islas del proyecto (~18) para que el keep-alive
+ * preserve estado de scroll, datos cargados y refs sin remontaje.
+ * Un componente oculto (display:none) no impacta layout ni paint.
+ */
+const MAX_CACHE_PAGES = 20;
 
 interface PaginaCacheada {
     islaId: string;
