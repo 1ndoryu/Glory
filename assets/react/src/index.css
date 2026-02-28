@@ -20,6 +20,12 @@
 /* Escanear archivos de App/React (componentes especificos del proyecto) */
 @source "../../../../App/React/**/*.{js,ts,jsx,tsx}";
 
+/* Escanear componentes desktop (ventana sync, onboarding, etc.) */
+@source "../../../../desktop/src/**/*.{js,ts,jsx,tsx}";
+
+/* Escanear componentes del Mezclador */
+@source "../../../../Mezclador/**/*.{js,ts,jsx,tsx}";
+
 /* ==============================================
    EXTENSION DEL TEMA TAILWIND
    ==============================================
