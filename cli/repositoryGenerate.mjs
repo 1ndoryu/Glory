@@ -160,10 +160,10 @@ function generarRepository(schema, seccionCustom) {
  * SECCION AUTO-GENERADA: Los metodos base se regeneran con schema:generate.
  * SECCION CUSTOM: Todo debajo de la marca CUSTOM se preserva al regenerar.
  *
- * @package App
+ * @package Kamples
  */
 
-namespace Glory\\App\\Database\\Repositories;
+namespace App\\Kamples\\Database\\Repositories;
 
 ${imports}
 
