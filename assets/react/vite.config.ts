@@ -1,6 +1,5 @@
 import {defineConfig, searchForWorkspaceRoot} from 'vite';
 import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
 import {resolve} from 'path';
 
 // Configuracion para integracion con WordPress
@@ -11,7 +10,7 @@ export default defineConfig(({mode}) => {
     const isDev = mode === 'development';
 
     return {
-        plugins: [react(), tailwindcss()],
+        plugins: [react()],
 
         // Base URL para los assets
         // En desarrollo: Vite dev server
