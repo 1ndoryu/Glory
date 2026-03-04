@@ -166,31 +166,117 @@ Tipa props de la isla actual con DX consistente.
 
 ## 🧠 Managers, servicios y herramientas internas
 
-Resumen de las piezas más útiles del core PHP de Glory:
+Inventario completo de todas las clases del core PHP de Glory:
 
-### Managers (registro y orquestación)
+### Managers (`Glory\Manager\`) — registro y orquestación
 
-- `PageManager`, `PageProcessor`, `PageReconciler`: registro, validación y sincronización de páginas React.
-- `AssetManager`: registro y carga ordenada de assets.
-- `MenuManager`, `MenuSync`: normalización y sincronización de menús.
-- `PostTypeManager`: registro de CPTs y soporte asociado.
-- `DefaultContentManager`: contenido inicial controlado por configuración.
+- `PageManager`: fachada para definir páginas gestionadas (`define()`, `reactPage()`, `registrarRutaDinamica()`).
+- `PageDefinition`: almacén estático de páginas definidas, React full-pages y rutas dinámicas.
+- `PageProcessor`: CRUD de páginas — crea/actualiza posts de tipo `page` con el contenido definido.
+- `PageReconciler`: reconcilia páginas gestionadas (limpia obsoletas, fija `front_page`).
+- `PageSeoDefaults`: valores SEO por defecto por slug para páginas gestionadas.
+- `PageTemplateInterceptor`: intercepta `template_include` para redirigir páginas gestionadas a `TemplateReact.php`; resuelve rutas dinámicas.
+- `AssetManager`: registro y carga ordenada de scripts/estilos con defer, async CSS, modo dev, feature flags y exclusión por página.
+- `MenuManager`: registro y sincronización de menús de navegación WP.
+- `MenuDefinition`: define los ítems seed por defecto para menús desde archivos PHP.
+- `MenuNormalizer`: normaliza placeholders en menús WP manteniéndolos sincronizados con el seed.
+- `MenuSync`: sincronización de menús entre código y base de datos.
+- `PostTypeManager`: registro de CPTs con autogeneración de labels y meta por defecto en `wp_postmeta`.
+- `DefaultContentManager`: contenido inicial controlado por configuración (posts semilla con imágenes).
+- `OpcionManager`: fachada central del subsistema de opciones del tema (registro, sincronización, get con caché en memoria, helpers tipados `texto()`, `imagen()`, `menu()`).
+- `AdminPageManager`: registra páginas de administración WP (`add_menu_page`/`add_submenu_page`) de forma declarativa.
+- `FolderScanner`: escaneo de carpetas de assets con caché en disco; extraído de `AssetManager` por SRP.
 
-### Services (lógica de dominio)
+### Services (`Glory\Services\`) — lógica de dominio
 
-- `ReactIslands`, `ReactContentProvider`, `ReactAssetLoader`: puente entre WordPress y runtime React.
-- `DefaultContentSynchronizer`: sincroniza contenido base y metadatos.
+- `ReactIslands`: sistema de islas React con montaje/hidratación automática, modos SSG/Islands/PHP, inyección de `GLORY_CONTEXT` y `__GLORY_ROUTES__`.
+- `ReactContentProvider`: provee contenido WP (posts, meta, taxonomías) a React como `window.__GLORY_CONTENT__`. Batch optimizado para evitar N+1.
+- `ReactAssetLoader`: carga condicional de assets React (Vite dev server o build de producción).
+- `DefaultContentSynchronizer`: sincroniza contenido base y metadatos con la BD.
 - `TokenManager`: manejo de tokens/nonce y utilidades de seguridad.
-- `QueryProfiler`, `PerformanceProfiler`, `HttpProfiler`: diagnóstico de rendimiento y consultas.
-- `Stripe/*`: checkout, cliente API y verificación de webhooks.
-- `Sync/*`: utilidades para sincronizar posts, términos y medios.
+- `BusquedaService`: búsqueda global — posts, usuarios y tipos custom con manejadores registrables y formateo de resultados.
+- `EventBus`: bus de eventos basado en versiones por canal; persiste en `wp_options` en `shutdown` para invalidar vistas/cache.
+- `PostActionManager`: CRUD de posts con validación de permisos, verificación de post type y logging detallado.
+- `QueryProfiler`, `PerformanceProfiler`, `HttpProfiler`: diagnóstico de rendimiento, queries SQL y peticiones HTTP.
+- `Stripe/StripeCheckoutService`: crea sesiones de Stripe Checkout para pagos únicos y suscripciones.
+- `Stripe/StripeApiClient`: cliente HTTP para la API de Stripe usando `wp_remote_request()` (sin SDK externo).
+- `Stripe/StripeConfig`: configuración centralizada (constantes PHP + `wp_options`).
+- `Stripe/StripeWebhookVerifier`: verificación HMAC-SHA256 de webhooks de Stripe.
+- `Stripe/AbstractStripeWebhookHandler`: handler base abstracto para procesar webhooks.
+- `Stripe/StripeWebhookException`: excepción tipada para errores de webhook.
+- `Sync/PostSyncHandler`, `Sync/TermSyncHandler`: sincronización de posts y términos.
+- `Sync/MediaIntegrityService`, `Sync/FeaturedImageRepair`, `Sync/GalleryRepair`: integridad y reparación de medios.
+- `Sync/ContentSanitizer`: sanitización de contenido.
+- `Sync/PostRelationHandler`: manejo de relaciones entre posts.
 
-### Core, API, SEO y Tools
+### Core (`Glory\Core\`) — bootstrap y configuración
 
-- Core: `GloryFeatures`, `GloryConfig`, `Setup`, `GloryLogger`, `SchemaRegistry`.
-- API: `ImagesController`, `NewsletterController`, `PageBlocksController`, `MCPController`.
-- SEO: `MetaTagRenderer`, `OpenGraphRenderer`, `JsonLdRenderer`, `SeoFrontendRenderer`.
-- Tools: `GitCommandRunner`, `ManejadorGit` para soporte de flujos internos.
+- `Setup`: clase principal de bootstrapping; orquesta carga de todo en orden correcto.
+- `GloryFeatures`: sistema de feature flags (código + BD) con `enable()`, `disable()`, `isActive()`.
+- `GloryConfig`: resolución de rutas del proyecto (lee `glory.config.php` o usa defaults).
+- `GloryLogger`: logging condicional por feature flag.
+- `LogFormatter`: formatea y escribe grupos de logs por función/método.
+- `SchemaRegistry`: carga schemas, valida en modo estricto (`WP_DEBUG`).
+- `DefaultContentRegistry`: almacén estático de definiciones de contenido por defecto.
+- `OpcionRegistry`: almacén estático de definiciones de opciones del tema.
+- `OpcionRepository`: patrón Repository — única clase que toca `get_option`/`update_option` para Glory.
+
+### Admin (`Glory\Admin\`) — panel de administración
+
+- `OpcionPanelController`: controlador MVC del panel "Theme Options" en wp-admin.
+- `OpcionPanelSaver`: persistencia de opciones desde el panel; marca de "guardado desde panel".
+- `PanelDataProvider`: provee datos (definiciones + valores actuales vs defaults) para el panel.
+- `PanelRenderer`: renderiza el formulario HTML del panel de opciones con agrupación por secciones.
+- `SeoMetabox`: metabox SEO en el editor de páginas (`add_meta_box` para `page`).
+- `SyncController`: controlador delgado que instancia y registra `SyncManager`.
+- `SyncManager`: orquesta sincronización de contenido, admin bar, botón de reset, sincronización manual.
+- `CachePurger`: purga caché de Glory, WP Object Cache, transients, archivos y plugins populares (LiteSpeed, WP Super Cache, etc.).
+- `TaxonomyMetaManager`: gestión de imágenes para categorías (media uploader en term edit).
+
+### API (`Glory\Api\`) — REST endpoints
+
+- `FormController`: `POST /glory/v1/form` — formularios de contacto con almacenamiento en tabla custom + email + rate limiting.
+- `ImagesController`: gestión de imágenes vía REST.
+- `NewsletterController`: suscripción a newsletter.
+- `PageBlocksController`: Page Builder — contenido por bloques.
+- `MCPController`: integración con MCP (Model Context Protocol).
+
+### SEO (`Glory\Seo\`) — optimización para motores de búsqueda
+
+- `MetaTagRenderer`: meta tags HTML (title, description, canonical, robots).
+- `OpenGraphRenderer`: etiquetas Open Graph (og:title, og:image, etc.).
+- `JsonLdRenderer`: datos estructurados JSON-LD (schema.org).
+- `SeoFrontendRenderer`: orquesta todos los renderers SEO en `wp_head`.
+
+### Utility (`Glory\Utility\`) — utilidades compartidas
+
+- `ScheduleManager`: gestión y normalización de horarios por día con estado abierto/cerrado en tiempo real.
+- `EmailUtility`: envío de emails HTML a administradores vía `wp_mail`.
+- `ImageUtility`: optimización de thumbnails (calidad, tamaño).
+- `PostUtility`: helper para obtener meta de posts (`get_post_meta` simplificado).
+- `UserUtility`: verificación de login y roles de usuario.
+- `AssetResolver`: resolución de rutas con aliases, búsqueda case-insensitive, caché de listados.
+- `AssetImporter`: importa assets del tema a la Biblioteca de Medios de WP (sideload, reparación de adjuntos).
+- `AssetLister`: listado, selección aleatoria y renderizado de imágenes por alias.
+- `AssetMeta`: constantes centralizadas para meta keys de assets.
+- `AssetsUtility`: fachada retrocompatible que delega a `AssetResolver`, `AssetImporter` y `AssetLister`.
+
+### Tools (`Glory\Tools\`) — herramientas internas
+
+- `GitCommandRunner`, `ManejadorGit`: soporte de flujos Git internos.
+
+### Contracts (`Glory\Contracts\`) — contratos/interfaces
+
+- `PostTypeSchema`: contrato abstracto para schemas de CPT. Define `meta()` con tipos (`int`, `string`, `float`, `bool`, `array`, `json`), genera getters tipados PHP y tipos TypeScript. Define también `taxonomias()`.
+- `TableSchema`: contrato abstracto para schemas de tablas custom (columnas, tipos, constraints, PK).
+
+### Repository (`Glory\Repository\`) — acceso a datos
+
+- `DefaultContentRepository`: patrón Repository para consultas WP_Query de posts gestionados por contenido por defecto.
+
+### Exception (`Glory\Exception\`)
+
+- `SchemaException`: excepción para errores de schema con `getTabla()` y `getColumna()`.
 
 ---
 
