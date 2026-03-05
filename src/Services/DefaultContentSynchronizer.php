@@ -72,11 +72,18 @@ class DefaultContentSynchronizer
                 $slugDefault = trim($definition['slugDefault']);
                 $post = $this->repository->findPorSlug($postType, $slugDefault);
                 if ($post) {
+                    /*
+                     * Forzar reasignación de imagen destacada: eliminar thumbnail y metas de fallback
+                     * antes del update para que FeaturedImageRepair la reimporte desde disco.
+                     * Sin esto, si el attachment anterior tiene REQUESTED == asset definido, la
+                     * comparación es igual y no detecta que el archivo físico cambió.
+                     */
+                    delete_post_thumbnail($post->ID);
+                    delete_post_meta($post->ID, \Glory\Services\Sync\FeaturedImageRepair::META_FALLBACK_LAST_ATTEMPT);
+                    delete_post_meta($post->ID, \Glory\Services\Sync\FeaturedImageRepair::META_FALLBACK_ASSET);
+                    delete_post_meta($post->ID, \Glory\Services\Sync\FeaturedImageRepair::META_FALLBACK_STATUS);
+
                     $this->postHandler->update($post->ID, $definition, true);
-                    // Restablecer sincronización automática: modo 'editor' y limpiar flag de edición manual
-                    // Restablecer sincronización automática: limpiar flag de edición manual
-                    // Se elimina el forzado a 'editor' para respetar si el usuario prefiere 'code'.
-                    // update_post_meta($post->ID, '_glory_content_mode', 'editor');
                     delete_post_meta($post->ID, PostSyncHandler::META_CLAVE_EDITADO_MANUALMENTE);
                 }
             }
@@ -193,22 +200,27 @@ class DefaultContentSynchronizer
     }
 
     /**
-     * Elimina los transients de cache de asset IDs de Glory (glory_asset_id_*).
+     * Elimina los transients de cache de asset IDs y de intentos de importación de Glory.
      * Necesario en reset para que assets renombrados o reemplazados se reimportan
      * correctamente desde disco sin quedar atrapados en el cache stale.
      */
     private function clearAssetIdTransients(): void
     {
         global $wpdb;
-        $prefix = $wpdb->esc_like('_transient_glory_asset_id_');
-        $timeoutPrefix = $wpdb->esc_like('_transient_timeout_glory_asset_id_');
-        $wpdb->query($wpdb->prepare(
-            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-            $prefix . '%'
-        ));
-        $wpdb->query($wpdb->prepare(
-            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
-            $timeoutPrefix . '%'
-        ));
+        /* Una sola query con OR para evitar N+1 */
+        $p1 = $wpdb->esc_like('_transient_glory_asset_id_') . '%';
+        $p2 = $wpdb->esc_like('_transient_timeout_glory_asset_id_') . '%';
+        $p3 = $wpdb->esc_like('_transient_glory_asset_import_attempt_') . '%';
+        $p4 = $wpdb->esc_like('_transient_timeout_glory_asset_import_attempt_') . '%';
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM {$wpdb->options}
+                 WHERE option_name LIKE %s
+                    OR option_name LIKE %s
+                    OR option_name LIKE %s
+                    OR option_name LIKE %s",
+                $p1, $p2, $p3, $p4
+            )
+        );
     }
 }
