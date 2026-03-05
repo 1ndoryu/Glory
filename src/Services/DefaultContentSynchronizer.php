@@ -62,8 +62,23 @@ class DefaultContentSynchronizer
         if ($this->isProcessing) return;
         $this->isProcessing = true;
 
-        /* Limpiar cache de asset IDs para forzar re-importación desde disco */
+        /* Limpiar cache de transients de assets */
         $this->clearAssetIdTransients();
+
+        /*
+         * Eliminar de la biblioteca de medios los attachments estale de cada asset definido.
+         * Escenario: el asset fue importado con un nombre distinto (fallback) y luego el
+         * archivo real fue añadido al tema. El attachment antiguo tiene REQUESTED == asset
+         * definido y su archivo físico existe en uploads → el sistema lo devuelve siempre.
+         * Eliminar esos attachments fuerza una importación limpia desde el archivo actual.
+         */
+        foreach (DefaultContentRegistry::getDefiniciones() as $postType => $config) {
+            if (!post_type_exists($postType)) continue;
+            foreach ($config['definicionesPost'] as $definition) {
+                if (empty($definition['imagenDestacadaAsset'])) continue;
+                $this->eliminarAttachmentsStaleDeAsset((string) $definition['imagenDestacadaAsset']);
+            }
+        }
 
         foreach (DefaultContentRegistry::getDefiniciones() as $postType => $config) {
             if (!post_type_exists($postType)) continue;
@@ -72,12 +87,6 @@ class DefaultContentSynchronizer
                 $slugDefault = trim($definition['slugDefault']);
                 $post = $this->repository->findPorSlug($postType, $slugDefault);
                 if ($post) {
-                    /*
-                     * Forzar reasignación de imagen destacada: eliminar thumbnail y metas de fallback
-                     * antes del update para que FeaturedImageRepair la reimporte desde disco.
-                     * Sin esto, si el attachment anterior tiene REQUESTED == asset definido, la
-                     * comparación es igual y no detecta que el archivo físico cambió.
-                     */
                     delete_post_thumbnail($post->ID);
                     delete_post_meta($post->ID, \Glory\Services\Sync\FeaturedImageRepair::META_FALLBACK_LAST_ATTEMPT);
                     delete_post_meta($post->ID, \Glory\Services\Sync\FeaturedImageRepair::META_FALLBACK_ASSET);
@@ -88,9 +97,55 @@ class DefaultContentSynchronizer
                 }
             }
         }
-        // Pasada global de integridad de medios tras restablecer
+
         $this->repairMediaIntegrityForAll();
         $this->isProcessing = false;
+    }
+
+    /**
+     * Elimina de la biblioteca de medios los attachments que apunten a un asset definido
+     * pero cuyo archivo físico en uploads NO coincida con el archivo actual del tema.
+     * Esto permite reimportar desde el archivo correcto cuando el asset fue reemplazado.
+     */
+    private function eliminarAttachmentsStaleDeAsset(string $assetReference): void
+    {
+        \Glory\Utility\AssetResolver::init();
+        [$alias, $nombreArchivo] = \Glory\Utility\AssetResolver::parseAssetReference($assetReference);
+        $rutaRelativa = \Glory\Utility\AssetResolver::resolveAssetPath($alias, $nombreArchivo);
+        if (!$rutaRelativa) return;
+
+        $rutaFisica = get_template_directory() . '/' . $rutaRelativa;
+
+        /* Buscar todos los attachments asociados a este asset (por REQUESTED o SOURCE) */
+        $q = new \WP_Query([
+            'post_type'      => 'attachment',
+            'post_status'    => 'inherit',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'no_found_rows'  => true,
+            'meta_query'     => [
+                'relation' => 'OR',
+                ['key' => \Glory\Utility\AssetMeta::REQUESTED, 'value' => $rutaRelativa, 'compare' => '='],
+                ['key' => \Glory\Utility\AssetMeta::SOURCE,    'value' => $rutaRelativa, 'compare' => '='],
+            ],
+        ]);
+
+        if (!$q->have_posts()) return;
+
+        $hashTema = file_exists($rutaFisica) ? md5_file($rutaFisica) : null;
+
+        foreach ($q->posts as $attachmentId) {
+            $rutaUploads = get_attached_file((int) $attachmentId);
+            if (!$rutaUploads || !file_exists($rutaUploads)) {
+                /* Archivo en uploads ya no existe: eliminar siempre */
+                wp_delete_attachment((int) $attachmentId, true);
+                continue;
+            }
+            /* Si el hash del archivo del tema != hash en uploads, el attachment es stale */
+            if ($hashTema !== null && md5_file($rutaUploads) !== $hashTema) {
+                wp_delete_attachment((int) $attachmentId, true);
+            }
+        }
     }
 
 
