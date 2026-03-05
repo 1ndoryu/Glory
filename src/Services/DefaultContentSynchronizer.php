@@ -62,6 +62,9 @@ class DefaultContentSynchronizer
         if ($this->isProcessing) return;
         $this->isProcessing = true;
 
+        /* Limpiar cache de asset IDs para forzar re-importación desde disco */
+        $this->clearAssetIdTransients();
+
         foreach (DefaultContentRegistry::getDefiniciones() as $postType => $config) {
             if (!post_type_exists($postType)) continue;
 
@@ -187,5 +190,25 @@ class DefaultContentSynchronizer
                 $svc->repairPostMedia((int) $pid, is_array($def) ? $def : []);
             }
         }
+    }
+
+    /**
+     * Elimina los transients de cache de asset IDs de Glory (glory_asset_id_*).
+     * Necesario en reset para que assets renombrados o reemplazados se reimportan
+     * correctamente desde disco sin quedar atrapados en el cache stale.
+     */
+    private function clearAssetIdTransients(): void
+    {
+        global $wpdb;
+        $prefix = $wpdb->esc_like('_transient_glory_asset_id_');
+        $timeoutPrefix = $wpdb->esc_like('_transient_timeout_glory_asset_id_');
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+            $prefix . '%'
+        ));
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
+            $timeoutPrefix . '%'
+        ));
     }
 }
