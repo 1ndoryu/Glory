@@ -103,9 +103,10 @@ class DefaultContentSynchronizer
     }
 
     /**
-     * Elimina de la biblioteca de medios los attachments que apunten a un asset definido
-     * pero cuyo archivo físico en uploads NO coincida con el archivo actual del tema.
-     * Esto permite reimportar desde el archivo correcto cuando el asset fue reemplazado.
+     * Elimina de la biblioteca de medios TODOS los attachments asociados a un asset definido.
+     * Al restablecer se necesita una reimportación limpia desde los archivos del tema,
+     * y la única forma segura es eliminar todo attachment previo que matchee por REQUESTED
+     * o SOURCE para que el importer cree uno nuevo desde el archivo correcto.
      */
     private function eliminarAttachmentsStaleDeAsset(string $assetReference): void
     {
@@ -114,37 +115,30 @@ class DefaultContentSynchronizer
         $rutaRelativa = \Glory\Utility\AssetResolver::resolveAssetPath($alias, $nombreArchivo);
         if (!$rutaRelativa) return;
 
-        $rutaFisica = get_template_directory() . '/' . $rutaRelativa;
+        /* Buscar attachment por REQUESTED, SOURCE o por el alias completo */
+        $rutaRelativaActual = \Glory\Utility\AssetResolver::resolveActualRelativeAssetPath($alias, $nombreArchivo);
+        $busquedaValores = array_unique(array_filter([$rutaRelativa, $rutaRelativaActual]));
 
-        /* Buscar todos los attachments asociados a este asset (por REQUESTED o SOURCE) */
+        $metaClauses = [];
+        foreach ($busquedaValores as $val) {
+            $metaClauses[] = ['key' => \Glory\Utility\AssetMeta::REQUESTED, 'value' => $val, 'compare' => '='];
+            $metaClauses[] = ['key' => \Glory\Utility\AssetMeta::SOURCE,    'value' => $val, 'compare' => '='];
+        }
+        $metaClauses['relation'] = 'OR';
+
         $q = new \WP_Query([
             'post_type'      => 'attachment',
             'post_status'    => 'inherit',
             'posts_per_page' => -1,
             'fields'         => 'ids',
             'no_found_rows'  => true,
-            'meta_query'     => [
-                'relation' => 'OR',
-                ['key' => \Glory\Utility\AssetMeta::REQUESTED, 'value' => $rutaRelativa, 'compare' => '='],
-                ['key' => \Glory\Utility\AssetMeta::SOURCE,    'value' => $rutaRelativa, 'compare' => '='],
-            ],
+            'meta_query'     => $metaClauses,
         ]);
 
         if (!$q->have_posts()) return;
 
-        $hashTema = file_exists($rutaFisica) ? md5_file($rutaFisica) : null;
-
         foreach ($q->posts as $attachmentId) {
-            $rutaUploads = get_attached_file((int) $attachmentId);
-            if (!$rutaUploads || !file_exists($rutaUploads)) {
-                /* Archivo en uploads ya no existe: eliminar siempre */
-                wp_delete_attachment((int) $attachmentId, true);
-                continue;
-            }
-            /* Si el hash del archivo del tema != hash en uploads, el attachment es stale */
-            if ($hashTema !== null && md5_file($rutaUploads) !== $hashTema) {
-                wp_delete_attachment((int) $attachmentId, true);
-            }
+            wp_delete_attachment((int) $attachmentId, true);
         }
     }
 
