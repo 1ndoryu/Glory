@@ -293,7 +293,12 @@ class PageDefinition
 
     public static function getHandlerPorSlug(string $slug): ?string
     {
-        return isset(self::$paginasDefinidas[$slug]) ? (self::$paginasDefinidas[$slug]['funcion'] ?? null) : null;
+        if (!isset(self::$paginasDefinidas[$slug])) {
+            return null;
+        }
+        $funcion = self::$paginasDefinidas[$slug]['funcion'] ?? null;
+        /* Las páginas React almacenan un callable array [class, method]; no es un handler de string */
+        return is_string($funcion) ? $funcion : null;
     }
 
     public static function setDefaultContentMode(string $mode): void
