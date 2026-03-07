@@ -190,7 +190,7 @@ function generarMetodosEspecificos(schema) {
         $colEstado = ${colsClass}::ESTADO;
 
         return static::consultar(
-            "SELECT * FROM {$tabla} WHERE {$colEstado} = :estado ORDER BY " . ${colsClass}::ID . " DESC LIMIT :limit OFFSET :offset",
+            "SELECT * FROM {$tabla} WHERE {$colEstado} = :estado ORDER BY " . static::colId() . " DESC LIMIT :limit OFFSET :offset",
             [
                 'estado' => ${enumsClass}::ESTADO_ACTIVO,
                 'limit' => $limit,
@@ -216,7 +216,7 @@ function generarMetodosEspecificos(schema) {
         $col = ${colsClass}::${colConst};
 
         return static::consultar(
-            "SELECT * FROM {$tabla} WHERE {$col} = :${paramDesc}Id ORDER BY " . ${colsClass}::ID . " DESC LIMIT :limit OFFSET :offset",
+            "SELECT * FROM {$tabla} WHERE {$col} = :${paramDesc}Id ORDER BY " . static::colId() . " DESC LIMIT :limit OFFSET :offset",
             ['${paramDesc}Id' => $${paramDesc}Id, 'limit' => $limit, 'offset' => $offset]
         );
     }`);
