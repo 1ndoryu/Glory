@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 namespace Glory\Tools;
 
 use Glory\Core\GloryLogger;

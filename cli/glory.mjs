@@ -11,6 +11,7 @@
  *   npx glory create table <nombre>        Crear tabla + schema + migracion
  *   npx glory schema:generate              Generar constantes + DTOs + TS desde schemas
  *   npx glory schema:validate              Validar accesos a columnas en codigo PHP
+ *   npx glory php:check                    Verificar errores de sintaxis en todo el PHP
  *   npx glory new <nombre> [--flags]       Crear proyecto nuevo
  *   npx glory setup [--flags]              Inicializar proyecto existente
  */
@@ -26,6 +27,7 @@ import { setup } from './setup.mjs';
 import { createTable } from './createTable.mjs';
 import { schemaGenerate } from './schemaGenerate.mjs';
 import { schemaValidate } from './schemaValidate.mjs';
+import { phpCheck } from './phpCheck.mjs';
 
 const args = argv.slice(2);
 
@@ -43,6 +45,10 @@ function mostrarAyuda() {
   Schema:
     npx glory schema:generate              Genera Cols + DTOs (PHP) + types (TS)
     npx glory schema:validate              Valida columnas hardcodeadas en PHP
+
+  Verificacion:
+    npx glory php:check                    Verifica errores de sintaxis PHP
+    npx glory php:check --verbose          Muestra cada archivo verificado
 
   Proyecto:
     npx glory new <nombre> [opciones]      Crea un proyecto nuevo desde cero
@@ -125,6 +131,11 @@ try {
         /* Validar accesos a columnas en codigo PHP */
         log('Validando accesos a columnas...', 'info');
         const ok = schemaValidate();
+        exit(ok ? 0 : 1);
+    } else if (comando === 'php:check') {
+        /* Verificar errores de sintaxis en PHP */
+        const verbose = args.includes('--verbose') || args.includes('-v');
+        const ok = phpCheck(verbose);
         exit(ok ? 0 : 1);
     } else {
         log(`Comando desconocido: "${comando}". Usa "npx glory --help" para ver opciones.`, 'error');
