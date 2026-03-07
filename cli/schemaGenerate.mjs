@@ -175,7 +175,15 @@ function generarEnums(schema) {
             const sufijo = valor.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '');
             return `    const ${prefijo}_${sufijo} = '${valor}';`;
         }).join('\n');
-        return `    /* Valores para columna "${col.nombre}" */\n${constantes}`;
+
+        /* Generar array agregado TODOS_{COLUMNA} con todos los valores check */
+        const valoresArray = col.check.map(v => {
+            const sufijo = v.toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_|_$/g, '');
+            return `self::${prefijo}_${sufijo}`;
+        }).join(', ');
+        const todosConst = `    const TODOS_${prefijo} = [${valoresArray}];`;
+
+        return `    /* Valores para columna "${col.nombre}" */\n${constantes}\n\n${todosConst}`;
     }).join('\n\n');
 
     return `<?php
