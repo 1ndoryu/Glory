@@ -10,11 +10,13 @@ use Glory\Manager\PageManager;
  * Renderiza bloques JSON-LD estructurados en wp_head:
  * - FAQPage y BreadcrumbList (desde post_meta o defaultSeoMap)
  * - Organization, WebSite, Service, BlogPosting
+ * - MusicRecording, Person, MusicPlaylist (via RuntimeSeoData para paginas dinamicas)
  */
 class JsonLdRenderer
 {
     /**
      * Punto de entrada: imprime JSON-LD de FAQ y Breadcrumb para la pagina actual.
+     * Si hay datos dinamicos en RuntimeSeoData, usa esos en lugar de post_meta.
      */
     public static function printJsonLd(): void
     {
@@ -23,7 +25,55 @@ class JsonLdRenderer
         }
 
         $postId = get_queried_object_id();
+
+        /* Si RuntimeSeoData tiene JSON-LD custom, emitirlo con breadcrumb integrado */
+        if (RuntimeSeoData::has() && RuntimeSeoData::get('jsonLd') !== null) {
+            self::printDynamicJsonLd();
+            return;
+        }
+
         self::printJsonLdFromMeta($postId);
+    }
+
+    /**
+     * Imprime JSON-LD dinamico desde RuntimeSeoData.
+     * Genera el schema custom (MusicRecording, Person, MusicPlaylist, etc.)
+     * junto con BreadcrumbList del contexto dinamico.
+     */
+    private static function printDynamicJsonLd(): void
+    {
+        $graph = [];
+        $jsonLd = RuntimeSeoData::get('jsonLd', []);
+        $breadcrumb = RuntimeSeoData::get('breadcrumb', []);
+        $canonical = RuntimeSeoData::get('canonical', '');
+        $idBase = $canonical !== '' ? MetaTagRenderer::ensureTrailingSlash($canonical) : home_url('/');
+
+        /* Breadcrumb del contexto dinamico */
+        if (!empty($breadcrumb) && is_array($breadcrumb)) {
+            $items = self::buildBreadcrumbItems($breadcrumb);
+            if (!empty($items)) {
+                $graph[] = [
+                    '@type' => 'BreadcrumbList',
+                    '@id' => $idBase . '#breadcrumb',
+                    'itemListElement' => $items,
+                ];
+            }
+        }
+
+        /* Schema custom (MusicRecording, Person, MusicPlaylist, etc.) */
+        if (!empty($jsonLd) && is_array($jsonLd)) {
+            $graph[] = $jsonLd;
+        }
+
+        if (!empty($graph)) {
+            $json = [
+                '@context' => 'https://schema.org',
+                '@graph' => $graph,
+            ];
+            echo '<script type="application/ld+json" data-glory-seo="1">'
+                . wp_json_encode($json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                . '</script>' . "\n";
+        }
     }
 
     /**
@@ -192,12 +242,13 @@ class JsonLdRenderer
             '@id' => $siteUrl . '#website',
             'name' => $siteName,
             'url' => $siteUrl,
+            'description' => $siteDesc,
             'publisher' => ['@id' => $siteUrl . '#organization'],
             'potentialAction' => [
                 '@type' => 'SearchAction',
                 'target' => [
                     '@type' => 'EntryPoint',
-                    'urlTemplate' => $siteUrl . '?s={search_term_string}',
+                    'urlTemplate' => $siteUrl . '?q={search_term_string}',
                 ],
                 'query-input' => 'required name=search_term_string',
             ],

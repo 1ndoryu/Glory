@@ -31,6 +31,9 @@ class SeoFrontendRenderer
             add_theme_support('title-tag');
         });
 
+        /* Registrar DynamicSeoResolver en hook `wp` (antes de wp_head) */
+        DynamicSeoResolver::register();
+
         /* Filtro para el titulo del documento */
         add_filter('document_title_parts', [MetaTagRenderer::class, 'filterDocumentTitle'], 20);
 
@@ -42,6 +45,8 @@ class SeoFrontendRenderer
         /* Meta tags basicos */
         add_action('wp_head', [MetaTagRenderer::class, 'printCanonical'], 1);
         add_action('wp_head', [MetaTagRenderer::class, 'printMetaDescription'], 1);
+        add_action('wp_head', [MetaTagRenderer::class, 'printRobots'], 1);
+        add_action('wp_head', [MetaTagRenderer::class, 'printKeywords'], 1);
 
         /* Open Graph y Twitter Cards */
         add_action('wp_head', [OpenGraphRenderer::class, 'printOpenGraph'], 1);

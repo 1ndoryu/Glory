@@ -9,6 +9,8 @@ use Glory\Manager\PageManager;
  *
  * Renderiza meta tags basicos de SEO: titulo, descripcion, canonical.
  * Expone helpers reutilizados por OpenGraphRenderer y JsonLdRenderer.
+ *
+ * Prioridad de datos: RuntimeSeoData (dinamico) > post_meta > defaultSeoMap > fallback post
  */
 class MetaTagRenderer
 {
@@ -32,9 +34,22 @@ class MetaTagRenderer
     /**
      * Obtiene titulo y descripcion SEO para el post actual.
      * Reutilizado por OG, Twitter Cards y JSON-LD para evitar duplicar logica.
+     * Consulta RuntimeSeoData primero para soportar SEO dinamico.
      */
     public static function getSeoData(int $postId): array
     {
+        /* Override de SEO dinamico (sample, perfil, coleccion) */
+        if (RuntimeSeoData::has()) {
+            $runtimeTitle = RuntimeSeoData::get('title', '');
+            $runtimeDesc = RuntimeSeoData::get('description', '');
+            if ($runtimeTitle !== '' || $runtimeDesc !== '') {
+                return [
+                    'title' => $runtimeTitle !== '' ? $runtimeTitle : get_the_title($postId),
+                    'desc'  => $runtimeDesc,
+                ];
+            }
+        }
+
         $title = (string) get_post_meta($postId, self::META_TITLE, true);
         $desc = (string) get_post_meta($postId, self::META_DESC, true);
         $slug = get_post_field('post_name', $postId);
@@ -66,10 +81,18 @@ class MetaTagRenderer
     }
 
     /**
-     * Obtiene la imagen destacada del post o un fallback del sitio.
+     * Obtiene la imagen OG. Prioriza RuntimeSeoData para paginas dinamicas.
      */
     public static function getOgImage(int $postId): string
     {
+        /* Override de SEO dinamico */
+        if (RuntimeSeoData::has()) {
+            $runtimeImage = RuntimeSeoData::get('ogImage', '');
+            if ($runtimeImage !== '') {
+                return $runtimeImage;
+            }
+        }
+
         $thumbnail = get_the_post_thumbnail_url($postId, 'large');
         if ($thumbnail && is_string($thumbnail)) {
             return $thumbnail;
@@ -95,6 +118,16 @@ class MetaTagRenderer
     {
         if (!is_page() && !is_singular()) {
             return $parts;
+        }
+
+        /* Override de SEO dinamico */
+        if (RuntimeSeoData::has()) {
+            $runtimeTitle = RuntimeSeoData::get('title', '');
+            if ($runtimeTitle !== '') {
+                $parts['title'] = $runtimeTitle;
+                unset($parts['site'], $parts['tagline']);
+                return $parts;
+            }
         }
 
         $postId = get_queried_object_id();
@@ -128,6 +161,16 @@ class MetaTagRenderer
             return;
         }
 
+        /* Override de SEO dinamico */
+        if (RuntimeSeoData::has()) {
+            $runtimeCanonical = RuntimeSeoData::get('canonical', '');
+            if ($runtimeCanonical !== '') {
+                $href = esc_url(self::ensureTrailingSlash($runtimeCanonical));
+                echo "<link rel=\"canonical\" href=\"{$href}\" />\n";
+                return;
+            }
+        }
+
         $postId = get_queried_object_id();
         $metaCanonical = (string) get_post_meta($postId, self::META_CANONICAL, true);
 
@@ -144,7 +187,15 @@ class MetaTagRenderer
             if (!empty($defaults['canonical'])) {
                 $href = esc_url(self::ensureTrailingSlash((string) $defaults['canonical']));
                 echo "<link rel=\"canonical\" href=\"{$href}\" />\n";
+                return;
             }
+        }
+
+        /* Fallback final: permalink del post (wp core canonical fue removido) */
+        $permalink = get_permalink($postId);
+        if (is_string($permalink) && $permalink !== '') {
+            $href = esc_url(self::ensureTrailingSlash($permalink));
+            echo "<link rel=\"canonical\" href=\"{$href}\" />\n";
         }
     }
 
@@ -155,6 +206,16 @@ class MetaTagRenderer
     {
         if (!is_page() && !is_singular()) {
             return;
+        }
+
+        /* Override de SEO dinamico */
+        if (RuntimeSeoData::has()) {
+            $runtimeDesc = RuntimeSeoData::get('description', '');
+            if ($runtimeDesc !== '') {
+                $content = esc_attr($runtimeDesc);
+                echo "<meta name=\"description\" content=\"{$content}\" />\n";
+                return;
+            }
         }
 
         $postId = get_queried_object_id();
@@ -174,6 +235,52 @@ class MetaTagRenderer
                 $content = esc_attr((string) $defaults['desc']);
                 echo "<meta name=\"description\" content=\"{$content}\" />\n";
             }
+        }
+    }
+
+    /**
+     * Imprime meta robots en wp_head.
+     * Solo emite si RuntimeSeoData o defaultSeoMap especifican robots.
+     */
+    public static function printRobots(): void
+    {
+        if (!is_page() && !is_singular()) {
+            return;
+        }
+
+        /* Override de SEO dinamico */
+        if (RuntimeSeoData::has()) {
+            $robots = RuntimeSeoData::get('robots', '');
+            if ($robots !== '') {
+                echo '<meta name="robots" content="' . esc_attr($robots) . '" />' . "\n";
+                return;
+            }
+        }
+
+        /* Fallback a defaultSeoMap */
+        $postId = get_queried_object_id();
+        $slug = get_post_field('post_name', $postId);
+        if (is_string($slug) && $slug !== '') {
+            $defaults = PageManager::getDefaultSeoForSlug($slug);
+            if (!empty($defaults['robots'])) {
+                echo '<meta name="robots" content="' . esc_attr((string) $defaults['robots']) . '" />' . "\n";
+            }
+        }
+    }
+
+    /**
+     * Imprime meta keywords en wp_head (solo si hay datos dinamicos).
+     */
+    public static function printKeywords(): void
+    {
+        if (!RuntimeSeoData::has()) {
+            return;
+        }
+
+        $extra = RuntimeSeoData::get('extra', []);
+        $keywords = $extra['keywords'] ?? '';
+        if ($keywords !== '') {
+            echo '<meta name="keywords" content="' . esc_attr($keywords) . '" />' . "\n";
         }
     }
 }
