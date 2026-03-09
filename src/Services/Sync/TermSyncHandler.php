@@ -16,23 +16,27 @@ class TermSyncHandler
     /**
      * Sincroniza todas las definiciones de categorías globales.
      */
-    public function sync(): void
+    public function sync(): bool
     {
         $categoriasDef = $GLOBALS['glory_categorias_definidas'] ?? [];
         if (empty($categoriasDef)) {
             // GloryLogger::info('TermSyncHandler: No hay definiciones de categorías para sincronizar.');
-            return;
+            return true;
         }
 
-        $this->deleteObsoleteTerms($categoriasDef);
-        $this->createOrUpdateTerms($categoriasDef);
+        $ok = true;
+        $ok = $this->deleteObsoleteTerms($categoriasDef) && $ok;
+        $ok = $this->createOrUpdateTerms($categoriasDef) && $ok;
+
+        return $ok;
     }
 
     /**
      * Elimina términos gestionados que ya no están en la definición.
      */
-    private function deleteObsoleteTerms(array $definitions): void
+    private function deleteObsoleteTerms(array $definitions): bool
     {
+        $ok = true;
         $definedNames = array_filter(array_column($definitions, 'nombre'));
         $managedTerms = get_terms([
             'taxonomy' => 'category',
@@ -42,22 +46,29 @@ class TermSyncHandler
         ]);
 
         if (is_wp_error($managedTerms)) {
-            return;
+            return false;
         }
 
         foreach ($managedTerms as $term) {
             if (!in_array($term->name, $definedNames, true)) {
-                wp_delete_term($term->term_id, 'category');
+                $result = wp_delete_term($term->term_id, 'category');
+                if ($result === false || is_wp_error($result)) {
+                    $ok = false;
+                    GloryLogger::warning("TermSyncHandler: No se pudo eliminar la categoria obsoleta '{$term->name}'.");
+                }
                 // GloryLogger::info("TermSyncHandler: Categoría obsoleta '{$term->name}' eliminada.");
             }
         }
+
+        return $ok;
     }
 
     /**
      * Crea o actualiza los términos basados en las definiciones.
      */
-    private function createOrUpdateTerms(array $definitions): void
+    private function createOrUpdateTerms(array $definitions): bool
     {
+        $ok = true;
         foreach ($definitions as $def) {
             $nombre = $def['nombre'] ?? null;
             if (!$nombre) continue;
@@ -76,7 +87,11 @@ class TermSyncHandler
                 update_term_meta($term->term_id, self::META_CLAVE_CATEGORIA_GESTIONADA, '1');
 
                 if ($term->description !== ($def['descripcion'] ?? '')) {
-                    wp_update_term($term->term_id, 'category', ['description' => $def['descripcion'] ?? '']);
+                    $actualizado = wp_update_term($term->term_id, 'category', ['description' => $def['descripcion'] ?? '']);
+                    if (is_wp_error($actualizado)) {
+                        $ok = false;
+                        GloryLogger::warning("TermSyncHandler: No se pudo actualizar descripcion de '{$term->name}'.");
+                    }
                 }
 
                 if (!empty($def['imagenAsset']) && !get_term_meta($term->term_id, 'glory_category_image_id', true)) {
@@ -87,5 +102,7 @@ class TermSyncHandler
                 }
             }
         }
+
+        return $ok;
     }
 }

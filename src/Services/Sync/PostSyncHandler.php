@@ -44,7 +44,7 @@ class PostSyncHandler
     /**
      * Actualiza un post existente.
      */
-    public function update(int $postId, array $definition, bool $isForced): void
+    public function update(int $postId, array $definition, bool $isForced): bool
     {
         $updateData = $this->prepareCorePostData(get_post_type($postId), $definition);
         $updateData['ID'] = $postId;
@@ -53,7 +53,7 @@ class PostSyncHandler
 
         if (is_wp_error($result)) {
             GloryLogger::error("PostSyncHandler: FALLÓ al actualizar post ID {$postId}.", ['error' => $result->get_error_message()]);
-            return;
+            return false;
         }
 
         $this->relationHandler = new PostRelationHandler($postId);
@@ -68,6 +68,8 @@ class PostSyncHandler
         } else {
             GloryLogger::info("PostSyncHandler: Post ID {$postId} actualizado.");
         }
+
+        return true;
     }
 
     /**

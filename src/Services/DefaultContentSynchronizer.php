@@ -31,7 +31,10 @@ class DefaultContentSynchronizer
         $this->isProcessing = true;
         // GloryLogger::info('DCS: Iniciando sincronización de contenido por defecto.');
 
-        $this->termHandler->sync();
+        $syncTerminosOk = $this->termHandler->sync();
+        if (!$syncTerminosOk) {
+            GloryLogger::warning('DCS: Sincronizacion de terminos finalizo con incidencias.');
+        }
 
         $definitionsByType = DefaultContentRegistry::getDefiniciones();
         if (empty($definitionsByType)) {
@@ -47,7 +50,10 @@ class DefaultContentSynchronizer
             if (!post_type_exists($postType)) continue;
 
             $this->sincronizarPostsParaTipo($postType, $config);
-            $this->eliminarPostsObsoletosParaTipo($postType, $config);
+            $eliminadosOk = $this->eliminarPostsObsoletosParaTipo($postType, $config);
+            if (!$eliminadosOk) {
+                GloryLogger::warning("DCS: Hubo errores eliminando posts obsoletos de tipo '{$postType}'.");
+            }
         }
 
         // Pasada global de integridad de medios post-sincronización
@@ -76,7 +82,10 @@ class DefaultContentSynchronizer
             if (!post_type_exists($postType)) continue;
             foreach ($config['definicionesPost'] as $definition) {
                 if (empty($definition['imagenDestacadaAsset'])) continue;
-                $this->eliminarAttachmentsStaleDeAsset((string) $definition['imagenDestacadaAsset']);
+                $limpiezaOk = $this->eliminarAttachmentsStaleDeAsset((string) $definition['imagenDestacadaAsset']);
+                if (!$limpiezaOk) {
+                    GloryLogger::warning('DCS: Fallo limpieza de attachments stale para un asset definido.');
+                }
             }
         }
 
@@ -92,7 +101,10 @@ class DefaultContentSynchronizer
                     delete_post_meta($post->ID, \Glory\Services\Sync\FeaturedImageRepair::META_FALLBACK_ASSET);
                     delete_post_meta($post->ID, \Glory\Services\Sync\FeaturedImageRepair::META_FALLBACK_STATUS);
 
-                    $this->postHandler->update($post->ID, $definition, true);
+                    $actualizado = $this->postHandler->update($post->ID, $definition, true);
+                    if (!$actualizado) {
+                        GloryLogger::warning("DCS: No se pudo restablecer contenido del post ID {$post->ID}.");
+                    }
                     delete_post_meta($post->ID, PostSyncHandler::META_CLAVE_EDITADO_MANUALMENTE);
                 }
             }
@@ -108,12 +120,14 @@ class DefaultContentSynchronizer
      * y la única forma segura es eliminar todo attachment previo que matchee por REQUESTED
      * o SOURCE para que el importer cree uno nuevo desde el archivo correcto.
      */
-    private function eliminarAttachmentsStaleDeAsset(string $assetReference): void
+    private function eliminarAttachmentsStaleDeAsset(string $assetReference): bool
     {
         \Glory\Utility\AssetResolver::init();
         [$alias, $nombreArchivo] = \Glory\Utility\AssetResolver::parseAssetReference($assetReference);
         $rutaRelativa = \Glory\Utility\AssetResolver::resolveAssetPath($alias, $nombreArchivo);
-        if (!$rutaRelativa) return;
+        if (!$rutaRelativa) {
+            return false;
+        }
 
         /* Buscar attachment por REQUESTED, SOURCE o por el alias completo */
         $rutaRelativaActual = \Glory\Utility\AssetResolver::resolveActualRelativeAssetPath($alias, $nombreArchivo);
@@ -135,11 +149,19 @@ class DefaultContentSynchronizer
             'meta_query'     => $metaClauses,
         ]);
 
-        if (!$q->have_posts()) return;
-
-        foreach ($q->posts as $attachmentId) {
-            wp_delete_attachment((int) $attachmentId, true);
+        if (!$q->have_posts()) {
+            return true;
         }
+
+        $ok = true;
+        foreach ($q->posts as $attachmentId) {
+            $eliminado = wp_delete_attachment((int) $attachmentId, true);
+            if ($eliminado === false || $eliminado === null) {
+                $ok = false;
+            }
+        }
+
+        return $ok;
     }
 
 
@@ -168,7 +190,10 @@ class DefaultContentSynchronizer
             if ($existingPost) {
                 $this->gestionarPostExistente($existingPost, $definition, $config['modoActualizacion']);
             } else {
-                $this->postHandler->create($postType, $definition);
+                $nuevoPostId = $this->postHandler->create($postType, $definition);
+                if ($nuevoPostId === null) {
+                    GloryLogger::warning("DCS: No se pudo crear post por defecto para tipo '{$postType}'.");
+                }
             }
         }
     }
@@ -185,14 +210,20 @@ class DefaultContentSynchronizer
             //     'ID' => (int) $post->ID,
             //     'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
             // ]);
-            $this->postHandler->update($post->ID, $definition, true);
+            $actualizado = $this->postHandler->update($post->ID, $definition, true);
+            if (!$actualizado) {
+                GloryLogger::warning("DCS: Fallo actualizacion forzada para post ID {$post->ID}.");
+            }
         } elseif ($updateMode === 'smart' && !$isEdited) {
             if ($this->postHandler->needsUpdate($post, $definition)) {
                 // GloryLogger::info('DCS: Actualización por smart-compare', [
                 //     'ID' => (int) $post->ID,
                 //     'slugDefault' => (string) ($definition['slugDefault'] ?? ''),
                 // ]);
-                $this->postHandler->update($post->ID, $definition, false);
+                $actualizado = $this->postHandler->update($post->ID, $definition, false);
+                if (!$actualizado) {
+                    GloryLogger::warning("DCS: Fallo actualizacion smart para post ID {$post->ID}.");
+                }
             }
         } elseif ($isEdited) {
             // GloryLogger::info('DCS: Saltado por edición manual', [
@@ -203,20 +234,26 @@ class DefaultContentSynchronizer
     }
 
 
-    private function eliminarPostsObsoletosParaTipo(string $postType, array $config): void
+    private function eliminarPostsObsoletosParaTipo(string $postType, array $config): bool
     {
-        if (empty($config['permitirEliminacion'])) return;
+        if (empty($config['permitirEliminacion'])) {
+            return true;
+        }
 
         $definedSlugs = array_column($config['definicionesPost'], 'slugDefault');
         $obsoleteIds = $this->repository->findObsoletos($postType, $definedSlugs);
 
+        $ok = true;
         foreach ($obsoleteIds as $postId) {
             if (!$this->repository->haSidoEditadoManualmente($postId)) {
                 if (!wp_delete_post($postId, true)) {
+                    $ok = false;
                     // GloryLogger::error("DCS: FALLÓ al eliminar post obsoleto ID {$postId}.");
                 }
             }
         }
+
+        return $ok;
     }
 
     private function repairMediaIntegrityForAll(): void
