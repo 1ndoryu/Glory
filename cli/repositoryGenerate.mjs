@@ -161,10 +161,20 @@ function toUpperSnake(str) {
 }
 
 /*
- * Determinar qué columnas tienen check/enum para generar imports de Enums.
+ * Determinar si un schema tiene valores enum (check/enum en columnas)
+ * o si ya existe un archivo Enums generado manualmente en disco.
  */
 function tieneEnums(schema) {
-    return schema.columnas.some(c => c.check && c.check.length > 0);
+    const porCheck = schema.columnas.some(c => c.check && c.check.length > 0);
+    if (porCheck) return true;
+
+    /* Fallback: verificar si existe archivo Enums en disco (creado manualmente) */
+    const rutaEnums = resolve(
+        process.cwd(),
+        'App', 'Config', 'Schema', '_generated',
+        `${schema.nombreClase}Enums.php`
+    );
+    return existsSync(rutaEnums);
 }
 
 /*

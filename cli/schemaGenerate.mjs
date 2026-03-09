@@ -108,8 +108,8 @@ function parsearSchema(contenido, nombreArchivo) {
         const maxM = props.match(/'max'\s*=>\s*(\d+)/);
         col.max = maxM ? parseInt(maxM[1]) : null;
 
-        /* Check */
-        const checkM = props.match(/'check'\s*=>\s*\[([^\]]+)\]/);
+        /* Check o Enum (ambos generan constantes Enums) */
+        const checkM = props.match(/'(?:check|enum)'\s*=>\s*\[([^\]]+)\]/);
         if (checkM) {
             col.check = checkM[1].match(/'([^']+)'/g)?.map(s => s.replace(/'/g, '')) || [];
         }
