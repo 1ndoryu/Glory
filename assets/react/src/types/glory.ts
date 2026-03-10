@@ -79,6 +79,9 @@ export interface GloryRouteConfig {
     island: string;
     props: Record<string, unknown>;
     title: string;
+    /* Patrón de params para rutas dinámicas (ej: ':id/:slug?').
+     * El router extrae params nombrados de la URL usando este patrón. */
+    params?: string;
 }
 
 export type GloryRoutesMap = Record<string, GloryRouteConfig>;

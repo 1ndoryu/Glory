@@ -151,16 +151,29 @@ class PageTemplateInterceptor
             $segmento = substr($requestPath, strlen($padreSlug) + 1);
             $segmento = trim($segmento, '/');
 
-            /* Ignorar si está vacío o tiene sub-segmentos (ej: /perfil/a/b) */
-            if (empty($segmento) || str_contains($segmento, '/')) {
+            /*
+             * Rutas multi-segmento: /sampleo/168/seo-slug → segmento='168/seo-slug'
+             * Solo permitir si la ruta dinámica declara multi-segmento.
+             * Rutas simples (single segment) rechazan sub-segmentos como antes.
+             */
+            if (empty($segmento)) {
                 continue;
             }
 
-            /* Verificar que NO sea una página hija conocida (ej: /perfil/editar) */
+            $tieneSubSegmentos = str_contains($segmento, '/');
+            if ($tieneSubSegmentos && !PageDefinition::rutaDinamicaPermiteMultiSegmento($padreSlug)) {
+                continue;
+            }
+
+            /* Verificar que NO sea una página hija conocida (ej: /perfil/editar).
+             * Para rutas multi-segmento, comprobar solo el primer sub-segmento. */
+            $primerSegmento = str_contains($segmento, '/')
+                ? strstr($segmento, '/', true)
+                : $segmento;
             $paginasDefinidas = PageDefinition::getPaginasDefinidas();
             $esHijoConocido = false;
             foreach ($paginasDefinidas as $key => $def) {
-                if (($def['parentSlug'] ?? '') === $padreSlug && $def['slug'] === $segmento) {
+                if (($def['parentSlug'] ?? '') === $padreSlug && $def['slug'] === $primerSegmento) {
                     $esHijoConocido = true;
                     break;
                 }
@@ -207,7 +220,12 @@ class PageTemplateInterceptor
             $segmento = substr($requestPath, strlen($padreSlug) + 1);
             $segmento = trim($segmento, '/');
 
-            if (empty($segmento) || str_contains($segmento, '/')) {
+            if (empty($segmento)) {
+                continue;
+            }
+
+            $tieneSubSegmentos = str_contains($segmento, '/');
+            if ($tieneSubSegmentos && !PageDefinition::rutaDinamicaPermiteMultiSegmento($padreSlug)) {
                 continue;
             }
 

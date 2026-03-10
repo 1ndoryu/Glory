@@ -128,7 +128,18 @@ export function PageRenderer({ suspenseFallback }: PageRendererProps): JSX.Eleme
                 const { component: Component, isLazy } = resolved;
                 const esActiva = pagina.islaId === islaActual;
 
-                let contenido: JSX.Element = <Component {...pagina.props} />;
+                /*
+                 * Fix: la isla activa siempre usa propsActuales del store (live).
+                 * Esto cubre navegación entre páginas que usan la MISMA isla
+                 * (ej: /sampleo/169 → /sampleo/168): el cache no actualiza props
+                 * porque islaActual no cambia, pero propsActuales sí.
+                 * Las islas ocultas (keep-alive) mantienen sus props cacheados.
+                 */
+                const propsEfectivos = esActiva
+                    ? (propsActuales ?? pagina.props)
+                    : pagina.props;
+
+                let contenido: JSX.Element = <Component {...propsEfectivos} />;
 
                 if (isLazy) {
                     contenido = (

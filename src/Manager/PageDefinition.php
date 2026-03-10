@@ -19,8 +19,10 @@ class PageDefinition
     private static array $reactPageConfigs = [];
 
     /*
-     * Slugs de páginas padre que aceptan segmentos dinámicos.
-     * Ej: 'perfil' permite /perfil/{username}.
+     * Rutas dinámicas: slug padre → patrón de parámetros.
+     * Ej: 'perfil' => ':username', 'sampleo' => ':id/:slug?'
+     * El patrón define cómo se extraen params de la URL en el cliente (SPA).
+     * Segmentos con : son params nombrados. Sufijo ? indica opcional.
      */
     private static array $rutasDinamicas = [];
 
@@ -264,17 +266,42 @@ class PageDefinition
     /* ── Rutas dinámicas: /perfil/{username}, /sample/{slug}, etc. ── */
 
     /**
-     * Registra un slug como ruta dinámica.
-     * Permite que /slug/{segmento} resuelva a la página padre.
+     * Registra un slug como ruta dinámica con patrón de parámetros.
+     * El patrón se serializa al mapa SPA para extracción client-side.
+     *
+     * @param string $padreSlug Slug padre (ej: 'sampleo')
+     * @param string $params Patrón de params (ej: ':id/:slug?'). Default ':slug'.
+     *                       Segmentos :nombre son params nombrados.
+     *                       Sufijo ? indica opcional. Permite multi-segmento.
      */
-    public static function registrarRutaDinamica(string $padreSlug): void
+    public static function registrarRutaDinamica(string $padreSlug, string $params = ':slug'): void
     {
-        if (!in_array($padreSlug, self::$rutasDinamicas, true)) {
-            self::$rutasDinamicas[] = $padreSlug;
-        }
+        self::$rutasDinamicas[$padreSlug] = $params;
     }
 
+    /**
+     * Retorna los slugs de rutas dinámicas (claves del array).
+     * Compatibilidad con PageTemplateInterceptor que itera los slugs.
+     */
     public static function getRutasDinamicas(): array
+    {
+        return array_keys(self::$rutasDinamicas);
+    }
+
+    /**
+     * Indica si una ruta dinámica permite multi-segmento (más de un param).
+     * Rutas como ':id/:slug?' tienen 2+ segmentos después del prefijo.
+     */
+    public static function rutaDinamicaPermiteMultiSegmento(string $padreSlug): bool
+    {
+        $patron = self::$rutasDinamicas[$padreSlug] ?? '';
+        return substr_count($patron, '/') > 0;
+    }
+
+    /**
+     * Retorna el mapa completo slug → patrón de params.
+     */
+    public static function getRutasDinamicasConParams(): array
     {
         return self::$rutasDinamicas;
     }
@@ -350,6 +377,13 @@ class PageDefinition
                 'props' => $props,
                 'title' => $config['titulo'] ?? '',
             ];
+
+            /* Incluir patrón de parámetros para extracción client-side SPA */
+            $slugSinSlash = trim($path, '/');
+            $rutasConParams = self::getRutasDinamicasConParams();
+            if (isset($rutasConParams[$slugSinSlash])) {
+                $routes[$path]['params'] = $rutasConParams[$slugSinSlash];
+            }
         }
 
         return $routes;

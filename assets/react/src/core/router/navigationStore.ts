@@ -12,6 +12,8 @@ export interface GloryRoute {
     island: string;
     props: Record<string, unknown>;
     title: string;
+    /* Patrón de params para rutas dinámicas (ej: ':id/:slug?') */
+    params?: string;
 }
 
 export type GloryRoutesMap = Record<string, GloryRoute>;
@@ -77,11 +79,36 @@ function buscarRutaEnMapa(rutas: GloryRoutesMap, rutaNormalizada: string): Glory
 }
 
 /*
+ * Extrae parámetros nombrados de los segmentos dinámicos de la URL.
+ * Patrón ':id/:slug?' → segmentos '168/big-daddy-kane' → { id: '168', slug: 'big-daddy-kane' }.
+ * Segmentos con sufijo ? son opcionales.
+ */
+function extraerParamsDeUrl(patron: string, segmentoDinamico: string): Record<string, string> {
+    const definiciones = patron.split('/').filter(Boolean);
+    const segmentos = segmentoDinamico.split('/').filter(Boolean);
+    const resultado: Record<string, string> = {};
+
+    for (let i = 0; i < definiciones.length; i++) {
+        const def = definiciones[i];
+        const esOpcional = def.endsWith('?');
+        const nombre = def.replace(/^:/, '').replace(/\?$/, '');
+
+        if (i < segmentos.length) {
+            resultado[nombre] = segmentos[i];
+        } else if (!esOpcional) {
+            resultado[nombre] = '';
+        }
+    }
+
+    return resultado;
+}
+
+/*
  * Resuelve los props para una ruta.
  * En coincidencia exacta retorna los props estáticos del mapa.
- * En coincidencia por prefijo extrae el segmento dinámico de la URL y lo
- * inyecta como `slug` — necesario para rutas como /cancion/{slug} donde
- * el mapa solo tiene /cancion/ con props vacíos (callables PHP no serializados).
+ * En coincidencia por prefijo:
+ *   - Si la ruta tiene patrón de params, extrae params nombrados.
+ *   - Si no, inyecta todo como slug (retrocompatibilidad).
  */
 function resolverPropsParaRuta(rutas: GloryRoutesMap, rutaNormalizada: string): Record<string, unknown> {
     if (rutas[rutaNormalizada]) return rutas[rutaNormalizada].props;
@@ -91,9 +118,14 @@ function resolverPropsParaRuta(rutas: GloryRoutesMap, rutaNormalizada: string): 
         const prefijo = '/' + segmentos.slice(0, i).join('/') + '/';
         if (rutas[prefijo]) {
             const segmentoDinamico = rutaNormalizada.slice(prefijo.length).replace(/\/$/, '');
-            return segmentoDinamico
-                ? { ...rutas[prefijo].props, slug: segmentoDinamico }
-                : rutas[prefijo].props;
+            if (!segmentoDinamico) return rutas[prefijo].props;
+
+            const rutaConfig = rutas[prefijo];
+            if (rutaConfig.params) {
+                return { ...rutaConfig.props, ...extraerParamsDeUrl(rutaConfig.params, segmentoDinamico) };
+            }
+
+            return { ...rutas[prefijo].props, slug: segmentoDinamico };
         }
     }
 
