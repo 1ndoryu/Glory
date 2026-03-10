@@ -160,32 +160,22 @@ function initializeSPA(routes: GloryRoutesMap, options: InitOptions): void {
      * para que la isla inicial reciba datos como el usuario autenticado.
      */
     const contenedorInicial = document.querySelector<HTMLElement>('[data-island]');
-    let rutasConPropsEvaluados = routes;
 
+    /* Extraer props evaluados del servidor (data-props del DOM).
+     * Para rutas dinámicas (/cancion/slug), la búsqueda exacta en el mapa fallaría
+     * porque el mapa solo tiene /cancion/. Se pasan directamente a inicializar,
+     * que usa buscarRutaEnMapa (soporta prefijo) y los mergea sobre los props del mapa. */
+    let propsEvaluadosServidor: Record<string, unknown> | undefined;
     if (contenedorInicial?.dataset.props) {
         try {
-            const propsServidor = JSON.parse(contenedorInicial.dataset.props) as Record<string, unknown>;
-            /* Normalización básica del path para hacer match con el mapa de rutas */
-            const pathActual = window.location.pathname;
-            const pathNorm = pathActual === '/' ? '/' : (pathActual.endsWith('/') ? pathActual : pathActual + '/');
-
-            if (rutasConPropsEvaluados[pathNorm]) {
-                rutasConPropsEvaluados = {
-                    ...rutasConPropsEvaluados,
-                    [pathNorm]: {
-                        ...rutasConPropsEvaluados[pathNorm],
-                        /* Props del servidor tienen prioridad: incluyen datos de usuario evaluados en tiempo de render */
-                        props: { ...rutasConPropsEvaluados[pathNorm].props, ...propsServidor },
-                    },
-                };
-            }
+            propsEvaluadosServidor = JSON.parse(contenedorInicial.dataset.props) as Record<string, unknown>;
         } catch {
-            /* JSON inválido en data-props: continuar sin merge, las props quedan vacías */
+            /* JSON inválido en data-props: continuar sin props evaluados */
         }
     }
 
-    /* Inicializar store de navegacion con las rutas (props evaluados incluidos) */
-    useNavigationStore.getState().inicializar(rutasConPropsEvaluados, window.location.pathname);
+    /* Inicializar store con rutas + props evaluados del servidor para la ruta inicial */
+    useNavigationStore.getState().inicializar(routes, window.location.pathname, propsEvaluadosServidor);
 
     if (import.meta.env.DEV) {
         const rutasStr = Object.keys(routes).join(', ');

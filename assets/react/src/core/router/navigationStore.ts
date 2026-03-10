@@ -34,8 +34,10 @@ export interface NavigationState {
 }
 
 export interface NavigationActions {
-    /* Inicializa el store con las rutas de PHP y la ruta actual */
-    inicializar: (rutas: GloryRoutesMap, rutaInicial: string) => void;
+    /* Inicializa el store con las rutas de PHP y la ruta actual.
+     * propsEvaluados: props del servidor (data-props del DOM) que sobreescriben los del mapa.
+     * Necesario para rutas dinámicas (/cancion/slug) donde el mapa tiene /cancion/ sin slug. */
+    inicializar: (rutas: GloryRoutesMap, rutaInicial: string, propsEvaluados?: Record<string, unknown>) => void;
     /* Navega a una nueva ruta sin recarga */
     navegar: (ruta: string) => void;
     /* Vuelve atras en el historial */
@@ -74,6 +76,30 @@ function buscarRutaEnMapa(rutas: GloryRoutesMap, rutaNormalizada: string): Glory
     return null;
 }
 
+/*
+ * Resuelve los props para una ruta.
+ * En coincidencia exacta retorna los props estáticos del mapa.
+ * En coincidencia por prefijo extrae el segmento dinámico de la URL y lo
+ * inyecta como `slug` — necesario para rutas como /cancion/{slug} donde
+ * el mapa solo tiene /cancion/ con props vacíos (callables PHP no serializados).
+ */
+function resolverPropsParaRuta(rutas: GloryRoutesMap, rutaNormalizada: string): Record<string, unknown> {
+    if (rutas[rutaNormalizada]) return rutas[rutaNormalizada].props;
+
+    const segmentos = rutaNormalizada.split('/').filter(Boolean);
+    for (let i = segmentos.length - 1; i >= 1; i--) {
+        const prefijo = '/' + segmentos.slice(0, i).join('/') + '/';
+        if (rutas[prefijo]) {
+            const segmentoDinamico = rutaNormalizada.slice(prefijo.length).replace(/\/$/, '');
+            return segmentoDinamico
+                ? { ...rutas[prefijo].props, slug: segmentoDinamico }
+                : rutas[prefijo].props;
+        }
+    }
+
+    return {};
+}
+
 export const useNavigationStore = create<NavigationState & NavigationActions>((set, get) => ({
     rutaActual: normalizarRuta(window.location.pathname),
     islaActual: null,
@@ -83,29 +109,38 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
     rutas: {},
     modoSPA: false,
 
-    inicializar: (rutas, rutaInicial) => {
+    inicializar: (rutas, rutaInicial, propsEvaluados) => {
         const ruta = normalizarRuta(rutaInicial);
         const config = buscarRutaEnMapa(rutas, ruta);
+        /* resolverPropsParaRuta extrae el slug de la URL para rutas dinámicas
+         * (ej: /cancion/mi-cancion/ → slug='mi-cancion') como fallback base.
+         * propsEvaluados del servidor toman prioridad (mismos valores, más confiables). */
+        const propsDeRuta = resolverPropsParaRuta(rutas, ruta);
+        const propsActuales = propsEvaluados && Object.keys(propsEvaluados).length > 0
+            ? { ...propsDeRuta, ...propsEvaluados }
+            : propsDeRuta;
 
         set({
             rutas,
             modoSPA: Object.keys(rutas).length > 0,
             rutaActual: ruta,
             islaActual: config?.island ?? null,
-            propsActuales: config?.props ?? {},
+            propsActuales,
             tituloActual: config?.title ?? document.title,
         });
 
         /* Escuchar popstate para navegacion con historial (boton atras/adelante) */
         window.addEventListener('popstate', () => {
             const nuevaRuta = normalizarRuta(window.location.pathname);
-            const nuevaConfig = buscarRutaEnMapa(get().rutas, nuevaRuta);
+            const rutasActuales = get().rutas;
+            const nuevaConfig = buscarRutaEnMapa(rutasActuales, nuevaRuta);
 
             if (nuevaConfig) {
                 set({
                     rutaActual: nuevaRuta,
                     islaActual: nuevaConfig.island,
-                    propsActuales: nuevaConfig.props,
+                    /* Extraer slug de la URL para rutas dinámicas (ej: /cancion/slug/) */
+                    propsActuales: resolverPropsParaRuta(rutasActuales, nuevaRuta),
                     tituloActual: nuevaConfig.title,
                     navegando: true,
                 });
@@ -133,11 +168,13 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
         /* Actualizar historial del navegador */
         window.history.pushState({ gloryRoute: rutaNormalizada }, '', rutaNormalizada);
 
-        /* Actualizar estado */
+        /* Actualizar estado.
+         * resolverPropsParaRuta extrae slug de la URL cuando es prefijo match
+         * (ej: navegar('/cancion/mi-cancion/') → { slug: 'mi-cancion' }). */
         set({
             rutaActual: rutaNormalizada,
             islaActual: config.island,
-            propsActuales: config.props,
+            propsActuales: resolverPropsParaRuta(rutas, rutaNormalizada),
             tituloActual: config.title,
             navegando: true,
         });
