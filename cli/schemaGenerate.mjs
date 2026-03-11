@@ -135,7 +135,7 @@ function parsearSchema(contenido, nombreArchivo) {
 
 /* Mapeo tipo schema → tipo PHP */
 function tipoPHP(tipo) {
-    const mapa = { int: 'int', float: 'float', decimal: 'float', string: 'string', text: 'string', bool: 'bool', datetime: 'string', json: 'array', array: 'array', vector: 'string' };
+    const mapa = { int: 'int', float: 'float', decimal: 'float', string: 'string', text: 'string', bool: 'bool', datetime: 'string', json: 'array', jsonb: 'array', array: 'array', vector: 'string', bigint: 'int' };
     return mapa[tipo] || 'mixed';
 }
 
@@ -145,7 +145,7 @@ function tipoTS(tipo, col) {
     if (col.check && (tipo === 'string')) {
         return col.check.map(v => `'${v}'`).join(' | ');
     }
-    const mapa = { int: 'number', float: 'number', decimal: 'number', string: 'string', text: 'string', bool: 'boolean', datetime: 'string', json: 'Record<string, unknown>', array: 'string[]', vector: 'number[]' };
+    const mapa = { int: 'number', float: 'number', decimal: 'number', string: 'string', text: 'string', bool: 'boolean', datetime: 'string', json: 'Record<string, unknown>', jsonb: 'Record<string, unknown>', array: 'string[]', vector: 'number[]', bigint: 'number' };
     return mapa[tipo] || 'unknown';
 }
 
@@ -231,7 +231,8 @@ ${constantes}
 function generarDTO(schema) {
     const propiedades = schema.columnas.map(col => {
         const tipo = tipoPHP(col.tipo);
-        const nullable = col.nullable ? '?' : '';
+        /* mixed ya incluye null en PHP 8 — no se puede marcar ?mixed */
+        const nullable = (col.nullable && tipo !== 'mixed') ? '?' : '';
         return `        public readonly ${nullable}${tipo} $${snakeToCamel(col.nombre)}`;
     }).join(',\n');
 
@@ -245,7 +246,7 @@ function generarDTO(schema) {
             case 'float': cast = `(float) `; break;
             case 'bool': cast = `(bool) `; break;
             case 'array':
-                if (col.tipo === 'json') {
+                if (col.tipo === 'json' || col.tipo === 'jsonb') {
                     cast = '';
                     /* Especial: decodificar JSON string */
                     if (col.nullable) {
