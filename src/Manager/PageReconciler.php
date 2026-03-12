@@ -86,11 +86,24 @@ class PageReconciler
                 continue;
             }
 
+            /* Obtener datos antes de intentar eliminar para log de contexto */
+            $paginaObj = get_post($idPagina);
+            $contexto  = $paginaObj
+                ? "slug='{$paginaObj->post_name}', titulo='{$paginaObj->post_title}', status='{$paginaObj->post_status}'"
+                : 'página no encontrada en BD';
+
+            GloryLogger::info("PageProcessor: Intentando eliminar página obsoleta ID {$idPagina} ({$contexto}).");
+
             $paginaEliminada = wp_delete_post($idPagina, true);
             if (!$paginaEliminada) {
-                GloryLogger::error("PageProcessor: Falló al eliminar página obsoleta ID: {$idPagina}.");
+                /* Determinar causa probable del fallo */
+                $hijos         = get_children(['post_parent' => $idPagina, 'post_type' => 'page', 'fields' => 'ids']);
+                $causaProbable = !empty($hijos)
+                    ? 'tiene páginas hijas: [' . implode(', ', (array) $hijos) . ']'
+                    : 'causa desconocida (verificar permisos, FK externas o filtros wp_delete_post)';
+                GloryLogger::error("PageProcessor: Falló al eliminar página obsoleta ID {$idPagina} ({$contexto}). {$causaProbable}");
             } else {
-                GloryLogger::info("PageProcessor: Página obsoleta ID: {$idPagina} eliminada.");
+                GloryLogger::info("PageProcessor: Página obsoleta ID {$idPagina} eliminada ({$contexto}).");
             }
         }
     }
