@@ -192,18 +192,16 @@ class PageTemplateInterceptor
     }
 
     /**
-     * Fuerza la resolución de rutas dinámicas que WordPress resolvió como 404.
-     * Esto cubre los casos donde parse_request redirigió pagename pero WP
-     * aún marcó la query como 404 (típico en acceso directo por URL).
+     * Fuerza la resolución de rutas que WordPress resolvió como 404.
+     * Cubre dos casos:
+     * 1. Rutas dinámicas (/perfil/{username}) donde parse_request redirigió
+     *    pero WP aún marcó 404.
+     * 2. Páginas estáticas definidas (/admin/panel) que WP no resolvió
+     *    por problemas de rewrite rules, caché o jerarquía padre/hijo.
      */
     public static function forzarResolucionDinamica(): void
     {
         if (!is_404()) {
-            return;
-        }
-
-        $rutasDinamicas = PageDefinition::getRutasDinamicas();
-        if (empty($rutasDinamicas)) {
             return;
         }
 
@@ -212,6 +210,8 @@ class PageTemplateInterceptor
             return;
         }
 
+        /* 1. Intentar resolver como ruta dinámica */
+        $rutasDinamicas = PageDefinition::getRutasDinamicas();
         foreach ($rutasDinamicas as $padreSlug) {
             if (strpos($requestPath, $padreSlug . '/') !== 0) {
                 continue;
@@ -229,27 +229,83 @@ class PageTemplateInterceptor
                 continue;
             }
 
-            /* Buscar la página padre en WP */
             $paginaPadre = get_page_by_path($padreSlug);
             if (!$paginaPadre) {
-                continue;
+                /*
+                 * QQ28: Auto-reparar si la página está definida en PageDefinition
+                 * pero no existe en WordPress (nunca sincronizada o eliminada).
+                 * Crea la página on-the-fly para que el routing funcione sin
+                 * requerir sync manual. Usa transient para no repetir cada request.
+                 */
+                $paginasDefinidas = PageDefinition::getPaginasDefinidas();
+                if (isset($paginasDefinidas[$padreSlug])) {
+                    $transientKey = 'glory_autofix_' . $padreSlug;
+                    if (false === get_transient($transientKey)) {
+                        $nuevoId = PageProcessor::crearPaginaDefinida($paginasDefinidas[$padreSlug]);
+                        set_transient($transientKey, true, 300);
+                        if ($nuevoId) {
+                            $paginaPadre = get_post($nuevoId);
+                            GloryLogger::info("PageTemplateInterceptor: Auto-creada página faltante '{$padreSlug}' (ID={$nuevoId})");
+                        }
+                    }
+                }
+                if (!$paginaPadre) {
+                    continue;
+                }
             }
 
-            /* Forzar la main query para que resuelva a la página padre */
-            global $wp_query;
-            $wp_query->is_404 = false;
-            $wp_query->is_page = true;
-            $wp_query->is_singular = true;
-            $wp_query->post = $paginaPadre;
-            $wp_query->posts = [$paginaPadre];
-            $wp_query->found_posts = 1;
-            $wp_query->post_count = 1;
-            $wp_query->queried_object = $paginaPadre;
-            $wp_query->queried_object_id = $paginaPadre->ID;
-
-            status_header(200);
-            GloryLogger::info("PageTemplateInterceptor: Forzado 404 → página '{$padreSlug}' para /{$requestPath}/");
-            break;
+            self::forzarQueryAPagina($paginaPadre);
+            GloryLogger::info("PageTemplateInterceptor: Forzado 404 → ruta dinámica '{$padreSlug}' para /{$requestPath}/");
+            return;
         }
+
+        /* 2. Intentar resolver como página estática definida en PageDefinition.
+         * Cubre páginas que WP no resuelve por rewrite rules, caché, o jerarquía
+         * padre/hijo no sincronizada. Ej: /admin/panel accedido directamente. */
+        $paginasDefinidas = PageDefinition::getPaginasDefinidas();
+        if (!isset($paginasDefinidas[$requestPath])) {
+            return;
+        }
+
+        $pagina = get_page_by_path($requestPath);
+        if (!$pagina) {
+            /* QQ28: Auto-crear página estática definida pero ausente en WP */
+            $transientKey = 'glory_autofix_' . str_replace('/', '_', $requestPath);
+            if (false === get_transient($transientKey)) {
+                $nuevoId = PageProcessor::crearPaginaDefinida($paginasDefinidas[$requestPath]);
+                set_transient($transientKey, true, 300);
+                if ($nuevoId) {
+                    $pagina = get_post($nuevoId);
+                    GloryLogger::info("PageTemplateInterceptor: Auto-creada página estática faltante '{$requestPath}' (ID={$nuevoId})");
+                }
+            }
+            if (!$pagina) {
+                return;
+            }
+        }
+
+        self::forzarQueryAPagina($pagina);
+        GloryLogger::info("PageTemplateInterceptor: Forzado 404 → página estática '{$requestPath}' (acceso directo)");
+    }
+
+    /**
+     * Fuerza la main query de WordPress para que resuelva a una página específica.
+     * Cambia el estado 404 a 200 y configura todos los campos necesarios
+     * para que template_include y el resto del pipeline funcionen correctamente.
+     */
+    private static function forzarQueryAPagina(\WP_Post $pagina): void
+    {
+        global $wp_query;
+        $wp_query->is_404 = false;
+        $wp_query->is_page = true;
+        $wp_query->is_singular = true;
+        $wp_query->post = $pagina;
+        $wp_query->posts = [$pagina];
+        $wp_query->found_posts = 1;
+        $wp_query->post_count = 1;
+        $wp_query->queried_object = $pagina;
+        $wp_query->queried_object_id = $pagina->ID;
+
+        status_header(200);
     }
 }
