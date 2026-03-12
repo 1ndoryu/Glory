@@ -16,10 +16,17 @@ class GitCommandRunner
     {
         $comandoOriginal = $comando;
         $opcionesProc = [];
-        $esWindows = (defined('WP_SYSTEM') && WP_SYSTEM === 'windows');
+        $esWindows = \PHP_OS_FAMILY === 'Windows';
 
+        /*
+         * En Windows, git puede no estar en PATH del proceso PHP.
+         * Intentar ruta completa si el simple 'git' falla.
+         */
         if ($esWindows && isset($comando[0]) && strtolower($comando[0]) === 'git') {
-            $comando[0] = 'C:/Program Files/Git/cmd/git.exe';
+            $gitExe = 'C:/Program Files/Git/cmd/git.exe';
+            if (file_exists($gitExe)) {
+                $comando[0] = $gitExe;
+            }
         }
         $opcionesProc['bypass_shell'] = false;
 
