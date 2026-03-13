@@ -17,7 +17,7 @@ export default defineConfig(({mode}) => {
         // En produccion: Ruta relativa al tema de WordPress
         // En desarrollo: Vite dev server (Debe ser la URL completa para que no busque en el dominio de WP)
         // En produccion: Ruta relativa al tema de WordPress
-        base: isDev ? 'http://localhost:5173/' : '/wp-content/themes/glory/Glory/assets/react/dist/',
+        base: isDev ? 'http://localhost:5173/' : '/wp-content/themes/glorytemplate/Glory/assets/react/dist/',
 
         build: {
             // Directorio de salida
