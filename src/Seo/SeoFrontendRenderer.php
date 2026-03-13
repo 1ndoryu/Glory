@@ -37,9 +37,10 @@ class SeoFrontendRenderer
         /* Filtro para el titulo del documento */
         add_filter('document_title_parts', [MetaTagRenderer::class, 'filterDocumentTitle'], 20);
 
-        /* Remover canonical del core para evitar duplicados */
+        /* Remover canonical y favicon del core para evitar duplicados con los personalizados */
         add_action('init', function () {
             remove_action('wp_head', 'rel_canonical');
+            remove_action('wp_head', 'wp_site_icon', 99);
         });
 
         /* Meta tags basicos */
