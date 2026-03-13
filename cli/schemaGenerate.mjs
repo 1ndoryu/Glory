@@ -419,20 +419,28 @@ export function schemaGenerate() {
 
             /* Generar {Tabla}Cols.php */
             const colsPath = resolve(generatedDir, `${schema.nombreClase}Cols.php`);
-            writeFileSync(colsPath, generarCols(schema), 'utf-8');
-            log(`  Cols: _generated/${schema.nombreClase}Cols.php`, 'success');
+            const colsNuevo = generarCols(schema);
+            if (!existsSync(colsPath) || readFileSync(colsPath, 'utf-8').replace(/\r\n/g, '\n') !== colsNuevo.replace(/\r\n/g, '\n')) {
+                writeFileSync(colsPath, colsNuevo, 'utf-8');
+                log(`  Cols: _generated/${schema.nombreClase}Cols.php`, 'success');
+            }
 
             /* Generar {Tabla}DTO.php */
             const dtoPath = resolve(generatedDir, `${schema.nombreClase}DTO.php`);
-            writeFileSync(dtoPath, generarDTO(schema), 'utf-8');
-            log(`  DTO:  _generated/${schema.nombreClase}DTO.php`, 'success');
+            const dtoNuevo = generarDTO(schema);
+            if (!existsSync(dtoPath) || readFileSync(dtoPath, 'utf-8').replace(/\r\n/g, '\n') !== dtoNuevo.replace(/\r\n/g, '\n')) {
+                writeFileSync(dtoPath, dtoNuevo, 'utf-8');
+                log(`  DTO:  _generated/${schema.nombreClase}DTO.php`, 'success');
+            }
 
             /* Generar {Tabla}Enums.php — solo si hay columnas con check */
             const enumsContent = generarEnums(schema);
             if (enumsContent) {
                 const enumsPath = resolve(generatedDir, `${schema.nombreClase}Enums.php`);
-                writeFileSync(enumsPath, enumsContent, 'utf-8');
-                log(`  Enum: _generated/${schema.nombreClase}Enums.php`, 'success');
+                if (!existsSync(enumsPath) || readFileSync(enumsPath, 'utf-8').replace(/\r\n/g, '\n') !== enumsContent.replace(/\r\n/g, '\n')) {
+                    writeFileSync(enumsPath, enumsContent, 'utf-8');
+                    log(`  Enum: _generated/${schema.nombreClase}Enums.php`, 'success');
+                }
             }
         } else {
             errores++;
@@ -442,8 +450,11 @@ export function schemaGenerate() {
     /* Generar schema.ts unificado */
     if (schemas.length > 0) {
         const tsPath = resolve(tsDir, 'schema.ts');
-        writeFileSync(tsPath, generarTS(schemas), 'utf-8');
-        log(`  TS:   App/React/types/_generated/schema.ts`, 'success');
+        const tsNuevo = generarTS(schemas);
+        if (!existsSync(tsPath) || readFileSync(tsPath, 'utf-8').replace(/\r\n/g, '\n') !== tsNuevo.replace(/\r\n/g, '\n')) {
+            writeFileSync(tsPath, tsNuevo, 'utf-8');
+            log(`  TS:   App/React/types/_generated/schema.ts`, 'success');
+        }
     }
 
     /* Generar Repositories — preserva sección CUSTOM de repos existentes */

@@ -301,11 +301,12 @@ function generarRepository(schema, seccionCustom, usesCustom, colIdCustom, codig
     let bloqueCustom;
     if (codigoHuerfano && seccionCustom) {
         /* Mover código huérfano (estaba arriba de CUSTOM) al inicio de la sección custom */
-        bloqueCustom = `\n    ${codigoHuerfano}\n\n    ${seccionCustom}\n`;
+        bloqueCustom = `
+    ${codigoHuerfano}\n\n    ${seccionCustom}\n`;
     } else if (seccionCustom) {
-        bloqueCustom = `\n    ${seccionCustom}\n`;
+        bloqueCustom = `    ${seccionCustom}\n`;
     } else {
-        bloqueCustom = `\n    /* Agregar metodos custom aqui (queries complejas, JOINs, CTEs, etc.) */\n`;
+        bloqueCustom = `    /* Agregar metodos custom aqui (queries complejas, JOINs, CTEs, etc.) */\n`;
     }
 
     return `<?php
@@ -369,7 +370,17 @@ export function generarRepositorios(schemas, repoDir) {
         }
 
         const contenido = generarRepository(schema, seccionCustom, usesCustom, colIdCustom, codigoHuerfano);
-        writeFileSync(repoPath, contenido, 'utf-8');
+
+        /* Solo escribir si el contenido cambió — evita marcar archivos como modificados por whitespace */
+        const normalizar = s => s.replace(/\r\n/g, '\n').replace(/[ \t]+$/gm, '').replace(/\n{3,}/g, '\n\n').trimEnd();
+        const contenidoAnterior = existsSync(repoPath) ? readFileSync(repoPath, 'utf-8') : '';
+        if (normalizar(contenido) !== normalizar(contenidoAnterior)) {
+            writeFileSync(repoPath, contenido, 'utf-8');
+        } else {
+            log(`  Repo: Repositories/${schema.nombreClase}Repository.php (sin cambios — omitido)`, 'info');
+            generados++;
+            continue;
+        }
 
         const labels = [];
         if (seccionCustom) labels.push('custom');
