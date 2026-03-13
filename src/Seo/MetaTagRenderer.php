@@ -116,6 +116,50 @@ class MetaTagRenderer
      */
     public static function filterDocumentTitle(array $parts): array
     {
+        /* Manejo explícito de la portada (front page) */
+        if (is_front_page()) {
+            /* RuntimeSeoData para override dinámico */
+            if (RuntimeSeoData::has()) {
+                $runtimeTitle = RuntimeSeoData::get('title', '');
+                if ($runtimeTitle !== '') {
+                    $parts['title'] = $runtimeTitle;
+                    unset($parts['site'], $parts['tagline']);
+                    return $parts;
+                }
+            }
+
+            /* Buscar SEO del front page: primero por page_on_front, luego por slug 'home' */
+            $frontPageId = (int) get_option('page_on_front');
+            $seoTitle = '';
+
+            if ($frontPageId > 0) {
+                $seoTitle = (string) get_post_meta($frontPageId, self::META_TITLE, true);
+                if ($seoTitle === '') {
+                    $slug = get_post_field('post_name', $frontPageId);
+                    if (is_string($slug) && $slug !== '') {
+                        $defaults = PageManager::getDefaultSeoForSlug($slug);
+                        if (!empty($defaults['title'])) {
+                            $seoTitle = (string) $defaults['title'];
+                        }
+                    }
+                }
+            }
+
+            /* Fallback para homepage sin static page (show_on_front=posts) */
+            if ($seoTitle === '') {
+                $defaults = PageManager::getDefaultSeoForSlug('home');
+                if (!empty($defaults['title'])) {
+                    $seoTitle = (string) $defaults['title'];
+                }
+            }
+
+            if ($seoTitle !== '') {
+                $parts['title'] = $seoTitle;
+                unset($parts['site'], $parts['tagline']);
+            }
+            return $parts;
+        }
+
         if (!is_page() && !is_singular()) {
             return $parts;
         }
@@ -157,7 +201,7 @@ class MetaTagRenderer
      */
     public static function printCanonical(): void
     {
-        if (!is_page() && !is_singular()) {
+        if (!is_page() && !is_singular() && !is_front_page()) {
             return;
         }
 
@@ -204,7 +248,7 @@ class MetaTagRenderer
      */
     public static function printMetaDescription(): void
     {
-        if (!is_page() && !is_singular()) {
+        if (!is_page() && !is_singular() && !is_front_page()) {
             return;
         }
 
