@@ -30,6 +30,12 @@ export interface GloryContext {
     userId?: number;
     locale: string;
     options?: Record<string, unknown>;
+    /* Desktop: URL base del servidor API (en web coincide con restUrl) */
+    apiUrl?: string;
+    /* Desktop: flag de sesion activa para auth sin nonce */
+    isLoggedIn?: boolean;
+    /* Desktop: Google Client ID para GSI login */
+    googleClientId?: string;
     /* Extensibilidad sin debilitar el tipado principal */
     extra?: Record<string, unknown>;
 }
