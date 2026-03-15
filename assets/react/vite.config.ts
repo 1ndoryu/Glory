@@ -40,10 +40,11 @@ export default defineConfig(({mode}) => {
                 },
                 /*
                  * Módulos externos que no deben bundlearse
-                 * Se resuelven en runtime (plugins de Capacitor opcionales)
+                 * Se resuelven en runtime (plugins Tauri opcionales, Capacitor legacy)
                  */
                 external: [
-                    '@capacitor/local-notifications'
+                    '@capacitor/local-notifications',
+                    '@tauri-apps/plugin-notification'
                 ]
             },
 
