@@ -45,7 +45,9 @@ export default defineConfig(({mode}) => {
                 external: [
                     '@capacitor/local-notifications',
                     '@tauri-apps/plugin-notification',
-                    '@tauri-apps/plugin-fs'
+                    '@tauri-apps/plugin-fs',
+                    '@tauri-apps/plugin-shell',
+                    '@tauri-apps/api/app'
                 ]
             },
 
