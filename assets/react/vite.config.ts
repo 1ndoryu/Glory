@@ -1,4 +1,4 @@
-import {defineConfig, searchForWorkspaceRoot} from 'vite';
+import {defineConfig, searchForWorkspaceRoot, type Plugin} from 'vite';
 import react from '@vitejs/plugin-react';
 import {resolve} from 'path';
 
@@ -6,11 +6,42 @@ import {resolve} from 'path';
 // En desarrollo: Vite sirve los assets con HMR
 // En produccion: Genera bundles optimizados en dist/
 
+/* [183A-46] Plugin que resuelve modulos externos (Tauri, Capacitor legacy) como stubs
+ * vacios durante dev. Sin esto, Vite dev server falla porque los paquetes no estan
+ * instalados en Glory/assets/react/ (solo existen en desktop/). En build se manejan
+ * via rollupOptions.external. */
+const MODULOS_EXTERNOS = [
+    '@capacitor/local-notifications',
+    '@tauri-apps/plugin-notification',
+    '@tauri-apps/plugin-fs',
+    '@tauri-apps/plugin-shell',
+    '@tauri-apps/api/app',
+];
+
+function pluginModulosExternos(): Plugin {
+    return {
+        name: 'glory-external-stubs',
+        enforce: 'pre',
+        resolveId(id) {
+            if (MODULOS_EXTERNOS.some(m => id === m || id.startsWith(m + '/'))) {
+                return '\0external:' + id;
+            }
+            return null;
+        },
+        load(id) {
+            if (id.startsWith('\0external:')) {
+                return 'export default {};';
+            }
+            return null;
+        },
+    };
+}
+
 export default defineConfig(({mode}) => {
     const isDev = mode === 'development';
 
     return {
-        plugins: [react()],
+        plugins: [pluginModulosExternos(), react()],
 
         // Base URL para los assets
         // En desarrollo: Vite dev server
@@ -42,13 +73,7 @@ export default defineConfig(({mode}) => {
                  * Módulos externos que no deben bundlearse
                  * Se resuelven en runtime (plugins Tauri opcionales, Capacitor legacy)
                  */
-                external: [
-                    '@capacitor/local-notifications',
-                    '@tauri-apps/plugin-notification',
-                    '@tauri-apps/plugin-fs',
-                    '@tauri-apps/plugin-shell',
-                    '@tauri-apps/api/app'
-                ]
+                external: MODULOS_EXTERNOS
             },
 
             // Limpia el directorio antes de cada build
