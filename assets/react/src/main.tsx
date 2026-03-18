@@ -15,6 +15,42 @@ import { initializeIslands } from './core/hydration';
 /* Islas del proyecto (importadas desde App/React) */
 import appIslands, { AppProvider } from '@app/appIslands';
 
+function marcarEntornoNativo(): void {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+        return;
+    }
+
+    const capacitor = window.Capacitor;
+    const esCapacitorNativo = (() => {
+        if (!capacitor) return false;
+
+        try {
+            return !!capacitor.isNativePlatform?.() || typeof capacitor.getPlatform?.() === 'string';
+        } catch {
+            return false;
+        }
+    })();
+
+    if (!esCapacitorNativo) {
+        return;
+    }
+
+    const plataforma = (() => {
+        try {
+            return capacitor?.getPlatform?.() ?? null;
+        } catch {
+            return null;
+        }
+    })();
+
+    window.__KAMPLES_MOBILE__ = true;
+    document.body.classList.add('plataformaCapacitor');
+
+    if (plataforma === 'android' || /android/i.test(navigator.userAgent)) {
+        document.body.classList.add('plataformaAndroid');
+    }
+}
+
 /* Registrar islas Glory de ejemplo solo en desarrollo */
 if (import.meta.env.DEV) {
     import('./islands/ExampleIsland').then(({ ExampleIsland }) => {
@@ -34,6 +70,7 @@ islandRegistry.registerAll(appIslands);
 
 /* Iniciar cuando el DOM este listo */
 function init(): void {
+    marcarEntornoNativo();
     initializeIslands({ appProvider: AppProvider });
 }
 
