@@ -197,8 +197,17 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
             return;
         }
 
+        /* [183A-77] Preservar query string y hash en el historial.
+         * normalizarRuta() los elimina para matching, pero pushState necesita la URL completa
+         * para que filtros de búsqueda (?buscar=) persistan en la barra de direcciones. */
+        const idxQuery = ruta.indexOf('?');
+        const idxHash = ruta.indexOf('#');
+        const idxSufijo = idxQuery >= 0 ? idxQuery : (idxHash >= 0 ? idxHash : -1);
+        const sufijo = idxSufijo >= 0 ? ruta.substring(idxSufijo) : '';
+        const urlCompleta = rutaNormalizada + sufijo;
+
         /* Actualizar historial del navegador */
-        window.history.pushState({ gloryRoute: rutaNormalizada }, '', rutaNormalizada);
+        window.history.pushState({ gloryRoute: rutaNormalizada }, '', urlCompleta);
 
         /* Actualizar estado.
          * resolverPropsParaRuta extrae slug de la URL cuando es prefijo match
