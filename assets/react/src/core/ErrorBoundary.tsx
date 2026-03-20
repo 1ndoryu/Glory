@@ -9,6 +9,10 @@ import { Component, type ReactNode, type ErrorInfo } from 'react';
 interface ErrorBoundaryProps {
     islandName: string;
     fallback?: ReactNode;
+    /** [193A-46] Cambiar este valor resetea el error boundary automáticamente.
+     * Útil para keep-alive SPA: al re-navegar a una isla, el orden cambia
+     * y el boundary se auto-limpia sin remontaje. */
+    resetKey?: number;
     children: ReactNode;
 }
 
@@ -30,6 +34,17 @@ export class IslandErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
             error,
             info.componentStack,
         );
+    }
+
+    /* [193A-46] Auto-reset cuando cambia resetKey (re-navegación SPA keep-alive) */
+    componentDidUpdate(prevProps: ErrorBoundaryProps): void {
+        if (
+            this.state.hasError &&
+            this.props.resetKey !== undefined &&
+            prevProps.resetKey !== this.props.resetKey
+        ) {
+            this.setState({ hasError: false, error: null });
+        }
     }
 
     render(): ReactNode {
@@ -86,7 +101,7 @@ export class IslandErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
             );
         }
 
-        /* En produccion: fallback limpio */
+        /* En produccion: fallback limpio con boton reintentar */
         return (
             <div
                 style={{
@@ -97,6 +112,22 @@ export class IslandErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoun
                 }}
             >
                 Contenido no disponible
+                <br />
+                <button
+                    onClick={() => this.setState({ hasError: false, error: null })}
+                    style={{
+                        marginTop: '8px',
+                        padding: '4px 12px',
+                        border: '1px solid #4b5563',
+                        borderRadius: '4px',
+                        background: 'transparent',
+                        color: '#9ca3af',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                    }}
+                >
+                    Reintentar
+                </button>
             </div>
         );
     }

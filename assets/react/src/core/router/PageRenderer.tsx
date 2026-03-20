@@ -155,7 +155,7 @@ export function PageRenderer({ suspenseFallback }: PageRendererProps): JSX.Eleme
                         data-glory-page={pagina.islaId}
                         style={{ display: esActiva ? 'block' : 'none' }}
                     >
-                        <IslandErrorBoundary islandName={pagina.islaId}>
+                        <IslandErrorBoundary islandName={pagina.islaId} resetKey={pagina.orden}>
                             {contenido}
                         </IslandErrorBoundary>
                     </div>
