@@ -94,7 +94,9 @@ export function PageBuilder({blocks: initialBlocks, isAdmin = false, saveEndpoin
             {!isEditMode && <EditModeToggle onActivate={() => setIsEditMode(true)} canEdit={canEdit} text={editButtonText} />}
 
             {/* Contenido */}
-            <div style={{paddingTop: isEditMode && canEdit ? '48px' : '0'}}>{children ? children(blocks, isEditMode) : <BlockRenderer blocks={blocks} isEditMode={isEditMode && canEdit} selectedBlockId={selectedBlockId} onSelectBlock={setSelectedBlockId} onEditBlock={handleEditBlock} onMoveUp={handleMoveUp} onMoveDown={handleMoveDown} onDeleteBlock={handleDeleteBlock} />}</div>
+            {/* as any: @types/react 19 incluye bigint/Promise en ReactNode pero JSX no los acepta */}
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            <div style={{paddingTop: isEditMode && canEdit ? '48px' : '0'}}>{children ? (children(blocks, isEditMode) as any) : <BlockRenderer blocks={blocks} isEditMode={isEditMode && canEdit} selectedBlockId={selectedBlockId} onSelectBlock={setSelectedBlockId} onEditBlock={handleEditBlock} onMoveUp={handleMoveUp} onMoveDown={handleMoveDown} onDeleteBlock={handleDeleteBlock} />}</div>
 
             {/* Panel agregar bloque */}
             {canEdit && isEditMode && <AddBlockPanel onAddBlock={handleAddBlock} allowedTypes={allowedBlockTypes} />}
