@@ -28,8 +28,7 @@ export function AddBlockPanel({onAddBlock, title = 'Agregar Bloque', allowedType
         return (
             <div
                 id="add-block-panel-empty"
-                style={{
-                    /* sentinel-disable inline-style-prohibido — panel admin page builder, self-contained */
+                style={{ /* sentinel-disable inline-style-prohibido — panel admin page builder, self-contained */
                     padding: '40px 20px',
                     textAlign: 'center',
                     color: '#666'
@@ -42,8 +41,7 @@ export function AddBlockPanel({onAddBlock, title = 'Agregar Bloque', allowedType
     return (
         <div
             id="add-block-panel"
-            style={{
-                /* sentinel-disable inline-style-prohibido */
+            style={{ /* sentinel-disable inline-style-prohibido */
                 maxWidth: '1200px',
                 margin: '0 auto',
                 padding: '24px',
@@ -51,8 +49,7 @@ export function AddBlockPanel({onAddBlock, title = 'Agregar Bloque', allowedType
             }}>
             {title && (
                 <p
-                    style={{
-                        /* sentinel-disable inline-style-prohibido */
+                    style={{ /* sentinel-disable inline-style-prohibido */
                         fontSize: '12px',
                         color: '#666',
                         marginBottom: '12px',
@@ -64,8 +61,7 @@ export function AddBlockPanel({onAddBlock, title = 'Agregar Bloque', allowedType
             )}
 
             <div
-                style={{
-                    /* sentinel-disable inline-style-prohibido */
+                style={{ /* sentinel-disable inline-style-prohibido */
                     display: 'inline-flex',
                     gap: '8px',
                     flexWrap: 'wrap',
@@ -76,8 +72,7 @@ export function AddBlockPanel({onAddBlock, title = 'Agregar Bloque', allowedType
                         key={blockType.type}
                         type="button"
                         onClick={() => onAddBlock(blockType.type)}
-                        style={{
-                            /* sentinel-disable inline-style-prohibido */
+                        style={{ /* sentinel-disable inline-style-prohibido */
                             background: '#1a1a1a',
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             color: '#fff',

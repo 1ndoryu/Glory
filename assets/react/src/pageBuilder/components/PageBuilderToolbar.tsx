@@ -33,8 +33,7 @@ export function PageBuilderToolbar({onExit, onSave, isSaving = false, title = 'E
         <div
             id="page-builder-toolbar"
             className="pb-toolbar"
-            style={{
-                /* sentinel-disable inline-style-prohibido — toolbar admin del page builder, estilos self-contained */
+            style={{ /* sentinel-disable inline-style-prohibido — toolbar admin del page builder, estilos self-contained */
                 position: 'fixed',
                 top: '64px',
                 left: 0,
@@ -46,8 +45,7 @@ export function PageBuilderToolbar({onExit, onSave, isSaving = false, title = 'E
                 padding: '12px 24px'
             }}>
             <div
-                style={{
-                    /* sentinel-disable inline-style-prohibido */
+                style={{ /* sentinel-disable inline-style-prohibido */
                     maxWidth: '1200px',
                     margin: '0 auto',
                     display: 'flex',
@@ -58,8 +56,7 @@ export function PageBuilderToolbar({onExit, onSave, isSaving = false, title = 'E
                     <button
                         type="button"
                         onClick={onExit}
-                        style={{
-                            /* sentinel-disable inline-style-prohibido */
+                        style={{ /* sentinel-disable inline-style-prohibido */
                             background: 'transparent',
                             border: 'none',
                             color: '#888',
@@ -73,8 +70,7 @@ export function PageBuilderToolbar({onExit, onSave, isSaving = false, title = 'E
                         ← {exitText}
                     </button>
                     <span
-                        style={{
-                            /* sentinel-disable inline-style-prohibido */
+                        style={{ /* sentinel-disable inline-style-prohibido */
                             fontSize: '14px',
                             fontWeight: 500,
                             color: '#fff'
@@ -87,8 +83,7 @@ export function PageBuilderToolbar({onExit, onSave, isSaving = false, title = 'E
                     type="button"
                     onClick={onSave}
                     disabled={isSaving}
-                    style={{
-                        /* sentinel-disable inline-style-prohibido */
+                    style={{ /* sentinel-disable inline-style-prohibido */
                         background: '#fff',
                         border: 'none',
                         color: '#000',
