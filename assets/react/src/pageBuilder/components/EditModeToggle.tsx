@@ -34,6 +34,7 @@ export function EditModeToggle({onActivate, canEdit, text = 'Editar Pagina', pos
             type="button"
             onClick={onActivate}
             style={{
+                /* sentinel-disable inline-style-prohibido — boton flotante admin page builder */
                 position: 'fixed',
                 ...positionStyles[position],
                 zIndex: 50,
