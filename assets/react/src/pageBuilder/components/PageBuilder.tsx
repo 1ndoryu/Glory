@@ -96,6 +96,7 @@ export function PageBuilder({blocks: initialBlocks, isAdmin = false, saveEndpoin
             {/* Contenido */}
             {/* as any: @types/react 19 incluye bigint/Promise en ReactNode pero JSX no los acepta */}
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {/* sentinel-disable-next-line any-type-explicito — React 19 type incompatibility con children(blocks) */}
             <div style={{/* sentinel-disable inline-style-prohibido */ paddingTop: isEditMode && canEdit ? '48px' : '0'}}>{children ? (children(blocks, isEditMode) as any) : <BlockRenderer blocks={blocks} isEditMode={isEditMode && canEdit} selectedBlockId={selectedBlockId} onSelectBlock={setSelectedBlockId} onEditBlock={handleEditBlock} onMoveUp={handleMoveUp} onMoveDown={handleMoveDown} onDeleteBlock={handleDeleteBlock} />}</div>
 
             {/* Panel agregar bloque */}

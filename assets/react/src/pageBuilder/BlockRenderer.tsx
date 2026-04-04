@@ -65,6 +65,7 @@ function renderBlock(
 
     /* @types/react 19 rompe el tipado de ComponentType con JSX intrinsics — cast a any para bypass */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // sentinel-disable-next-line any-type-explicito — React 19 ComponentType incompatible con JSX intrinsics
     const Component = definition.component as any;
     const blockContent = <Component data={block.props} blockId={block.id} isEditing={isEditMode} />;
 
