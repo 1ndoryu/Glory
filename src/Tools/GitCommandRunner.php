@@ -48,7 +48,7 @@ class GitCommandRunner
             return ['exito' => false, 'salida' => '', 'error' => $msg, 'codigo' => -1];
         }
 
-        /* sentinel-disable exec-sin-escapeshellarg — proc_open con array es seguro: cada argumento se pasa al OS sin shell interpolation */
+        /* sentinel-disable-next-line exec-sin-escapeshellarg — proc_open con array es seguro: cada argumento se pasa al OS sin shell interpolation */
         $proceso = proc_open($comando, $descriptores, $pipes, $cwd, null, $opcionesProc);
 
         if (!is_resource($proceso)) {
