@@ -212,29 +212,20 @@ class WebScraperProvider implements ApiProviderInterface
             : get_option('amazon_scraper_proxy_auth', '');
 
         /*
-         * Configuracion de parámetros del proxy DataImpulse.
-         * 
-         * SOLUCION para forzar rotacion de IP:
-         * Usar un sessid UNICO por cada request. DataImpulse asigna una nueva IP
-         * a cada sessid diferente. Al generar un UUID aleatorio por request,
-         * garantizamos que obtendremos una IP diferente cada vez.
-         * 
-         * Esto funciona incluso si el dashboard tiene configurado un rotation interval.
-         * 
-         * Ref: https://docs.dataimpulse.com/proxies/types-of-connections
+         * Puerto 10000 = DataImpulse Web Unblocker (renderiza JS, pasa Akamai).
+         * Solo acepta auth simple user:pass, sin sufijos __cr/sessid.
+         * Puerto 823 = Residential rotating, requiere __cr.XX;sessid.XXX.
          */
-        $countryCode = $this->getProxyCountryCode();
-        $sessionId = bin2hex(random_bytes(8)); // Unico por request
+        $isWebUnblocker = (strpos($proxy, ':10000') !== false);
 
-        if (!empty($proxyAuth) && strpos($proxyAuth, ':') !== false) {
-            [$proxyUser, $proxyPass] = explode(':', $proxyAuth, 2);
+        if (!$isWebUnblocker) {
+            $countryCode = $this->getProxyCountryCode();
+            $sessionId = bin2hex(random_bytes(8));
 
-            /*
-             * Formato: usuario__cr.XX;sessid.UNIQUE:password
-             * - cr.XX: Geo-targeting (IP del pais)
-             * - sessid.UNIQUE: Fuerza una nueva IP porque es un ID nuevo
-             */
-            $proxyAuth = "{$proxyUser}__cr.{$countryCode};sessid.{$sessionId}:{$proxyPass}";
+            if (!empty($proxyAuth) && strpos($proxyAuth, ':') !== false) {
+                [$proxyUser, $proxyPass] = explode(':', $proxyAuth, 2);
+                $proxyAuth = "{$proxyUser}__cr.{$countryCode};sessid.{$sessionId}:{$proxyPass}";
+            }
         }
 
         /* Solo advertir si el proxy no está configurado */
