@@ -85,8 +85,15 @@ export default defineConfig(({mode}) => {
             port: 5173,
             origin: 'http://localhost:5173',
 
-            // Permite conexiones desde cualquier origen (necesario para Local by Flywheel)
-            cors: true,
+            // Permite que WordPress en glory.local cargue módulos desde Vite.
+            cors: {
+                origin: true,
+            },
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET,HEAD,OPTIONS',
+                'Access-Control-Allow-Headers': '*',
+            },
 
             // Escucha en todas las interfaces de red
             host: true,
