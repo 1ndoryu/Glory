@@ -48,7 +48,7 @@ export default defineConfig(({mode}) => {
         // En produccion: Ruta relativa al tema de WordPress
         // En desarrollo: Vite dev server (Debe ser la URL completa para que no busque en el dominio de WP)
         // En produccion: Ruta relativa al tema de WordPress
-        base: isDev ? 'http://localhost:5173/' : '/wp-content/themes/glorytemplate/Glory/assets/react/dist/',
+        base: isDev ? 'http://localhost:5174/' : '/wp-content/themes/glorytemplate/Glory/assets/react/dist/',
 
         build: {
             // Directorio de salida
@@ -81,17 +81,21 @@ export default defineConfig(({mode}) => {
         },
 
         server: {
-            // Puerto para el dev server
-            port: 5173,
-            origin: 'http://localhost:5173',
+            // Puerto para el dev server (5174 porque 5173 lo ocupa FreeLLMAPI)
+            port: 5174,
+            strictPort: true,
+            origin: 'http://localhost:5174',
 
             // Permite que WordPress en glory.local cargue módulos desde Vite.
+            // Orígenes explícitos + headers redundantes porque algunos middlewares
+            // de Vite no pasan por cors() para modulos ES internos (@vite/client, @react-refresh).
             cors: {
-                origin: true,
+                origin: ['http://glory.local', 'http://localhost:5174', 'http://localhost'],
+                credentials: true,
             },
             headers: {
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET,HEAD,OPTIONS',
+                'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
                 'Access-Control-Allow-Headers': '*',
             },
 
@@ -114,7 +118,7 @@ export default defineConfig(({mode}) => {
             hmr: {
                 // El host sera localhost porque Vite corre en tu maquina
                 host: 'localhost',
-                port: 5173,
+                port: 5174,
                 protocol: 'ws'
             }
         },

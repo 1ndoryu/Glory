@@ -39,8 +39,8 @@ class ReactIslands
     // Modo desarrollo (detecta si Vite dev server esta corriendo)
     private static ?bool $devMode = null;
 
-    // Puerto del servidor de desarrollo Vite
-    private const DEV_SERVER_PORT = 5173;
+    // Puerto del servidor de desarrollo Vite (5174 porque 5173 lo ocupa FreeLLMAPI)
+    private const DEV_SERVER_PORT = 5174;
 
     /**
      * Inicializa el sistema de islas React
