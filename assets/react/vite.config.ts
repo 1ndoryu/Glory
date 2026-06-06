@@ -43,12 +43,11 @@ export default defineConfig(({mode}) => {
     return {
         plugins: [pluginModulosExternos(), react()],
 
-        // Base URL para los assets
-        // En desarrollo: Vite dev server
-        // En produccion: Ruta relativa al tema de WordPress
-        // En desarrollo: Vite dev server (Debe ser la URL completa para que no busque en el dominio de WP)
-        // En produccion: Ruta relativa al tema de WordPress
-        base: isDev ? 'http://localhost:5174/' : '/wp-content/themes/glorytemplate/Glory/assets/react/dist/',
+        /* [066A-2] Base URL relativo en producción para que funcione sin importar
+         * el nombre del directorio del theme (glorytemplate local, glory en prod).
+         * En desarrollo: URL completa del Vite dev server para que no resuelva
+         * contra el dominio de WordPress. */
+        base: isDev ? 'http://localhost:5174/' : './',
 
         build: {
             // Directorio de salida
