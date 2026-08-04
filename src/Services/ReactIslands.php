@@ -42,6 +42,32 @@ class ReactIslands
     // Puerto del servidor de desarrollo Vite (5174 porque 5173 lo ocupa FreeLLMAPI)
     private const DEV_SERVER_PORT = 5174;
 
+    /* En wp-env PHP corre dentro de Docker: localhost ya no apunta al host. */
+    private static function getEnvValue(string $name, string $fallback): string
+    {
+        $value = $_ENV[$name] ?? getenv($name);
+        if (!is_string($value) || $value === '') {
+            $value = defined($name) ? constant($name) : null;
+        }
+        return is_string($value) && $value !== '' ? $value : $fallback;
+    }
+
+    private static function getDevProbeUrl(): string
+    {
+        return rtrim(self::getEnvValue(
+            'GLORY_VITE_DEV_SERVER_PROBE_URL',
+            'http://localhost:' . self::DEV_SERVER_PORT
+        ), '/');
+    }
+
+    private static function getDevPublicUrl(): string
+    {
+        return rtrim(self::getEnvValue(
+            'GLORY_VITE_DEV_SERVER_PUBLIC_URL',
+            'http://localhost:' . self::DEV_SERVER_PORT
+        ), '/');
+    }
+
     /**
      * Inicializa el sistema de islas React
      * Se llama automaticamente al registrar la primera isla
@@ -82,7 +108,7 @@ class ReactIslands
         }
 
         // Verificar si el dev server esta respondiendo
-        $devServerUrl = 'http://localhost:' . self::DEV_SERVER_PORT;
+        $devServerUrl = self::getDevProbeUrl();
 
         /* Probe al dev server: un fallo de conexion es resultado esperado en produccion */
         try {
@@ -123,7 +149,7 @@ class ReactIslands
     private static function getAssetsUrl(): string
     {
         if (self::isDevMode()) {
-            return 'http://localhost:' . self::DEV_SERVER_PORT;
+            return self::getDevPublicUrl();
         }
 
         return get_template_directory_uri() . '/Glory/assets/react/dist';

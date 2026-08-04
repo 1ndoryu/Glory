@@ -89,7 +89,7 @@ export default defineConfig(({mode}) => {
             // Orígenes explícitos + headers redundantes porque algunos middlewares
             // de Vite no pasan por cors() para modulos ES internos (@vite/client, @react-refresh).
             cors: {
-                origin: ['http://glory.local', 'http://localhost:5174', 'http://localhost'],
+                origin: ['http://glory.local', 'http://localhost:8888', 'http://localhost:5174', 'http://localhost'],
                 credentials: true,
             },
             headers: {
