@@ -42,7 +42,7 @@ class ReactIslands
     // Puerto del servidor de desarrollo Vite (5174 porque 5173 lo ocupa FreeLLMAPI)
     private const DEV_SERVER_PORT = 5174;
 
-    /* En wp-env PHP corre dentro de Docker: localhost ya no apunta al host. */
+    /* La URL de Vite puede sobrescribirse en wp-config.php o .env (GLORY_VITE_DEV_SERVER_PROBE_URL / _PUBLIC_URL). */
     private static function getEnvValue(string $name, string $fallback): string
     {
         $value = $_ENV[$name] ?? getenv($name);
@@ -52,11 +52,14 @@ class ReactIslands
         return is_string($value) && $value !== '' ? $value : $fallback;
     }
 
+    /* Se usa 127.0.0.1 (IPv4) en vez de localhost: en Windows, el navegador
+     * prefiere ::1 (IPv6) al resolver localhost y un proceso externo colgado
+     * en ::1 puede secuestrar el puerto y responder sin cabeceras CORS. */
     private static function getDevProbeUrl(): string
     {
         return rtrim(self::getEnvValue(
             'GLORY_VITE_DEV_SERVER_PROBE_URL',
-            'http://localhost:' . self::DEV_SERVER_PORT
+            'http://127.0.0.1:' . self::DEV_SERVER_PORT
         ), '/');
     }
 
@@ -64,7 +67,7 @@ class ReactIslands
     {
         return rtrim(self::getEnvValue(
             'GLORY_VITE_DEV_SERVER_PUBLIC_URL',
-            'http://localhost:' . self::DEV_SERVER_PORT
+            'http://127.0.0.1:' . self::DEV_SERVER_PORT
         ), '/');
     }
 

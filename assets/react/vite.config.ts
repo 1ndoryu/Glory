@@ -46,8 +46,10 @@ export default defineConfig(({mode}) => {
         /* [066A-2] Base URL relativo en producción para que funcione sin importar
          * el nombre del directorio del theme (glorytemplate local, glory en prod).
          * En desarrollo: URL completa del Vite dev server para que no resuelva
-         * contra el dominio de WordPress. */
-        base: isDev ? 'http://localhost:5174/' : './',
+         * contra el dominio de WordPress. Se usa 127.0.0.1 (IPv4): en Windows el
+         * navegador prefiere ::1 al resolver localhost y un proceso externo en
+         * ::1 puede secuestrar el puerto sin cabeceras CORS. */
+        base: isDev ? 'http://127.0.0.1:5174/' : './',
 
         build: {
             // Directorio de salida
@@ -83,13 +85,13 @@ export default defineConfig(({mode}) => {
             // Puerto para el dev server (5174 porque 5173 lo ocupa FreeLLMAPI)
             port: 5174,
             strictPort: true,
-            origin: 'http://localhost:5174',
+            origin: 'http://127.0.0.1:5174',
 
             // Permite que WordPress en glory.local cargue módulos desde Vite.
             // Orígenes explícitos + headers redundantes porque algunos middlewares
             // de Vite no pasan por cors() para modulos ES internos (@vite/client, @react-refresh).
             cors: {
-                origin: ['http://glory.local', 'http://localhost:8888', 'http://localhost:5174', 'http://localhost'],
+                origin: ['http://glory.local', 'http://localhost:8888', 'http://127.0.0.1:5174', 'http://127.0.0.1', 'http://localhost:5174', 'http://localhost'],
                 credentials: true,
             },
             headers: {
@@ -115,8 +117,8 @@ export default defineConfig(({mode}) => {
 
             // Configuracion de HMR para funcionar con dominios .local
             hmr: {
-                // El host sera localhost porque Vite corre en tu maquina
-                host: 'localhost',
+                // IPv4 directo: evita que el websocket resuelva a ::1 y caiga en un proceso externo
+                host: '127.0.0.1',
                 port: 5174,
                 protocol: 'ws'
             }
